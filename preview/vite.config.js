@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-  base: '/alloy-design-system/',
+  base: '/teambridge-free/',
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: [
