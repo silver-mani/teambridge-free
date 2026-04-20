@@ -1,0 +1,125 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   DataCard
+   Compact metric tile: colored icon badge · label · value · optional Tag
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Card ────────────────────────────────────────────────────────────────────
+   Flex-column layout, 12px gap and padding.
+   Uses bg-primary + opaque border so it works on any surface color.         */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* ── Badge ───────────────────────────────────────────────────────────────────
+   48×48 rounded square container for the icon.
+   Color variants set bg + icon tint via CSS custom properties on the element,
+   with the icon inheriting `color` so a single currentColor SVG works for all.*/
+
+.badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+}
+
+.badgeIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+}
+
+/* Enforce Alloy stroke-width token — CSS property overrides SVG presentation
+   attributes, so this wins over any hardcoded strokeWidth on icon components. */
+.badgeIcon > svg,
+.badgeIcon > svg * {
+  stroke-width: var(--icon-stroke-width, 1.75);
+}
+
+/* ── Badge color variants ────────────────────────────────────────────────────
+   Each variant maps to the Alloy -tertiary (very light) bg token and the
+   -secondary content token for icon tint. These are full semantic tokens —
+   no palette values are hardcoded here.                                     */
+
+.green  { background: var(--color-green-bg-tertiary);  color: var(--color-green-content-secondary);  }
+.yellow { background: var(--color-yellow-bg-tertiary); color: var(--color-yellow-content-secondary); }
+.matcha { background: var(--color-matcha-bg-tertiary); color: var(--color-matcha-content-secondary); }
+.purple { background: var(--color-purple-bg-tertiary); color: var(--color-purple-content-secondary); }
+.blue   { background: var(--color-blue-bg-tertiary);   color: var(--color-blue-content-secondary);   }
+.azure  { background: var(--color-azure-bg-tertiary);  color: var(--color-azure-content-secondary);  }
+.red    { background: var(--color-red-bg-tertiary);    color: var(--color-red-content-secondary);    }
+.orange { background: var(--color-orange-bg-tertiary); color: var(--color-orange-content-secondary); }
+.pink   { background: var(--color-pink-bg-tertiary);   color: var(--color-pink-content-secondary);   }
+.slate  { background: var(--color-slate-bg-tertiary);  color: var(--color-slate-content-secondary);  }
+
+/* ── Content ─────────────────────────────────────────────────────────────────
+   Vertical stack: label then value row.                                     */
+
+.content {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+/* ── Label — Alloy Paragraph/sm ──────────────────────────────────────────────
+   12px Regular, content-primary. Matches "alloy-paragraph-s" type style.   */
+
+.label {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);         /* 12px */
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--tracking-normal);
+  color: var(--color-content-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Value row — value + optional ValueChangeLabel side-by-side ─────────── */
+
+.valueRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+/* ── Change slot — wraps a ValueChangeLabel ───────────────────────────────── */
+
+.change {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* ── Value — Alloy Heading/sm Medium ─────────────────────────────────────────
+   20px Medium, -0.006em tracking. Matches "alloy-heading-s-medium" style.  */
+
+.value {
+  font-family: var(--font-sans);
+  font-size: var(--text-xl);         /* 20px */
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-normal);
+  letter-spacing: -0.006em;          /* −0.12px at 20px per Figma spec */
+  color: var(--color-content-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

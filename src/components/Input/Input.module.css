@@ -1,0 +1,454 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Alloy · Input / Field
+   Shared styles for TextField, TextArea, SelectField, PasswordField, SearchField.
+   Architecture: FieldWrapper (label+footer) → FieldShell (bordered box) → control
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Field wrapper — vertical stack ────────────────────────────────────────── */
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+}
+
+/* ── Label row ──────────────────────────────────────────────────────────────── */
+.labelRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.label {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-secondary);
+  line-height: var(--line-height-snug);
+}
+.required {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-error-content);
+  line-height: var(--line-height-none);
+  user-select: none;
+}
+.labelIcon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: var(--color-content-tertiary);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Size tokens — set on .shell, inherited by all children via CSS custom props.
+   ───────────────────────────────────────────────────────────────────────────── */
+.sm { --field-h: 32px; --field-fs: var(--text-xs);   --field-px: var(--space-2); --field-icon: 14px; }
+.md { --field-h: 40px; --field-fs: var(--text-sm);   --field-px: var(--space-3); --field-icon: 16px; }
+.lg { --field-h: 48px; --field-fs: var(--text-base); --field-px: var(--space-4); --field-icon: 18px; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Shell — the bordered / underlined box that wraps the control and icon slots.
+   ───────────────────────────────────────────────────────────────────────────── */
+.shell {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  /* Control padding defaults — overridden by variant + icon presence */
+  --ctrl-pl: 0;
+  --ctrl-pr: 0;
+  /* Icon slot outer padding — overridden by variant */
+  --icon-pad: 0;
+  transition:
+    border-color var(--duration-fast) var(--ease-default),
+    box-shadow   var(--duration-fast) var(--ease-default),
+    background   var(--duration-fast) var(--ease-default);
+}
+
+/* When icons are present, reduce control side padding to a comfortable gap.
+   .shell[data-has-*] has specificity (0,2,0) — beats variant class (0,1,0). */
+.shell[data-has-leading]  { --ctrl-pl: var(--space-2); }
+.shell[data-has-trailing] { --ctrl-pr: var(--space-2); }
+
+/* ── Outlined ─────────────────────────────────────────────────────────────── */
+.outlined {
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-button); /* 6px — matches button / interactive elements */
+  --ctrl-pl: var(--field-px);
+  --ctrl-pr: var(--field-px);
+  --icon-pad: var(--field-px);
+}
+.outlined:hover:not([data-disabled]):not([data-readonly]):not([data-error]):not([data-success]):not(:focus-within) {
+  border-color: var(--color-content-disabled);
+}
+.outlined:focus-within:not([data-disabled]):not([data-readonly]),
+.outlined[data-focused]:not([data-disabled]):not([data-readonly]) {
+  border-color: var(--color-border-selected);
+  box-shadow: var(--shadow-ring-default);
+  outline: none;
+}
+.outlined[data-error]                  { border-color: var(--color-error-border);   }
+.outlined[data-success]                { border-color: var(--color-success-border); }
+.outlined[data-error]:focus-within,
+.outlined[data-error][data-focused]    { border-color: var(--color-error-border);   }
+.outlined[data-success]:focus-within,
+.outlined[data-success][data-focused]  { border-color: var(--color-success-border); }
+.outlined[data-disabled]               { background: var(--color-bg-disabled); border-color: var(--color-border-disabled); }
+.outlined[data-readonly]               { background: var(--color-bg-secondary); }
+
+/* ── Underlined ───────────────────────────────────────────────────────────── */
+.underlined {
+  background: transparent;
+  border-bottom: 1px solid var(--color-border-opaque);
+  border-radius: 0;
+  /* No outer padding for icon slots or control in underlined */
+  --ctrl-pl: 0;
+  --ctrl-pr: 0;
+  --icon-pad: 0;
+}
+/* Underlined still needs gap reduction when icons present */
+.underlined[data-has-leading]  { --ctrl-pl: var(--space-2); }
+.underlined[data-has-trailing] { --ctrl-pr: var(--space-2); }
+
+/* Animated accent line */
+.underlined::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--color-border-selected);
+  border-radius: 1px;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--duration-fast) var(--ease-default);
+  pointer-events: none;
+}
+.underlined:focus-within:not([data-disabled]):not([data-readonly])::after { transform: scaleX(1); }
+
+.underlined:hover:not([data-disabled]):not([data-readonly]):not([data-error]):not([data-success]):not(:focus-within) {
+  border-bottom-color: var(--color-content-disabled);
+}
+.underlined[data-error]                { border-bottom-color: var(--color-error-border);   }
+.underlined[data-success]              { border-bottom-color: var(--color-success-border); }
+.underlined[data-error]::after         { background: var(--color-error-border);   }
+.underlined[data-success]::after       { background: var(--color-success-border); }
+.underlined[data-disabled]             { border-bottom-style: dashed; border-bottom-color: var(--color-border-disabled); }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Icon slots
+   box-sizing: border-box means padding eats into width — so we add them together:
+   width = field-icon + icon-pad → content area = field-icon after padding subtracted.
+   ───────────────────────────────────────────────────────────────────────────── */
+.leadingSlot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: calc(var(--field-icon) + var(--icon-pad));
+  height: var(--field-icon);
+  padding-left: var(--icon-pad);
+  color: var(--color-content-tertiary);
+  pointer-events: none;
+}
+
+.trailingSlot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: calc(var(--field-icon) + var(--icon-pad));
+  height: var(--field-icon);
+  padding-right: var(--icon-pad);
+  color: var(--color-content-tertiary);
+  pointer-events: none;
+}
+
+/* Interactive trailing control (password toggle, clear button) */
+.trailingActionWrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding-right: var(--icon-pad);
+}
+.trailingActionBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--field-icon);
+  height: var(--field-icon);
+  color: var(--color-content-tertiary);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: var(--radius-xs);
+  transition: color var(--duration-fast) var(--ease-default);
+}
+.trailingActionBtn:hover { color: var(--color-content-secondary); }
+.trailingActionBtn:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* Success trailing icon */
+.successTrailingSlot {
+  color: var(--color-green-content-secondary);
+}
+
+/* Error trailing icon */
+.errorTrailingSlot {
+  color: var(--color-red-content-secondary);
+}
+
+/* Disabled — mute all slots */
+.shell[data-disabled] .leadingSlot,
+.shell[data-disabled] .trailingSlot,
+.shell[data-disabled] .trailingActionBtn { color: var(--color-content-disabled); pointer-events: none; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Native control — shared base for <input>, <textarea>, <select>
+   ───────────────────────────────────────────────────────────────────────────── */
+.control {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: var(--font-sans);
+  font-size: var(--field-fs);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-content-primary);
+  caret-color: var(--color-content-primary);
+  line-height: var(--line-height-snug);
+}
+
+/* Outlined: fixed height, horizontal padding from CSS custom props */
+.outlined .control {
+  height: var(--field-h);
+  padding: 0 var(--ctrl-pr) 0 var(--ctrl-pl);
+}
+
+/* Underlined: same height, no horizontal padding (flush to edge) */
+.underlined .control {
+  height: var(--field-h);
+  padding: 0 var(--ctrl-pr) 0 var(--ctrl-pl);
+}
+
+.control::placeholder { color: var(--color-content-tertiary); }
+.control:disabled     { color: var(--color-content-disabled); cursor: not-allowed; }
+.control[readonly]    { color: var(--color-content-secondary); cursor: default; }
+
+/* Browser defaults cleanup */
+.control[type="number"]::-webkit-outer-spin-button,
+.control[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.control[type="number"] { -moz-appearance: textfield; }
+.control[type="search"]::-webkit-search-decoration,
+.control[type="search"]::-webkit-search-cancel-button,
+.control[type="search"]::-webkit-search-results-button,
+.control[type="search"]::-webkit-search-results-decoration { -webkit-appearance: none; }
+
+/* ── Select — custom value display (replaces native <select>) ───────────────── */
+.selectValue {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+.selectPlaceholder { color: var(--color-content-tertiary); }
+.shell[data-disabled] .selectValue  { color: var(--color-content-disabled); cursor: not-allowed; }
+
+/* Chevron rotation when panel is open */
+.selectChevron {
+  display: inline-flex;
+  align-items: center;
+  transition: transform var(--duration-fast) var(--ease-default);
+}
+.selectChevronOpen { transform: rotate(180deg); }
+
+/* ── Textarea ───────────────────────────────────────────────────────────────── */
+.textareaShell { align-items: flex-start; }
+
+/* Textarea replaces fixed height with top/bottom padding */
+.outlined.textareaShell .control {
+  height: auto;
+  padding-top: var(--space-2);
+  padding-bottom: var(--space-2);
+}
+.underlined.textareaShell .control {
+  height: auto;
+  padding-top: var(--space-1);
+  padding-bottom: var(--space-2);
+}
+
+.textareaControl {
+  resize: vertical;
+  line-height: var(--line-height-normal);
+}
+
+.sm.textareaShell .control { min-height: 64px; }
+.md.textareaShell .control { min-height: 80px; }
+.lg.textareaShell .control { min-height: 96px; }
+
+/* Align textarea icons to the first text line */
+.textareaShell .leadingSlot      { align-self: flex-start; padding-top: var(--space-2); }
+.textareaShell .trailingSlot     { align-self: flex-start; padding-top: var(--space-2); }
+.textareaShell .trailingActionWrap { align-self: flex-start; padding-top: var(--space-2); }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Footer — hint / error / success message
+   ───────────────────────────────────────────────────────────────────────────── */
+.footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-snug);
+  color: var(--color-content-tertiary);
+  margin: 0;
+}
+/* footerRow is kept for semantic clarity but .footer already uses flex */
+.footerRow { display: flex; }
+.footerError   { color: var(--color-error-content);   }
+.footerSuccess { color: var(--color-success-content); }
+
+/* Icon inside the footer row */
+.footerIcon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Horizontal layout — label on the left, control + footer on the right.
+   Useful for settings pages and dense form rows.
+   ───────────────────────────────────────────────────────────────────────────── */
+.wrapperHorizontal {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.horizontalLabelCol {
+  flex-shrink: 0;
+  width: 160px;
+  /* Nudges label text to vertically center with a md (40px) input.
+     (40px height − ~17px label line-height) / 2 ≈ 11px */
+  padding-top: 11px;
+}
+
+/* The label column can contain hint text explaining the field group */
+.horizontalLabelHint {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-content-tertiary);
+  line-height: var(--line-height-relaxed);
+  margin-top: var(--space-1);
+}
+
+.horizontalControlCol {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   MultiSelectField
+   Custom combobox: chip tokens inside the shell + dropdown options panel.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Container ──────────────────────────────────────────────────────────────── */
+.msContainer {
+  position: relative;
+  width: 100%;
+}
+
+/* ── Shell ─────────────────────────────────────────────────────────────────────
+   Combines with .outlined/.underlined + .sm/.md/.lg for border/bg/token styling.
+   Height is fluid (min-height) so chips can wrap to multiple rows.
+   ───────────────────────────────────────────────────────────────────────────── */
+.msShell {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  min-height: var(--field-h);
+  gap: var(--space-1);
+  padding: var(--space-1) var(--field-px);
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+  /* Override the fixed-height .outlined .control rule — we set our own sizing */
+  height: auto !important;
+}
+
+/* Open state — match the outlined focus-within style */
+.msOpen.outlined {
+  border-color: var(--color-border-selected);
+  box-shadow: var(--shadow-ring-default);
+}
+.msOpen.outlined[data-error]   { border-color: var(--color-error-border);   }
+.msOpen.outlined[data-success] { border-color: var(--color-success-border); }
+
+.msDisabled { cursor: not-allowed; pointer-events: none; }
+
+/* ── Chip area ───────────────────────────────────────────────────────────────── */
+.msBody {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.msPlaceholder {
+  font-family: var(--font-sans);
+  font-size:   var(--field-fs);
+  color:       var(--color-content-tertiary);
+  line-height: var(--line-height-snug);
+}
+
+/* ── Chips — rendered by Alloy Tag component, no custom styles needed ── */
+
+/* ── Trailing chevron ─────────────────────────────────────────────────────────── */
+.msChevron {
+  display:      inline-flex;
+  align-items:  center;
+  justify-content: center;
+  flex-shrink:  0;
+  color:        var(--color-content-tertiary);
+  width:        var(--field-icon);
+  height:       var(--field-icon);
+  margin-left:  auto;
+  transition:   transform var(--duration-base) var(--ease-default);
+}
+.msChevronOpen { transform: rotate(180deg); }
+
+/* ── Dropdown panel ────────────────────────────────────────────────────────────── */
+.msPanel {
+  position:   absolute;
+  top:        calc(100% + var(--space-1));
+  left:       0;
+  right:      0;
+  background: var(--color-bg-primary);
+  border:     1px solid var(--color-border-opaque);
+  border-radius: var(--radius-button); /* 6px — matches other panels */
+  box-shadow: var(--shadow-below-md);
+  z-index:    var(--z-dropdown);
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 228px;
+  padding:    var(--space-1);
+}
+
+/* ── Option rows — rendered by Alloy ListItem component, no custom styles needed ── */
+

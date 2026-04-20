@@ -1,0 +1,1180 @@
+/**
+ * Alloy Design Tokens
+ *
+ * Two-layer token architecture:
+ *
+ *  Layer 1 — Palette  (@layer alloy.palette)
+ *    Raw named values. Never reference these directly in components.
+ *    Prefix: --Alloy-{color}-{number}
+ *
+ *  Layer 2 — Usage / Semantic  (:root / .dark / .light)
+ *    Role-based aliases organized by usage category.
+ *    These are what components consume.
+ *
+ *    Categories:
+ *      --color-bg-*        Page and surface backgrounds
+ *      --color-content-*   Text and icon colors
+ *      --color-border-*    Strokes, dividers, outlines
+ *      --color-success-*   Success state
+ *      --color-warning-*   Warning state
+ *      --color-error-*     Error / danger state
+ *      --color-info-*      Informational state
+ *
+ * Dark mode:
+ *   • @media (prefers-color-scheme: dark)  — respects OS preference
+ *   • .dark on <html>                      — manual override to dark
+ *   • .light on <html>                     — manual override to light
+ */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Layer 1: Palette
+   ───────────────────────────────────────────────────────────────────────── */
+@layer alloy.palette {
+  :root {
+    /* Blue */
+    --Alloy-blue-50:  #E8F0FF;
+    --Alloy-blue-100: #D1E1FF;
+    --Alloy-blue-150: #BAD2FF;
+    --Alloy-blue-200: #A3C3FF;
+    --Alloy-blue-300: #75A5FE;
+    --Alloy-blue-400: #4787FE;
+    --Alloy-blue-500: #1969FE;
+    --Alloy-blue-600: #1454CB;
+    --Alloy-blue-700: #0F3F98;
+    --Alloy-blue-800: #0A2A66;
+    --Alloy-blue-850: #08204C;
+    --Alloy-blue-900: #051533;
+    --Alloy-blue-950: #030B19;
+
+    /* Azure */
+    --Alloy-azure-50:  #E7F1FB;
+    --Alloy-azure-100: #CEE3F8;
+    --Alloy-azure-150: #B6D5F4;
+    --Alloy-azure-200: #9DC7F0;
+    --Alloy-azure-300: #6DACE9;
+    --Alloy-azure-400: #3C90E1;
+    --Alloy-azure-500: #0B74DA;
+    --Alloy-azure-600: #095DAE;
+    --Alloy-azure-700: #074683;
+    --Alloy-azure-800: #042E57;
+    --Alloy-azure-850: #032341;
+    --Alloy-azure-900: #02172C;
+    --Alloy-azure-950: #010C16;
+
+    /* Purple */
+    --Alloy-purple-50:  #F0EEFA;
+    --Alloy-purple-100: #E1DEF5;
+    --Alloy-purple-150: #D2CDF0;
+    --Alloy-purple-200: #C3BDEB;
+    --Alloy-purple-300: #A69BE2;
+    --Alloy-purple-400: #887AD8;
+    --Alloy-purple-500: #6A59CE;
+    --Alloy-purple-600: #5547A5;
+    --Alloy-purple-700: #40357C;
+    --Alloy-purple-800: #2A2452;
+    --Alloy-purple-850: #201B3E;
+    --Alloy-purple-900: #151229;
+    --Alloy-purple-950: #0B0915;
+
+    /* Pink */
+    --Alloy-pink-50:  #FFEAF4;
+    --Alloy-pink-100: #FFD5E9;
+    --Alloy-pink-150: #FFC0DE;
+    --Alloy-pink-200: #FFABD3;
+    --Alloy-pink-300: #FF82BE;
+    --Alloy-pink-400: #FF58A8;
+    --Alloy-pink-500: #FF2E92;
+    --Alloy-pink-600: #CD2575;
+    --Alloy-pink-700: #9B1C58;
+    --Alloy-pink-800: #69123C;
+    --Alloy-pink-850: #500E2D;
+    --Alloy-pink-900: #37091F;
+    --Alloy-pink-950: #1E0510;
+
+    /* Red */
+    --Alloy-red-50:  #FFE9E9;
+    --Alloy-red-100: #FFD3D3;
+    --Alloy-red-150: #FFBEBD;
+    --Alloy-red-200: #FFA8A7;
+    --Alloy-red-300: #FF7C7C;
+    --Alloy-red-400: #FF5150;
+    --Alloy-red-500: #FF2524;
+    --Alloy-red-600: #CC1E1D;
+    --Alloy-red-700: #991616;
+    --Alloy-red-800: #660F0E;
+    --Alloy-red-850: #4D0B0B;
+    --Alloy-red-900: #330707;
+    --Alloy-red-950: #1A0404;
+
+    /* Orange */
+    --Alloy-orange-50:  #FDF5EA;
+    --Alloy-orange-100: #FCEBD5;
+    --Alloy-orange-150: #FAE1C0;
+    --Alloy-orange-200: #F8D7AB;
+    --Alloy-orange-300: #F5C481;
+    --Alloy-orange-400: #F1B057;
+    --Alloy-orange-500: #EE9C2D;
+    --Alloy-orange-600: #BE7D24;
+    --Alloy-orange-700: #8F5E1B;
+    --Alloy-orange-800: #5F3E12;
+    --Alloy-orange-850: #472F0E;
+    --Alloy-orange-900: #301F09;
+    --Alloy-orange-950: #181005;
+
+    /* Yellow */
+    --Alloy-yellow-50:  #FFFAE5;
+    --Alloy-yellow-100: #FFF5CC;
+    --Alloy-yellow-150: #FFF0B2;
+    --Alloy-yellow-200: #FFEB99;
+    --Alloy-yellow-300: #FFE066;
+    --Alloy-yellow-400: #FFD633;
+    --Alloy-yellow-500: #FFCC00;
+    --Alloy-yellow-600: #CCA300;
+    --Alloy-yellow-700: #997A00;
+    --Alloy-yellow-800: #665200;
+    --Alloy-yellow-850: #4D3D00;
+    --Alloy-yellow-900: #332900;
+    --Alloy-yellow-950: #1A1400;
+
+    /* Matcha */
+    --Alloy-matcha-50:  #F5FBE6;
+    --Alloy-matcha-100: #EBF6CD;
+    --Alloy-matcha-150: #E1F2B3;
+    --Alloy-matcha-200: #D7ED9A;
+    --Alloy-matcha-300: #C4E568;
+    --Alloy-matcha-400: #B0DC35;
+    --Alloy-matcha-500: #9CD303;
+    --Alloy-matcha-600: #7DA902;
+    --Alloy-matcha-700: #5E7F02;
+    --Alloy-matcha-800: #3E5401;
+    --Alloy-matcha-850: #2F3F01;
+    --Alloy-matcha-900: #1F2A01;
+    --Alloy-matcha-950: #101500;
+
+    /* Green */
+    --Alloy-green-50:  #E6F6E7;
+    --Alloy-green-100: #D0EED3;
+    --Alloy-green-150: #BBE6BF;
+    --Alloy-green-200: #A5DEAB;
+    --Alloy-green-300: #7ACD82;
+    --Alloy-green-400: #4FBD5A;
+    --Alloy-green-500: #24AD32;
+    --Alloy-green-600: #1D8A28;
+    --Alloy-green-700: #16681E;
+    --Alloy-green-800: #0E4514;
+    --Alloy-green-850: #0B340F;
+    --Alloy-green-900: #07230A;
+    --Alloy-green-950: #041105;
+
+    /* Slate */
+    --Alloy-slate-50:  #F6F7F9;
+    --Alloy-slate-100: #E8EAEE;
+    --Alloy-slate-150: #CBD0D7;
+    --Alloy-slate-200: #A8AFBA;
+    --Alloy-slate-300: #87919F;
+    --Alloy-slate-400: #677384;
+    --Alloy-slate-500: #475569;
+    --Alloy-slate-600: #394454;
+    --Alloy-slate-700: #2B333F;
+    --Alloy-slate-800: #1C222A;
+    --Alloy-slate-850: #151A20;
+    --Alloy-slate-900: #0E1115;
+    --Alloy-slate-950: #07090B;
+
+    /* Grey */
+    --Alloy-grey-50:  #F4F4F4;
+    --Alloy-grey-100: #EAEAEA;
+    --Alloy-grey-150: #DFDFDF;
+    --Alloy-grey-200: #D5D5D5;
+    --Alloy-grey-300: #BFBFBF;
+    --Alloy-grey-400: #AAAAAA;
+    --Alloy-grey-500: #959595;
+    --Alloy-grey-600: #777777;
+    --Alloy-grey-700: #5A5A5A;
+    --Alloy-grey-800: #3C3C3C;
+    --Alloy-grey-850: #2D2D2D;
+    --Alloy-grey-900: #1F1F1F;
+    --Alloy-grey-950: #101010;
+
+    /* Base */
+    --Alloy-white: #ffffff;
+    --Alloy-black: #151515;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Layer 2: Usage tokens — Light mode (default)
+   ───────────────────────────────────────────────────────────────────────── */
+:root {
+
+  /* ── Background ───────────────────────────────────────────────────────────
+     Semantic background tokens for ALL filled surfaces in the UI:
+     page, cards, panels, buttons, tags, chips, inputs, and more.
+     Maps directly to Layer 1 primitive tokens (--Alloy-{color}-{number}).   */
+  --color-bg-primary:      var(--Alloy-white);          /* Default filled surface — page, cards, primary buttons */
+  --color-bg-secondary:    var(--Alloy-slate-50);       /* Recessed layer — sidebars, inactive tabs, hover states */
+  --color-bg-tertiary:     var(--Alloy-slate-100);      /* Further recessed — inputs, tags, chips, subtle fills  */
+  --color-bg-transparent:  rgba(21, 21, 21, 0.05);      /* Transparent tint — ghost buttons, overlays, scrim     */
+  --color-bg-always-dark:  var(--Alloy-black);          /* Always dark regardless of mode — dark tooltips, etc.  */
+  --color-bg-always-light: var(--Alloy-white);          /* Always light regardless of mode — light badges, etc.  */
+  --color-bg-disabled:     var(--Alloy-slate-50);       /* Disabled state background — inputs, buttons, controls */
+
+  /* ── Content ──────────────────────────────────────────────────────────────
+     Text and icon colors. Maps to Layer 1 primitive tokens.
+     Use across all text and iconography hierarchy levels.                    */
+  --color-content-primary:    var(--Alloy-black);       /* Headings, body copy, primary icons  */
+  --color-content-secondary:  var(--Alloy-slate-800);   /* Supporting text, labels, meta       */
+  --color-content-tertiary:   var(--Alloy-slate-500);   /* Placeholders, timestamps, captions  */
+  --color-content-disabled:   var(--Alloy-slate-300);   /* Disabled text and icons             */
+  --color-content-inverse:    var(--Alloy-white);       /* Text / icons on dark fills          */
+  --color-content-link:       var(--Alloy-blue-500);    /* Hyperlinks                          */
+  --color-content-link-hover: var(--Alloy-blue-600);
+
+  /* ── Border ───────────────────────────────────────────────────────────────
+     Use for ALL strokes: dividers, outlines, card edges, input borders.
+     Maps to layer-1 --Alloy-* primitives.                                    */
+  --color-border-opaque:      var(--Alloy-slate-100);      /* Default stroke — dividers, inputs, cards  */
+  --color-border-transparent: rgba(21, 21, 21, 0.05);      /* Transparent overlay stroke                */
+  --color-border-selected:    var(--Alloy-slate-850);      /* Active / selected component stroke        */
+  --color-border-disabled:    var(--Alloy-slate-50);       /* Disabled component stroke                 */
+  --color-border-focus:       var(--Alloy-slate-850);      /* Keyboard focus ring                       */
+  --color-border-hover:       var(--color-slate-border-tertiary); /* Interactive stroke on all hovered components */
+
+  /* ── Scrollbar ─────────────────────────────────────────────────────────── */
+  --color-scrollbar-thumb:    rgba(7, 9, 11, 0.25);        /* Scrollbar thumb — semi-transparent dark   */
+
+  /* ── Inverse ──────────────────────────────────────────────────────────────
+     Opposite-mode tokens. Light mode → dark fills / light text.
+     Dark mode → automatically flips to light fills / dark text.
+     Use for: primary buttons, badges, tooltips, high-contrast surfaces.     */
+  --color-bg-inverse-primary:   var(--Alloy-black);          /* #151515 — primary dark fill  */
+  --color-bg-inverse-secondary: var(--Alloy-slate-900);      /* Deep dark secondary fill     */
+  --color-bg-inverse-tertiary:  var(--Alloy-slate-850);      /* Slightly lifted dark fill    */
+
+  --color-content-inverse-primary:   var(--Alloy-white);     /* #FFFFFF — primary text on dark fills   */
+  --color-content-inverse-secondary: var(--Alloy-slate-200); /* Slightly muted text on dark fills      */
+  --color-content-inverse-tertiary:  var(--Alloy-slate-400); /* Muted text on dark fills               */
+
+  /* ── Success ──────────────────────────────────────────────────────────────*/
+  --color-success-fill:    var(--Alloy-green-500);     /* Icon, badge, indicator fill    */
+  --color-success-bg:      var(--Alloy-green-50);      /* Alert / toast background       */
+  --color-success-border:  var(--Alloy-green-200);     /* Alert border                   */
+  --color-success-content: var(--Alloy-green-700);     /* Text and icons on success bg   */
+
+  /* ── Warning ──────────────────────────────────────────────────────────────*/
+  --color-warning-fill:    var(--Alloy-orange-500);
+  --color-warning-bg:      var(--Alloy-orange-50);
+  --color-warning-border:  var(--Alloy-orange-200);
+  --color-warning-content: var(--Alloy-orange-700);
+
+  /* ── Error ────────────────────────────────────────────────────────────────*/
+  --color-error-fill:    var(--Alloy-red-500);
+  --color-error-bg:      var(--Alloy-red-50);
+  --color-error-border:  var(--Alloy-red-200);
+  --color-error-content: var(--Alloy-red-700);
+
+  /* ── Info ─────────────────────────────────────────────────────────────────*/
+  --color-info-fill:    var(--Alloy-azure-500);
+  --color-info-bg:      var(--Alloy-azure-50);
+  --color-info-border:  var(--Alloy-azure-200);
+  --color-info-content: var(--Alloy-azure-700);
+
+  /* ════════════════════════════════════════════════════════════════════════════
+     COLORED SEMANTIC TOKENS
+     Role-based aliases per primitive color — grouped by Background / Content / Border.
+     Light:  bg → {color}-600/500/50 · content → {color}-800/700/500 · border → {color}-600/500/150
+     Dark:   bg → {color}-500/600/950 · content → {color}-200/300/400 · border → {color}-500/400/800
+     ════════════════════════════════════════════════════════════════════════════ */
+
+  /* ── Blue ─────────────────────────────────────────────────────────────── */
+  --color-blue-bg-primary:         var(--Alloy-blue-600);
+  --color-blue-bg-secondary:       var(--Alloy-blue-500);
+  --color-blue-bg-tertiary:        var(--Alloy-blue-50);
+  --color-blue-content-primary:    var(--Alloy-blue-800);
+  --color-blue-content-secondary:  var(--Alloy-blue-700);
+  --color-blue-content-tertiary:   var(--Alloy-blue-500);
+  --color-blue-border-primary:     var(--Alloy-blue-600);
+  --color-blue-border-secondary:   var(--Alloy-blue-500);
+  --color-blue-border-tertiary:    var(--Alloy-blue-150);
+
+  /* ── Azure ────────────────────────────────────────────────────────────── */
+  --color-azure-bg-primary:         var(--Alloy-azure-600);
+  --color-azure-bg-secondary:       var(--Alloy-azure-500);
+  --color-azure-bg-tertiary:        var(--Alloy-azure-50);
+  --color-azure-content-primary:    var(--Alloy-azure-800);
+  --color-azure-content-secondary:  var(--Alloy-azure-700);
+  --color-azure-content-tertiary:   var(--Alloy-azure-500);
+  --color-azure-border-primary:     var(--Alloy-azure-600);
+  --color-azure-border-secondary:   var(--Alloy-azure-500);
+  --color-azure-border-tertiary:    var(--Alloy-azure-150);
+
+  /* ── Purple ───────────────────────────────────────────────────────────── */
+  --color-purple-bg-primary:         var(--Alloy-purple-600);
+  --color-purple-bg-secondary:       var(--Alloy-purple-500);
+  --color-purple-bg-tertiary:        var(--Alloy-purple-50);
+  --color-purple-content-primary:    var(--Alloy-purple-800);
+  --color-purple-content-secondary:  var(--Alloy-purple-700);
+  --color-purple-content-tertiary:   var(--Alloy-purple-500);
+  --color-purple-border-primary:     var(--Alloy-purple-600);
+  --color-purple-border-secondary:   var(--Alloy-purple-500);
+  --color-purple-border-tertiary:    var(--Alloy-purple-150);
+
+  /* ── Pink ─────────────────────────────────────────────────────────────── */
+  --color-pink-bg-primary:         var(--Alloy-pink-600);
+  --color-pink-bg-secondary:       var(--Alloy-pink-500);
+  --color-pink-bg-tertiary:        var(--Alloy-pink-50);
+  --color-pink-content-primary:    var(--Alloy-pink-800);
+  --color-pink-content-secondary:  var(--Alloy-pink-700);
+  --color-pink-content-tertiary:   var(--Alloy-pink-500);
+  --color-pink-border-primary:     var(--Alloy-pink-600);
+  --color-pink-border-secondary:   var(--Alloy-pink-500);
+  --color-pink-border-tertiary:    var(--Alloy-pink-150);
+
+  /* ── Red ──────────────────────────────────────────────────────────────── */
+  --color-red-bg-primary:         var(--Alloy-red-600);
+  --color-red-bg-secondary:       var(--Alloy-red-500);
+  --color-red-bg-tertiary:        var(--Alloy-red-50);
+  --color-red-content-primary:    var(--Alloy-red-800);
+  --color-red-content-secondary:  var(--Alloy-red-700);
+  --color-red-content-tertiary:   var(--Alloy-red-500);
+  --color-red-border-primary:     var(--Alloy-red-600);
+  --color-red-border-secondary:   var(--Alloy-red-500);
+  --color-red-border-tertiary:    var(--Alloy-red-150);
+
+  /* ── Orange ───────────────────────────────────────────────────────────── */
+  --color-orange-bg-primary:         var(--Alloy-orange-600);
+  --color-orange-bg-secondary:       var(--Alloy-orange-500);
+  --color-orange-bg-tertiary:        var(--Alloy-orange-50);
+  --color-orange-content-primary:    var(--Alloy-orange-800);
+  --color-orange-content-secondary:  var(--Alloy-orange-700);
+  --color-orange-content-tertiary:   var(--Alloy-orange-500);
+  --color-orange-border-primary:     var(--Alloy-orange-600);
+  --color-orange-border-secondary:   var(--Alloy-orange-500);
+  --color-orange-border-tertiary:    var(--Alloy-orange-150);
+
+  /* ── Yellow ───────────────────────────────────────────────────────────── */
+  --color-yellow-bg-primary:         var(--Alloy-yellow-600);
+  --color-yellow-bg-secondary:       var(--Alloy-yellow-500);
+  --color-yellow-bg-tertiary:        var(--Alloy-yellow-50);
+  --color-yellow-content-primary:    var(--Alloy-yellow-800);
+  --color-yellow-content-secondary:  var(--Alloy-yellow-700);
+  --color-yellow-content-tertiary:   var(--Alloy-yellow-500);
+  --color-yellow-border-primary:     var(--Alloy-yellow-600);
+  --color-yellow-border-secondary:   var(--Alloy-yellow-500);
+  --color-yellow-border-tertiary:    var(--Alloy-yellow-150);
+
+  /* ── Matcha ───────────────────────────────────────────────────────────── */
+  --color-matcha-bg-primary:         var(--Alloy-matcha-600);
+  --color-matcha-bg-secondary:       var(--Alloy-matcha-500);
+  --color-matcha-bg-tertiary:        var(--Alloy-matcha-50);
+  --color-matcha-content-primary:    var(--Alloy-matcha-800);
+  --color-matcha-content-secondary:  var(--Alloy-matcha-700);
+  --color-matcha-content-tertiary:   var(--Alloy-matcha-500);
+  --color-matcha-border-primary:     var(--Alloy-matcha-600);
+  --color-matcha-border-secondary:   var(--Alloy-matcha-500);
+  --color-matcha-border-tertiary:    var(--Alloy-matcha-150);
+
+  /* ── Green ────────────────────────────────────────────────────────────── */
+  --color-green-bg-primary:         var(--Alloy-green-600);
+  --color-green-bg-secondary:       var(--Alloy-green-500);
+  --color-green-bg-tertiary:        var(--Alloy-green-50);
+  --color-green-content-primary:    var(--Alloy-green-800);
+  --color-green-content-secondary:  var(--Alloy-green-700);
+  --color-green-content-tertiary:   var(--Alloy-green-500);
+  --color-green-border-primary:     var(--Alloy-green-600);
+  --color-green-border-secondary:   var(--Alloy-green-500);
+  --color-green-border-tertiary:    var(--Alloy-green-150);
+
+  /* ── Slate ────────────────────────────────────────────────────────────── */
+  --color-slate-bg-primary:         var(--Alloy-slate-600);
+  --color-slate-bg-secondary:       var(--Alloy-slate-500);
+  --color-slate-bg-tertiary:        var(--Alloy-slate-50);
+  --color-slate-content-primary:    var(--Alloy-slate-800);
+  --color-slate-content-secondary:  var(--Alloy-slate-700);
+  --color-slate-content-tertiary:   var(--Alloy-slate-500);
+  --color-slate-border-primary:     var(--Alloy-slate-600);
+  --color-slate-border-secondary:   var(--Alloy-slate-500);
+  --color-slate-border-tertiary:    var(--Alloy-slate-150);
+
+  /* ── Grey ─────────────────────────────────────────────────────────────── */
+  --color-grey-bg-primary:         var(--Alloy-grey-600);
+  --color-grey-bg-secondary:       var(--Alloy-grey-500);
+  --color-grey-bg-tertiary:        var(--Alloy-grey-50);
+  --color-grey-content-primary:    var(--Alloy-grey-800);
+  --color-grey-content-secondary:  var(--Alloy-grey-700);
+  --color-grey-content-tertiary:   var(--Alloy-grey-500);
+  --color-grey-border-primary:     var(--Alloy-grey-600);
+  --color-grey-border-secondary:   var(--Alloy-grey-500);
+  --color-grey-border-tertiary:    var(--Alloy-grey-150);
+
+  /* ── Spacing ─────────────────────────────────────────────────────────────── */
+  --space-0:  0px;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* ── Typography ──────────────────────────────────────────────────────────── */
+
+  /* Font families — Geist (sans) and Geist Mono are the only official Alloy fonts.
+     Consumers must install the `geist` npm package and import
+     src/styles/typography.css to load the @font-face declarations.            */
+  --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system,
+               BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'Cascadia Code',
+               'Source Code Pro', Menlo, Consolas, monospace;
+
+  /* Font sizes — rem-based, 16px root */
+  --text-xs:   0.75rem;    /*  12px */
+  --text-sm:   0.875rem;   /*  14px */
+  --text-base: 1rem;       /*  16px */
+  --text-lg:   1.125rem;   /*  18px */
+  --text-xl:   1.25rem;    /*  20px */
+  --text-2xl:  1.5rem;     /*  24px */
+  --text-3xl:    1.875rem;   /*  30px */
+  --text-3-5xl:  2rem;       /*  32px */
+  --text-4xl:    2.25rem;    /*  36px */
+  --text-4-5xl:  2.5rem;     /*  40px */
+  --text-5xl:    3rem;       /*  48px */
+  --text-5-5xl:  3.5rem;     /*  56px */
+  --text-6xl:    4rem;       /*  64px */
+  --text-6-5xl:  4.5rem;     /*  72px */
+  --text-7xl:    6rem;       /*  96px */
+
+  /* Font weights */
+  --font-weight-light:    300;
+  --font-weight-regular:  400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+  --font-weight-bold:     700;
+
+  /* Line heights
+     Calibrated per size range for optimal readability:
+     none    → display-xl (96px)   — optically flush, no extra leading
+     tighter → display-lg (72px)   — barely open, large glyphs fill space
+     tight   → display-md (64px)   — subtle breathing room at large sizes
+     snug    → display-sm/xs, heading-xl/lg — transition into UI scale
+     normal  → heading-md/sm/xs    — comfortable for product UI headings
+     relaxed → label & paragraph-sm — short strings, small text
+     loose   → paragraph-lg/md     — body copy sweet spot              */
+  --line-height-none:    1;       /* 96px × 1.0  =  96px */
+  --line-height-tighter: 1.05;    /* 72px × 1.05 =  75.6px */
+  --line-height-tight:   1.1;     /* 64px × 1.1  =  70.4px */
+  --line-height-snug:    1.2;     /* 56px × 1.2  =  67.2px */
+  --line-height-normal:  1.3;     /* 24px × 1.3  =  31.2px */
+  --line-height-relaxed: 1.5;     /* 12px × 1.5  =  18px   */
+  --line-height-loose:   1.6;     /* 16px × 1.6  =  25.6px */
+
+  /* Letter spacing */
+  --tracking-tight:  -0.03em;
+  --tracking-normal:  0em;
+  --tracking-wide:    0.02em;
+  --tracking-wider:   0.05em;
+
+  /* ── Border radius ───────────────────────────────────────────────────────── */
+  --radius-xs:   2px;
+  --radius-sm:     4px;
+  --radius-button: 6px;  /* Standard interactive element radius — buttons, inputs, selects */
+  --radius-md:     8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-2xl:  24px;
+  --radius-full: 9999px;
+
+  /* ── Shadows ─────────────────────────────────────────────────────────────── */
+  /*
+   * Two types × three elevation levels.
+   *   below — shadow projects downward  (cards, panels, modals)
+   *   above — shadow projects upward    (tooltips, bottom sheets, FABs)
+   *
+   * Elevation levels:
+   *   low    → single soft layer, subtle lift
+   *   md     → near layer + diffuse spread, mid elevation
+   *   high   → near layer + strong spread, highest elevation
+   */
+
+  /* Below — light mode */
+  --shadow-below-low:  0 12px 32px 0 rgba(0, 0, 0, 0.03);
+  --shadow-below-md:   0 2px 4px 0 rgba(0, 0, 0, 0.03),
+                       0 12px 32px 0 rgba(0, 0, 0, 0.06);
+  --shadow-below-high: 0 2px 4px 0 rgba(0, 0, 0, 0.03),
+                       0 12px 32px 0 rgba(0, 0, 0, 0.09);
+
+  /* Above — light mode (Y offsets inverted) */
+  --shadow-above-low:  0 -12px 32px 0 rgba(0, 0, 0, 0.03);
+  --shadow-above-md:   0 -2px 4px 0 rgba(0, 0, 0, 0.03),
+                       0 -12px 32px 0 rgba(0, 0, 0, 0.06);
+  --shadow-above-high: 0 -2px 4px 0 rgba(0, 0, 0, 0.03),
+                       0 -12px 32px 0 rgba(0, 0, 0, 0.09);
+
+  /* Ring — 3px spread focus rings; color adapts via --color-bg-*-ring tokens */
+  --shadow-ring-default: 0 0 0 3px var(--color-bg-slate-ring);
+  --shadow-ring-focus:   0 0 0 3px var(--color-bg-focus-ring);
+  --shadow-ring-error:   0 0 0 3px var(--color-bg-error-ring);
+  --shadow-ring-success: 0 0 0 3px var(--color-bg-success-ring);
+
+  /* ── Z-index ─────────────────────────────────────────────────────────────── */
+  --z-base:     0;
+  --z-raised:   10;
+  --z-dropdown: 100;
+  --z-sticky:   200;
+  --z-overlay:  300;
+  --z-modal:    400;
+  --z-toast:    500;
+
+  /* ── Icon artwork ─────────────────────────────────────────────────────────── */
+  --icon-stroke-width: 1.75;
+
+  /* ── Input focus rings ─────────────────────────────────────────────────────── */
+  --color-bg-focus-ring:   color-mix(in srgb, var(--Alloy-slate-900) 12%, transparent);
+  --color-bg-slate-ring:   color-mix(in srgb, var(--Alloy-slate-900) 12%, transparent);
+  --color-bg-error-ring:   color-mix(in srgb, var(--Alloy-red-500)   12%, transparent);
+  --color-bg-success-ring: color-mix(in srgb, var(--Alloy-green-500) 12%, transparent);
+
+  /* ── Transitions ─────────────────────────────────────────────────────────── */
+  --duration-fast:  100ms;
+  --duration-base:  150ms;
+  --duration-slow:  250ms;
+  --ease-default:   cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in:        cubic-bezier(0.4, 0, 1, 1);
+  --ease-out:       cubic-bezier(0, 0, 0.2, 1);
+
+  /* ── Product gradients ───────────────────────────────────────────────────── */
+  /*
+   * Branded gradient tokens for specific Alloy product lines.
+   * Each token holds the full gradient value and can be applied as:
+   *
+   *   Background  →  background: var(--gradient-policy-engine);
+   *   Border      →  border-image: var(--gradient-policy-engine) 1;
+   *   Text        →  background: var(--gradient-ponder);
+   *                  -webkit-background-clip: text;
+   *                  -webkit-text-fill-color: transparent;
+   *                  background-clip: text;
+   *
+   * Never hardcode these color stops in components — always reference the token.
+   */
+
+  /* Policy Engine — coral → orange → rose (warm left-to-right) */
+  --gradient-policy-engine:
+    linear-gradient(
+      to right,
+      #FFA79B  5.75%,
+      #FF8825 34.95%,
+      #FC6684 65.93%,
+      #FD4274  100%
+    );
+
+  /* Ponder — purple → blue → teal (AI left-to-right) */
+  --gradient-ponder:
+    linear-gradient(
+      to right,
+      #8C4FE2   0%,
+      #446CFF  50%,
+      #1EDFDE 100%
+    );
+
+  /* AI — purple → blue (button/accent fill, no teal) */
+  --gradient-ai:
+    linear-gradient(
+      to right,
+      #8C4FE2   0%,
+      #446CFF 100%
+    );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Layer 2: Usage tokens — Dark mode
+   ───────────────────────────────────────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    /* Background */
+    --color-bg-primary:      var(--Alloy-slate-950);
+    --color-bg-secondary:    var(--Alloy-slate-900);
+    --color-bg-tertiary:     var(--Alloy-slate-850);
+    --color-bg-transparent:  rgba(255, 255, 255, 0.05);
+    --color-bg-always-dark:  var(--Alloy-black);
+    --color-bg-always-light: var(--Alloy-white);
+    --color-bg-disabled:     var(--Alloy-slate-800);
+
+    /* Content */
+    --color-content-primary:    var(--Alloy-white);
+    --color-content-secondary:  var(--Alloy-slate-200);
+    --color-content-tertiary:   var(--Alloy-slate-400);
+    --color-content-disabled:   var(--Alloy-slate-600);
+    --color-content-inverse:    var(--Alloy-black);
+    --color-content-link:       var(--Alloy-blue-400);
+    --color-content-link-hover: var(--Alloy-blue-300);
+
+    /* Border */
+    --color-border-opaque:      var(--Alloy-slate-700);      /* Default stroke on dark surfaces           */
+    --color-border-transparent: rgba(255, 255, 255, 0.05);   /* Transparent overlay stroke                */
+    --color-border-selected:    var(--Alloy-slate-200);      /* Active / selected component stroke        */
+    --color-border-disabled:    var(--Alloy-slate-800);      /* Disabled component stroke                 */
+    --color-border-focus:       var(--Alloy-slate-200);      /* Keyboard focus ring                       */
+    --color-border-hover:       var(--color-slate-border-tertiary);
+
+    --color-scrollbar-thumb:    rgba(255, 255, 255, 0.45);   /* Scrollbar thumb — semi-transparent light  */
+
+    /* Input focus rings — slightly more opaque on dark surfaces */
+    --color-bg-focus-ring:   color-mix(in srgb, var(--Alloy-slate-200) 15%, transparent);
+    --color-bg-slate-ring:   color-mix(in srgb, var(--Alloy-slate-200) 15%, transparent);
+    --color-bg-error-ring:   color-mix(in srgb, var(--Alloy-red-400)   18%, transparent);
+    --color-bg-success-ring: color-mix(in srgb, var(--Alloy-green-400) 18%, transparent);
+
+    /* Inverse — flipped for dark mode (light fills / dark text) */
+    --color-bg-inverse-primary:   var(--Alloy-white);
+    --color-bg-inverse-secondary: var(--Alloy-slate-50);
+    --color-bg-inverse-tertiary:  var(--Alloy-slate-100);
+
+    --color-content-inverse-primary:   var(--Alloy-black);
+    --color-content-inverse-secondary: var(--Alloy-slate-800);
+    --color-content-inverse-tertiary:  var(--Alloy-slate-500);
+
+    /* Success */
+    --color-success-fill:    var(--Alloy-green-500);
+    --color-success-bg:      var(--Alloy-green-950);
+    --color-success-border:  var(--Alloy-green-800);
+    --color-success-content: var(--Alloy-green-400);
+
+    /* Warning */
+    --color-warning-fill:    var(--Alloy-orange-500);
+    --color-warning-bg:      var(--Alloy-orange-950);
+    --color-warning-border:  var(--Alloy-orange-800);
+    --color-warning-content: var(--Alloy-orange-400);
+
+    /* Error */
+    --color-error-fill:    var(--Alloy-red-500);
+    --color-error-bg:      var(--Alloy-red-950);
+    --color-error-border:  var(--Alloy-red-800);
+    --color-error-content: var(--Alloy-red-400);
+
+    /* Info */
+    --color-info-fill:    var(--Alloy-azure-500);
+    --color-info-bg:      var(--Alloy-azure-950);
+    --color-info-border:  var(--Alloy-azure-800);
+    --color-info-content: var(--Alloy-azure-400);
+
+    /* Colored semantic — dark overrides */
+    /* ── Blue ─────────────────────────────────────────────────────────────── */
+    --color-blue-bg-primary:         var(--Alloy-blue-500);
+    --color-blue-bg-secondary:       var(--Alloy-blue-600);
+    --color-blue-bg-tertiary:        var(--Alloy-blue-950);
+    --color-blue-content-primary:    var(--Alloy-blue-200);
+    --color-blue-content-secondary:  var(--Alloy-blue-300);
+    --color-blue-content-tertiary:   var(--Alloy-blue-400);
+    --color-blue-border-primary:     var(--Alloy-blue-500);
+    --color-blue-border-secondary:   var(--Alloy-blue-400);
+    --color-blue-border-tertiary:    var(--Alloy-blue-800);
+
+    /* ── Azure ────────────────────────────────────────────────────────────── */
+    --color-azure-bg-primary:         var(--Alloy-azure-500);
+    --color-azure-bg-secondary:       var(--Alloy-azure-600);
+    --color-azure-bg-tertiary:        var(--Alloy-azure-950);
+    --color-azure-content-primary:    var(--Alloy-azure-200);
+    --color-azure-content-secondary:  var(--Alloy-azure-300);
+    --color-azure-content-tertiary:   var(--Alloy-azure-400);
+    --color-azure-border-primary:     var(--Alloy-azure-500);
+    --color-azure-border-secondary:   var(--Alloy-azure-400);
+    --color-azure-border-tertiary:    var(--Alloy-azure-800);
+
+    /* ── Purple ───────────────────────────────────────────────────────────── */
+    --color-purple-bg-primary:         var(--Alloy-purple-500);
+    --color-purple-bg-secondary:       var(--Alloy-purple-600);
+    --color-purple-bg-tertiary:        var(--Alloy-purple-950);
+    --color-purple-content-primary:    var(--Alloy-purple-200);
+    --color-purple-content-secondary:  var(--Alloy-purple-300);
+    --color-purple-content-tertiary:   var(--Alloy-purple-400);
+    --color-purple-border-primary:     var(--Alloy-purple-500);
+    --color-purple-border-secondary:   var(--Alloy-purple-400);
+    --color-purple-border-tertiary:    var(--Alloy-purple-800);
+
+    /* ── Pink ─────────────────────────────────────────────────────────────── */
+    --color-pink-bg-primary:         var(--Alloy-pink-500);
+    --color-pink-bg-secondary:       var(--Alloy-pink-600);
+    --color-pink-bg-tertiary:        var(--Alloy-pink-950);
+    --color-pink-content-primary:    var(--Alloy-pink-200);
+    --color-pink-content-secondary:  var(--Alloy-pink-300);
+    --color-pink-content-tertiary:   var(--Alloy-pink-400);
+    --color-pink-border-primary:     var(--Alloy-pink-500);
+    --color-pink-border-secondary:   var(--Alloy-pink-400);
+    --color-pink-border-tertiary:    var(--Alloy-pink-800);
+
+    /* ── Red ──────────────────────────────────────────────────────────────── */
+    --color-red-bg-primary:         var(--Alloy-red-500);
+    --color-red-bg-secondary:       var(--Alloy-red-600);
+    --color-red-bg-tertiary:        var(--Alloy-red-950);
+    --color-red-content-primary:    var(--Alloy-red-200);
+    --color-red-content-secondary:  var(--Alloy-red-300);
+    --color-red-content-tertiary:   var(--Alloy-red-400);
+    --color-red-border-primary:     var(--Alloy-red-500);
+    --color-red-border-secondary:   var(--Alloy-red-400);
+    --color-red-border-tertiary:    var(--Alloy-red-800);
+
+    /* ── Orange ───────────────────────────────────────────────────────────── */
+    --color-orange-bg-primary:         var(--Alloy-orange-500);
+    --color-orange-bg-secondary:       var(--Alloy-orange-600);
+    --color-orange-bg-tertiary:        var(--Alloy-orange-950);
+    --color-orange-content-primary:    var(--Alloy-orange-200);
+    --color-orange-content-secondary:  var(--Alloy-orange-300);
+    --color-orange-content-tertiary:   var(--Alloy-orange-400);
+    --color-orange-border-primary:     var(--Alloy-orange-500);
+    --color-orange-border-secondary:   var(--Alloy-orange-400);
+    --color-orange-border-tertiary:    var(--Alloy-orange-800);
+
+    /* ── Yellow ───────────────────────────────────────────────────────────── */
+    --color-yellow-bg-primary:         var(--Alloy-yellow-500);
+    --color-yellow-bg-secondary:       var(--Alloy-yellow-600);
+    --color-yellow-bg-tertiary:        var(--Alloy-yellow-950);
+    --color-yellow-content-primary:    var(--Alloy-yellow-200);
+    --color-yellow-content-secondary:  var(--Alloy-yellow-300);
+    --color-yellow-content-tertiary:   var(--Alloy-yellow-400);
+    --color-yellow-border-primary:     var(--Alloy-yellow-500);
+    --color-yellow-border-secondary:   var(--Alloy-yellow-400);
+    --color-yellow-border-tertiary:    var(--Alloy-yellow-800);
+
+    /* ── Matcha ───────────────────────────────────────────────────────────── */
+    --color-matcha-bg-primary:         var(--Alloy-matcha-500);
+    --color-matcha-bg-secondary:       var(--Alloy-matcha-600);
+    --color-matcha-bg-tertiary:        var(--Alloy-matcha-950);
+    --color-matcha-content-primary:    var(--Alloy-matcha-200);
+    --color-matcha-content-secondary:  var(--Alloy-matcha-300);
+    --color-matcha-content-tertiary:   var(--Alloy-matcha-400);
+    --color-matcha-border-primary:     var(--Alloy-matcha-500);
+    --color-matcha-border-secondary:   var(--Alloy-matcha-400);
+    --color-matcha-border-tertiary:    var(--Alloy-matcha-800);
+
+    /* ── Green ────────────────────────────────────────────────────────────── */
+    --color-green-bg-primary:         var(--Alloy-green-500);
+    --color-green-bg-secondary:       var(--Alloy-green-600);
+    --color-green-bg-tertiary:        var(--Alloy-green-950);
+    --color-green-content-primary:    var(--Alloy-green-200);
+    --color-green-content-secondary:  var(--Alloy-green-300);
+    --color-green-content-tertiary:   var(--Alloy-green-400);
+    --color-green-border-primary:     var(--Alloy-green-500);
+    --color-green-border-secondary:   var(--Alloy-green-400);
+    --color-green-border-tertiary:    var(--Alloy-green-800);
+
+    /* ── Slate ────────────────────────────────────────────────────────────── */
+    --color-slate-bg-primary:         var(--Alloy-slate-500);
+    --color-slate-bg-secondary:       var(--Alloy-slate-600);
+    --color-slate-bg-tertiary:        var(--Alloy-slate-950);
+    --color-slate-content-primary:    var(--Alloy-slate-200);
+    --color-slate-content-secondary:  var(--Alloy-slate-300);
+    --color-slate-content-tertiary:   var(--Alloy-slate-400);
+    --color-slate-border-primary:     var(--Alloy-slate-500);
+    --color-slate-border-secondary:   var(--Alloy-slate-400);
+    --color-slate-border-tertiary:    var(--Alloy-slate-800);
+
+    /* ── Grey ─────────────────────────────────────────────────────────────── */
+    --color-grey-bg-primary:         var(--Alloy-grey-500);
+    --color-grey-bg-secondary:       var(--Alloy-grey-600);
+    --color-grey-bg-tertiary:        var(--Alloy-grey-950);
+    --color-grey-content-primary:    var(--Alloy-grey-200);
+    --color-grey-content-secondary:  var(--Alloy-grey-300);
+    --color-grey-content-tertiary:   var(--Alloy-grey-400);
+    --color-grey-border-primary:     var(--Alloy-grey-500);
+    --color-grey-border-secondary:   var(--Alloy-grey-400);
+    --color-grey-border-tertiary:    var(--Alloy-grey-800);
+
+    /* Shadows — dark mode (higher opacity; shadows need more contrast on dark) */
+    --shadow-below-low:  0 12px 32px 0 rgba(0, 0, 0, 0.20);
+    --shadow-below-md:   0 2px 4px 0 rgba(0, 0, 0, 0.15),
+                         0 12px 32px 0 rgba(0, 0, 0, 0.30);
+    --shadow-below-high: 0 2px 4px 0 rgba(0, 0, 0, 0.15),
+                         0 12px 32px 0 rgba(0, 0, 0, 0.45);
+
+    --shadow-above-low:  0 -12px 32px 0 rgba(0, 0, 0, 0.20);
+    --shadow-above-md:   0 -2px 4px 0 rgba(0, 0, 0, 0.15),
+                         0 -12px 32px 0 rgba(0, 0, 0, 0.30);
+    --shadow-above-high: 0 -2px 4px 0 rgba(0, 0, 0, 0.15),
+                         0 -12px 32px 0 rgba(0, 0, 0, 0.45);
+  }
+}
+
+/* Manual .dark override */
+.dark {
+  --color-bg-primary:      var(--Alloy-slate-950);
+  --color-bg-secondary:    var(--Alloy-slate-900);
+  --color-bg-tertiary:     var(--Alloy-slate-850);
+  --color-bg-transparent:  rgba(255, 255, 255, 0.05);
+  --color-bg-always-dark:  var(--Alloy-black);
+  --color-bg-always-light: var(--Alloy-white);
+  --color-bg-disabled:     var(--Alloy-slate-800);
+
+  --color-content-primary:    var(--Alloy-white);
+  --color-content-secondary:  var(--Alloy-slate-200);
+  --color-content-tertiary:   var(--Alloy-slate-400);
+  --color-content-disabled:   var(--Alloy-slate-600);
+  --color-content-inverse:    var(--Alloy-black);
+  --color-content-link:       var(--Alloy-blue-400);
+  --color-content-link-hover: var(--Alloy-blue-300);
+
+  --color-border-opaque:      var(--Alloy-slate-700);
+  --color-border-transparent: rgba(255, 255, 255, 0.05);
+  --color-border-selected:    var(--Alloy-slate-200);
+  --color-border-disabled:    var(--Alloy-slate-800);
+  --color-border-focus:       var(--Alloy-slate-200);
+  --color-border-hover:       var(--color-slate-border-tertiary);
+
+  --color-scrollbar-thumb:    rgba(255, 255, 255, 0.45);   /* Scrollbar thumb — semi-transparent light  */
+
+  /* Inverse — flipped for dark mode */
+  --color-bg-inverse-primary:   var(--Alloy-white);
+  --color-bg-inverse-secondary: var(--Alloy-slate-50);
+  --color-bg-inverse-tertiary:  var(--Alloy-slate-100);
+
+  --color-content-inverse-primary:   var(--Alloy-black);
+  --color-content-inverse-secondary: var(--Alloy-slate-800);
+  --color-content-inverse-tertiary:  var(--Alloy-slate-500);
+
+  --color-success-fill:    var(--Alloy-green-500);
+  --color-success-bg:      var(--Alloy-green-950);
+  --color-success-border:  var(--Alloy-green-800);
+  --color-success-content: var(--Alloy-green-400);
+
+  --color-warning-fill:    var(--Alloy-orange-500);
+  --color-warning-bg:      var(--Alloy-orange-950);
+  --color-warning-border:  var(--Alloy-orange-800);
+  --color-warning-content: var(--Alloy-orange-400);
+
+  --color-error-fill:    var(--Alloy-red-500);
+  --color-error-bg:      var(--Alloy-red-950);
+  --color-error-border:  var(--Alloy-red-800);
+  --color-error-content: var(--Alloy-red-400);
+
+  --color-info-fill:    var(--Alloy-azure-500);
+  --color-info-bg:      var(--Alloy-azure-950);
+  --color-info-border:  var(--Alloy-azure-800);
+  --color-info-content: var(--Alloy-azure-400);
+
+  /* Colored semantic — dark overrides */
+  /* ── Blue ─────────────────────────────────────────────────────────────── */
+  --color-blue-bg-primary:         var(--Alloy-blue-500);
+  --color-blue-bg-secondary:       var(--Alloy-blue-600);
+  --color-blue-bg-tertiary:        var(--Alloy-blue-950);
+  --color-blue-content-primary:    var(--Alloy-blue-200);
+  --color-blue-content-secondary:  var(--Alloy-blue-300);
+  --color-blue-content-tertiary:   var(--Alloy-blue-400);
+  --color-blue-border-primary:     var(--Alloy-blue-500);
+  --color-blue-border-secondary:   var(--Alloy-blue-400);
+  --color-blue-border-tertiary:    var(--Alloy-blue-800);
+
+  /* ── Azure ────────────────────────────────────────────────────────────── */
+  --color-azure-bg-primary:         var(--Alloy-azure-500);
+  --color-azure-bg-secondary:       var(--Alloy-azure-600);
+  --color-azure-bg-tertiary:        var(--Alloy-azure-950);
+  --color-azure-content-primary:    var(--Alloy-azure-200);
+  --color-azure-content-secondary:  var(--Alloy-azure-300);
+  --color-azure-content-tertiary:   var(--Alloy-azure-400);
+  --color-azure-border-primary:     var(--Alloy-azure-500);
+  --color-azure-border-secondary:   var(--Alloy-azure-400);
+  --color-azure-border-tertiary:    var(--Alloy-azure-800);
+
+  /* ── Purple ───────────────────────────────────────────────────────────── */
+  --color-purple-bg-primary:         var(--Alloy-purple-500);
+  --color-purple-bg-secondary:       var(--Alloy-purple-600);
+  --color-purple-bg-tertiary:        var(--Alloy-purple-950);
+  --color-purple-content-primary:    var(--Alloy-purple-200);
+  --color-purple-content-secondary:  var(--Alloy-purple-300);
+  --color-purple-content-tertiary:   var(--Alloy-purple-400);
+  --color-purple-border-primary:     var(--Alloy-purple-500);
+  --color-purple-border-secondary:   var(--Alloy-purple-400);
+  --color-purple-border-tertiary:    var(--Alloy-purple-800);
+
+  /* ── Pink ─────────────────────────────────────────────────────────────── */
+  --color-pink-bg-primary:         var(--Alloy-pink-500);
+  --color-pink-bg-secondary:       var(--Alloy-pink-600);
+  --color-pink-bg-tertiary:        var(--Alloy-pink-950);
+  --color-pink-content-primary:    var(--Alloy-pink-200);
+  --color-pink-content-secondary:  var(--Alloy-pink-300);
+  --color-pink-content-tertiary:   var(--Alloy-pink-400);
+  --color-pink-border-primary:     var(--Alloy-pink-500);
+  --color-pink-border-secondary:   var(--Alloy-pink-400);
+  --color-pink-border-tertiary:    var(--Alloy-pink-800);
+
+  /* ── Red ──────────────────────────────────────────────────────────────── */
+  --color-red-bg-primary:         var(--Alloy-red-500);
+  --color-red-bg-secondary:       var(--Alloy-red-600);
+  --color-red-bg-tertiary:        var(--Alloy-red-950);
+  --color-red-content-primary:    var(--Alloy-red-200);
+  --color-red-content-secondary:  var(--Alloy-red-300);
+  --color-red-content-tertiary:   var(--Alloy-red-400);
+  --color-red-border-primary:     var(--Alloy-red-500);
+  --color-red-border-secondary:   var(--Alloy-red-400);
+  --color-red-border-tertiary:    var(--Alloy-red-800);
+
+  /* ── Orange ───────────────────────────────────────────────────────────── */
+  --color-orange-bg-primary:         var(--Alloy-orange-500);
+  --color-orange-bg-secondary:       var(--Alloy-orange-600);
+  --color-orange-bg-tertiary:        var(--Alloy-orange-950);
+  --color-orange-content-primary:    var(--Alloy-orange-200);
+  --color-orange-content-secondary:  var(--Alloy-orange-300);
+  --color-orange-content-tertiary:   var(--Alloy-orange-400);
+  --color-orange-border-primary:     var(--Alloy-orange-500);
+  --color-orange-border-secondary:   var(--Alloy-orange-400);
+  --color-orange-border-tertiary:    var(--Alloy-orange-800);
+
+  /* ── Yellow ───────────────────────────────────────────────────────────── */
+  --color-yellow-bg-primary:         var(--Alloy-yellow-500);
+  --color-yellow-bg-secondary:       var(--Alloy-yellow-600);
+  --color-yellow-bg-tertiary:        var(--Alloy-yellow-950);
+  --color-yellow-content-primary:    var(--Alloy-yellow-200);
+  --color-yellow-content-secondary:  var(--Alloy-yellow-300);
+  --color-yellow-content-tertiary:   var(--Alloy-yellow-400);
+  --color-yellow-border-primary:     var(--Alloy-yellow-500);
+  --color-yellow-border-secondary:   var(--Alloy-yellow-400);
+  --color-yellow-border-tertiary:    var(--Alloy-yellow-800);
+
+  /* ── Matcha ───────────────────────────────────────────────────────────── */
+  --color-matcha-bg-primary:         var(--Alloy-matcha-500);
+  --color-matcha-bg-secondary:       var(--Alloy-matcha-600);
+  --color-matcha-bg-tertiary:        var(--Alloy-matcha-950);
+  --color-matcha-content-primary:    var(--Alloy-matcha-200);
+  --color-matcha-content-secondary:  var(--Alloy-matcha-300);
+  --color-matcha-content-tertiary:   var(--Alloy-matcha-400);
+  --color-matcha-border-primary:     var(--Alloy-matcha-500);
+  --color-matcha-border-secondary:   var(--Alloy-matcha-400);
+  --color-matcha-border-tertiary:    var(--Alloy-matcha-800);
+
+  /* ── Green ────────────────────────────────────────────────────────────── */
+  --color-green-bg-primary:         var(--Alloy-green-500);
+  --color-green-bg-secondary:       var(--Alloy-green-600);
+  --color-green-bg-tertiary:        var(--Alloy-green-950);
+  --color-green-content-primary:    var(--Alloy-green-200);
+  --color-green-content-secondary:  var(--Alloy-green-300);
+  --color-green-content-tertiary:   var(--Alloy-green-400);
+  --color-green-border-primary:     var(--Alloy-green-500);
+  --color-green-border-secondary:   var(--Alloy-green-400);
+  --color-green-border-tertiary:    var(--Alloy-green-800);
+
+  /* ── Slate ────────────────────────────────────────────────────────────── */
+  --color-slate-bg-primary:         var(--Alloy-slate-500);
+  --color-slate-bg-secondary:       var(--Alloy-slate-600);
+  --color-slate-bg-tertiary:        var(--Alloy-slate-950);
+  --color-slate-content-primary:    var(--Alloy-slate-200);
+  --color-slate-content-secondary:  var(--Alloy-slate-300);
+  --color-slate-content-tertiary:   var(--Alloy-slate-400);
+  --color-slate-border-primary:     var(--Alloy-slate-500);
+  --color-slate-border-secondary:   var(--Alloy-slate-400);
+  --color-slate-border-tertiary:    var(--Alloy-slate-800);
+
+  /* ── Grey ─────────────────────────────────────────────────────────────── */
+  --color-grey-bg-primary:         var(--Alloy-grey-500);
+  --color-grey-bg-secondary:       var(--Alloy-grey-600);
+  --color-grey-bg-tertiary:        var(--Alloy-grey-950);
+  --color-grey-content-primary:    var(--Alloy-grey-200);
+  --color-grey-content-secondary:  var(--Alloy-grey-300);
+  --color-grey-content-tertiary:   var(--Alloy-grey-400);
+  --color-grey-border-primary:     var(--Alloy-grey-500);
+  --color-grey-border-secondary:   var(--Alloy-grey-400);
+  --color-grey-border-tertiary:    var(--Alloy-grey-800);
+
+  --shadow-below-low:  0 12px 32px 0 rgba(0, 0, 0, 0.20);
+  --shadow-below-md:   0 2px 4px 0 rgba(0, 0, 0, 0.15),
+                       0 12px 32px 0 rgba(0, 0, 0, 0.30);
+  --shadow-below-high: 0 2px 4px 0 rgba(0, 0, 0, 0.15),
+                       0 12px 32px 0 rgba(0, 0, 0, 0.45);
+
+  --shadow-above-low:  0 -12px 32px 0 rgba(0, 0, 0, 0.20);
+  --shadow-above-md:   0 -2px 4px 0 rgba(0, 0, 0, 0.15),
+                       0 -12px 32px 0 rgba(0, 0, 0, 0.30);
+  --shadow-above-high: 0 -2px 4px 0 rgba(0, 0, 0, 0.15),
+                       0 -12px 32px 0 rgba(0, 0, 0, 0.45);
+}
+
+/* Manual .light override */
+.light {
+  --color-bg-primary:      var(--Alloy-white);
+  --color-bg-secondary:    var(--Alloy-slate-50);
+  --color-bg-tertiary:     var(--Alloy-slate-100);
+  --color-bg-transparent:  rgba(21, 21, 21, 0.05);
+  --color-bg-always-dark:  var(--Alloy-black);
+  --color-bg-always-light: var(--Alloy-white);
+  --color-bg-disabled:     var(--Alloy-slate-50);
+
+  --color-content-primary:    var(--Alloy-black);
+  --color-content-secondary:  var(--Alloy-slate-500);
+  --color-content-tertiary:   var(--Alloy-slate-300);
+  --color-content-disabled:   var(--Alloy-slate-200);
+  --color-content-inverse:    var(--Alloy-white);
+  --color-content-link:       var(--Alloy-blue-500);
+  --color-content-link-hover: var(--Alloy-blue-600);
+
+  --color-border-opaque:      var(--Alloy-slate-100);
+  --color-border-transparent: rgba(21, 21, 21, 0.05);
+  --color-border-selected:    var(--Alloy-slate-850);
+  --color-border-disabled:    var(--Alloy-slate-50);
+  --color-border-focus:       var(--Alloy-slate-850);
+  --color-border-hover:       var(--color-slate-border-tertiary);
+
+  /* Inverse — same as light mode */
+  --color-bg-inverse-primary:   var(--Alloy-black);
+  --color-bg-inverse-secondary: var(--Alloy-slate-900);
+  --color-bg-inverse-tertiary:  var(--Alloy-slate-850);
+
+  --color-content-inverse-primary:   var(--Alloy-white);
+  --color-content-inverse-secondary: var(--Alloy-slate-200);
+  --color-content-inverse-tertiary:  var(--Alloy-slate-400);
+
+  --color-success-fill:    var(--Alloy-green-500);
+  --color-success-bg:      var(--Alloy-green-50);
+  --color-success-border:  var(--Alloy-green-200);
+  --color-success-content: var(--Alloy-green-700);
+
+  --color-warning-fill:    var(--Alloy-orange-500);
+  --color-warning-bg:      var(--Alloy-orange-50);
+  --color-warning-border:  var(--Alloy-orange-200);
+  --color-warning-content: var(--Alloy-orange-700);
+
+  --color-error-fill:    var(--Alloy-red-500);
+  --color-error-bg:      var(--Alloy-red-50);
+  --color-error-border:  var(--Alloy-red-200);
+  --color-error-content: var(--Alloy-red-700);
+
+  --color-info-fill:    var(--Alloy-azure-500);
+  --color-info-bg:      var(--Alloy-azure-50);
+  --color-info-border:  var(--Alloy-azure-200);
+  --color-info-content: var(--Alloy-azure-700);
+
+  /* Colored semantic — light overrides */
+  /* ── Blue ─────────────────────────────────────────────────────────────── */
+  --color-blue-bg-primary:         var(--Alloy-blue-600);
+  --color-blue-bg-secondary:       var(--Alloy-blue-500);
+  --color-blue-bg-tertiary:        var(--Alloy-blue-50);
+  --color-blue-content-primary:    var(--Alloy-blue-800);
+  --color-blue-content-secondary:  var(--Alloy-blue-700);
+  --color-blue-content-tertiary:   var(--Alloy-blue-500);
+  --color-blue-border-primary:     var(--Alloy-blue-600);
+  --color-blue-border-secondary:   var(--Alloy-blue-500);
+  --color-blue-border-tertiary:    var(--Alloy-blue-150);
+
+  /* ── Azure ────────────────────────────────────────────────────────────── */
+  --color-azure-bg-primary:         var(--Alloy-azure-600);
+  --color-azure-bg-secondary:       var(--Alloy-azure-500);
+  --color-azure-bg-tertiary:        var(--Alloy-azure-50);
+  --color-azure-content-primary:    var(--Alloy-azure-800);
+  --color-azure-content-secondary:  var(--Alloy-azure-700);
+  --color-azure-content-tertiary:   var(--Alloy-azure-500);
+  --color-azure-border-primary:     var(--Alloy-azure-600);
+  --color-azure-border-secondary:   var(--Alloy-azure-500);
+  --color-azure-border-tertiary:    var(--Alloy-azure-150);
+
+  /* ── Purple ───────────────────────────────────────────────────────────── */
+  --color-purple-bg-primary:         var(--Alloy-purple-600);
+  --color-purple-bg-secondary:       var(--Alloy-purple-500);
+  --color-purple-bg-tertiary:        var(--Alloy-purple-50);
+  --color-purple-content-primary:    var(--Alloy-purple-800);
+  --color-purple-content-secondary:  var(--Alloy-purple-700);
+  --color-purple-content-tertiary:   var(--Alloy-purple-500);
+  --color-purple-border-primary:     var(--Alloy-purple-600);
+  --color-purple-border-secondary:   var(--Alloy-purple-500);
+  --color-purple-border-tertiary:    var(--Alloy-purple-150);
+
+  /* ── Pink ─────────────────────────────────────────────────────────────── */
+  --color-pink-bg-primary:         var(--Alloy-pink-600);
+  --color-pink-bg-secondary:       var(--Alloy-pink-500);
+  --color-pink-bg-tertiary:        var(--Alloy-pink-50);
+  --color-pink-content-primary:    var(--Alloy-pink-800);
+  --color-pink-content-secondary:  var(--Alloy-pink-700);
+  --color-pink-content-tertiary:   var(--Alloy-pink-500);
+  --color-pink-border-primary:     var(--Alloy-pink-600);
+  --color-pink-border-secondary:   var(--Alloy-pink-500);
+  --color-pink-border-tertiary:    var(--Alloy-pink-150);
+
+  /* ── Red ──────────────────────────────────────────────────────────────── */
+  --color-red-bg-primary:         var(--Alloy-red-600);
+  --color-red-bg-secondary:       var(--Alloy-red-500);
+  --color-red-bg-tertiary:        var(--Alloy-red-50);
+  --color-red-content-primary:    var(--Alloy-red-800);
+  --color-red-content-secondary:  var(--Alloy-red-700);
+  --color-red-content-tertiary:   var(--Alloy-red-500);
+  --color-red-border-primary:     var(--Alloy-red-600);
+  --color-red-border-secondary:   var(--Alloy-red-500);
+  --color-red-border-tertiary:    var(--Alloy-red-150);
+
+  /* ── Orange ───────────────────────────────────────────────────────────── */
+  --color-orange-bg-primary:         var(--Alloy-orange-600);
+  --color-orange-bg-secondary:       var(--Alloy-orange-500);
+  --color-orange-bg-tertiary:        var(--Alloy-orange-50);
+  --color-orange-content-primary:    var(--Alloy-orange-800);
+  --color-orange-content-secondary:  var(--Alloy-orange-700);
+  --color-orange-content-tertiary:   var(--Alloy-orange-500);
+  --color-orange-border-primary:     var(--Alloy-orange-600);
+  --color-orange-border-secondary:   var(--Alloy-orange-500);
+  --color-orange-border-tertiary:    var(--Alloy-orange-150);
+
+  /* ── Yellow ───────────────────────────────────────────────────────────── */
+  --color-yellow-bg-primary:         var(--Alloy-yellow-600);
+  --color-yellow-bg-secondary:       var(--Alloy-yellow-500);
+  --color-yellow-bg-tertiary:        var(--Alloy-yellow-50);
+  --color-yellow-content-primary:    var(--Alloy-yellow-800);
+  --color-yellow-content-secondary:  var(--Alloy-yellow-700);
+  --color-yellow-content-tertiary:   var(--Alloy-yellow-500);
+  --color-yellow-border-primary:     var(--Alloy-yellow-600);
+  --color-yellow-border-secondary:   var(--Alloy-yellow-500);
+  --color-yellow-border-tertiary:    var(--Alloy-yellow-150);
+
+  /* ── Matcha ───────────────────────────────────────────────────────────── */
+  --color-matcha-bg-primary:         var(--Alloy-matcha-600);
+  --color-matcha-bg-secondary:       var(--Alloy-matcha-500);
+  --color-matcha-bg-tertiary:        var(--Alloy-matcha-50);
+  --color-matcha-content-primary:    var(--Alloy-matcha-800);
+  --color-matcha-content-secondary:  var(--Alloy-matcha-700);
+  --color-matcha-content-tertiary:   var(--Alloy-matcha-500);
+  --color-matcha-border-primary:     var(--Alloy-matcha-600);
+  --color-matcha-border-secondary:   var(--Alloy-matcha-500);
+  --color-matcha-border-tertiary:    var(--Alloy-matcha-150);
+
+  /* ── Green ────────────────────────────────────────────────────────────── */
+  --color-green-bg-primary:         var(--Alloy-green-600);
+  --color-green-bg-secondary:       var(--Alloy-green-500);
+  --color-green-bg-tertiary:        var(--Alloy-green-50);
+  --color-green-content-primary:    var(--Alloy-green-800);
+  --color-green-content-secondary:  var(--Alloy-green-700);
+  --color-green-content-tertiary:   var(--Alloy-green-500);
+  --color-green-border-primary:     var(--Alloy-green-600);
+  --color-green-border-secondary:   var(--Alloy-green-500);
+  --color-green-border-tertiary:    var(--Alloy-green-150);
+
+  /* ── Slate ────────────────────────────────────────────────────────────── */
+  --color-slate-bg-primary:         var(--Alloy-slate-600);
+  --color-slate-bg-secondary:       var(--Alloy-slate-500);
+  --color-slate-bg-tertiary:        var(--Alloy-slate-50);
+  --color-slate-content-primary:    var(--Alloy-slate-800);
+  --color-slate-content-secondary:  var(--Alloy-slate-700);
+  --color-slate-content-tertiary:   var(--Alloy-slate-500);
+  --color-slate-border-primary:     var(--Alloy-slate-600);
+  --color-slate-border-secondary:   var(--Alloy-slate-500);
+  --color-slate-border-tertiary:    var(--Alloy-slate-150);
+
+  /* ── Grey ─────────────────────────────────────────────────────────────── */
+  --color-grey-bg-primary:         var(--Alloy-grey-600);
+  --color-grey-bg-secondary:       var(--Alloy-grey-500);
+  --color-grey-bg-tertiary:        var(--Alloy-grey-50);
+  --color-grey-content-primary:    var(--Alloy-grey-800);
+  --color-grey-content-secondary:  var(--Alloy-grey-700);
+  --color-grey-content-tertiary:   var(--Alloy-grey-500);
+  --color-grey-border-primary:     var(--Alloy-grey-600);
+  --color-grey-border-secondary:   var(--Alloy-grey-500);
+  --color-grey-border-tertiary:    var(--Alloy-grey-150);
+
+  --shadow-below-low:  0 12px 32px 0 rgba(0, 0, 0, 0.03);
+  --shadow-below-md:   0 2px 4px 0 rgba(0, 0, 0, 0.03),
+                       0 12px 32px 0 rgba(0, 0, 0, 0.06);
+  --shadow-below-high: 0 2px 4px 0 rgba(0, 0, 0, 0.03),
+                       0 12px 32px 0 rgba(0, 0, 0, 0.09);
+
+  --shadow-above-low:  0 -12px 32px 0 rgba(0, 0, 0, 0.03);
+  --shadow-above-md:   0 -2px 4px 0 rgba(0, 0, 0, 0.03),
+                       0 -12px 32px 0 rgba(0, 0, 0, 0.06);
+  --shadow-above-high: 0 -2px 4px 0 rgba(0, 0, 0, 0.03),
+                       0 -12px 32px 0 rgba(0, 0, 0, 0.09);
+}

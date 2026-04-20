@@ -1,0 +1,51 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   ValueChangeLabel
+   Inline metric change indicator — trend (arrow + text) or text-only modes.
+   Colors map to Alloy success / warning / error semantic tokens.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);          /* 14px — Paragraph/sm */
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+}
+
+/* ── Icon slot ────────────────────────────────────────────────────────────────
+   Keeps icon vertically centered with the text and inherits color.           */
+
+.icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: inherit;
+}
+
+.icon > svg,
+.icon > svg * {
+  stroke: currentColor;
+}
+
+.text {
+  color: inherit;
+}
+
+/* ── Severity colors ──────────────────────────────────────────────────────────
+   Uses Alloy semantic success / warning / error content tokens.
+   These handle dark mode automatically via tokens.css.                       */
+
+.positive {
+  color: var(--color-success-content);
+}
+
+.warning {
+  color: var(--color-warning-content);
+}
+
+.negative {
+  color: var(--color-error-content);
+}

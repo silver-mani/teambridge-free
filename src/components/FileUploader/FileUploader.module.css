@@ -1,0 +1,425 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Alloy · FileUploader
+   Variants: area (standalone drop zone) | inline (input-like row)
+   States:   empty | uploading | complete | error
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Hidden native file input ──────────────────────────────────────────────── */
+.hiddenInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Area variant — standalone drag-and-drop zone
+   ───────────────────────────────────────────────────────────────────────────── */
+.area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-5);
+  padding: var(--space-8);
+  width: 100%;
+  border: 1px dashed var(--color-border-opaque);
+  border-radius: var(--radius-button);
+  background: var(--color-bg-primary);
+  text-align: center;
+  position: relative;
+  transition:
+    background   var(--duration-fast) var(--ease-default),
+    border-color var(--duration-fast) var(--ease-default);
+}
+
+.area[data-drag-over] {
+  background: var(--color-bg-secondary);
+  border-color: var(--color-border-focus);
+}
+
+.area[data-state='error'] {
+  border-color: var(--color-error-border);
+}
+
+.area[data-disabled] {
+  background: var(--color-bg-disabled);
+  border-color: var(--color-border-disabled);
+  pointer-events: none;
+}
+
+/* ── Upload cloud icon ──────────────────────────────────────────────────────── */
+.uploadIcon {
+  color: var(--color-content-tertiary);
+  flex-shrink: 0;
+}
+
+/* ── Title + description text block ─────────────────────────────────────────── */
+.textBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  width: 100%;
+}
+
+.title {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+  line-height: var(--line-height-snug);
+  margin: 0;
+}
+
+.description {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-content-secondary);
+  line-height: var(--line-height-snug);
+  margin: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Shared — file info row (uploading + complete states)
+   ───────────────────────────────────────────────────────────────────────────── */
+.fileRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  text-align: left;
+}
+
+.fileIcon {
+  color: var(--color-content-tertiary);
+  flex-shrink: 0;
+}
+
+.fileName {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+  line-height: var(--line-height-snug);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+.successIcon {
+  color: var(--color-green-content-secondary);
+  flex-shrink: 0;
+}
+
+/* ── Remove / clear button ──────────────────────────────────────────────────── */
+.removeBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--color-content-tertiary);
+  border-radius: var(--radius-xs);
+  flex-shrink: 0;
+  transition: color var(--duration-fast) var(--ease-default);
+}
+.removeBtn:hover { color: var(--color-content-secondary); }
+.removeBtn:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Progress bar (area variant — uploading state)
+   ───────────────────────────────────────────────────────────────────────────── */
+.progressWrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+  text-align: left;
+}
+
+.progressBar {
+  width: 100%;
+  height: 4px;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--color-border-focus);
+  border-radius: var(--radius-full);
+  transition: width var(--duration-base) var(--ease-default);
+}
+
+.progressLabel {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-content-tertiary);
+  line-height: var(--line-height-snug);
+  margin: 0;
+}
+
+/* ── Error state (area variant) ─────────────────────────────────────────────── */
+.errorRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  justify-content: center;
+  text-align: left;
+}
+
+.errorIcon {
+  color: var(--color-red-content-secondary);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.errorText {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-error-content);
+  line-height: var(--line-height-snug);
+  margin: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Area variant — multi-file mode
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Outer wrapper — stacks drop zone + file list vertically */
+.areaMulti {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+/* Drop zone inside multi mode — same look as the single .area */
+.multiDropZone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-5);
+  padding: var(--space-8);
+  width: 100%;
+  border: 1px dashed var(--color-border-opaque);
+  border-radius: var(--radius-button);
+  background: var(--color-bg-primary);
+  text-align: center;
+  position: relative;
+  transition:
+    background   var(--duration-fast) var(--ease-default),
+    border-color var(--duration-fast) var(--ease-default);
+}
+
+.areaMulti[data-drag-over] .multiDropZone {
+  background: var(--color-bg-secondary);
+  border-color: var(--color-border-focus);
+}
+
+.areaMulti[data-disabled] .multiDropZone {
+  background: var(--color-bg-disabled);
+  border-color: var(--color-border-disabled);
+  pointer-events: none;
+}
+
+/* File list */
+.fileList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+}
+
+.fileListItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-button);
+  background: var(--color-bg-primary);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Inline variant — compact input-row style
+   ───────────────────────────────────────────────────────────────────────────── */
+.inline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+  height: 40px;
+  width: 100%;
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-button);
+  background: var(--color-bg-primary);
+  position: relative;
+  overflow: hidden;
+  transition:
+    border-color var(--duration-fast) var(--ease-default),
+    box-shadow   var(--duration-fast) var(--ease-default);
+}
+
+.inline:hover:not([data-disabled]):not([data-state='uploading']):not([data-state='complete']) {
+  border-color: var(--color-content-disabled);
+}
+
+.inline[data-state='uploading'] {
+  padding-right: var(--space-2);
+}
+
+.inline[data-state='complete'] {
+  border-color: var(--color-success-border);
+  padding-right: var(--space-2);
+}
+
+.inline[data-state='error'] {
+  border-color: var(--color-error-border);
+  padding-right: var(--space-2);
+}
+
+.inline[data-disabled] {
+  background: var(--color-bg-disabled);
+  border-color: var(--color-border-disabled);
+  pointer-events: none;
+}
+
+/* ── Inline: leading icon ──────────────────────────────────────────────────── */
+.inlineIcon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: var(--color-content-tertiary);
+}
+.inline[data-state='complete'] .inlineIcon { color: var(--color-green-content-secondary); }
+.inline[data-state='error']    .inlineIcon { color: var(--color-red-content-secondary); }
+
+/* ── Inline: progress percent label ─────────────────────────────────────────── */
+.progressPercent {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-tertiary);
+  line-height: var(--line-height-snug);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ── Inline: text content ───────────────────────────────────────────────────── */
+.inlineText {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-content-tertiary);
+  line-height: var(--line-height-snug);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inlineText[data-has-file] {
+  color: var(--color-content-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.inline[data-state='error'] .inlineText {
+  color: var(--color-error-content);
+}
+
+/* ── Inline: progress bar (uploading — 2px strip at bottom) ─────────────────── */
+.inlineProgress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-bg-tertiary);
+  overflow: hidden;
+}
+
+.inlineProgressFill {
+  height: 100%;
+  background: var(--color-border-focus);
+  transition: width var(--duration-base) var(--ease-default);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Inline — underlined field variant
+   ───────────────────────────────────────────────────────────────────────────── */
+.inline[data-field-variant='underlined'] {
+  border: none;
+  border-bottom: 1px solid var(--color-border-opaque);
+  border-radius: 0;
+  background: transparent;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Override tighter right-padding from state rules */
+.inline[data-field-variant='underlined'][data-state='uploading'],
+.inline[data-field-variant='underlined'][data-state='complete'],
+.inline[data-field-variant='underlined'][data-state='error'] {
+  padding-right: 0;
+}
+
+.inline[data-field-variant='underlined'][data-state='complete'] {
+  border-bottom-color: var(--color-success-border);
+}
+
+.inline[data-field-variant='underlined'][data-state='error'] {
+  border-bottom-color: var(--color-error-border);
+}
+
+.inline[data-field-variant='underlined'][data-disabled] {
+  border-bottom-style: dashed;
+  border-bottom-color: var(--color-border-disabled);
+}
+
+/* Hover — darken bottom border */
+.inline[data-field-variant='underlined']:hover:not([data-disabled]):not([data-state='uploading']):not([data-state='complete']):not([data-state='error']) {
+  border-bottom-color: var(--color-content-disabled);
+}
+
+/* Animated accent line on focus */
+.inline[data-field-variant='underlined']::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-border-focus);
+  transform: scaleX(0);
+  transition: transform var(--duration-fast) var(--ease-default);
+  pointer-events: none;
+}
+.inline[data-field-variant='underlined']:focus-within:not([data-disabled])::after {
+  transform: scaleX(1);
+}
+/* Hide accent line during uploading — progress bar fills that role */
+.inline[data-field-variant='underlined'][data-state='uploading']::after {
+  display: none;
+}

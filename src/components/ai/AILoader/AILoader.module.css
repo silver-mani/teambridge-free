@@ -1,0 +1,107 @@
+/* ── AILoader ────────────────────────────────────────────────────────────────
+   Teambridge AI shape-morphing loader.
+   The 4-pointed star path transforms to a circle and back, on repeat.
+
+   Both paths share the same command structure (M + 8×C + Z) so CSS can
+   interpolate each control point independently:
+     star  → 8 cubic beziers tracing the 4-tip sparkle
+     circle → 8 cubic beziers (4×90° arc split into 8×45°, computed via
+               De Casteljau subdivision of the standard kappa≈0.5523 circle)
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.root {
+  display: inline-block;
+  flex-shrink: 0;
+  animation: ai-spin 2.2s linear infinite;
+  transform-origin: 50% 50%;
+
+  /* ── Teambridge AI gradient tokens ───────────────────────────────────────
+     These are AI-specific brand colors. They live here as the single source
+     of truth rather than being hardcoded on every gradient stop.             */
+  --ai-grad-start:   #22D3EE; /* cyan    — gradient start (top-right) */
+  --ai-grad-mid:     #818CF8; /* indigo  — gradient midpoint          */
+  --ai-grad-end:     #A855F7; /* purple  — gradient end (bottom-left) */
+}
+
+/* Ghost underlay morphs in sync, stays faint */
+.ghost {
+  animation: ai-morph 2.2s linear infinite;
+}
+
+/* Main path morphs in sync */
+.path {
+  animation: ai-morph 2.2s linear infinite;
+}
+
+/* ── Solid dark variant ───────────────────────────────────────────────────
+   Always renders as a dark/black fill regardless of theme.
+   Light mode: --color-content-primary   (near-black)
+   Dark mode:  --color-content-inverse   (near-black on light surface, kept
+               dark so the mark reads on light or gradient backgrounds)       */
+.variant-inverse {
+  color: var(--color-content-primary);
+}
+@media (prefers-color-scheme: dark) {
+  .variant-inverse { color: var(--color-content-inverse); }
+}
+:global(.dark)  .variant-inverse { color: var(--color-content-inverse); }
+:global(.light) .variant-inverse { color: var(--color-content-primary); }
+
+/* ── Solid white/light variant ───────────────────────────────────────────
+   Always renders as a white/light fill regardless of theme.
+   Light mode: --color-content-inverse   (white — inverse of dark content)
+   Dark mode:  --color-content-primary   (near-white — primary content in dark)
+   Use on AI gradient backgrounds, dark surfaces, or colored fills.           */
+.variant-inverse-light {
+  color: var(--color-content-inverse);
+}
+@media (prefers-color-scheme: dark) {
+  .variant-inverse-light { color: var(--color-content-primary); }
+}
+:global(.dark)  .variant-inverse-light { color: var(--color-content-primary); }
+:global(.light) .variant-inverse-light { color: var(--color-content-inverse); }
+
+/* ── Stroke dark variant ─────────────────────────────────────────────────
+   Always renders as a dark/black outline regardless of theme.
+   Mirrors .variant-inverse but outline-only (no fill).                       */
+.variant-stroke {
+  color: var(--color-content-primary);
+}
+@media (prefers-color-scheme: dark) {
+  .variant-stroke { color: var(--color-content-inverse); }
+}
+:global(.dark)  .variant-stroke { color: var(--color-content-inverse); }
+:global(.light) .variant-stroke { color: var(--color-content-primary); }
+
+/* ── Stroke white/light variant ──────────────────────────────────────────
+   Always renders as a white/light outline regardless of theme.
+   Use on AI gradient backgrounds, dark surfaces, or colored fills.
+   Mirrors .variant-inverse-light but outline-only (no fill).                 */
+.variant-stroke-light {
+  color: var(--color-content-inverse);
+}
+@media (prefers-color-scheme: dark) {
+  .variant-stroke-light { color: var(--color-content-primary); }
+}
+:global(.dark)  .variant-stroke-light { color: var(--color-content-primary); }
+:global(.light) .variant-stroke-light { color: var(--color-content-inverse); }
+
+/* ── Keyframes ───────────────────────────────────────────────────────────── */
+@keyframes ai-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ── Morph keyframe ──────────────────────────────────────────────────────── */
+@keyframes ai-morph {
+  0%, 100% {
+    /* 4-pointed star — fully visible */
+    d: path('M22.2808 11.6847C17.6641 9.97486 14.0252 6.33591 12.3153 1.71918C12.2076 1.42694 11.7937 1.42694 11.6847 1.71918C9.97486 6.33591 6.33591 9.97482 1.71918 11.6847C1.42694 11.7924 1.42694 12.2063 1.71918 12.3153C6.33591 14.0251 9.97482 17.6641 11.6847 22.2808C11.7924 22.5731 12.2063 22.5731 12.3153 22.2808C14.0251 17.6641 17.6641 14.0252 22.2808 12.3153C22.5731 12.2076 22.5731 11.7937 22.2808 11.6847Z');
+    opacity: 1;
+  }
+  50% {
+    /* Circle (r=4, center 12 12) — nearly invisible */
+    d: path('M16 12C16 10.896 15.553 9.896 14.828 9.172C14.105 8.448 13.105 8 12 8C10.896 8 9.896 8.448 9.172 9.172C8.448 9.896 8 10.896 8 12C8 13.105 8.448 14.105 9.172 14.828C9.896 15.553 10.896 16 12 16C13.105 16 14.105 15.553 14.828 14.828C15.553 14.105 16 13.105 16 12Z');
+    opacity: 0.1;
+  }
+}

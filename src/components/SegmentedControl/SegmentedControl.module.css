@@ -1,0 +1,129 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Alloy · SegmentedControl
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* ─ Root track ─ */
+.root {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: 6px;
+}
+
+/* ─ Full-width variant ─ */
+.fullWidth {
+  display: flex;
+  width: 100%;
+}
+
+.fullWidth .item {
+  flex: 1;
+}
+
+/* ─ Sliding indicator (first child, absolutely positioned) ─ */
+.indicator {
+  position: absolute;
+  top: 2px;
+  left: var(--sc-indicator-x, 0px);
+  width: var(--sc-indicator-w, 0px);
+  height: calc(100% - 4px);
+  background: var(--color-bg-primary);
+  border-radius: 4px;
+  box-shadow: var(--shadow-below-low);
+  transition:
+    left  var(--duration-base) var(--ease-default),
+    width var(--duration-fast) var(--ease-default);
+  pointer-events: none;
+  z-index: 0;
+  will-change: left, width;
+}
+
+/* ─ Sizes — set CSS vars consumed by .item ─ */
+.sm {
+  --sc-item-height: 24px;
+  --sc-px:          var(--space-2);
+  --sc-gap:         var(--space-1);
+  --sc-icon-size:   14px;
+  font-size: var(--text-xs);
+}
+
+.md {
+  --sc-item-height: 28px;
+  --sc-px:          10px;
+  --sc-gap:         var(--space-1);
+  --sc-icon-size:   15px;
+  font-size: var(--text-sm);
+}
+
+.lg {
+  --sc-item-height: 32px;
+  --sc-px:          var(--space-3);
+  --sc-gap:         var(--space-1);
+  --sc-icon-size:   16px;
+  font-size: var(--text-sm);
+}
+
+/* ─ Item ─ */
+.item {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sc-gap);
+  height: var(--sc-item-height);
+  padding: 0 var(--sc-px);
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-content-tertiary);
+  font-family: var(--font-sans);
+  font-size: inherit;
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--tracking-normal);
+  white-space: nowrap;
+  cursor: pointer;
+  outline: none;
+  transition: color var(--duration-fast) var(--ease-default);
+}
+
+.item:hover:not(:disabled):not([aria-checked='true']) {
+  color: var(--color-content-secondary);
+}
+
+.item:disabled {
+  color: var(--color-content-disabled);
+  cursor: not-allowed;
+}
+
+.item:focus,
+.item:focus-visible {
+  outline: none;
+}
+
+/* ─ Selected item — indicator handles bg and shadow ─ */
+.itemSelected {
+  color: var(--color-content-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* ─ Icon slot ─ */
+.itemIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--sc-icon-size);
+  height: var(--sc-icon-size);
+}
+
+/* stroke-width + svg display handled by .alloy-icon-slot in artwork.css */
+
+/* label span is unstyled — just a grouping wrapper */
+.itemLabel {
+  line-height: var(--line-height-none);
+}

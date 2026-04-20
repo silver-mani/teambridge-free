@@ -1,0 +1,46 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Alloy · Artwork / icon-slot utility
+   ─────────────────────────────────────────────────────────────────────────────
+   Apply .alloy-icon-slot to any wrapper <span> that contains an SVG icon.
+
+   Why this exists
+   ───────────────
+   CSS `stroke-width` set on an <svg> element via inheritance does NOT override
+   strokeWidth presentation attributes on child <path> / <circle> elements —
+   inherited CSS always loses to an element's own presentation attribute.
+
+   This class uses a direct child selector (> svg *) to force stroke-width on
+   every SVG descendant, bypassing the cascade limitation.
+
+   Usage
+   ─────
+   Import this file alongside tokens.css and apply the class alongside the
+   component's local sizing class:
+
+     <span className={clsx(styles.itemIcon, 'alloy-icon-slot')} aria-hidden="true">
+       <MyIcon />
+     </span>
+
+   Override the default stroke per component or per size by setting the
+   --icon-stroke-width custom property on a parent element:
+
+     .myWrapper { --icon-stroke-width: 1.25; }
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.alloy-icon-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.alloy-icon-slot > svg,
+.alloy-icon-slot > svg * {
+  stroke-width: var(--icon-stroke-width, 1.75);
+}
+
+.alloy-icon-slot > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

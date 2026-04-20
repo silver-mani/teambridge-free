@@ -1,0 +1,129 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Alloy · DonutChart
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+}
+
+.chartWrap {
+  flex-shrink: 0;
+}
+
+.svg {
+  display: block;
+  overflow: visible;
+}
+
+.centerText {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  fill: var(--color-content-primary);
+}
+
+/* ─ Stat legend (Figma callout style) ─ */
+.statLegend {
+  display: flex;
+  gap: var(--space-4);
+  width: 100%;
+}
+
+.statItem {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-2);
+  flex: 1;
+}
+
+.statBar {
+  width: 3px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.statText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.statValue {
+  font-family: var(--font-sans);
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.statLabel {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  color: var(--color-content-tertiary);
+}
+
+/* ─ List legend ─ */
+.listLegend {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.legendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.legendLabel {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--color-content-secondary);
+  flex: 1;
+}
+
+.legendValue {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+}
+
+/* ─ Tooltip ─ */
+.tooltip {
+  position: fixed;
+  z-index: var(--z-tooltip, 999);
+  background: var(--color-bg-always-dark);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  box-shadow: var(--shadow-below-md);
+  pointer-events: none;
+  min-width: 80px;
+}
+
+.tooltipLabel {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.tooltipValue {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-bg-always-light);
+}

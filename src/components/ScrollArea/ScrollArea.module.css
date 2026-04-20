@@ -1,0 +1,102 @@
+/* ─── ScrollArea ──────────────────────────────────────────────────────────── */
+
+.root {
+  position: relative;
+  overflow: hidden;
+}
+
+/* ─── Viewport ────────────────────────────────────────────────────────────── */
+
+.viewport {
+  width: 100%;
+  height: 100%;
+  /* Hide native scrollbars */
+  scrollbar-width: none; /* Firefox */
+}
+
+.viewport::-webkit-scrollbar {
+  display: none; /* Chrome / Safari / Edge */
+}
+
+.scrollV  { overflow-y: scroll; }
+.scrollH  { overflow-x: scroll; }
+.noScrollV { overflow-y: hidden; }
+.noScrollH { overflow-x: hidden; }
+
+/* ─── Track ───────────────────────────────────────────────────────────────── */
+/*
+ * The track is the full-width/height overlay container that sits atop the
+ * viewport. It has 4px padding on all sides (matching Figma), giving a
+ * 12px-wide strip for a 4px thumb.
+ */
+
+.track {
+  position: absolute;
+  padding: var(--space-1); /* 4px — matches Figma */
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--duration-base) var(--ease-out);
+  z-index: var(--z-raised);
+}
+
+.track.visible {
+  opacity: 1;
+}
+
+/* Vertical: right edge, full height */
+.trackV {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 12px; /* 4px padding × 2 + 4px thumb */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Horizontal: bottom edge, full width */
+.trackH {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 12px;
+  display: flex;
+  flex-direction: row;
+}
+
+/* ─── Rail ────────────────────────────────────────────────────────────────── */
+/*
+ * The rail fills the track's inner area (after padding) and provides the
+ * coordinate space for percentage-based thumb positioning.
+ */
+
+.rail {
+  position: relative;
+  flex: 1;
+}
+
+/* ─── Thumb ───────────────────────────────────────────────────────────────── */
+/*
+ * No position/size transitions — position is updated every animation frame
+ * directly via JS DOM mutation, so any CSS transition would add perceived lag.
+ * Only opacity (on the track) transitions.
+ */
+
+.thumb {
+  position: absolute;
+  background: var(--color-scrollbar-thumb);
+  border-radius: var(--radius-full);
+}
+
+/* Vertical thumb: 4px wide, centered horizontally, height + top from JS */
+.trackV .thumb {
+  width: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Horizontal thumb: 4px tall, centered vertically, width + left from JS */
+.thumbH {
+  height: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+}

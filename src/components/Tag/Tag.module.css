@@ -1,0 +1,248 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Alloy · Tag
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* ─ Root ─ */
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--tag-gap);
+  height: var(--tag-height);
+  padding: 0 var(--tag-px);
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--tracking-wide);
+  white-space: nowrap;
+  user-select: none;
+  vertical-align: middle;
+}
+
+/* ─ Sizes ─ */
+.sm {
+  --tag-height:       20px;
+  --tag-px:           var(--space-2);
+  --tag-gap:          3px;
+  --tag-dot-size:     6px;
+  --tag-icon-size:    12px;
+  --tag-dismiss-size: 14px;
+}
+
+.md {
+  --tag-height:       24px;
+  --tag-px:           var(--space-2);
+  --tag-gap:          4px;
+  --tag-dot-size:     7px;
+  --tag-icon-size:    14px;
+  --tag-dismiss-size: 16px;
+}
+
+.lg {
+  --tag-height:       32px;
+  --tag-px:           var(--space-3);
+  --tag-gap:          5px;
+  --tag-dot-size:     8px;
+  --tag-icon-size:    16px;
+  --tag-dismiss-size: 18px;
+  font-size: var(--text-sm);
+}
+
+/* ─ Colors ─ */
+.neutral {
+  --tag-dot:            var(--color-content-disabled);
+  --tag-subtle-bg:      var(--color-bg-tertiary);
+  --tag-subtle-border:  var(--color-border-opaque);
+  --tag-subtle-color:   var(--color-content-secondary);
+  --tag-outline-bg:     transparent;
+  --tag-outline-border: var(--color-border-opaque);
+  --tag-outline-color:  var(--color-content-secondary);
+  --tag-solid-bg:       var(--color-bg-inverse-primary);
+  --tag-solid-border:   transparent;
+  --tag-solid-color:    var(--color-content-inverse-primary);
+}
+
+.blue {
+  --tag-dot:            var(--color-blue-bg-primary);
+  --tag-subtle-bg:      var(--color-blue-bg-tertiary);
+  --tag-subtle-border:  var(--color-blue-border-tertiary);
+  --tag-subtle-color:   var(--color-blue-content-primary);
+  --tag-outline-bg:     transparent;
+  --tag-outline-border: var(--color-blue-border-primary);
+  --tag-outline-color:  var(--color-blue-content-primary);
+  --tag-solid-bg:       var(--color-blue-bg-primary);
+  --tag-solid-border:   transparent;
+  --tag-solid-color:    var(--color-content-inverse-primary);
+}
+
+.azure {
+  --tag-dot:            var(--color-azure-bg-primary);
+  --tag-subtle-bg:      var(--color-azure-bg-tertiary);
+  --tag-subtle-border:  var(--color-azure-border-tertiary);
+  --tag-subtle-color:   var(--color-azure-content-primary);
+  --tag-outline-bg:     transparent;
+  --tag-outline-border: var(--color-azure-border-primary);
+  --tag-outline-color:  var(--color-azure-content-primary);
+  --tag-solid-bg:       var(--color-azure-bg-primary);
+  --tag-solid-border:   transparent;
+  --tag-solid-color:    var(--color-content-inverse-primary);
+}
+
+.purple {
+  --tag-dot:            var(--color-purple-bg-primary);
+  --tag-subtle-bg:      var(--color-purple-bg-tertiary);
+  --tag-subtle-border:  var(--color-purple-border-tertiary);
+  --tag-subtle-color:   var(--color-purple-content-primary);
+  --tag-outline-bg:     transparent;
+  --tag-outline-border: var(--color-purple-border-primary);
+  --tag-outline-color:  var(--color-purple-content-primary);
+  --tag-solid-bg:       var(--color-purple-bg-primary);
+  --tag-solid-border:   transparent;
+  --tag-solid-color:    var(--color-content-inverse-primary);
+}
+
+.pink {
+  --tag-dot:            var(--color-pink-bg-primary);
+  --tag-subtle-bg:      var(--color-pink-bg-tertiary);
+  --tag-subtle-border:  var(--color-pink-border-tertiary);
+  --tag-subtle-color:   var(--color-pink-content-primary);
+  --tag-outline-bg:     transparent;
+  --tag-outline-border: var(--color-pink-border-primary);
+  --tag-outline-color:  var(--color-pink-content-primary);
+  --tag-solid-bg:       var(--color-pink-bg-primary);
+  --tag-solid-border:   transparent;
+  --tag-solid-color:    var(--color-content-inverse-primary);
+}
+
+.red {
+  --tag-dot:            var(--color-red-bg-primary);
+  --tag-subtle-bg:      var(--color-red-bg-tertiary);
+  --tag-subtle-border:  var(--color-red-border-tertiary);
+  --tag-subtle-color:   var(--color-red-content-primary);
+  --tag-outline-bg:     transparent;
+  --tag-outline-border: var(--color-red-border-primary);
+  --tag-outline-color:  var(--color-red-content-primary);
+  --tag-solid-bg:       var(--color-red-bg-primary);
+  --tag-solid-border:   transparent;
+  --tag-solid-color:    var(--color-content-inverse-primary);
+}
+
+.orange {
+  --tag-dot:            var(--color-orange-bg-primary);
+  --tag-subtle-bg:      var(--color-orange-bg-tertiary);
+  --tag-subtle-border:  var(--color-orange-border-tertiary);
+  --tag-subtle-color:   var(--color-orange-content-primary);
+  --tag-outline-bg:     transparent;
+  --tag-outline-border: var(--color-orange-border-primary);
+  --tag-outline-color:  var(--color-orange-content-primary);
+  --tag-solid-bg:       var(--color-orange-bg-primary);
+  --tag-solid-border:   transparent;
+  --tag-solid-color:    var(--color-content-inverse-primary);
+}
+
+.yellow {
+  --tag-dot:            var(--color-yellow-bg-primary);
+  --tag-subtle-bg:      var(--color-yellow-bg-tertiary);
+  --tag-subtle-border:  var(--color-yellow-border-tertiary);
+  --tag-subtle-color:   var(--color-yellow-content-primary);
+  --tag-outline-bg:     transparent;
+  --tag-outline-border: var(--color-yellow-border-primary);
+  --tag-outline-color:  var(--color-yellow-content-primary);
+  --tag-solid-bg:       var(--color-yellow-bg-primary);
+  --tag-solid-border:   transparent;
+  --tag-solid-color:    var(--color-content-inverse-primary);
+}
+
+.matcha {
+  --tag-dot:            var(--color-matcha-bg-primary);
+  --tag-subtle-bg:      var(--color-matcha-bg-tertiary);
+  --tag-subtle-border:  var(--color-matcha-border-tertiary);
+  --tag-subtle-color:   var(--color-matcha-content-primary);
+  --tag-outline-bg:     transparent;
+  --tag-outline-border: var(--color-matcha-border-primary);
+  --tag-outline-color:  var(--color-matcha-content-primary);
+  --tag-solid-bg:       var(--color-matcha-bg-primary);
+  --tag-solid-border:   transparent;
+  --tag-solid-color:    var(--color-content-inverse-primary);
+}
+
+.green {
+  --tag-dot:            var(--color-green-bg-primary);
+  --tag-subtle-bg:      var(--color-green-bg-tertiary);
+  --tag-subtle-border:  var(--color-green-border-tertiary);
+  --tag-subtle-color:   var(--color-green-content-primary);
+  --tag-outline-bg:     transparent;
+  --tag-outline-border: var(--color-green-border-primary);
+  --tag-outline-color:  var(--color-green-content-primary);
+  --tag-solid-bg:       var(--color-green-bg-primary);
+  --tag-solid-border:   transparent;
+  --tag-solid-color:    var(--color-content-inverse-primary);
+}
+
+/* ─ Variants ─ */
+.subtle {
+  background-color: var(--tag-subtle-bg);
+  color: var(--tag-subtle-color);
+  border-color: var(--tag-subtle-border);
+}
+
+.outline {
+  background-color: var(--tag-outline-bg);
+  color: var(--tag-outline-color);
+  border-color: var(--tag-outline-border);
+}
+
+.solid {
+  background-color: var(--tag-solid-bg);
+  color: var(--tag-solid-color);
+  border-color: var(--tag-solid-border);
+}
+
+/* ─ Dot ─ */
+.dot {
+  width: var(--tag-dot-size);
+  height: var(--tag-dot-size);
+  border-radius: var(--radius-full);
+  background-color: var(--tag-dot);
+  flex-shrink: 0;
+}
+
+/* ─ Icon slot ─ */
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--tag-icon-size);
+  height: var(--tag-icon-size);
+}
+
+/* stroke-width + svg display handled by .alloy-icon-slot in artwork.css */
+
+/* ─ Dismiss button ─ */
+.dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tag-dismiss-size);
+  height: var(--tag-dismiss-size);
+  border-radius: var(--radius-full);
+  border: none;
+  background: none;
+  color: currentColor;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 1px;
+  margin-right: calc(-1 * 4px);
+  opacity: 0.55;
+  transition:
+    opacity var(--duration-fast) var(--ease-default),
+    background-color var(--duration-fast) var(--ease-default);
+  flex-shrink: 0;
+}
+
+.dismiss:hover {
+  opacity: 1;
+  background-color: rgba(0, 0, 0, 0.08);
+}

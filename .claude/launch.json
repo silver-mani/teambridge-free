@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "alloy-preview",
+      "runtimeExecutable": "/opt/homebrew/opt/node@22/bin/node",
+      "runtimeArgs": ["/Users/unassignedlaptop9/Documents/MyClaudeFolder/Alloy/preview/node_modules/vite/bin/vite.js", "--port", "5180", "/Users/unassignedlaptop9/Documents/MyClaudeFolder/Alloy/preview"],
+      "port": 5180
+    },
+    {
+      "name": "teambridge-website (dev)",
+      "runtimeExecutable": "/opt/homebrew/opt/node@22/bin/node",
+      "runtimeArgs": ["../teambridge-website/node_modules/vite/bin/vite.js", "../teambridge-website"],
+      "port": 5173
+    },
+    {
+      "name": "teambridge-website (preview)",
+      "runtimeExecutable": "/opt/homebrew/opt/node@22/bin/node",
+      "runtimeArgs": ["../teambridge-website/node_modules/vite/bin/vite.js", "preview", "../teambridge-website"],
+      "port": 4173
+    }
+  ]
+}

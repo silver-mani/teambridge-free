@@ -1,0 +1,163 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   AreaButton
+   Ghost "add zone" — dashed border, transparent background, full-width.
+   Sits at the end of a card group to indicate the user can add a new item.
+
+   Configurable via CSS custom properties (set via the height / borderRadius props):
+     --area-min-height   overrides the size-based min-height
+     --area-radius       overrides the default --radius-xl border-radius
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Base ────────────────────────────────────────────────────────────────── */
+
+.root {
+  /* Layout */
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  width:           100%;
+
+  /* Shape — radius and height configurable via CSS custom props */
+  border-radius: var(--area-radius, var(--radius-lg));
+  min-height:    var(--area-min-height);
+  border:        1.5px dashed var(--color-border-opaque);
+  padding:       var(--space-4);
+
+  /* Color */
+  background-color: transparent;
+  color:            var(--color-content-tertiary);
+
+  /* Interaction */
+  cursor:      pointer;
+  user-select: none;
+  appearance:  none;
+  outline:     none;
+
+  /* Transitions */
+  transition:
+    background-color var(--duration-fast) var(--ease-default),
+    border-color     var(--duration-fast) var(--ease-default),
+    color            var(--duration-fast) var(--ease-default);
+}
+
+.root:focus,
+.root:focus-visible {
+  outline:    none;
+  box-shadow: none;
+}
+
+/* ── Hover ───────────────────────────────────────────────────────────────── */
+
+.root:hover:not(:disabled) {
+  background-color: var(--color-bg-secondary);
+  border-color:     var(--color-border-hover);
+  color:            var(--color-content-secondary);
+}
+
+/* ── Active ──────────────────────────────────────────────────────────────── */
+
+.root:active:not(:disabled) {
+  background-color: var(--color-bg-tertiary);
+  border-color:     var(--color-border-hover);
+}
+
+/* ── Disabled ────────────────────────────────────────────────────────────── */
+
+.root:disabled {
+  cursor:           not-allowed;
+  border-color:     var(--color-border-disabled);
+  color:            var(--color-content-disabled);
+  background-color: transparent;
+}
+
+/* ── Sizes (vertical) ────────────────────────────────────────────────────── */
+
+.sm {
+  --area-min-height:  80px;
+  --area-icon-size:   16px;
+  --area-label-size:  var(--text-xs);
+}
+
+.md {
+  --area-min-height:  120px;
+  --area-icon-size:   20px;
+  --area-label-size:  var(--text-sm);
+}
+
+.lg {
+  --area-min-height:  160px;
+  --area-icon-size:   24px;
+  --area-label-size:  var(--text-sm);
+}
+
+/* ── Layout: horizontal ──────────────────────────────────────────────────── */
+/*
+ * Horizontal overrides the min-height to 36px regardless of size.
+ * Use the `height` prop to customise further.
+ * Icon/label sizes remain driven by the `size` prop.
+ */
+
+.horizontal {
+  --area-min-height:  36px;
+  --area-icon-size:   16px;
+  --area-label-size:  var(--text-sm);
+}
+
+/* ── Align: start ────────────────────────────────────────────────────────── */
+/*
+ * Shifts content to the leading (left) edge.
+ * - horizontal: justify-content → flex-start (icon+label hug the left)
+ * - vertical:   align-items     → flex-start (inner block aligns left)
+ * Padding on the root is retained so content has breathing room from the border.
+ */
+
+.alignStart {
+  justify-content: flex-start;
+}
+
+.alignStart.vertical {
+  align-items: flex-start;
+}
+
+/* ── Inner layout ────────────────────────────────────────────────────────── */
+
+.inner {
+  display:         flex;
+  flex-direction:  column;
+  align-items:     center;
+  justify-content: center;
+  gap:             var(--space-2);
+  pointer-events:  none;
+}
+
+.horizontal .inner {
+  flex-direction: row;
+}
+
+/* ── Icon slot ───────────────────────────────────────────────────────────── */
+
+.iconSlot {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  flex-shrink:     0;
+  width:           var(--area-icon-size, 20px);
+  height:          var(--area-icon-size, 20px);
+}
+
+.iconSlot > svg {
+  display: block;
+  width:   100%;
+  height:  100%;
+}
+
+/* ── Label ───────────────────────────────────────────────────────────────── */
+
+.label {
+  font-family:    var(--font-sans);
+  font-size:      var(--area-label-size, var(--text-sm));
+  font-weight:    var(--font-weight-medium);
+  line-height:    var(--line-height-normal);
+  letter-spacing: var(--tracking-wide);
+  color:          inherit;
+}

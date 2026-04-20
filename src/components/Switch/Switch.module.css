@@ -1,0 +1,144 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Alloy · Switch
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* ─ Root ─ */
+.root {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
+.disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* ─ Sizes ─ */
+.sm {
+  --sw-w:         28px;
+  --sw-h:         16px;
+  --sw-thumb:     10px;
+  --sw-gap:       2px;
+  --sw-translate: 11px;
+  --sw-label-fs:  var(--text-xs);
+  --sw-desc-fs:   var(--text-xs);
+  --sw-pad-top:   1px;
+}
+
+.md {
+  --sw-w:         36px;
+  --sw-h:         20px;
+  --sw-thumb:     14px;
+  --sw-gap:       2px;
+  --sw-translate: 16px;
+  --sw-label-fs:  var(--text-sm);
+  --sw-desc-fs:   var(--text-xs);
+  --sw-pad-top:   2px;
+}
+
+.lg {
+  --sw-w:         44px;
+  --sw-h:         24px;
+  --sw-thumb:     18px;
+  --sw-gap:       2px;
+  --sw-translate: 20px;
+  --sw-label-fs:  var(--text-base);
+  --sw-desc-fs:   var(--text-sm);
+  --sw-pad-top:   3px;
+}
+
+/* ─ Track ─ */
+.track {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  width:  var(--sw-w);
+  height: var(--sw-h);
+  border-radius: var(--radius-full);
+  background:    var(--color-bg-tertiary);
+  border: 1.5px solid var(--color-border-opaque);
+  box-sizing: border-box;
+  cursor: pointer;
+  padding: 0;
+  /* reset button defaults */
+  appearance: none;
+  outline: none;
+  transition:
+    background-color var(--duration-fast) var(--ease-default),
+    border-color     var(--duration-fast) var(--ease-default),
+    box-shadow       var(--duration-fast) var(--ease-default);
+}
+
+.track:hover:not(:disabled) {
+  border-color: var(--color-content-disabled);
+}
+
+.track:focus-visible {
+  box-shadow: 0 0 0 3px var(--color-bg-slate-ring);
+  border-color: var(--color-border-selected);
+}
+
+.track:disabled {
+  cursor: not-allowed;
+}
+
+/* ─ Checked ─ */
+.trackChecked {
+  background:   var(--color-bg-inverse-primary);
+  border-color: var(--color-bg-inverse-primary);
+}
+
+.trackChecked:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+/* ─ Thumb ─ */
+.thumb {
+  position:      absolute;
+  left:          var(--sw-gap);
+  width:         var(--sw-thumb);
+  height:        var(--sw-thumb);
+  border-radius: var(--radius-full);
+  background:    var(--color-bg-primary);
+  box-shadow:    0 1px 3px rgba(0, 0, 0, 0.2);
+  transition:    transform var(--duration-fast) var(--ease-default);
+  pointer-events: none;
+}
+
+.trackChecked .thumb {
+  transform: translateX(var(--sw-translate));
+}
+
+/* ─ Label area ─ */
+.labelWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: var(--sw-pad-top);
+}
+
+.label {
+  font-family:  var(--font-sans);
+  font-size:    var(--sw-label-fs);
+  font-weight:  var(--font-weight-medium);
+  color:        var(--color-content-primary);
+  line-height:  var(--line-height-snug);
+  cursor:       pointer;
+  user-select:  none;
+}
+
+.disabled .label {
+  color: var(--color-content-disabled);
+  cursor: not-allowed;
+}
+
+.description {
+  font-family: var(--font-sans);
+  font-size:   var(--sw-desc-fs);
+  color:       var(--color-content-tertiary);
+  line-height: var(--line-height-snug);
+}

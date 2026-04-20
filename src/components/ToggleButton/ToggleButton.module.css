@@ -1,0 +1,24 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   ToggleButton — selected state styles
+   Two selectionStyle modes, applied via className when selected=true.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* selectionStyle="border" — keeps defaultVariant bg, adds a prominent border */
+.selectedBorder {
+  border-color: var(--color-border-selected) !important;
+}
+
+/* selectionStyle="fill" — inverse fill, same as the primary Button variant */
+.selectedFill {
+  background-color: var(--color-bg-inverse-primary) !important;
+  color:            var(--color-content-inverse-primary) !important;
+  border-color:     transparent !important;
+}
+
+.selectedFill:hover:not(:disabled) {
+  background-color: var(--color-bg-inverse-secondary) !important;
+}
+
+.selectedFill:active:not(:disabled) {
+  background-color: var(--color-bg-inverse-tertiary) !important;
+}

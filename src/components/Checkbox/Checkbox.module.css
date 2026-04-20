@@ -1,0 +1,152 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Alloy · Checkbox
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* ─ Root ─ */
+.root {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* ─ Sizes ─ */
+.sm {
+  --cb-size:       14px;
+  --cb-radius:     3px;
+  --cb-label-fs:   var(--text-xs);
+  --cb-desc-fs:    var(--text-xs);
+  --cb-pad-top:    1px;
+}
+
+.md {
+  --cb-size:       18px;
+  --cb-radius:     var(--radius-xs);
+  --cb-label-fs:   var(--text-sm);
+  --cb-desc-fs:    var(--text-xs);
+  --cb-pad-top:    1px;
+}
+
+.lg {
+  --cb-size:       22px;
+  --cb-radius:     var(--radius-sm);
+  --cb-label-fs:   var(--text-base);
+  --cb-desc-fs:    var(--text-sm);
+  --cb-pad-top:    2px;
+}
+
+/* ─ Control wrapper (positions native input + styled box on top) ─ */
+.controlWrap {
+  position:   relative;
+  width:      var(--cb-size);
+  height:     var(--cb-size);
+  flex-shrink: 0;
+  margin-top: var(--cb-pad-top);
+}
+
+/* ─ Native input — invisible, full size, captures focus/events ─ */
+.input {
+  position:  absolute;
+  inset:     0;
+  opacity:   0;
+  width:     100%;
+  height:    100%;
+  margin:    0;
+  padding:   0;
+  cursor:    pointer;
+  z-index:   1;
+}
+
+.input:disabled { cursor: not-allowed; }
+
+/* ─ Styled box ─ */
+.box {
+  position:       absolute;
+  inset:          0;
+  display:        inline-flex;
+  align-items:    center;
+  justify-content: center;
+  border-radius:  var(--cb-radius);
+  border:         1.5px solid var(--color-border-opaque);
+  background:     transparent;
+  color:          var(--color-content-inverse-primary);
+  box-sizing:     border-box;
+  pointer-events: none;
+  transition:
+    background-color var(--duration-fast) var(--ease-default),
+    border-color     var(--duration-fast) var(--ease-default);
+}
+
+/* Hover (via sibling input) */
+.input:hover:not(:disabled) ~ .box {
+  border-color: var(--color-content-disabled);
+}
+
+/* Focus */
+.input:focus-visible ~ .box {
+  box-shadow:   0 0 0 3px var(--color-bg-slate-ring);
+  border-color: var(--color-border-selected);
+}
+
+/* ─ Checked / indeterminate ─ */
+.boxChecked {
+  background:   var(--color-bg-inverse-primary);
+  border-color: var(--color-bg-inverse-primary);
+}
+
+.boxChecked:hover {
+  opacity: 0.9;
+}
+
+/* ─ Error ─ */
+.boxError {
+  border-color: var(--color-error-border);
+}
+
+.input:focus-visible ~ .boxError {
+  box-shadow:   0 0 0 3px var(--color-bg-error-ring);
+  border-color: var(--color-error-border);
+}
+
+/* ─ Label area ─ */
+.labelWrap {
+  display:        flex;
+  flex-direction: column;
+  gap:            2px;
+  padding-top:    var(--cb-pad-top);
+}
+
+.label {
+  font-family:  var(--font-sans);
+  font-size:    var(--cb-label-fs);
+  font-weight:  var(--font-weight-medium);
+  color:        var(--color-content-primary);
+  line-height:  var(--line-height-snug);
+  cursor:       pointer;
+  user-select:  none;
+}
+
+.disabled .label {
+  color:  var(--color-content-disabled);
+  cursor: not-allowed;
+}
+
+.error .label { color: var(--color-error-content); }
+
+.required {
+  color: var(--color-error-content);
+  font-weight: var(--font-weight-medium);
+}
+
+.description {
+  font-family: var(--font-sans);
+  font-size:   var(--cb-desc-fs);
+  color:       var(--color-content-tertiary);
+  line-height: var(--line-height-snug);
+}
+
+.error .description { color: var(--color-error-content); }

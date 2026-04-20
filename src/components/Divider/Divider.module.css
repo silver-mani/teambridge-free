@@ -1,0 +1,58 @@
+.root {
+  border: none;
+  background-color: var(--color-border-opaque);
+  margin: 0;
+  flex-shrink: 0;
+}
+
+/* Orientation */
+.horizontal {
+  display: block;
+  width: 100%;
+  height: var(--divider-size);
+}
+
+.vertical {
+  display: inline-block;
+  width: var(--divider-size);
+  height: 100%;
+  align-self: stretch;
+}
+
+/* Thickness */
+.thickness-1 {
+  --divider-size: 1px;
+}
+
+.thickness-2 {
+  --divider-size: 2px;
+}
+
+/* Variant */
+.solid {
+  background-color: var(--color-border-opaque);
+}
+
+.dashed {
+  background-color: transparent;
+}
+
+.dashed.horizontal {
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--color-border-opaque),
+    var(--color-border-opaque) 2px,
+    transparent 2px,
+    transparent 4px
+  );
+}
+
+.dashed.vertical {
+  background-image: repeating-linear-gradient(
+    180deg,
+    var(--color-border-opaque),
+    var(--color-border-opaque) 2px,
+    transparent 2px,
+    transparent 4px
+  );
+}

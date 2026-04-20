@@ -1,0 +1,43 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Alloy · RadioGroup
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.root {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-2);
+}
+
+.groupLabel {
+  font-family:  var(--font-sans);
+  font-size:    var(--text-sm);
+  font-weight:  var(--font-weight-medium);
+  color:        var(--color-content-secondary);
+  line-height:  var(--line-height-snug);
+}
+
+.required {
+  color: var(--color-error-content);
+}
+
+.options {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-2);
+}
+
+.horizontal {
+  flex-direction: row;
+  flex-wrap:      wrap;
+  gap:            var(--space-4);
+}
+
+.footer {
+  font-family: var(--font-sans);
+  font-size:   var(--text-xs);
+  color:       var(--color-content-tertiary);
+  line-height: var(--line-height-snug);
+  margin:      0;
+}
+
+.footerError { color: var(--color-error-content); }

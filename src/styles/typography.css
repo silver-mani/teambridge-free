@@ -1,0 +1,283 @@
+/**
+ * Alloy Typography
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Loads Geist and Geist Mono via the official `geist` npm package, sets base
+ * document styles, and exposes semantic utility classes for the full type scale.
+ *
+ * Usage
+ *   1. Install the font package:  npm install geist
+ *   2. Import once at your app entry, after tokens.css:
+ *        CSS:   @import '@alloy/tokens/styles/typography.css';
+ *        JS/TS: import '@alloy/tokens/styles/typography.css';
+ *
+ * Utility classes
+ *   .display-{xl|lg|md|sm|xs}     — hero / marketing text
+ *   .heading-{xl|lg|md|sm|xs}     — UI product headings
+ *   .paragraph-{lg|md|sm}         — body copy & descriptions
+ *   .label-{lg|md|sm}             — form labels, badges, captions
+ *
+ * Only Geist and Geist Mono are sanctioned Alloy typefaces.
+ * Never override --font-sans or --font-mono with third-party fonts.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
+/* ── Font loading ─────────────────────────────────────────────────────────── */
+
+@import 'geist/dist/fonts/geist-sans/style.css';
+@import 'geist/dist/fonts/geist-mono/style.css';
+
+/* ── Base document styles ─────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px; /* establishes the rem base */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-relaxed);
+  letter-spacing: var(--tracking-normal);
+  color: var(--color-content-primary);
+  background-color: var(--color-bg-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
+}
+
+/* ── Code & pre ───────────────────────────────────────────────────────────── */
+
+code,
+kbd,
+samp {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem; /* 13px inline */
+  font-weight: var(--font-weight-regular);
+  letter-spacing: var(--tracking-normal);
+}
+
+pre {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-relaxed);
+  letter-spacing: var(--tracking-normal);
+}
+
+/* ── Link defaults ────────────────────────────────────────────────────────── */
+
+a {
+  color: var(--color-content-link);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color var(--duration-fast) var(--ease-default);
+}
+
+a:hover {
+  color: var(--color-content-link-hover);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   DISPLAY
+   Hero and marketing text. Optically-tight leading, negative tracking.
+   Font weight is always regular (400).
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.display-xl {
+  font-family:    var(--font-sans);
+  font-size:      var(--text-7xl);      /* 96px → lh 96px   (×1.0)  */
+  font-weight:    var(--font-weight-regular);
+  line-height:    var(--line-height-none);
+  letter-spacing: var(--tracking-tight);
+}
+
+.display-lg {
+  font-family:    var(--font-sans);
+  font-size:      var(--text-6-5xl);    /* 72px → lh 75.6px (×1.05) */
+  font-weight:    var(--font-weight-regular);
+  line-height:    var(--line-height-tighter);
+  letter-spacing: var(--tracking-tight);
+}
+
+.display-md {
+  font-family:    var(--font-sans);
+  font-size:      var(--text-6xl);      /* 64px → lh 70.4px (×1.1)  */
+  font-weight:    var(--font-weight-regular);
+  line-height:    var(--line-height-tight);
+  letter-spacing: var(--tracking-tight);
+}
+
+.display-sm {
+  font-family:    var(--font-sans);
+  font-size:      var(--text-5-5xl);    /* 56px → lh 67.2px (×1.2)  */
+  font-weight:    var(--font-weight-regular);
+  line-height:    var(--line-height-snug);
+  letter-spacing: var(--tracking-tight);
+}
+
+.display-xs {
+  font-family:    var(--font-sans);
+  font-size:      var(--text-5xl);      /* 48px → lh 57.6px (×1.2)  */
+  font-weight:    var(--font-weight-regular);
+  line-height:    var(--line-height-snug);
+  letter-spacing: var(--tracking-normal);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   HEADING
+   UI product headings. Calibrated leading per size.
+   Font weight is always regular (400).
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.heading-xl {
+  font-family:    var(--font-sans);
+  font-size:      var(--text-4-5xl);    /* 40px → lh 48px   (×1.2)  */
+  font-weight:    var(--font-weight-regular);
+  line-height:    var(--line-height-snug);
+  letter-spacing: var(--tracking-normal);
+}
+
+.heading-lg {
+  font-family:    var(--font-sans);
+  font-size:      var(--text-3-5xl);    /* 32px → lh 41.6px (×1.3)  */
+  font-weight:    var(--font-weight-regular);
+  line-height:    var(--line-height-normal);
+  letter-spacing: var(--tracking-normal);
+}
+
+.heading-md {
+  font-family:    var(--font-sans);
+  font-size:      var(--text-2xl);      /* 24px → lh 31.2px (×1.3)  */
+  font-weight:    var(--font-weight-regular);
+  line-height:    var(--line-height-normal);
+  letter-spacing: var(--tracking-normal);
+}
+
+.heading-sm {
+  font-family:    var(--font-sans);
+  font-size:      var(--text-xl);       /* 20px → lh 30px   (×1.5)  */
+  font-weight:    var(--font-weight-regular);
+  line-height:    var(--line-height-relaxed);
+  letter-spacing: var(--tracking-normal);
+}
+
+.heading-xs {
+  font-family:    var(--font-sans);
+  font-size:      var(--text-lg);       /* 18px → lh 27px   (×1.5)  */
+  font-weight:    var(--font-weight-regular);
+  line-height:    var(--line-height-relaxed);
+  letter-spacing: var(--tracking-wide);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   PARAGRAPH
+   Body copy and longform content. Always regular (400), loose leading for comfort.
+   Use for: descriptions, help text, content areas, prose, tooltips.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.paragraph-lg {
+  font-family:    var(--font-sans);
+  font-size:      var(--text-base);     /* 16px → lh 25.6px (×1.6)  */
+  font-weight:    var(--font-weight-regular);
+  line-height:    var(--line-height-loose);
+  letter-spacing: var(--tracking-normal);
+}
+
+.paragraph-md {
+  font-family:    var(--font-sans);
+  font-size:      var(--text-sm);       /* 14px → lh 22.4px (×1.6)  */
+  font-weight:    var(--font-weight-regular);
+  line-height:    var(--line-height-loose);
+  letter-spacing: var(--tracking-normal);
+}
+
+.paragraph-sm {
+  font-family:    var(--font-sans);
+  font-size:      var(--text-xs);       /* 12px → lh 18px   (×1.5)  */
+  font-weight:    var(--font-weight-regular);
+  line-height:    var(--line-height-relaxed);
+  letter-spacing: var(--tracking-normal);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   LABEL
+   Short UI text. Always medium (500), wider tracking at smaller sizes.
+   Use for: form labels, badge text, table headers, nav items, overlines, tags.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.label-lg {
+  font-family:    var(--font-sans);
+  font-size:      var(--text-base);     /* 16px → lh 24px   (×1.5)  */
+  font-weight:    var(--font-weight-medium);
+  line-height:    var(--line-height-relaxed);
+  letter-spacing: var(--tracking-normal);
+}
+
+.label-md {
+  font-family:    var(--font-sans);
+  font-size:      var(--text-sm);       /* 14px → lh 21px   (×1.5)  */
+  font-weight:    var(--font-weight-medium);
+  line-height:    var(--line-height-relaxed);
+  letter-spacing: var(--tracking-wide);
+}
+
+.label-sm {
+  font-family:    var(--font-sans);
+  font-size:      var(--text-xs);       /* 12px → lh 15.6px (×1.3)  */
+  font-weight:    var(--font-weight-medium);
+  line-height:    var(--line-height-normal);
+  letter-spacing: var(--tracking-wider);
+}
+
+/* ── HTML element defaults (mapped to semantic scale) ─────────────────────── */
+/* Opt-in baseline — override freely in your component CSS.                   */
+
+h1 {
+  font-size: var(--text-5xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--tracking-tight);
+}
+
+h2 {
+  font-size: var(--text-3xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+  letter-spacing: var(--tracking-tight);
+}
+
+h3 {
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--tracking-normal);
+}
+
+h4 {
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--tracking-normal);
+}
+
+h5 {
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--tracking-normal);
+}
+
+h6 {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--tracking-normal);
+}

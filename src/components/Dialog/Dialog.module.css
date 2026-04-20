@@ -1,0 +1,121 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Dialog
+   Overlay · container · header · content · footer
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Overlay ──────────────────────────────────────────────────────────────────
+   Full-viewport scrim. Click on it → backdrop mousedown fires onClose.        */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, black 30%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  padding: var(--space-4);
+}
+
+/* ── Dialog container ─────────────────────────────────────────────────────────
+   Vertical flex column so header/footer stay fixed while content scrolls.     */
+
+.dialog {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: calc(100vh - var(--space-16));
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-below-high);
+  overflow: hidden;
+}
+
+/* ── Size variants ────────────────────────────────────────────────────────────
+   sm matches the Automation_2.0 WorkflowSettingsDialog at 440 px.             */
+
+.sm { max-width: 440px; }
+.md { max-width: 560px; }
+.lg { max-width: 680px; }
+
+/* ── Header ───────────────────────────────────────────────────────────────────
+   Title left · close button right. 16 px padding. Border below.               */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--color-border-opaque);
+  flex-shrink: 0;
+}
+
+/* ── Title — Alloy Heading/sm Semibold ──────────────────────────────────────── */
+
+.title {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-content-primary);
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Close button — 28×28 ghost ─────────────────────────────────────────────── */
+
+.closeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-content-tertiary);
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) var(--ease-default),
+    color var(--duration-fast) var(--ease-default);
+}
+
+.closeBtn:hover {
+  background: color-mix(in srgb, var(--color-content-primary) 8%, transparent);
+  color: var(--color-content-primary);
+}
+
+.closeBtn:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 1px;
+}
+
+/* ── Content ──────────────────────────────────────────────────────────────────
+   Scrollable body. flex: 1 makes it fill the space between header and footer.
+   16 px padding on all sides.                                                  */
+
+.content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-4);
+}
+
+/* ── Footer ───────────────────────────────────────────────────────────────────
+   Right-aligned button row. 16 px padding. Border above.
+   8 px gap between sibling buttons.                                            */
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-top: 1px solid var(--color-border-opaque);
+  flex-shrink: 0;
+}

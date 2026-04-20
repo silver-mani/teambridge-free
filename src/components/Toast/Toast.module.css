@@ -1,0 +1,65 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Toast
+   Fixed top-right stack · slide-in from right · slide-out to right
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Stack container ──────────────────────────────────────────────────────────
+   Fixed top-right with 20 px padding from every edge.
+   Toasts stack downward with 8 px gap.
+   max-width: 400px keeps toasts narrow enough for a notification.            */
+
+.stack {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 400px;
+  max-width: calc(100vw - 40px);
+  pointer-events: none;        /* Let clicks fall through the gap between toasts */
+}
+
+/* ── Toast item wrapper ───────────────────────────────────────────────────────
+   Animated enter/exit shell.
+   pointer-events: auto re-enables interaction on the alert itself.           */
+
+.item {
+  pointer-events: auto;
+  animation: slideIn var(--duration-base) var(--ease-out) both;
+}
+
+.itemExiting {
+  animation: slideOut var(--duration-base) var(--ease-in) both;
+}
+
+/* ── Enter — slide in from right + fade ─────────────────────────────────────── */
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(calc(100% + 20px));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ── Exit — slide out to right + fade ──────────────────────────────────────── */
+
+@keyframes slideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+    max-height: 200px;
+    margin-bottom: 0;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(calc(100% + 20px));
+    max-height: 0;
+    margin-bottom: calc(-1 * var(--space-2));
+  }
+}

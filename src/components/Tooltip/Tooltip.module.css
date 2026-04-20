@@ -1,0 +1,97 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Tooltip
+   Dark inverse bubble · 4 placements · fade + slide animation
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Wrapper ─────────────────────────────────────────────────────────────────
+   Inline-flex so the wrapper doesn't stretch block-level triggers.
+   Must be position:relative so the tooltip can anchor to it.            */
+
+.wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Bubble ──────────────────────────────────────────────────────────────────
+   Uses --color-bg-inverse-primary / --color-content-inverse-primary so it
+   automatically inverts in dark mode (dark bg → light tooltip, and vice versa).
+   z-index uses --z-overlay so it appears above sticky headers and dropdowns.  */
+
+.tooltip {
+  position: absolute; /* overridden to fixed by .portal */
+  background: var(--color-bg-inverse-primary);
+  color: var(--color-content-inverse-primary);
+
+  /* Typography */
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-snug);
+  letter-spacing: var(--tracking-normal);
+
+  /* Layout */
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: var(--z-overlay);
+
+  /* Hidden state — invisible + slight offset */
+  opacity: 0;
+  transition:
+    opacity var(--duration-fast) var(--ease-default),
+    transform var(--duration-fast) var(--ease-default);
+}
+
+/* Visible state */
+.tooltip[data-visible] {
+  opacity: 1;
+}
+
+/* ── Portal mode — fixed position, coords injected via inline style ──────── */
+
+.portal {
+  position: fixed;
+}
+
+/* ── Placement: top ──────────────────────────────────────────────────────── */
+
+.top {
+  transform: translateX(-50%) translateY(calc(-100% + 4px));
+}
+
+.top[data-visible] {
+  transform: translateX(-50%) translateY(-100%);
+}
+
+/* ── Placement: bottom ───────────────────────────────────────────────────── */
+
+.bottom {
+  transform: translateX(-50%) translateY(-4px);
+}
+
+.bottom[data-visible] {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── Placement: left ─────────────────────────────────────────────────────── */
+
+.left {
+  transform: translateX(calc(-100% + 4px)) translateY(-50%);
+}
+
+.left[data-visible] {
+  transform: translateX(-100%) translateY(-50%);
+}
+
+/* ── Placement: right ────────────────────────────────────────────────────── */
+
+.right {
+  transform: translateX(-4px) translateY(-50%);
+}
+
+.right[data-visible] {
+  transform: translateX(0) translateY(-50%);
+}
