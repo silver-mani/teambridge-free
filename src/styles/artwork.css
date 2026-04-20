@@ -1,0 +1,17 @@
+.alloy-icon-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.alloy-icon-slot > svg,
+.alloy-icon-slot > svg * {
+  stroke-width: var(--icon-stroke-width, 1.75);
+}
+
+.alloy-icon-slot > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
