@@ -248,7 +248,7 @@ export default function IndustrySelector({ onSelect = () => {} }) {
         <div style={{ width: '100%', maxWidth: 880 }}>
           <div style={{ textAlign: 'center', marginBottom: 'var(--space-10)' }}>
             <Eyebrow style={{ color: 'var(--color-content-tertiary)', marginBottom: 'var(--space-3)' }}>
-              Teambridge Sandbox
+              Teambridge Access
             </Eyebrow>
             <h1
               style={{
@@ -271,8 +271,8 @@ export default function IndustrySelector({ onSelect = () => {} }) {
                 color: 'var(--color-content-tertiary)',
               }}
             >
-              We&rsquo;ll load your sandbox with realistic data — your shifts, your staff,
-              your workflows. Pick an industry to begin.
+              We&rsquo;ll load realistic data for your shifts, your staff, and your workflows.
+              Pick an industry to begin.
             </p>
           </div>
 
