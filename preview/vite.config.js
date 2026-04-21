@@ -7,7 +7,8 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-  base: '/teambridge-free/',
+  // Vercel serves at the domain root; GitHub Pages serves under /teambridge-free/.
+  base: process.env.VERCEL ? '/' : '/teambridge-free/',
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: [
