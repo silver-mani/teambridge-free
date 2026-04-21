@@ -1,12 +1,15 @@
 /* ─────────────────────────────────────────────────────────────────────────────
-   Industry dummy data for Act 1
-   One record per industry. Each record carries:
-   - label            : Human-readable industry name for the header
-   - workerNoun       : Industry-appropriate noun (nurse / guard / crew member…)
-   - activeCard       : The in-progress cancellation card (always index 0)
-   - feed             : Five additional activity cards, newest first
-   - drillIn          : Reasoning script shown after the active card is clicked
-   Copy avoids em-dashes per direction.
+   Industry dummy data for Act 1 (rebuild)
+   One record per industry, each with:
+   - label            : Industry label for the header / nav
+   - workerNoun       : Singular industry-appropriate noun
+   - workerNounPlural : Plural form
+   - mission          : Top-of-page briefing (headline + stat tiles)
+   - needsYou         : 3 AI-prepared cards that need human approval
+   - activeCard       : In-progress auto-handled card (Marcus cancellation)
+   - feed             : Background activity cards
+   - drillIn          : Reasoning script shown after active card is clicked
+   Copy avoids em-dashes throughout.
    ───────────────────────────────────────────────────────────────────────────── */
 
 const MATCH_TEMPLATE = {
@@ -36,17 +39,19 @@ const MATCH_TEMPLATE = {
     { name: 'Priya S.',   meta: '4.7 mi · Ground only, 34 hrs',        winner: false },
   ],
   construction: [
-    { name: 'Janelle R.', meta: '2.3 mi · Framing lead, 32 hrs',     winner: true  },
-    { name: 'David K.',   meta: '3.6 mi · Framer, 28 hrs',           winner: false },
-    { name: 'Priya S.',   meta: '4.9 mi · Carpenter apprentice, 24', winner: false },
+    { name: 'Janelle R.', meta: '2.3 mi · Framing lead, 32 hrs',        winner: true  },
+    { name: 'David K.',   meta: '3.6 mi · Framer, 28 hrs',              winner: false },
+    { name: 'Priya S.',   meta: '4.9 mi · Carpenter apprentice, 24 hrs',winner: false },
   ],
 }
 
 function buildIndustry({
-  id, label, workerNoun, venueNoun,
+  id, label, workerNoun, workerNounPlural, venueNoun,
   activeLocation, shiftNoun,
   credentialCard,
   offerReason,
+  mission,
+  needsYou,
 }) {
   const matches = MATCH_TEMPLATE[id]
   const winner = matches.find(m => m.winner)
@@ -55,6 +60,10 @@ function buildIndustry({
     id,
     label,
     workerNoun,
+    workerNounPlural,
+
+    mission,
+    needsYou,
 
     activeCard: {
       id: 'active-cancellation',
@@ -80,14 +89,14 @@ function buildIndustry({
         statusLabel: 'Monitoring',
         timestamp: 'Live',
         title: '3 potential gaps opening this weekend',
-        description: `2 ${workerNoun}s approaching call out pattern. Flagging for early action.`,
+        description: `2 ${workerNounPlural} approaching call out pattern. Flagging for early action.`,
       },
       {
         id: 'overtime',
         status: 'watching',
         statusLabel: 'Watching',
         timestamp: 'Live',
-        title: `4 ${workerNoun}s approaching weekly overtime limit`,
+        title: `4 ${workerNounPlural} approaching weekly overtime limit`,
         description: 'Proactive alert before a scheduling conflict occurs.',
       },
       {
@@ -95,7 +104,7 @@ function buildIndustry({
         status: 'sent',
         statusLabel: 'Sent',
         timestamp: '34 min ago',
-        title: `Shift reminders sent to 6 ${workerNoun}s`,
+        title: `Shift reminders sent to 6 ${workerNounPlural}`,
         description: `Tomorrow's early shift. All delivered, 4 confirmed.`,
       },
       credentialCard,
@@ -107,7 +116,7 @@ function buildIndustry({
           id: 'search',
           kind: 'loading',
           delay: 0,
-          title: `Searching qualified ${workerNoun}s available tonight...`,
+          title: `Searching qualified ${workerNounPlural} available tonight...`,
         },
         {
           id: 'filter',
@@ -160,6 +169,7 @@ export const INDUSTRY_DATA = {
     id: 'healthcare',
     label: 'Healthcare',
     workerNoun: 'nurse',
+    workerNounPlural: 'nurses',
     venueNoun: 'facility',
     activeLocation: 'Memorial North',
     shiftNoun: 'ICU shift',
@@ -172,12 +182,54 @@ export const INDUSTRY_DATA = {
       title: 'Credential check completed for new hire',
       description: 'Sarah M. cleared. First shift Monday at Memorial South.',
     },
+    mission: {
+      headline: 'Your floors are staffed. 2 decisions waiting on you.',
+      stats: [
+        { label: 'Open shifts next 72 hrs',     value: '0',    tone: 'success' },
+        { label: 'Readiness this week',         value: '94%',  tone: 'success' },
+        { label: 'Items needing approval',      value: '2',    tone: 'warning' },
+        { label: 'Auto resolved today',         value: '14',   tone: 'neutral' },
+      ],
+    },
+    needsYou: [
+      {
+        id: 'pto-swap',
+        type: 'approval',
+        timestamp: '5 min ago',
+        title: 'PTO request overlaps a thin shift',
+        summary: 'Keisha N. requested PTO Saturday, 7am to 7pm. ICU is down to 3 nurses that shift.',
+        reasoning: [
+          'Checked weekend coverage: ICU has 3 nurses scheduled, target is 4.',
+          'Scanned 18 nurses off that day. 2 are qualified and under overtime.',
+          'Ashley P. has worked 4 of Keisha\'s last 6 swaps. High acceptance rate.',
+        ],
+        recommendation: 'Approve PTO and auto offer the shift to Ashley P.',
+        resolvedTitle: 'PTO approved, shift offered to Ashley P.',
+        resolvedDescription: 'Offer sent. Ashley confirmed 2 min later. Coverage intact.',
+      },
+      {
+        id: 'new-hire',
+        type: 'approval',
+        timestamp: '18 min ago',
+        title: 'New hire ready to onboard',
+        summary: 'Diana R. completed paperwork, credentials verified. Ready to assign to Memorial South ICU.',
+        reasoning: [
+          'RN license active and verified with state board.',
+          'BLS, ACLS, and PALS current through 2027.',
+          'Requested Memorial South. Lives 3.2 miles away.',
+        ],
+        recommendation: 'Onboard to Memorial South ICU. First shift Monday.',
+        resolvedTitle: 'Diana R. onboarded to Memorial South ICU',
+        resolvedDescription: 'Assignment confirmed. Welcome message sent. First shift scheduled Monday 7am.',
+      },
+    ],
   }),
 
   staffing: buildIndustry({
     id: 'staffing',
     label: 'Staffing',
     workerNoun: 'contractor',
+    workerNounPlural: 'contractors',
     venueNoun: 'client site',
     activeLocation: 'Stellar Events',
     shiftNoun: 'per diem shift',
@@ -190,12 +242,54 @@ export const INDUSTRY_DATA = {
       title: 'Client site onboarding completed',
       description: 'Sarah M. cleared for Meridian Healthcare. First placement Monday.',
     },
+    mission: {
+      headline: 'Clients are covered. 2 placements need your call.',
+      stats: [
+        { label: 'Open orders next 72 hrs',     value: '1',    tone: 'warning' },
+        { label: 'Fill rate this week',         value: '97%',  tone: 'success' },
+        { label: 'Items needing approval',      value: '2',    tone: 'warning' },
+        { label: 'Auto placed today',           value: '11',   tone: 'neutral' },
+      ],
+    },
+    needsYou: [
+      {
+        id: 'high-value-order',
+        type: 'approval',
+        timestamp: '8 min ago',
+        title: 'New order from high margin client',
+        summary: 'Meridian Healthcare posted 3 RN slots for next weekend. 96 hours total.',
+        reasoning: [
+          'Client has 100% fill rate over last 9 months. High retention.',
+          '5 contractors match credentials, all above 4.7 rating.',
+          'Pay rate is 18% above market. Likely to fill in under an hour.',
+        ],
+        recommendation: 'Accept order and auto dispatch to top 5 contractors.',
+        resolvedTitle: 'Order accepted, 3 contractors confirmed',
+        resolvedDescription: 'All 3 slots filled in 34 minutes. Client notified.',
+      },
+      {
+        id: 'rate-negotiation',
+        type: 'approval',
+        timestamp: '22 min ago',
+        title: 'Contractor rate increase request',
+        summary: 'David K. asked for $3/hr increase. 4.9 rating, 6 month tenure, 2 client recommendations.',
+        reasoning: [
+          'David has placed at 8 clients, zero complaints, 98% attendance.',
+          'Current rate is $2/hr below contractors with similar profile.',
+          'Clients Meridian and Stellar specifically requested him twice.',
+        ],
+        recommendation: 'Approve $3/hr increase. Margin impact minimal.',
+        resolvedTitle: 'Rate increase approved for David K.',
+        resolvedDescription: 'New rate effective next pay period. David notified.',
+      },
+    ],
   }),
 
   events: buildIndustry({
     id: 'events',
     label: 'Events & Venues',
     workerNoun: 'staff member',
+    workerNounPlural: 'staff',
     venueNoun: 'venue',
     activeLocation: 'Civic Arena',
     shiftNoun: 'usher shift',
@@ -208,12 +302,54 @@ export const INDUSTRY_DATA = {
       title: 'Event certification completed for new hire',
       description: 'Sarah M. cleared for alcohol service. First event Saturday.',
     },
+    mission: {
+      headline: 'Saturday is staffed. 2 surge decisions waiting.',
+      stats: [
+        { label: 'Open positions next 72 hrs',  value: '0',    tone: 'success' },
+        { label: 'Saturday readiness',          value: '100%', tone: 'success' },
+        { label: 'Items needing approval',      value: '2',    tone: 'warning' },
+        { label: 'Auto resolved today',         value: '9',    tone: 'neutral' },
+      ],
+    },
+    needsYou: [
+      {
+        id: 'surge-request',
+        type: 'approval',
+        timestamp: '4 min ago',
+        title: 'Surge staffing for sold out show',
+        summary: 'Civic Arena confirmed sellout for Saturday. Ticket sales up 18%. Recommend adding 12 staff.',
+        reasoning: [
+          'Historical: last 4 sellouts needed 10 to 14 extra staff for entry and concourse.',
+          'Weather clear, which increases walk up traffic.',
+          '22 staff available and under hours, all trained for this venue.',
+        ],
+        recommendation: 'Add 12 staff. Dispatch offers by seniority.',
+        resolvedTitle: 'Surge approved, 12 staff added for Saturday',
+        resolvedDescription: 'Offers sent. 12 confirmed within 40 minutes. Venue notified.',
+      },
+      {
+        id: 'new-venue',
+        type: 'approval',
+        timestamp: '29 min ago',
+        title: 'New venue added to rotation',
+        summary: 'Harbor Theater signed a 6 month contract. First event in 9 days. Need 24 trained staff.',
+        reasoning: [
+          '31 staff within 5 miles, 18 have theater experience.',
+          'Alcohol certification required for 8 roles. 14 staff currently certified.',
+          'Training session can be scheduled for Tuesday evening.',
+        ],
+        recommendation: 'Accept venue. Pre stage 18 staff, schedule training Tuesday.',
+        resolvedTitle: 'Harbor Theater onboarded',
+        resolvedDescription: 'Staff pre staged. Training scheduled. First event ready.',
+      },
+    ],
   }),
 
   security: buildIndustry({
     id: 'security',
     label: 'Security',
     workerNoun: 'guard',
+    workerNounPlural: 'guards',
     venueNoun: 'post',
     activeLocation: 'Corporate Campus A',
     shiftNoun: 'overnight patrol',
@@ -226,12 +362,54 @@ export const INDUSTRY_DATA = {
       title: 'Guard license verified for new hire',
       description: 'Sarah M. licensed and cleared. First post Monday at North Gate.',
     },
+    mission: {
+      headline: 'Every post is manned. 2 decisions waiting on you.',
+      stats: [
+        { label: 'Open posts next 72 hrs',      value: '0',    tone: 'success' },
+        { label: 'Post coverage this week',     value: '99%',  tone: 'success' },
+        { label: 'Items needing approval',      value: '2',    tone: 'warning' },
+        { label: 'Auto resolved today',         value: '12',   tone: 'neutral' },
+      ],
+    },
+    needsYou: [
+      {
+        id: 'armed-post-swap',
+        type: 'approval',
+        timestamp: '6 min ago',
+        title: 'Armed post swap request',
+        summary: 'Rivera wants to swap Thursday armed post with Chen. Both are certified. Hours within limits.',
+        reasoning: [
+          'Both guards hold current armed post certification and firearm permits.',
+          'Chen has worked this post 11 times, Rivera 14 times. Both familiar.',
+          'No overtime risk. No client restrictions on either guard.',
+        ],
+        recommendation: 'Approve swap. Client notification auto sent.',
+        resolvedTitle: 'Swap approved, Chen assigned Thursday',
+        resolvedDescription: 'Both guards notified. Client updated. Schedule locked.',
+      },
+      {
+        id: 'client-request',
+        type: 'approval',
+        timestamp: '25 min ago',
+        title: 'Client requested additional coverage',
+        summary: 'Corporate Campus A asked for a second patrol guard nightly for 2 weeks.',
+        reasoning: [
+          '14 armed certified guards available nightly, all under overtime.',
+          'Client is prepaid, high retention, 24 month contract.',
+          'Rate matches contract terms. No scope change needed.',
+        ],
+        recommendation: 'Accept. Stage 3 guards to rotate across 2 weeks.',
+        resolvedTitle: 'Coverage accepted, 3 guards staged',
+        resolvedDescription: 'Schedule built. Guards notified. Client confirmed.',
+      },
+    ],
   }),
 
   'light-industrial': buildIndustry({
     id: 'light-industrial',
     label: 'Light Industrial',
     workerNoun: 'associate',
+    workerNounPlural: 'associates',
     venueNoun: 'facility',
     activeLocation: 'DC East Warehouse',
     shiftNoun: 'pick and pack shift',
@@ -244,12 +422,54 @@ export const INDUSTRY_DATA = {
       title: 'Forklift certification verified',
       description: 'Sarah M. cleared for DC East. First shift Monday.',
     },
+    mission: {
+      headline: 'Lines are running. 2 decisions waiting on you.',
+      stats: [
+        { label: 'Open shifts next 72 hrs',     value: '0',    tone: 'success' },
+        { label: 'Line readiness this week',    value: '96%',  tone: 'success' },
+        { label: 'Items needing approval',      value: '2',    tone: 'warning' },
+        { label: 'Auto resolved today',         value: '13',   tone: 'neutral' },
+      ],
+    },
+    needsYou: [
+      {
+        id: 'peak-surge',
+        type: 'approval',
+        timestamp: '7 min ago',
+        title: 'Peak volume surge detected',
+        summary: 'DC East projecting 22% above forecast next 5 days. Recommend adding 8 forklift certified associates.',
+        reasoning: [
+          'Last 3 similar surges required 6 to 10 extra associates.',
+          '12 forklift certified associates available, all under overtime.',
+          'Adding 8 keeps throughput at target with 15% buffer.',
+        ],
+        recommendation: 'Add 8 associates to DC East next 5 days.',
+        resolvedTitle: 'Surge staffing confirmed at DC East',
+        resolvedDescription: '8 associates scheduled. Shift leads notified. Throughput protected.',
+      },
+      {
+        id: 'cert-expiring',
+        type: 'approval',
+        timestamp: '31 min ago',
+        title: '5 forklift certs expiring in 14 days',
+        summary: 'Batch renewal available at $45 per associate. On site training Thursday afternoon.',
+        reasoning: [
+          'All 5 are active, high performers, zero safety incidents.',
+          'Thursday session covers 2 hours. Paid as training time.',
+          'Not renewing would remove 5 from forklift pool during peak.',
+        ],
+        recommendation: 'Approve batch renewal. Schedule Thursday.',
+        resolvedTitle: 'Renewal approved for 5 associates',
+        resolvedDescription: 'Training booked Thursday 2pm. All 5 confirmed attendance.',
+      },
+    ],
   }),
 
   construction: buildIndustry({
     id: 'construction',
     label: 'Construction',
     workerNoun: 'crew member',
+    workerNounPlural: 'crew members',
     venueNoun: 'job site',
     activeLocation: '5th and Main site',
     shiftNoun: 'framing shift',
@@ -262,6 +482,47 @@ export const INDUSTRY_DATA = {
       title: 'OSHA 30 verified for new hire',
       description: 'Sarah M. cleared for 5th and Main. First shift Monday.',
     },
+    mission: {
+      headline: 'Every site has a crew. 2 decisions waiting on you.',
+      stats: [
+        { label: 'Open crew slots next 72 hrs', value: '0',    tone: 'success' },
+        { label: 'Site readiness this week',    value: '95%',  tone: 'success' },
+        { label: 'Items needing approval',      value: '2',    tone: 'warning' },
+        { label: 'Auto resolved today',         value: '10',   tone: 'neutral' },
+      ],
+    },
+    needsYou: [
+      {
+        id: 'weather-shift',
+        type: 'approval',
+        timestamp: '9 min ago',
+        title: 'Weather forecast moves framing inside schedule',
+        summary: 'Heavy rain Thursday. Recommend shifting 5th and Main crew to Elm Street interior work.',
+        reasoning: [
+          '85% chance of 1+ inch rain Thursday. Framing unsafe.',
+          'Elm Street has drywall and interior trim ready, no crew assigned.',
+          'Same crew qualifies for both. No overtime, no comp risk.',
+        ],
+        recommendation: 'Swap crews Thursday. Resume framing Friday.',
+        resolvedTitle: 'Crew reassigned to Elm Street Thursday',
+        resolvedDescription: 'Foreman notified. 5th and Main framing resumes Friday 6am.',
+      },
+      {
+        id: 'osha-expiring',
+        type: 'approval',
+        timestamp: '33 min ago',
+        title: '4 OSHA 30 certs expiring in 21 days',
+        summary: 'Group renewal available online. $75 per crew member, can start this week.',
+        reasoning: [
+          'All 4 are leads or senior crew. Loss of cert pulls them off site.',
+          'Online renewal is self paced, average 4 hours.',
+          'Cost well below replacing coverage during active projects.',
+        ],
+        recommendation: 'Approve group renewal. Send links today.',
+        resolvedTitle: 'Renewal approved for 4 crew',
+        resolvedDescription: 'Links sent. All 4 started. Certs renewed within 5 days.',
+      },
+    ],
   }),
 }
 
