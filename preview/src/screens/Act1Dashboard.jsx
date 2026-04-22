@@ -753,14 +753,7 @@ function ActivityRow({ row }) {
         {avatarNode}
         <span className="activity-row-text">
           <span className="activity-row-actor">{row.actor}</span>
-          {isAgent && (
-            <>
-              <span className="activity-row-agent-glyph" aria-hidden="true">
-                <TeambridgeAIIcon size={10} />
-              </span>
-              <span className="activity-row-agent-role">{agent.role}</span>
-            </>
-          )}
+          {isAgent && <span className="activity-row-agent-role"> ({agent.role})</span>}
           <span className="activity-row-verb">{' '}{row.verb}</span>
         </span>
         <span className="activity-row-time">{row.time}</span>
