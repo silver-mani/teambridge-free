@@ -605,13 +605,13 @@ export function getIndustryData(id) {
    AI agent is the executor shown in a small footer on each card.
    ───────────────────────────────────────────────────────────────────────────── */
 
-// Build the upcoming-event card inline — it now lives in needsYou[1] instead
-// of as the active/hero card. BASE_URL covers GitHub Pages + Vercel paths.
+// Build the upcoming-event card inline — it now lives at the top of needsYou
+// instead of the active/hero slot. BASE_URL covers GitHub Pages + Vercel.
 const UPCOMING_EVENT_CARD = {
   id: 'upcoming-event',
   status: 'monitoring',
   statusLabel: 'Coverage 98%',
-  timestamp: 'Saturday 7pm',
+  timestamp: 'Sat Apr 26 · 7:00 PM',
   eyebrow: 'Event Coverage Update',
   agentId: 'atlas',
   agentTask: 'Event Surge Planning',
@@ -620,7 +620,7 @@ const UPCOMING_EVENT_CARD = {
   subject: {
     kind: 'event',
     primary: '49ers vs Rams',
-    secondary: 'Saturday 7pm · Civic Arena · Sold out',
+    secondary: 'Sat Apr 26 · 7:00 PM · Civic Arena · Sold out',
     metric: 'Coverage 98%',
     image: `${import.meta.env.BASE_URL}events/49ers-rams.svg`,
     imageKind: 'rect',
@@ -666,15 +666,13 @@ INDUSTRY_DATA.events.feed = INDUSTRY_DATA.events.feed
     return card
   })
 
-// Events needsYou: Rachel replacement (1st), then the upcoming 49ers event
-// (2nd). Drop Harbor Theater / new-venue — too abstract for the anchor demo.
-// The 49ers card has no approve/reject — it's a monitoring card the operator
-// should be aware of, surfaced in the needs zone for visibility.
+// Events needsYou: 49ers event (1st — the thing you care about), then the
+// Rachel replacement (2nd — the action you need to take). Drop Harbor Theater.
 INDUSTRY_DATA.events.needsYou = [
+  UPCOMING_EVENT_CARD,
   ...INDUSTRY_DATA.events.needsYou
     .filter(c => c.id !== 'new-venue')
     .map(c => c.id === 'last-min-replacement' ? { ...c, eyebrow: 'Shift Replacement' } : c),
-  UPCOMING_EVENT_CARD,
 ]
 
 // No hero "active" card anymore — the Teambridge-is-handling zone just lists
