@@ -360,10 +360,13 @@ export const INDUSTRY_DATA = {
         resolvedDescription: 'Assignment locked. Rachel notified. Sandra\'s record updated.',
         animated: true,
         subject: {
-          kind: 'person',
-          primary: 'Rachel Williams',
-          secondary: 'Replacing Sandra Lee · 49ers vs Rams',
-          image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=160&h=160&fit=crop&crop=faces&auto=format',
+          kind: 'pair',
+          primary: 'Rachel Williams ↔ Sandra Lee',
+          secondary: 'Replacement · 49ers vs Rams · Saturday 7pm',
+          images: [
+            'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=160&h=160&fit=crop&crop=faces&auto=format',
+            'https://images.unsplash.com/photo-1489980557514-251d61e3eeb6?w=160&h=160&fit=crop&crop=faces&auto=format',
+          ],
         },
       },
       {
