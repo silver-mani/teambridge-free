@@ -1033,6 +1033,104 @@ function NeedsZoneWithSelect({ cards, selectedCardId, onSelect }) {
 
 /* ─── Screen root ────────────────────────────────────────────────────────── */
 
+/* ─── Right-side Prompt panel (peek at Act 2) ────────────────────────────── */
+
+const PROMPT_SUGGESTIONS = {
+  healthcare: [
+    'Fill my weekend ICU gaps',
+    'Onboard a new nurse in under 5 min',
+    'Show PTO that would thin coverage',
+    'Credential the next batch of hires',
+    'Draft a pre-shift safety briefing',
+  ],
+  staffing: [
+    'Dispatch 3 RNs for Meridian next weekend',
+    'Approve David K.\'s rate increase',
+    'Find contractors for a high-margin order',
+    'Show clients with low fill rate',
+    'Draft weekly client summary',
+  ],
+  events: [
+    'Fill the last open role for Saturday',
+    'Draft the pre-game crew briefing',
+    'Show coverage by gate for the 49ers game',
+    'Pre-brief staff for Harbor Theater opener',
+    'Summarise auto-approved swaps this week',
+  ],
+  security: [
+    'Approve the armed post swap',
+    'Stage coverage for Corporate Campus A',
+    'Show guards nearing overtime',
+    'Verify next hire\'s guard license',
+    'Draft incident-response digest',
+  ],
+  'light-industrial': [
+    'Add 8 associates for peak volume at DC East',
+    'Renew 5 forklift certs Thursday',
+    'Show associates approaching overtime',
+    'Draft reminder for tomorrow\'s 5am shift',
+    'Summarise auto-approved swaps',
+  ],
+  construction: [
+    'Swap crews for Thursday rain forecast',
+    'Renew OSHA 30 certs group',
+    'Show crew hours by site',
+    'Draft foreman\'s morning plan',
+    'Summarise week-over-week throughput',
+  ],
+}
+
+function PromptPanel({ industryId }) {
+  const suggestions = PROMPT_SUGGESTIONS[industryId] ?? PROMPT_SUGGESTIONS.events
+
+  return (
+    <aside className="prompt-panel" aria-label="Ask Teambridge">
+      <header className="prompt-panel-head">
+        <div className="prompt-panel-title">
+          <span className="prompt-panel-mark" aria-hidden="true">
+            <TeambridgeAIIcon size={14} />
+          </span>
+          <span>Ask Teambridge</span>
+        </div>
+      </header>
+
+      <div className="prompt-input">
+        <textarea
+          className="prompt-input-field"
+          placeholder="Ask anything, or type @ to add context"
+          rows={3}
+        />
+        <div className="prompt-input-footer">
+          <span className="prompt-scope-chip">
+            <span className="prompt-scope-dot" aria-hidden="true" />
+            All data
+            <span className="prompt-scope-chev" aria-hidden="true">⌄</span>
+          </span>
+          <button type="button" className="prompt-submit" aria-label="Send" disabled>
+            <ArrowNarrowRightIcon size={14} />
+          </button>
+        </div>
+      </div>
+
+      <div className="prompt-suggestions">
+        <h4 className="prompt-suggestions-title">Suggested prompts</h4>
+        <ul className="prompt-suggestions-list">
+          {suggestions.map((s, i) => (
+            <li key={i}>
+              <button type="button" className="prompt-suggestion">
+                <span className="prompt-suggestion-mark" aria-hidden="true">
+                  <TeambridgeAIIcon size={10} />
+                </span>
+                <span>{s}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </aside>
+  )
+}
+
 export default function Act1Dashboard({ industryId, onBack, onExplore }) {
   const data = useMemo(() => getIndustryData(industryId), [industryId])
   const [selectedCardId, setSelectedCardId] = useState(null)
@@ -1069,6 +1167,8 @@ export default function Act1Dashboard({ industryId, onBack, onExplore }) {
           />
         </div>
       </main>
+
+      {!selectedCard && <PromptPanel industryId={industryId} />}
 
       {selectedCard && (
         <RecordDrawer
