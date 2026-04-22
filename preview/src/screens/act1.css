@@ -1511,12 +1511,51 @@ button.activity-card { cursor: pointer; }
 
 .activity-card-dimmed { opacity: 0.45; pointer-events: none; }
 
+/* Expandable card — clickable header + inline body */
+.activity-card-expandable { padding: 0; }
+.activity-card-trigger {
+  display: block;
+  width: 100%;
+  padding: var(--space-3);
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.activity-card-trigger:focus-visible {
+  outline: 2px solid var(--color-blue-border-primary);
+  outline-offset: -2px;
+}
+.activity-card-body {
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-3);
+  border-top: 1px solid var(--color-border-opaque);
+  max-height: 420px;
+  overflow-y: auto;
+}
+/* Avatars in the card body sit on --color-bg-primary (card bg), not on
+   the drawer's --color-bg-secondary, so retune the rail punch-through. */
+.activity-card-body .activity-row-avatar {
+  box-shadow: 0 0 0 2px var(--color-bg-primary);
+}
+.activity-card-body .activity-row-avatar-agent {
+  box-shadow: 0 0 0 2px var(--color-bg-primary),
+              0 0 0 3.5px color-mix(in srgb, var(--color-purple-bg-primary) 70%, transparent);
+}
+
 /* Soft-lift hover — no border-color change */
+.activity-card-expandable:hover:not(.activity-card-open),
 button.activity-card:hover:not(.activity-card-selected),
 .needs-card[role="button"]:hover:not(.needs-card-resolving):not(.needs-card-selected) {
   box-shadow: 0 10px 28px -8px color-mix(in srgb, var(--color-content-primary) 14%, transparent),
               0 2px 6px -2px color-mix(in srgb, var(--color-content-primary) 8%, transparent);
   transform: translateY(-1px);
+}
+.activity-card-open {
+  box-shadow: 0 10px 28px -8px color-mix(in srgb, var(--color-content-primary) 14%, transparent),
+              0 2px 6px -2px color-mix(in srgb, var(--color-content-primary) 8%, transparent);
 }
 
 .activity-card,

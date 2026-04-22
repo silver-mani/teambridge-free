@@ -274,11 +274,14 @@ function CardHeaderRow({ eyebrow, statusBadge, timestamp }) {
 
 /* ─── Activity card (used in Zone 2 + drill-in) ──────────────────────────── */
 
-function ActivityCard({ card, onClick, selected = false, dimmed = false }) {
+function ActivityCard({ card, expanded = false, onToggle, dimmed = false }) {
   const meta = STATUS_MAP[card.status] ?? STATUS_MAP.resolved
   const agent = card.agentId ? getAgent(card.agentId) : null
-  const interactive = typeof onClick === 'function'
   const pulsing = card.status === 'in-progress'
+
+  const activityEntries = card.record?.activity
+  const expandable = !!activityEntries?.length && typeof onToggle === 'function'
+  const showBody = expandable && expanded
 
   const description = card.subject?.secondary ?? card.description ?? card.title
 
@@ -313,14 +316,33 @@ function ActivityCard({ card, onClick, selected = false, dimmed = false }) {
   const className = [
     'activity-card',
     'activity-card-compact-wrap',
-    selected && 'activity-card-selected',
-    dimmed   && 'activity-card-dimmed',
+    expandable && 'activity-card-expandable',
+    showBody   && 'activity-card-open',
+    dimmed     && 'activity-card-dimmed',
   ].filter(Boolean).join(' ')
 
-  return interactive ? (
-    <button type="button" className={className} onClick={onClick} aria-pressed={selected}>{inner}</button>
-  ) : (
-    <div className={className}>{inner}</div>
+  if (!expandable) {
+    return <div className={className}>{inner}</div>
+  }
+
+  return (
+    <div className={className}>
+      <button
+        type="button"
+        className="activity-card-trigger"
+        onClick={onToggle}
+        aria-expanded={expanded}
+      >
+        {inner}
+      </button>
+      {showBody && (
+        <div className="activity-card-body">
+          <ul className="activity-rows">
+            {activityEntries.map((row, i) => <ActivityRow key={i} row={row} />)}
+          </ul>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -905,7 +927,9 @@ function RecordDrawer({ card, detail, onClose, onExplore }) {
 
 /* ─── Activity feed (right column) ───────────────────────────────────────── */
 
-function ActivityFeed({ data, selectedCardId, onSelect }) {
+function ActivityFeed({ data }) {
+  const [expandedId, setExpandedId] = useState(null)
+  const toggle = id => setExpandedId(curr => curr === id ? null : id)
   return (
     <aside className="activity-feed" aria-label="Activity">
       <div className="activity-feed-inner">
@@ -914,16 +938,16 @@ function ActivityFeed({ data, selectedCardId, onSelect }) {
           {data.activeCard && (
             <ActivityCard
               card={data.activeCard}
-              selected={selectedCardId === data.activeCard.id}
-              onClick={() => onSelect(data.activeCard.id)}
+              expanded={expandedId === data.activeCard.id}
+              onToggle={() => toggle(data.activeCard.id)}
             />
           )}
           {data.feed.map(card => (
             <ActivityCard
               key={card.id}
               card={card}
-              selected={selectedCardId === card.id}
-              onClick={() => onSelect(card.id)}
+              expanded={expandedId === card.id}
+              onToggle={() => toggle(card.id)}
             />
           ))}
         </div>
@@ -1859,25 +1883,9 @@ function PromptPanel({ industryId }) {
 
 export default function Act1Dashboard({ industryId, onBack, onExplore }) {
   const data = useMemo(() => getIndustryData(industryId), [industryId])
-  const [selectedCardId, setSelectedCardId] = useState(null)
-
-  const selectedCard = useMemo(() => {
-    if (!selectedCardId) return null
-    if (data.activeCard?.id === selectedCardId) return data.activeCard
-    const fromFeed  = data.feed.find(c => c.id === selectedCardId)
-    if (fromFeed) return fromFeed
-    const fromNeeds = data.needsYou.find(c => c.id === selectedCardId)
-    if (fromNeeds) return fromNeeds
-    return null
-  }, [selectedCardId, data])
-
-  const detail = useMemo(
-    () => selectedCard ? getCardDetail(selectedCard, data) : null,
-    [selectedCard, data],
-  )
 
   return (
-    <div className={`act1-root ${selectedCard ? 'drawer-open' : ''}`}>
+    <div className="act1-root">
       <LeftNav
         industryLabel={data.label}
         onBrand={onBack}
@@ -1886,21 +1894,7 @@ export default function Act1Dashboard({ industryId, onBack, onExplore }) {
 
       <PromptPanel industryId={industryId} />
 
-      <ActivityFeed
-        data={data}
-        selectedCardId={selectedCardId}
-        onSelect={setSelectedCardId}
-      />
-
-      {selectedCard && (
-        <RecordDrawer
-          key={selectedCard.id}
-          card={selectedCard}
-          detail={detail}
-          onClose={() => setSelectedCardId(null)}
-          onExplore={onExplore}
-        />
-      )}
+      <ActivityFeed data={data} />
     </div>
   )
 }
