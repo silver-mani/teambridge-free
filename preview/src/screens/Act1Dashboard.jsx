@@ -1105,6 +1105,7 @@ Ready to email to the client ops channel?` },
   ],
   events: [
     { label: 'Fill the last open Saturday role',
+      specialist: 'nova',
       answer: {
         segments: [
           { type: 'text', text: "One role left for the 49ers vs Rams Saturday call: Gate 3 usher · 6:30 PM report. I ranked 2 strong candidates under hours:" },
@@ -1116,6 +1117,7 @@ Ready to email to the client ops channel?` },
         ],
       } },
     { label: 'Draft the pre-game crew briefing',
+      specialist: 'sofia',
       answer: {
         segments: [
           { type: 'text', text: "Draft briefing for 48 staff · Saturday 5:00 PM call:" },
@@ -1130,6 +1132,7 @@ Ready to email to the client ops channel?` },
         ],
       } },
     { label: 'Coverage by gate for Saturday',
+      specialist: 'atlas',
       answer: {
         segments: [
           { type: 'text', text: "47 of 48 confirmed · one role pending approval." },
@@ -1145,6 +1148,7 @@ Ready to email to the client ops channel?` },
         ],
       } },
     { label: 'Pre-brief for Harbor Theater opener',
+      specialist: 'sofia',
       answer: {
         segments: [
           { type: 'text', text: "Harbor Theater opens May 1. Current readiness:" },
@@ -1158,6 +1162,7 @@ Ready to email to the client ops channel?` },
         ],
       } },
     { label: 'Summarise auto-approved swaps',
+      specialist: 'nova',
       answer: {
         segments: [
           { type: 'text', text: "This week across 4 venues: **12 shift swaps auto-approved, 0 manager intervention.**" },
@@ -1412,13 +1417,91 @@ function normalizeSegments(content) {
   return []
 }
 
-function Message({ message }) {
+/* Heuristic — find which specialist the AI recommended in a free-form answer. */
+function detectSpecialist(text) {
+  if (typeof text !== 'string') return 'nova'
+  const names = ['nova', 'atlas', 'iris', 'sofia', 'leo']
+  for (const n of names) {
+    if (new RegExp(`\\b${n}\\b`, 'i').test(text)) return n
+  }
+  return 'nova'
+}
+
+/* Animated agent-at-work checklist — renders as its own message bubble. */
+function ProgressMessage({ message, onResolved }) {
+  const agent = message.kind === 'specialist' && message.agentId ? getAgent(message.agentId) : null
+  const steps = message.steps ?? []
+  const revealed = message.stepsDone ?? 0
+  const resolved = message.resolved
+
+  return (
+    <div className={`prompt-msg prompt-msg-assistant prompt-msg-progress ${message.kind === 'manual' ? 'is-manual' : ''}`}>
+      <span className={`prompt-msg-mark ${agent ? `agent-avatar-${agent.color}` : ''}`} aria-hidden="true"
+            style={agent?.avatar ? { backgroundImage: `url(${agent.avatar})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}>
+        {!agent && <TeambridgeAIIcon size={12} />}
+      </span>
+      <div className="prompt-msg-body">
+        <div className="progress-header">
+          <span className="progress-actor">{agent ? `${agent.name} · ${agent.role}` : 'You'}</span>
+          <span className="progress-status">{resolved ? 'Complete' : 'Working on it'}</span>
+        </div>
+        <ul className="progress-steps">
+          {steps.map((s, i) => {
+            const state = i < revealed ? 'done' : i === revealed ? 'active' : 'pending'
+            return (
+              <li key={i} className={`progress-step progress-step-${state}`}>
+                <span className="progress-step-mark" aria-hidden="true">
+                  {state === 'done' && <CheckIcon size={10} />}
+                  {state === 'active' && <AILoader size="xs" variant="gradient" />}
+                </span>
+                <span className="progress-step-text">{s}</span>
+              </li>
+            )
+          })}
+        </ul>
+        {resolved && (
+          <div className="progress-resolution">
+            <CheckIcon size={14} />
+            <span>{resolved}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ActionButtons({ specialist, onApprove, onManual }) {
+  const agent = specialist ? getAgent(specialist) : null
+  return (
+    <div className="prompt-actions-row">
+      <button type="button" className="prompt-action prompt-action-primary" onClick={onApprove}>
+        {agent ? (
+          <>
+            <span className="prompt-action-agent" style={{ backgroundImage: `url(${agent.avatar})` }} />
+            Have {agent.name} take it
+          </>
+        ) : (
+          <>Have Teambridge AI take it</>
+        )}
+      </button>
+      <button type="button" className="prompt-action prompt-action-ghost" onClick={onManual}>
+        I'll handle it
+      </button>
+    </div>
+  )
+}
+
+function Message({ message, onApprove, onManual }) {
   if (message.role === 'user') {
     return (
       <div className="prompt-msg prompt-msg-user">
         <div className="prompt-msg-text">{message.content}</div>
       </div>
     )
+  }
+
+  if (message.role === 'progress') {
+    return <ProgressMessage message={message} />
   }
 
   const segments   = normalizeSegments(message.content)
@@ -1438,6 +1521,13 @@ function Message({ message }) {
           const revealed  = isCurrent ? chars : Infinity
           return <Segment key={i} seg={seg} charsRevealed={revealed} />
         })}
+        {message.status === 'done' && message.showActions && (
+          <ActionButtons
+            specialist={message.specialist}
+            onApprove={() => onApprove(message)}
+            onManual={() => onManual(message)}
+          />
+        )}
       </div>
     </div>
   )
@@ -1459,44 +1549,57 @@ function PromptPanel({ industryId }) {
   const updateMsg = (id, patch) =>
     setMessages(prev => prev.map(m => m.id === id ? { ...m, ...patch } : m))
 
-  // Drive the streaming state machine for any in-flight assistant message.
+  // Drive the streaming state machine for any in-flight assistant message
+  // OR any in-flight progress message.
   useEffect(() => {
-    const m = messages.find(x => x.role === 'assistant' && x.status !== 'done')
+    const m = messages.find(x => (x.role === 'assistant' && x.status !== 'done') || (x.role === 'progress' && !x.resolved))
     if (!m) return
 
-    if (m.status === 'thinking') {
-      if (!m.content) return          // waiting on async response
-      const t = setTimeout(() => updateMsg(m.id, { status: 'streaming', step: 0, chars: 0 }), 550)
-      return () => clearTimeout(t)
-    }
-
-    if (m.status === 'streaming') {
-      const segments = normalizeSegments(m.content)
-      const seg = segments[m.step]
-      if (!seg) {
-        updateMsg(m.id, { status: 'done' })
-        return
-      }
-      if (seg.type === 'text' || seg.type === 'cta') {
-        const full = seg.text
-        if (m.chars < full.length) {
-          const t = setTimeout(() => updateMsg(m.id, { chars: Math.min(full.length, m.chars + 6) }), 20)
-          return () => clearTimeout(t)
-        }
-        const t = setTimeout(() => updateMsg(m.id, { step: m.step + 1, chars: 0 }), 240)
+    if (m.role === 'assistant') {
+      if (m.status === 'thinking') {
+        if (!m.content) return
+        const t = setTimeout(() => updateMsg(m.id, { status: 'streaming', step: 0, chars: 0 }), 550)
         return () => clearTimeout(t)
       }
-      // Rich segment — pause briefly, then advance
-      const t = setTimeout(() => updateMsg(m.id, { step: m.step + 1, chars: 0 }), 420)
+
+      if (m.status === 'streaming') {
+        const segments = normalizeSegments(m.content)
+        const seg = segments[m.step]
+        if (!seg) {
+          updateMsg(m.id, { status: 'done' })
+          return
+        }
+        if (seg.type === 'text' || seg.type === 'cta') {
+          const full = seg.text
+          if (m.chars < full.length) {
+            const t = setTimeout(() => updateMsg(m.id, { chars: Math.min(full.length, m.chars + 6) }), 20)
+            return () => clearTimeout(t)
+          }
+          const t = setTimeout(() => updateMsg(m.id, { step: m.step + 1, chars: 0 }), 240)
+          return () => clearTimeout(t)
+        }
+        const t = setTimeout(() => updateMsg(m.id, { step: m.step + 1, chars: 0 }), 420)
+        return () => clearTimeout(t)
+      }
+    }
+
+    if (m.role === 'progress') {
+      const done = m.stepsDone ?? 0
+      const total = (m.steps ?? []).length
+      if (done < total) {
+        const t = setTimeout(() => updateMsg(m.id, { stepsDone: done + 1 }), 900)
+        return () => clearTimeout(t)
+      }
+      const t = setTimeout(() => updateMsg(m.id, { resolved: m.resolutionText }), 500)
       return () => clearTimeout(t)
     }
   }, [messages])
 
-  const submitCanned = (label, content) => {
+  const submitCanned = (label, content, specialist) => {
     setMessages(prev => [
       ...prev,
       { id: ++idRef.current, role: 'user', content: label, status: 'done' },
-      { id: ++idRef.current, role: 'assistant', content, status: 'thinking' },
+      { id: ++idRef.current, role: 'assistant', content, status: 'thinking', showActions: true, specialist },
     ])
   }
 
@@ -1530,10 +1633,10 @@ function PromptPanel({ industryId }) {
     } catch (_) { /* network error, fall through */ }
 
     if (!replyText) {
-      replyText = "I'm offline from the live AI right now, but here's where I'd start: check the open role for Saturday, roster changes in the last hour, and any credentialing still in-flight. Set `ANTHROPIC_API_KEY` on the Vercel deploy to enable real answers here."
+      replyText = "I'm offline from the live AI right now, but here's where I'd start: check the open role for Saturday, roster changes in the last hour, and any credentialing still in-flight. Nova can handle this when you're ready — set ANTHROPIC_API_KEY on the Vercel deploy for real answers."
     }
 
-    updateMsg(assistantId, { content: replyText })
+    updateMsg(assistantId, { content: replyText, showActions: true, specialist: detectSpecialist(replyText) })
   }
 
   const submit = (text) => {
@@ -1541,8 +1644,46 @@ function PromptPanel({ industryId }) {
     if (!t) return
     setInput('')
     const canned = suggestions.find(s => s.label.toLowerCase() === t.toLowerCase())
-    if (canned) return submitCanned(canned.label, canned.answer)
+    if (canned) return submitCanned(canned.label, canned.answer, canned.specialist)
     return submitFreeForm(t)
+  }
+
+  const SPECIALIST_STEPS = {
+    nova:  ['Pulling shift roster', 'Ranking candidates by proximity + hours', 'Dispatching SMS offer to top match', 'Waiting on response…', 'Shift locked, charge lead notified'],
+    atlas: ['Pulling historical data', 'Running surge model', 'Staging proposed roster', 'Drafting dispatch plan', 'Plan staged, ready to review'],
+    iris:  ['Fetching uploaded documents', 'Cross-checking issuing authority', 'Running background match', 'Verifying identity', 'Cleared and added to roster'],
+    sofia: ['Drafting the communication', 'Personalising for each recipient', 'Scheduling delivery window', 'Dispatching via SMS + in-app', 'Monitoring confirmations'],
+    leo:   ['Pulling overtime + cert records', 'Scanning for violations', 'Drafting advisory', 'Routing to affected workers', 'Compliance snapshot updated'],
+  }
+
+  const MANUAL_STEPS = [
+    'Opening the record',
+    'Reviewing the context and options',
+    'Sending your decision',
+    'Logging the outcome',
+  ]
+
+  const spawnProgress = (kind, agentId, resolution) => {
+    const steps = kind === 'specialist' ? (SPECIALIST_STEPS[agentId] ?? SPECIALIST_STEPS.nova) : MANUAL_STEPS
+    setMessages(prev => prev.map(m => m.showActions ? { ...m, showActions: false } : m).concat({
+      id: ++idRef.current,
+      role: 'progress',
+      kind,
+      agentId: kind === 'specialist' ? agentId : null,
+      steps,
+      stepsDone: 0,
+      resolutionText: resolution,
+    }))
+  }
+
+  const handleApprove = (msg) => {
+    const agentId = msg.specialist ?? 'nova'
+    const agent = getAgent(agentId)
+    spawnProgress('specialist', agentId, `${agent.name} handled it — ready for your next move.`)
+  }
+
+  const handleManual = () => {
+    spawnProgress('manual', null, 'Done. Logged and ready for the next thing.')
   }
 
   const clear = () => { setMessages([]); setInput('') }
@@ -1567,7 +1708,7 @@ function PromptPanel({ industryId }) {
 
       {hasChat && (
         <div className="prompt-messages" ref={scrollRef}>
-          {messages.map(m => <Message key={m.id} message={m} />)}
+          {messages.map(m => <Message key={m.id} message={m} onApprove={handleApprove} onManual={handleManual} />)}
         </div>
       )}
 
