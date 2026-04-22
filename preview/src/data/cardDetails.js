@@ -382,13 +382,126 @@ function needsDetail(card, ctx) {
   }
 }
 
+/* ─── Events prototype — subject-first detail content ────────────────────── */
+
+function rachelReplacementDetail(data) {
+  return {
+    mode: 'animated',
+    steps: data.drillIn.steps,
+    kicker: data.drillIn.kicker,
+    resolution: data.drillIn.resolution,
+    communications: [
+      sms({
+        contact: 'Sandra Lee',
+        phone: '+1 (415) 555-0142',
+        timestamp: '2:58 PM',
+        status: 'received',
+        note: 'Cancellation that started this workflow',
+        messages: [
+          { from: 'them', text: 'Hi, can\'t make my 7pm usher shift Saturday at Civic Arena — family emergency. Really sorry about the short notice.', time: '2:58 PM' },
+          { from: 'agent', text: 'Got it Sandra, no penalty on your record. I\'ll find the replacement and notify the charge lead. Hope everything\'s ok.', time: '2:58 PM' },
+        ],
+      }),
+      sms({
+        contact: 'Rachel Williams',
+        phone: '+1 (415) 555-0187',
+        timestamp: '3:00 PM',
+        status: 'accepted',
+        note: 'Top-ranked match — accepted',
+        messages: [
+          { from: 'agent', text: 'Hi Rachel, this is Teambridge. Sandra Lee just cancelled her 7pm usher shift at Civic Arena for the 49ers vs Rams Saturday. You\'re the closest qualified usher with a strong guest rating. Can you take it?', time: '3:00 PM' },
+          { from: 'them', text: 'Yes! I\'m available, count me in.', time: '3:01 PM' },
+          { from: 'agent', text: 'Perfect — pending manager approval. Report 6:30pm to the east entry. Details in your app.', time: '3:01 PM' },
+        ],
+      }),
+      email({
+        contact: 'Miguel R., Event Lead',
+        to: 'miguel.r@civicarena.events',
+        timestamp: '3:01 PM',
+        subject: 'Replacement selected: Sandra → Rachel (Saturday 7pm)',
+        status: 'delivered',
+        body: `Hi Miguel,
+
+Sandra Lee cancelled her Saturday 7pm usher shift. Replacement selected pending manager approval.
+
+Covering: Rachel Williams
+Arrival: 6:30 PM
+Experience: 4 events this month, high guest rating
+Overtime status: clear
+
+Will confirm once approved.
+
+— Teambridge`,
+      }),
+    ],
+    outcome: {
+      title: 'Rachel confirmed, awaiting your approval',
+      description: 'Sandra handled with empathy. Rachel accepted and is pre-briefed. Manager approval unlocks final confirmation.',
+      metrics: [
+        { label: 'Time to fill',      value: '3 min' },
+        { label: 'Candidates asked',  value: '1' },
+        { label: 'Cost differential', value: '$0' },
+      ],
+    },
+  }
+}
+
+function upcomingEventDetail() {
+  return {
+    mode: 'static',
+    timeline: [
+      item('2 hrs ago', 'Sellout confirmed',      'Ticket sales up 18% vs historical for this matchup.'),
+      item('2 hrs ago', 'Surge plan staged',      'Atlas pre-staged 12 extra roles across entry, concourse, and parking.'),
+      item('45 min ago', 'Credentials verified',   'Iris cleared Sarah M. (new hire) for alcohol service. Added to Saturday roster.'),
+      item('3 min ago', 'Last-minute replacement', 'Sandra Lee cancelled. Nova selected Rachel Williams, accepted. Awaiting your approval.'),
+    ],
+    communications: [
+      sms({
+        contact: 'All staff (48)',
+        timestamp: 'Thursday 9am',
+        status: 'delivered',
+        messages: [
+          { from: 'agent', text: 'Saturday 7pm 49ers vs Rams at Civic Arena: reporting time 5:30pm. Reply Y to confirm.', time: 'Thursday 9am' },
+        ],
+      }),
+      email({
+        contact: '49ers Community Ops',
+        to: 'ops@civicarena.events',
+        timestamp: 'Wednesday',
+        subject: 'Event plan confirmed — 49ers vs Rams Saturday',
+        status: 'delivered',
+        body: `Final staffing plan attached. Base roster 36 + surge 12 = 48 staff. Coverage 98% as of this morning.
+
+No changes needed from your side. We\'ll update if anything shifts before game day.
+
+— Teambridge`,
+      }),
+    ],
+    outcome: {
+      title: '98% staffed · 1 action required',
+      description: 'On track for Saturday. Rachel Williams replacement approval pending.',
+      metrics: [
+        { label: 'Coverage',   value: '98%' },
+        { label: 'Open roles', value: '1' },
+        { label: 'Approvals',  value: '1 pending' },
+      ],
+    },
+  }
+}
+
 /* Main lookup. Called by the panel with the card + industry data context.   */
 export function getCardDetail(card, data) {
   const ctx = {
     workerNoun:       data.workerNoun,
     workerNounPlural: data.workerNounPlural,
-    activeLocation:   data.activeCard?.title?.match(/at ([^,]+),/)?.[1] ?? 'your location',
+    activeLocation:   data.activeCard?.title?.match(/at ([^,]+),/)?.[1]
+                   ?? data.activeCard?.subject?.secondary?.match(/·\s*([^·]+?)(?:\s*·|$)/)?.[1]
+                   ?? 'your location',
   }
+
+  // Events prototype cards (subject-first)
+  if (card.id === 'upcoming-event')       return upcomingEventDetail()
+  if (card.id === 'last-min-replacement') return rachelReplacementDetail(data)
 
   if (card.id === 'active-cancellation') return { ...marcusActiveDetail(data), steps: data.drillIn.steps, kicker: data.drillIn.kicker, resolution: data.drillIn.resolution }
   if (card.id === 'swaps')        return swapsDetail(ctx)
