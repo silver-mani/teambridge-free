@@ -8,6 +8,12 @@
   background: var(--color-bg-secondary);
   font-family: var(--font-sans);
   color: var(--color-content-primary);
+
+  /* AI gradient stops — used by all the gradient marks + accents
+     (Teambridge purple → blue → cyan, mirrors --gradient-ponder). */
+  --ai-grad-start: #8C4FE2;
+  --ai-grad-mid:   #446CFF;
+  --ai-grad-end:   #1EDFDE;
 }
 
 /* ─── Left nav ────────────────────────────────────────────────────────────── */
