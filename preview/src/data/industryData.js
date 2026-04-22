@@ -734,15 +734,35 @@ const EVENTS_RECORDS = {
       { label: 'Event ID',           value: 'EVT-04-0426-01' },
     ],
     activity: [
-      { kind: 'agent', agentId: 'nova',  actor: 'Nova',  verb: 'flagged Rachel Williams replacement for approval', time: '3 min ago' },
+      { kind: 'agent', agentId: 'nova',  actor: 'Nova',  verb: 'flagged Rachel Williams replacement for approval', time: '3 min ago',
+        metrics: [
+          { label: '3 min', sub: 'time to fill' },
+          { label: '1', sub: 'action needed' },
+        ] },
       { kind: 'user',  actor: 'Sandra Lee', avatar: SANDRA.avatar, verb: 'cancelled her Saturday 7pm shift', time: '5 min ago',
         comm: { type: 'sms', contact: 'Sandra Lee', phone: '+1 (415) 555-0142',
                 messages: [
                   { from: 'them',  text: 'Hi, can\'t make my 7pm usher shift Saturday at Civic Arena — family emergency. Really sorry about the short notice.', time: '2:58 PM' },
                   { from: 'agent', text: 'Got it Sandra, no penalty on your record. I\'ll find the replacement and notify the charge lead.', time: '2:58 PM' },
                 ] } },
-      { kind: 'agent', agentId: 'iris',  actor: 'Iris',  verb: 'cleared Sarah M. for alcohol service', time: '45 min ago' },
-      { kind: 'agent', agentId: 'atlas', actor: 'Atlas', verb: 'staged surge plan (+12 staff across entry, concourse, parking)', time: '2 hrs ago' },
+      { kind: 'agent', agentId: 'iris',  actor: 'Iris',  verb: 'cleared Sarah M. for alcohol service', time: '45 min ago',
+        workSteps: [
+          'Parsed 4 uploaded documents',
+          'Cross-checked TABC database',
+          'Background check — no records',
+          'Added to Saturday roster',
+        ] },
+      { kind: 'agent', agentId: 'atlas', actor: 'Atlas', verb: 'staged surge plan (+12 staff across entry, concourse, parking)', time: '2 hrs ago',
+        workSteps: [
+          'Analysed last 4 sellouts (10–14 extra staff needed)',
+          'Checked weather (+ walk-up bump)',
+          'Identified 22 staff available, under hours',
+          'Dispatched surge offers by seniority',
+        ],
+        metrics: [
+          { label: '+12', sub: 'roles staged' },
+          { label: '98%', sub: 'coverage' },
+        ] },
       { kind: 'user',  actor: 'Civic Arena Ops', verb: 'confirmed final staffing plan',    time: 'Wednesday' },
       { kind: 'agent', agentId: 'atlas', actor: 'Atlas', verb: 'opened this event',        time: 'Monday' },
     ],
@@ -772,6 +792,14 @@ const EVENTS_RECORDS = {
     ],
     activity: [
       { kind: 'agent', agentId: 'nova', actor: 'Nova', verb: 'awaiting your approval', time: 'Pending',
+        workSteps: [
+          'Recommended Rachel Williams (top match)',
+          'Drafted event-lead notification email',
+        ],
+        metrics: [
+          { label: '3 min', sub: 'time to fill' },
+          { label: '$0',    sub: 'cost differential' },
+        ],
         comm: { type: 'email', contact: 'Miguel R., Event Lead', to: 'miguel.r@civicarena.events',
                 subject: 'Replacement selected: Sandra → Rachel (Saturday 7pm)',
                 body: `Hi Miguel,\n\nSandra Lee cancelled her Saturday 7pm usher shift. Replacement selected pending manager approval.\n\nCovering: Rachel Williams\nArrival: 6:30 PM\nExperience: 4 events this month, high guest rating\nOvertime status: clear\n\nWill confirm once approved.\n\n— Teambridge` } },
@@ -782,8 +810,24 @@ const EVENTS_RECORDS = {
                   { from: 'them',  text: 'Yes! I\'m available, count me in.', time: '3:01 PM' },
                   { from: 'agent', text: 'Perfect — pending manager approval. Report 6:30pm to the east entry. Details in your app.', time: '3:01 PM' },
                 ] } },
-      { kind: 'agent', agentId: 'nova', actor: 'Nova', verb: 'sent shift offer to Rachel Williams (top match)', time: '3 min ago' },
-      { kind: 'agent', agentId: 'nova', actor: 'Nova', verb: 'scanned 3 qualified replacements · ranked by proximity and hours', time: '5 min ago' },
+      { kind: 'agent', agentId: 'nova', actor: 'Nova', verb: 'sent shift offer to Rachel Williams', time: '3 min ago',
+        workSteps: [
+          'Messaged top match first',
+          'Pre-briefed on arrival time + entry',
+          'Pre-notified charge lead in parallel',
+        ] },
+      { kind: 'agent', agentId: 'nova', actor: 'Nova', verb: 'ranked 3 qualified replacements', time: '5 min ago',
+        workSteps: [
+          'Filtered by guest-services certification',
+          'Ranked by proximity to Civic Arena',
+          'Checked weekly hours (overtime guard)',
+          'Reviewed past-event rating',
+        ],
+        metrics: [
+          { label: '3',     sub: 'candidates' },
+          { label: '1.7 mi', sub: 'closest' },
+          { label: '<40 hrs', sub: 'overtime-safe' },
+        ] },
       { kind: 'user',  actor: 'Sandra Lee', avatar: SANDRA.avatar, verb: 'cancelled her shift', time: '5 min ago',
         comm: { type: 'sms', contact: 'Sandra Lee', phone: '+1 (415) 555-0142',
                 messages: [
@@ -812,9 +856,24 @@ const EVENTS_RECORDS = {
       { label: 'User ID',          value: 'USR-0311-SM' },
     ],
     activity: [
-      { kind: 'agent', agentId: 'iris', actor: 'Iris', verb: 'cleared Sarah for first shift', time: '1 hr ago' },
-      { kind: 'agent', agentId: 'iris', actor: 'Iris', verb: 'ran background check · no adverse records', time: '1 hr 5 min ago' },
-      { kind: 'agent', agentId: 'iris', actor: 'Iris', verb: 'verified 4 documents with issuing authority', time: '1 hr 8 min ago' },
+      { kind: 'agent', agentId: 'iris', actor: 'Iris', verb: 'cleared Sarah for first shift', time: '1 hr ago',
+        workSteps: [
+          'Identity match verified',
+          'TABC cert valid through Dec 2027',
+          'No adverse background records',
+          'Assigned to Saturday 49ers vs Rams',
+        ],
+        metrics: [
+          { label: '12 min', sub: 'time to clear' },
+          { label: '4',      sub: 'docs verified' },
+          { label: '0',      sub: 'manager touches' },
+        ] },
+      { kind: 'agent', agentId: 'iris', actor: 'Iris', verb: 'ran background + document checks', time: '1 hr 5 min ago',
+        workSteps: [
+          'Parsed driver license + work auth',
+          'Cross-checked name/DOB/issue dates',
+          'Queried TABC licensing database',
+        ] },
       { kind: 'user',  actor: 'Sarah M.', avatar: SARAH.avatar, verb: 'uploaded required documents', time: '1 hr 12 min ago' },
       { kind: 'user',  actor: 'HR', verb: 'added Sarah to the roster', time: 'Mar 12, 2026' },
     ],
