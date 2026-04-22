@@ -1554,7 +1554,7 @@ function PromptPanel({ industryId }) {
       <header className="prompt-panel-head">
         <div className="prompt-panel-title">
           <span className="prompt-panel-mark" aria-hidden="true">
-            <TeambridgeAIIcon size={12} />
+            <TeambridgeAIIcon size={10} />
           </span>
           <span>New chat</span>
         </div>
