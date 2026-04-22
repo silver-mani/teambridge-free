@@ -1039,7 +1039,7 @@ export default function Act1Dashboard({ industryId, onBack, onExplore }) {
 
   const selectedCard = useMemo(() => {
     if (!selectedCardId) return null
-    if (data.activeCard.id === selectedCardId) return data.activeCard
+    if (data.activeCard?.id === selectedCardId) return data.activeCard
     const fromFeed  = data.feed.find(c => c.id === selectedCardId)
     if (fromFeed) return fromFeed
     const fromNeeds = data.needsYou.find(c => c.id === selectedCardId)
