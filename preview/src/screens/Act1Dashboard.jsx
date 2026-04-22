@@ -900,45 +900,27 @@ function RecordDrawer({ card, detail, onClose, onExplore }) {
 /* ─── Activity feed (right column) ───────────────────────────────────────── */
 
 function ActivityFeed({ data, selectedCardId, onSelect }) {
-  const handlingCount = (data.activeCard ? 1 : 0) + data.feed.length
   return (
-    <aside className="activity-feed" aria-label="Activity feed">
+    <aside className="activity-feed" aria-label="Activity">
       <div className="activity-feed-inner">
-        {data.needsYou?.length > 0 && (
-          <NeedsZoneWithSelect
-            cards={data.needsYou}
-            selectedCardId={selectedCardId}
-            onSelect={onSelect}
-          />
-        )}
-
-        <section className="zone zone-handling">
-          <div className="zone-head">
-            <h2 className="zone-title">Teambridge is handling</h2>
-            <span className="zone-count">{handlingCount} active</span>
-          </div>
-          <p className="zone-sub">
-            Running automatically in the background. Open any card to see how it was resolved.
-          </p>
-
-          <div className="feed">
-            {data.activeCard && (
-              <ActivityCard
-                card={data.activeCard}
-                selected={selectedCardId === data.activeCard.id}
-                onClick={() => onSelect(data.activeCard.id)}
-              />
-            )}
-            {data.feed.map(card => (
-              <ActivityCard
-                key={card.id}
-                card={card}
-                selected={selectedCardId === card.id}
-                onClick={() => onSelect(card.id)}
-              />
-            ))}
-          </div>
-        </section>
+        <h2 className="activity-feed-title">Activity</h2>
+        <div className="feed">
+          {data.activeCard && (
+            <ActivityCard
+              card={data.activeCard}
+              selected={selectedCardId === data.activeCard.id}
+              onClick={() => onSelect(data.activeCard.id)}
+            />
+          )}
+          {data.feed.map(card => (
+            <ActivityCard
+              key={card.id}
+              card={card}
+              selected={selectedCardId === card.id}
+              onClick={() => onSelect(card.id)}
+            />
+          ))}
+        </div>
       </div>
     </aside>
   )
