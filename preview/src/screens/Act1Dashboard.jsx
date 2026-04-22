@@ -1689,7 +1689,7 @@ function PromptPanel({ industryId }) {
     <aside className="prompt-panel" aria-label="Ask Teambridge">
       <header className="prompt-panel-head">
         <div className="prompt-panel-title">
-          <span>New chat</span>
+          <span>Ask Teambridge</span>
         </div>
         {hasChat && (
           <button type="button" className="prompt-panel-clear" onClick={clear} title="New chat">

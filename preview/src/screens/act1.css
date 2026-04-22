@@ -36,6 +36,7 @@
   background: transparent;
   border: none;
   padding: var(--space-2);
+  margin-top: var(--space-2);          /* nudge brand baseline-aligned with Welcome */
   margin-bottom: var(--space-4);
   border-radius: var(--radius-button);
   cursor: pointer;
@@ -179,8 +180,9 @@
   flex-direction: column;
   gap: var(--space-4);
   z-index: 10;
-  padding: 0 var(--space-4);          /* equal left / right breathing room */
-  --prompt-text-indent: 24px;         /* every label aligns to this column */
+  padding: 36px var(--space-4) 0;      /* top push so "Ask Teambridge" baseline-aligns
+                                          with Welcome / nav brand */
+  --prompt-text-indent: 24px;
 }
 
 @media (max-width: 1200px) {
