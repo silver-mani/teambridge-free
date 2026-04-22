@@ -1267,8 +1267,110 @@ button.activity-card:hover:not(.activity-card-selected),
 .activity-row-wrap {
   display: flex;
   flex-direction: column;
+  padding: var(--space-2) 0;
 }
 .activity-row-wrap + .activity-row-wrap { border-top: 1px solid var(--color-border-opaque); }
+
+/* Agent row — elevated, tinted bg + left accent in agent color */
+.activity-row-wrap-agent {
+  position: relative;
+  margin: var(--space-2) 0;
+  padding: var(--space-3) var(--space-3) var(--space-3) calc(var(--space-3) + 3px);
+  background: color-mix(in srgb, var(--agent-accent, var(--color-purple-bg-primary)) 5%, transparent);
+  border: 1px solid color-mix(in srgb, var(--agent-accent, var(--color-purple-bg-primary)) 18%, var(--color-border-opaque));
+  border-left: 3px solid var(--agent-accent, var(--color-purple-bg-primary));
+  border-radius: var(--radius-md);
+}
+.activity-row-wrap-agent + .activity-row-wrap { border-top: none; }
+.activity-row-wrap + .activity-row-wrap-agent { border-top: none; }
+
+.activity-row-wrap-agent-purple { --agent-accent: var(--color-purple-bg-primary); }
+.activity-row-wrap-agent-blue   { --agent-accent: var(--color-blue-bg-primary);   }
+.activity-row-wrap-agent-matcha { --agent-accent: var(--color-matcha-bg-primary); }
+.activity-row-wrap-agent-orange { --agent-accent: var(--color-orange-bg-primary); }
+.activity-row-wrap-agent-pink   { --agent-accent: var(--color-pink-bg-primary);   }
+
+/* AI glyph + role label on agent rows */
+.activity-row-agent-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin: 0 4px 0 4px;
+  border-radius: 50%;
+  background: var(--agent-accent, var(--color-purple-bg-primary));
+  color: var(--color-content-inverse, #fff);
+  flex-shrink: 0;
+  vertical-align: -3px;
+}
+.activity-row-agent-role {
+  color: var(--color-content-tertiary);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: var(--font-weight-medium);
+  margin-right: 6px;
+}
+.activity-row-verb { color: var(--color-content-secondary); }
+
+/* Work steps — checklist proof of work under the agent verb */
+.activity-work-steps {
+  list-style: none;
+  margin: var(--space-2) 0 0 calc(24px + var(--space-3));
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.activity-work-step {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-content-secondary);
+  line-height: 1.45;
+}
+.activity-work-step-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--agent-accent, var(--color-purple-bg-primary)) 18%, transparent);
+  color: var(--agent-accent, var(--color-purple-bg-primary));
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* Metric pills — small proof-of-work stats */
+.activity-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: var(--space-2) 0 0 calc(24px + var(--space-3));
+}
+.activity-metric {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 3px var(--space-2);
+  background: var(--color-bg-primary);
+  border: 1px solid color-mix(in srgb, var(--agent-accent, var(--color-purple-bg-primary)) 22%, var(--color-border-opaque));
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  line-height: 1.2;
+}
+.activity-metric-value {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+  font-variant-numeric: tabular-nums;
+}
+.activity-metric-label {
+  color: var(--color-content-tertiary);
+  letter-spacing: 0.02em;
+}
 
 .activity-row-comm {
   margin: 0 0 var(--space-2) calc(24px + var(--space-3));

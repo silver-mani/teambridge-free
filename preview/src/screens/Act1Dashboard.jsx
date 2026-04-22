@@ -717,6 +717,7 @@ function ActivityRow({ row }) {
   const initials = row.actor.split(' ').map(p => p[0]).join('').slice(0, 2)
   const [open, setOpen] = useState(false)
   const agent = row.kind === 'agent' && row.agentId ? getAgent(row.agentId) : null
+  const isAgent = !!agent
 
   let avatarNode
   if (agent) {
@@ -732,7 +733,7 @@ function ActivityRow({ row }) {
     avatarNode = <span className="activity-row-avatar activity-row-avatar-system">{initials}</span>
   }
 
-  const commMeta = row.comm ? (COMM_TYPE_META[row.comm.type] ?? COMM_TYPE_META.sms) : null
+  const commMeta  = row.comm ? (COMM_TYPE_META[row.comm.type] ?? COMM_TYPE_META.sms) : null
   const commLabel = row.comm?.type === 'sms'
     ? `${row.comm.messages?.length ?? 0} message${(row.comm.messages?.length ?? 0) === 1 ? '' : 's'}`
     : row.comm?.type === 'email'
@@ -741,15 +742,55 @@ function ActivityRow({ row }) {
     ? `${row.comm.duration ?? 'Call'} · ${row.comm.outcome ?? ''}`
     : null
 
+  const wrapClass = [
+    'activity-row-wrap',
+    isAgent && 'activity-row-wrap-agent',
+    isAgent && `activity-row-wrap-agent-${agent.color}`,
+  ].filter(Boolean).join(' ')
+
   return (
-    <li className="activity-row-wrap">
+    <li className={wrapClass}>
       <div className="activity-row">
         {avatarNode}
         <span className="activity-row-text">
-          <span className="activity-row-actor">{row.actor}</span>{' '}{row.verb}
+          <span className="activity-row-actor">{row.actor}</span>
+          {isAgent && (
+            <>
+              <span className="activity-row-agent-glyph" aria-hidden="true">
+                <TeambridgeAIIcon size={10} />
+              </span>
+              <span className="activity-row-agent-role">{agent.role}</span>
+            </>
+          )}
+          <span className="activity-row-verb">{' '}{row.verb}</span>
         </span>
         <span className="activity-row-time">{row.time}</span>
       </div>
+
+      {isAgent && row.workSteps?.length > 0 && (
+        <ul className="activity-work-steps">
+          {row.workSteps.map((s, i) => (
+            <li key={i} className="activity-work-step">
+              <span className="activity-work-step-check" aria-hidden="true">
+                <CheckIcon size={10} />
+              </span>
+              <span>{s}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {isAgent && row.metrics?.length > 0 && (
+        <div className="activity-metrics">
+          {row.metrics.map((m, i) => (
+            <span key={i} className="activity-metric">
+              <span className="activity-metric-value">{m.label}</span>
+              <span className="activity-metric-label">{m.sub}</span>
+            </span>
+          ))}
+        </div>
+      )}
+
       {row.comm && (
         <div className="activity-row-comm">
           <button
