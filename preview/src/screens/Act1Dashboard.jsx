@@ -152,30 +152,37 @@ function SubjectImage({ subject, size = 56 }) {
   const radius = kind === 'person' || imageKind === 'round' ? '50%' : 'var(--radius-md)'
 
   if (kind === 'pair' && images?.length >= 2) {
+    const slot = size * 0.72
+    const containerWidth = slot * 1.6  /* two slots with slight overlap */
     return (
-      <span className="subject-image subject-image-pair" style={{ height: size }} aria-hidden="true">
+      <span className="subject-image subject-image-pair" style={{ height: size, width: containerWidth }} aria-hidden="true">
         <span
           className="subject-image-pair-slot subject-image-pair-slot-a"
-          style={{ width: size * 0.72, height: size * 0.72, backgroundImage: `url(${images[0]})` }}
+          style={{ width: slot, height: slot, backgroundImage: `url(${images[0]})` }}
         />
         <span
           className="subject-image-pair-slot subject-image-pair-slot-b"
-          style={{ width: size * 0.72, height: size * 0.72, backgroundImage: `url(${images[1]})` }}
+          style={{ width: slot, height: slot, backgroundImage: `url(${images[1]})` }}
         />
       </span>
     )
   }
 
   if (kind === 'group' && images?.length > 0) {
+    const slot = size * 0.7
+    const overlap = slot * 0.4
+    const count = Math.min(images.length, 3)
+    const containerWidth = slot + (count - 1) * (slot - overlap)
     return (
-      <span className="subject-image subject-image-group" style={{ height: size }} aria-hidden="true">
+      <span className="subject-image subject-image-group" style={{ height: size, width: containerWidth }} aria-hidden="true">
         {images.slice(0, 3).map((src, i) => (
           <span
             key={i}
             className="subject-image-group-slot"
             style={{
-              width: size * 0.7,
-              height: size * 0.7,
+              width: slot,
+              height: slot,
+              marginLeft: i === 0 ? 0 : -overlap,
               backgroundImage: `url(${src})`,
               zIndex: images.length - i,
             }}
@@ -273,40 +280,39 @@ function ActivityCard({ card, onClick, selected = false, dimmed = false }) {
   const interactive = typeof onClick === 'function'
   const pulsing = card.status === 'in-progress'
 
-  const statusBadge = card.statusLabel ? (
-    <>
-      <StatusTag status={meta.tagStatus} size="sm" dot={false}>{card.statusLabel}</StatusTag>
-      {pulsing && <span className="activity-card-pulse" aria-hidden="true" />}
-    </>
-  ) : null
+  const description = card.subject?.secondary ?? card.description ?? card.title
 
-  const inner = card.subject ? (
-    <>
-      <CardHeaderRow eyebrow={card.eyebrow} statusBadge={statusBadge} timestamp={card.timestamp} />
-      <SubjectHeader subject={card.subject} />
-      {agent && <AgentFooter agent={agent} task={card.agentTask} />}
-    </>
-  ) : (
-    <>
-      <div className="activity-card-head">
-        {agent && <AgentHeader agent={agent} task={card.agentTask} />}
-        <div className="activity-card-status">
-          <StatusTag status={meta.tagStatus} size="sm" dot={false}>{card.statusLabel}</StatusTag>
-          <span className="activity-card-dot" aria-hidden="true">·</span>
-          <span className="activity-card-time">{card.timestamp}</span>
-          {pulsing && <span className="activity-card-pulse" aria-hidden="true" />}
+  const inner = (
+    <div className="activity-card-compact">
+      {card.subject && <SubjectImage subject={card.subject} size={24} />}
+      <div className="activity-card-compact-text">
+        <div className="activity-card-compact-lead">
+          {card.eyebrow && (
+            <span className={`activity-card-compact-eyebrow ${agent ? `activity-card-compact-eyebrow-${agent.color}` : ''}`}>{card.eyebrow}</span>
+          )}
+          {card.eyebrow && agent && <span className="activity-card-compact-sep" aria-hidden="true">·</span>}
+          {agent && (
+            <span className="activity-card-compact-agent">
+              <span className="activity-card-compact-agent-avatar" style={{ backgroundImage: `url(${agent.avatar})` }} />
+              <span>{agent.name}</span>
+            </span>
+          )}
         </div>
+        <div className="activity-card-compact-desc">{description}</div>
       </div>
-      <div className="activity-card-body">
-        <h3 className="activity-card-title">{card.title}</h3>
+      <div className="activity-card-compact-right">
+        {card.statusLabel && (
+          <StatusTag status={meta.tagStatus} size="sm" dot={false}>{card.statusLabel}</StatusTag>
+        )}
+        <span className="activity-card-compact-time">{card.timestamp}</span>
+        {pulsing && <span className="activity-card-pulse" aria-hidden="true" />}
       </div>
-    </>
+    </div>
   )
 
   const className = [
     'activity-card',
-    card.subject && 'activity-card-subject',
-    pulsing  && 'activity-card-pulsing',
+    'activity-card-compact-wrap',
     selected && 'activity-card-selected',
     dimmed   && 'activity-card-dimmed',
   ].filter(Boolean).join(' ')
