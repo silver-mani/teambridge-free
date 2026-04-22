@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Eyebrow }             from '../../../src/components/Eyebrow/Eyebrow.tsx'
 import { StatusTag }           from '../../../src/components/StatusTag/StatusTag.tsx'
 import { Button }              from '../../../src/components/Button/Button.tsx'
 import { AILoader }            from '../../../src/components/ai/AILoader/AILoader.tsx'
@@ -39,18 +38,14 @@ function AgentAvatar({ agent, size = 32 }) {
   )
 }
 
-function AgentHeader({ agent, task, size = 32 }) {
+function AgentHeader({ agent, task, size = 28 }) {
   return (
     <div className="agent-header">
       <AgentAvatar agent={agent} size={size} />
-      <div className="agent-header-text">
-        <span className="agent-header-role">
-          {agent.role}
-          <span className="agent-header-sep" aria-hidden="true">·</span>
-          <span className="agent-header-task">{task}</span>
-        </span>
-        <span className="agent-header-name">{agent.name}</span>
-      </div>
+      <span className="agent-header-role">
+        {agent.role}
+        {task && <><span className="agent-header-sep" aria-hidden="true">·</span><span className="agent-header-task">{task}</span></>}
+      </span>
     </div>
   )
 }
@@ -134,23 +129,10 @@ function LeftNav({ industryLabel, onBrand, onAsk }) {
 
 /* ─── Mission briefing ────────────────────────────────────────────────────── */
 
-function MissionBriefing({ mission, industryLabel }) {
+function WelcomeHeader({ name = 'Alex' }) {
   return (
-    <section className="mission">
-      <div className="mission-head">
-        <Eyebrow style={{ color: 'var(--color-content-tertiary)' }}>
-          {industryLabel} · Mission briefing
-        </Eyebrow>
-        <h1 className="mission-headline">{mission.headline}</h1>
-      </div>
-      <div className="mission-stats">
-        {mission.stats.map(s => (
-          <div key={s.label} className={`mission-stat mission-stat-${s.tone}`}>
-            <div className="mission-stat-value">{s.value}</div>
-            <div className="mission-stat-label">{s.label}</div>
-          </div>
-        ))}
-      </div>
+    <section className="welcome">
+      <h1 className="welcome-headline">Welcome back, {name}.</h1>
     </section>
   )
 }
@@ -183,15 +165,7 @@ function ActivityCard({ card, emphasis = 'normal', onClick, selected = false, di
 
       <div className="activity-card-body">
         <h3 className="activity-card-title">{card.title}</h3>
-        <p  className="activity-card-desc">{card.description}</p>
       </div>
-
-      {isActive && !selected && (
-        <div className="activity-card-cta" aria-hidden="true">
-          Click to see how Teambridge is resolving this
-          <ArrowNarrowRightIcon size={16} />
-        </div>
-      )}
     </>
   )
 
@@ -232,7 +206,6 @@ function NeedsCard({ card, state, selected = false, onSelect, onApprove, onRejec
         </div>
         <div className="activity-card-body">
           <h3 className="activity-card-title">{card.resolvedTitle}</h3>
-          <p  className="activity-card-desc">{card.resolvedDescription}</p>
         </div>
       </article>
     )
@@ -262,22 +235,12 @@ function NeedsCard({ card, state, selected = false, onSelect, onApprove, onRejec
       </div>
 
       <h3 className="needs-card-title">{card.title}</h3>
-      <p  className="needs-card-summary">{card.summary}</p>
 
       <div className="needs-card-actions">
-        <Button variant="primary" size="sm" onClick={stopAndCall(onApprove)} disabled={resolving}>
+        <Button variant="secondary" size="sm" onClick={stopAndCall(onApprove)} disabled={resolving}>
           {resolving ? 'Resolving...' : 'Approve'}
         </Button>
-        <Button variant="tertiary" size="sm" onClick={stopAndCall(onSelect)} disabled={resolving}>
-          View reasoning
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          leadingArtwork={<XIcon size={14} />}
-          onClick={stopAndCall(onReject)}
-          disabled={resolving}
-        >
+        <Button variant="ghost" size="sm" onClick={stopAndCall(onReject)} disabled={resolving}>
           Reject
         </Button>
       </div>
@@ -617,7 +580,7 @@ function CardDetailPanel({ card, detail, onClose, onExplore }) {
 function Overview({ data, selectedCardId, onSelect }) {
   return (
     <div className="overview">
-      <MissionBriefing mission={data.mission} industryLabel={data.label} />
+      <WelcomeHeader />
       <NeedsZoneWithSelect cards={data.needsYou} selectedCardId={selectedCardId} onSelect={onSelect} />
       <HandlingZoneWithSelect data={data} selectedCardId={selectedCardId} onSelect={onSelect} />
     </div>

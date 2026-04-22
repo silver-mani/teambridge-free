@@ -170,53 +170,18 @@
 
 .overview { display: flex; flex-direction: column; gap: var(--space-10); }
 
-/* ─── Mission briefing ────────────────────────────────────────────────────── */
+/* ─── Welcome ────────────────────────────────────────────────────────────── */
 
-.mission { display: flex; flex-direction: column; gap: var(--space-6); }
+.welcome { display: flex; flex-direction: column; }
 
-.mission-head { display: flex; flex-direction: column; gap: var(--space-3); }
-
-.mission-headline {
+.welcome-headline {
   margin: 0;
-  font-size: var(--text-3-5xl);
+  font-size: var(--text-3xl);
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-snug);
   letter-spacing: -0.015em;
   color: var(--color-content-primary);
 }
-
-.mission-stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-3);
-}
-
-.mission-stat {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--space-4);
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border-opaque);
-  border-radius: var(--radius-lg);
-}
-
-.mission-stat-value {
-  font-size: var(--text-2xl);
-  font-weight: var(--font-weight-medium);
-  letter-spacing: -0.01em;
-  color: var(--color-content-primary);
-  line-height: 1.1;
-}
-
-.mission-stat-label {
-  font-size: var(--text-xs);
-  color: var(--color-content-tertiary);
-  line-height: var(--line-height-normal);
-}
-
-.mission-stat-success .mission-stat-value { color: var(--color-success-content); }
-.mission-stat-warning .mission-stat-value { color: var(--color-warning-content); }
 
 /* ─── Zones ──────────────────────────────────────────────────────────────── */
 
@@ -335,7 +300,7 @@
 
 .needs-card-title {
   margin: 0;
-  padding-left: calc(32px + var(--space-2));
+  padding-left: calc(28px + var(--space-2));
   font-size: var(--text-base);
   font-weight: var(--font-weight-medium);
   letter-spacing: -0.005em;
@@ -345,7 +310,7 @@
 
 .needs-card-summary {
   margin: 0;
-  padding-left: calc(32px + var(--space-2));
+  padding-left: calc(28px + var(--space-2));
   font-size: var(--text-sm);
   line-height: var(--line-height-normal);
   color: var(--color-content-secondary);
@@ -353,7 +318,7 @@
 
 .needs-card-detail {
   margin-top: var(--space-2);
-  margin-left: calc(32px + var(--space-2));
+  margin-left: calc(28px + var(--space-2));
   padding: var(--space-4);
   background: var(--color-bg-secondary);
   border: 1px solid var(--color-border-opaque);
@@ -442,7 +407,7 @@
   display: flex;
   gap: var(--space-2);
   margin-top: var(--space-2);
-  margin-left: calc(32px + var(--space-2));
+  margin-left: calc(28px + var(--space-2));
   flex-wrap: wrap;
 }
 
@@ -510,12 +475,6 @@
   font-weight: var(--font-weight-regular);
 }
 
-.agent-header-name {
-  font-size: var(--text-xs);
-  color: var(--color-content-tertiary);
-  letter-spacing: 0.01em;
-}
-
 /* ─── Activity card ──────────────────────────────────────────────────────── */
 
 .activity-card {
@@ -576,7 +535,7 @@ button.activity-card-active:hover {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding-left: calc(32px + var(--space-2));
+  padding-left: calc(28px + var(--space-2));
 }
 
 .activity-card-iconwrap {
@@ -625,24 +584,6 @@ button.activity-card-active:hover {
   line-height: var(--line-height-normal);
   letter-spacing: -0.005em;
   color: var(--color-content-primary);
-}
-
-.activity-card-desc {
-  margin: 0;
-  font-size: var(--text-sm);
-  line-height: var(--line-height-normal);
-  color: var(--color-content-secondary);
-}
-
-.activity-card-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-1);
-  margin-left: calc(32px + var(--space-2));
-  font-size: var(--text-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-warning-content);
 }
 
 /* ─── Drill-in ────────────────────────────────────────────────────────────── */
@@ -1312,7 +1253,7 @@ button.activity-card-active:hover {
 /* ─── Responsive ──────────────────────────────────────────────────────────── */
 
 @media (max-width: 1024px) {
-  .mission-stats { grid-template-columns: repeat(2, 1fr); }
+  .welcome-headline { font-size: var(--text-2xl); }
 }
 
 /* Below 1200px the split layout becomes a full-screen overlay panel */
@@ -1357,5 +1298,5 @@ button.activity-card-active:hover {
   .act1-nav-item     { white-space: nowrap; }
   .act1-nav-foot     { display: none; }
   .act1-main         { padding: var(--space-6) var(--space-4) var(--space-12); }
-  .mission-headline  { font-size: var(--text-2xl); }
+  .welcome-headline  { font-size: var(--text-2xl); }
 }
