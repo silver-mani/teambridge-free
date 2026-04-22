@@ -19,7 +19,41 @@ import { GitBranch01Icon }     from '../../../src/components/icons/GitBranch01Ic
 import { MessageDotsSquareIcon } from '../../../src/components/icons/MessageDotsSquareIcon.tsx'
 import { XIcon }               from '../../../src/components/icons/XIcon.tsx'
 import { getIndustryData }     from '../data/industryData.js'
+import { getAgent }            from '../data/agents.js'
 import './act1.css'
+
+/* ─── Agent avatar (animated GIF in a color-tinted ring) ─────────────────── */
+
+function AgentAvatar({ agent, size = 32 }) {
+  return (
+    <span
+      className={`agent-avatar agent-avatar-${agent.color}`}
+      style={{
+        width: size,
+        height: size,
+        backgroundImage: `url(${agent.avatar})`,
+      }}
+      aria-label={agent.name}
+      role="img"
+    />
+  )
+}
+
+function AgentHeader({ agent, task, size = 32 }) {
+  return (
+    <div className="agent-header">
+      <AgentAvatar agent={agent} size={size} />
+      <div className="agent-header-text">
+        <span className="agent-header-role">
+          {agent.role}
+          <span className="agent-header-sep" aria-hidden="true">·</span>
+          <span className="agent-header-task">{task}</span>
+        </span>
+        <span className="agent-header-name">{agent.name}</span>
+      </div>
+    </div>
+  )
+}
 
 /* Map feed-card "status" values to Alloy StatusTag status + a small icon.  */
 const STATUS_MAP = {
@@ -126,25 +160,31 @@ function MissionBriefing({ mission, industryLabel }) {
 function ActivityCard({ card, emphasis = 'normal', onClick, dimmed = false }) {
   const meta = STATUS_MAP[card.status] ?? STATUS_MAP.resolved
   const { Icon, tagStatus } = meta
+  const agent = card.agentId ? getAgent(card.agentId) : null
   const isActive    = emphasis === 'active'
   const interactive = typeof onClick === 'function' && isActive
 
   const inner = (
     <>
-      <div className="activity-card-row">
-        <span className={`activity-card-iconwrap activity-card-iconwrap-${meta.color}`} aria-hidden="true">
-          {card.status === 'in-progress'
-            ? <AILoader size="sm" variant="gradient" />
-            : <Icon size={16} />}
-        </span>
-        <StatusTag status={tagStatus} size="sm" dot={false}>{card.statusLabel}</StatusTag>
-        <span className="activity-card-dot" aria-hidden="true">·</span>
-        <span className="activity-card-time">{card.timestamp}</span>
-        {isActive && <span className="activity-card-pulse" aria-hidden="true" />}
+      <div className="activity-card-head">
+        {agent && <AgentHeader agent={agent} task={card.agentTask} />}
+        <div className="activity-card-status">
+          <span className={`activity-card-iconwrap activity-card-iconwrap-${meta.color}`} aria-hidden="true">
+            {card.status === 'in-progress'
+              ? <AILoader size="sm" variant="gradient" />
+              : <Icon size={14} />}
+          </span>
+          <StatusTag status={tagStatus} size="sm" dot={false}>{card.statusLabel}</StatusTag>
+          <span className="activity-card-dot" aria-hidden="true">·</span>
+          <span className="activity-card-time">{card.timestamp}</span>
+          {isActive && <span className="activity-card-pulse" aria-hidden="true" />}
+        </div>
       </div>
 
-      <h3 className="activity-card-title">{card.title}</h3>
-      <p  className="activity-card-desc">{card.description}</p>
+      <div className="activity-card-body">
+        <h3 className="activity-card-title">{card.title}</h3>
+        <p  className="activity-card-desc">{card.description}</p>
+      </div>
 
       {isActive && (
         <div className="activity-card-cta" aria-hidden="true">
@@ -170,44 +210,51 @@ function ActivityCard({ card, emphasis = 'normal', onClick, dimmed = false }) {
 function NeedsCard({ card, expanded, onToggle, onApprove, onReject, state }) {
   const resolving = state === 'resolving'
   const resolved  = state === 'resolved'
+  const agent     = card.agentId ? getAgent(card.agentId) : null
 
   if (resolved) {
     return (
       <article className="needs-card needs-card-resolved">
-        <div className="activity-card-row">
-          <span className="activity-card-iconwrap activity-card-iconwrap-success" aria-hidden="true">
-            <CheckIcon size={16} />
-          </span>
-          <StatusTag status="success" size="sm" dot={false}>Resolved</StatusTag>
-          <span className="activity-card-dot" aria-hidden="true">·</span>
-          <span className="activity-card-time">Just now</span>
+        <div className="activity-card-head">
+          {agent && <AgentHeader agent={agent} task={card.agentTask} />}
+          <div className="activity-card-status">
+            <span className="activity-card-iconwrap activity-card-iconwrap-success" aria-hidden="true">
+              <CheckIcon size={14} />
+            </span>
+            <StatusTag status="success" size="sm" dot={false}>Resolved</StatusTag>
+            <span className="activity-card-dot" aria-hidden="true">·</span>
+            <span className="activity-card-time">Just now</span>
+          </div>
         </div>
-        <h3 className="activity-card-title">{card.resolvedTitle}</h3>
-        <p  className="activity-card-desc">{card.resolvedDescription}</p>
+        <div className="activity-card-body">
+          <h3 className="activity-card-title">{card.resolvedTitle}</h3>
+          <p  className="activity-card-desc">{card.resolvedDescription}</p>
+        </div>
       </article>
     )
   }
 
   return (
     <article className={`needs-card ${expanded ? 'needs-card-expanded' : ''} ${resolving ? 'needs-card-resolving' : ''}`}>
-      <button
-        type="button"
-        className="needs-card-head"
-        onClick={onToggle}
-        aria-expanded={expanded}
-      >
-        <div className="needs-card-meta">
-          <span className="needs-card-iconwrap" aria-hidden="true">
-            <TeambridgeAIIcon size={14} />
+      <div className="needs-card-head-row">
+        {agent && <AgentHeader agent={agent} task={card.agentTask} />}
+        <button
+          type="button"
+          className="needs-card-head"
+          onClick={onToggle}
+          aria-expanded={expanded}
+          aria-label={expanded ? 'Hide reasoning' : 'Show reasoning'}
+        >
+          <div className="needs-card-meta">
+            <StatusTag status="warning" size="sm" dot={false}>Needs approval</StatusTag>
+            <span className="activity-card-dot" aria-hidden="true">·</span>
+            <span className="activity-card-time">{card.timestamp}</span>
+          </div>
+          <span className="needs-card-chevron" aria-hidden="true">
+            <ChevronDownIcon size={16} />
           </span>
-          <StatusTag status="warning" size="sm" dot={false}>Needs approval</StatusTag>
-          <span className="activity-card-dot" aria-hidden="true">·</span>
-          <span className="activity-card-time">{card.timestamp}</span>
-        </div>
-        <span className="needs-card-chevron" aria-hidden="true">
-          <ChevronDownIcon size={16} />
-        </span>
-      </button>
+        </button>
+      </div>
 
       <h3 className="needs-card-title">{card.title}</h3>
       <p  className="needs-card-summary">{card.summary}</p>
