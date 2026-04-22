@@ -1685,9 +1685,6 @@ function PromptPanel({ industryId }) {
     <aside className="prompt-panel" aria-label="Ask Teambridge">
       <header className="prompt-panel-head">
         <div className="prompt-panel-title">
-          <span className="prompt-panel-mark" aria-hidden="true">
-            <TeambridgeAIIcon size={10} />
-          </span>
           <span>New chat</span>
         </div>
         {hasChat && (
