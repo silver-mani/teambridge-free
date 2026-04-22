@@ -607,6 +607,7 @@ INDUSTRY_DATA.events.activeCard = {
   status: 'monitoring',
   statusLabel: 'Coverage 98%',
   timestamp: 'Saturday 7pm',
+  eyebrow: 'Event Coverage Update',
   agentId: 'atlas',
   agentTask: 'Event Surge Planning',
   title: '49ers vs Rams, Saturday 7pm',
@@ -621,35 +622,48 @@ INDUSTRY_DATA.events.activeCard = {
   },
 }
 
-// Give each background feed card a subject so the layout stays consistent.
-const EVENTS_FEED_SUBJECTS = {
+// Give each background feed card a subject + eyebrow. Drop noisy "Live"
+// pattern cards (gaps, overtime) — they're monitoring-only and add clutter.
+const EVENTS_FEED_OVERRIDES = {
   swaps: {
-    kind: 'pattern',
-    primary: '2 shift swaps auto-approved',
-    secondary: 'Thursday · Civic Arena concourse',
-    icon: 'swap',
-  },
-  gaps: {
-    kind: 'pattern',
-    primary: '3 potential gaps this weekend',
-    secondary: 'Call-out pattern in 2 ushers · Flagged for early action',
-    icon: 'alert',
-  },
-  overtime: {
-    kind: 'pattern',
-    primary: '4 staff near overtime limit',
-    secondary: 'Could affect next week\'s shows at Civic Arena',
-    icon: 'clock',
+    eyebrow: 'Shift Swap Approved',
+    subject: {
+      kind: 'pair',
+      primary: 'Jordan K. ↔ Ashley P.',
+      secondary: 'Thursday usher shift swap · Civic Arena',
+      images: [
+        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=160&h=160&fit=crop&crop=faces&auto=format',
+        'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=160&h=160&fit=crop&crop=faces&auto=format',
+      ],
+    },
   },
   reminders: {
-    kind: 'pattern',
-    primary: '6 staff reminded for Saturday 5am call',
-    secondary: 'Harbor Theater load-in · 4 confirmed',
-    icon: 'bell',
+    eyebrow: 'Shift Reminders Sent',
+    subject: {
+      kind: 'group',
+      primary: '6 staff reminded · 4 confirmed',
+      secondary: 'Saturday 5am call · Harbor Theater load-in',
+      images: [
+        'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&h=120&fit=crop&crop=faces&auto=format',
+        'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&h=120&fit=crop&crop=faces&auto=format',
+        'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=120&h=120&fit=crop&crop=faces&auto=format',
+      ],
+    },
   },
 }
 
-INDUSTRY_DATA.events.feed = INDUSTRY_DATA.events.feed.map(card => {
-  const subject = EVENTS_FEED_SUBJECTS[card.id]
-  return subject ? { ...card, subject } : card
+INDUSTRY_DATA.events.feed = INDUSTRY_DATA.events.feed
+  .filter(card => card.id !== 'gaps' && card.id !== 'overtime')
+  .map(card => {
+    const override = EVENTS_FEED_OVERRIDES[card.id]
+    if (override) return { ...card, ...override }
+    if (card.id === 'credential') return { ...card, eyebrow: 'Credential Cleared' }
+    return card
+  })
+
+// Add eyebrows to needs-your-attention cards
+INDUSTRY_DATA.events.needsYou = INDUSTRY_DATA.events.needsYou.map(card => {
+  if (card.id === 'last-min-replacement') return { ...card, eyebrow: 'Shift Replacement' }
+  if (card.id === 'new-venue') return { ...card, eyebrow: 'New Venue Onboarding' }
+  return card
 })

@@ -147,8 +147,43 @@ const SUBJECT_ICON_META = {
 }
 
 function SubjectImage({ subject, size = 56 }) {
-  const { kind, image, imageKind, icon, badge } = subject
+  const { kind, image, images, imageKind, icon, badge } = subject
   const radius = kind === 'person' || imageKind === 'round' ? '50%' : 'var(--radius-md)'
+
+  if (kind === 'pair' && images?.length >= 2) {
+    return (
+      <span className="subject-image subject-image-pair" style={{ height: size }} aria-hidden="true">
+        <span
+          className="subject-image-pair-slot subject-image-pair-slot-a"
+          style={{ width: size * 0.72, height: size * 0.72, backgroundImage: `url(${images[0]})` }}
+        />
+        <span
+          className="subject-image-pair-slot subject-image-pair-slot-b"
+          style={{ width: size * 0.72, height: size * 0.72, backgroundImage: `url(${images[1]})` }}
+        />
+      </span>
+    )
+  }
+
+  if (kind === 'group' && images?.length > 0) {
+    return (
+      <span className="subject-image subject-image-group" style={{ height: size }} aria-hidden="true">
+        {images.slice(0, 3).map((src, i) => (
+          <span
+            key={i}
+            className="subject-image-group-slot"
+            style={{
+              width: size * 0.7,
+              height: size * 0.7,
+              backgroundImage: `url(${src})`,
+              zIndex: images.length - i,
+            }}
+          />
+        ))}
+      </span>
+    )
+  }
+
   const style = { width: size, height: size, borderRadius: radius }
 
   if (image) {
@@ -199,7 +234,7 @@ function SubjectHeader({ subject }) {
   )
 }
 
-function AgentFooter({ agent, task, statusNode }) {
+function AgentFooter({ agent, task }) {
   return (
     <div className="agent-footer">
       <AgentAvatar agent={agent} size={20} />
@@ -210,39 +245,60 @@ function AgentFooter({ agent, task, statusNode }) {
           <span className="agent-footer-task">{task}</span>
         </>
       )}
-      {statusNode && <span className="agent-footer-status">{statusNode}</span>}
+    </div>
+  )
+}
+
+/* ─── Standardized card header row (eyebrow + right-aligned status) ──────── */
+
+function CardHeaderRow({ eyebrow, statusLabel, statusTag, timestamp, pulsing }) {
+  return (
+    <div className="card-eyebrow-row">
+      {eyebrow && <span className="card-eyebrow">{eyebrow}</span>}
+      <div className="card-status-right">
+        {statusLabel && <StatusTag status={statusTag} size="sm" dot={false}>{statusLabel}</StatusTag>}
+        {timestamp && (
+          <>
+            <span className="card-dot" aria-hidden="true">·</span>
+            <span className="card-time">{timestamp}</span>
+          </>
+        )}
+        {pulsing && <span className="activity-card-pulse" aria-hidden="true" />}
+      </div>
     </div>
   )
 }
 
 /* ─── Activity card (used in Zone 2 + drill-in) ──────────────────────────── */
 
-function ActivityCard({ card, emphasis = 'normal', onClick, selected = false, dimmed = false }) {
+function ActivityCard({ card, onClick, selected = false, dimmed = false }) {
   const meta = STATUS_MAP[card.status] ?? STATUS_MAP.resolved
-  const { tagStatus } = meta
   const agent = card.agentId ? getAgent(card.agentId) : null
-  const isActive    = emphasis === 'active' || emphasis === 'selected-active'
   const interactive = typeof onClick === 'function'
-
-  const statusNode = (
-    <>
-      <StatusTag status={tagStatus} size="sm" dot={false}>{card.statusLabel}</StatusTag>
-      <span className="activity-card-dot" aria-hidden="true">·</span>
-      <span className="activity-card-time">{card.timestamp}</span>
-      {isActive && <span className="activity-card-pulse" aria-hidden="true" />}
-    </>
-  )
+  const pulsing = card.status === 'in-progress'
 
   const inner = card.subject ? (
     <>
+      <CardHeaderRow
+        eyebrow={card.eyebrow}
+        statusLabel={card.statusLabel}
+        statusTag={meta.tagStatus}
+        timestamp={card.timestamp}
+        pulsing={pulsing}
+      />
       <SubjectHeader subject={card.subject} />
-      {agent && <AgentFooter agent={agent} task={card.agentTask} statusNode={statusNode} />}
+      {agent && <AgentFooter agent={agent} task={card.agentTask} />}
     </>
   ) : (
     <>
       <div className="activity-card-head">
         {agent && <AgentHeader agent={agent} task={card.agentTask} />}
-        <div className="activity-card-status">{statusNode}</div>
+        <div className="activity-card-status">
+          <StatusTag status={meta.tagStatus} size="sm" dot={false}>{card.statusLabel}</StatusTag>
+          <span className="activity-card-dot" aria-hidden="true">·</span>
+          <span className="activity-card-time">{card.timestamp}</span>
+          {pulsing && <span className="activity-card-pulse" aria-hidden="true" />}
+        </div>
       </div>
       <div className="activity-card-body">
         <h3 className="activity-card-title">{card.title}</h3>
@@ -252,9 +308,10 @@ function ActivityCard({ card, emphasis = 'normal', onClick, selected = false, di
 
   const className = [
     'activity-card',
-    isActive  && 'activity-card-active',
-    selected  && 'activity-card-selected',
-    dimmed    && 'activity-card-dimmed',
+    card.subject && 'activity-card-subject',
+    pulsing  && 'activity-card-pulsing',
+    selected && 'activity-card-selected',
+    dimmed   && 'activity-card-dimmed',
   ].filter(Boolean).join(' ')
 
   return interactive ? (
@@ -274,37 +331,25 @@ function NeedsCard({ card, state, selected = false, onSelect, onApprove, onRejec
   if (resolved) {
     return (
       <article className="needs-card needs-card-resolved">
-        <div className="activity-card-head">
-          {agent && <AgentHeader agent={agent} task={card.agentTask} />}
-          <div className="activity-card-status">
-            <span className="activity-card-iconwrap activity-card-iconwrap-success" aria-hidden="true">
-              <CheckIcon size={14} />
-            </span>
-            <StatusTag status="success" size="sm" dot={false}>Resolved</StatusTag>
-            <span className="activity-card-dot" aria-hidden="true">·</span>
-            <span className="activity-card-time">Just now</span>
-          </div>
-        </div>
-        <div className="activity-card-body">
-          <h3 className="activity-card-title">{card.resolvedTitle}</h3>
-        </div>
+        <CardHeaderRow
+          eyebrow={card.eyebrow}
+          statusLabel="Resolved"
+          statusTag="success"
+          timestamp="Just now"
+        />
+        {card.subject
+          ? <SubjectHeader subject={card.subject} />
+          : <h3 className="needs-card-title">{card.resolvedTitle}</h3>}
+        {agent && <AgentFooter agent={agent} task={card.agentTask} />}
       </article>
     )
   }
 
   const stopAndCall = (fn) => (e) => { e.stopPropagation(); fn?.() }
 
-  const statusNode = (
-    <>
-      <StatusTag status="warning" size="sm" dot={false}>Awaiting approval</StatusTag>
-      <span className="activity-card-dot" aria-hidden="true">·</span>
-      <span className="activity-card-time">{card.timestamp}</span>
-    </>
-  )
-
   return (
     <article
-      className={`needs-card ${resolving ? 'needs-card-resolving' : ''} ${selected ? 'needs-card-selected' : ''}`}
+      className={`needs-card ${card.subject ? 'needs-card-subject' : ''} ${resolving ? 'needs-card-resolving' : ''} ${selected ? 'needs-card-selected' : ''}`}
       onClick={resolving ? undefined : onSelect}
       role="button"
       tabIndex={resolving ? -1 : 0}
@@ -314,20 +359,18 @@ function NeedsCard({ card, state, selected = false, onSelect, onApprove, onRejec
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect?.() }
       }}
     >
-      {card.subject ? (
-        <>
-          <SubjectHeader subject={card.subject} />
-          {agent && <AgentFooter agent={agent} task={card.agentTask} statusNode={statusNode} />}
-        </>
-      ) : (
-        <>
-          <div className="needs-card-head-row">
-            {agent && <AgentHeader agent={agent} task={card.agentTask} />}
-            <div className="needs-card-meta">{statusNode}</div>
-          </div>
-          <h3 className="needs-card-title">{card.title}</h3>
-        </>
-      )}
+      <CardHeaderRow
+        eyebrow={card.eyebrow}
+        statusLabel="Awaiting approval"
+        statusTag="warning"
+        timestamp={card.timestamp}
+      />
+
+      {card.subject
+        ? <SubjectHeader subject={card.subject} />
+        : <h3 className="needs-card-title">{card.title}</h3>}
+
+      {agent && <AgentFooter agent={agent} task={card.agentTask} />}
 
       <div className="needs-card-actions">
         <Button variant="secondary" size="sm" onClick={stopAndCall(onApprove)} disabled={resolving}>
@@ -686,7 +729,6 @@ function Overview({ data, selectedCardId, onSelect }) {
 }
 
 function HandlingZoneWithSelect({ data, selectedCardId, onSelect }) {
-  const isActiveSelected = selectedCardId === data.activeCard.id
   return (
     <section className="zone zone-handling">
       <div className="zone-head">
@@ -700,8 +742,7 @@ function HandlingZoneWithSelect({ data, selectedCardId, onSelect }) {
       <div className="feed">
         <ActivityCard
           card={data.activeCard}
-          emphasis={isActiveSelected ? 'selected-active' : 'active'}
-          selected={isActiveSelected}
+          selected={selectedCardId === data.activeCard.id}
           onClick={() => onSelect(data.activeCard.id)}
         />
         {data.feed.map(card => (
