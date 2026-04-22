@@ -916,48 +916,40 @@ function RecordDrawer({ card, detail, onClose, onExplore }) {
   )
 }
 
-/* ─── Overview (list view) ───────────────────────────────────────────────── */
+/* ─── Activity feed (right column) ───────────────────────────────────────── */
 
-function Overview({ data, selectedCardId, onSelect }) {
-  return (
-    <div className="overview">
-      <WelcomeHeader />
-      <NeedsZoneWithSelect cards={data.needsYou} selectedCardId={selectedCardId} onSelect={onSelect} />
-      <HandlingZoneWithSelect data={data} selectedCardId={selectedCardId} onSelect={onSelect} />
-    </div>
-  )
-}
-
-function HandlingZoneWithSelect({ data, selectedCardId, onSelect }) {
+function ActivityFeed({ data, selectedCardId, onSelect }) {
   const total = (data.activeCard ? 1 : 0) + data.feed.length
   return (
-    <section className="zone zone-handling">
-      <div className="zone-head">
-        <h2 className="zone-title">Teambridge is handling</h2>
-        <span className="zone-count">{total} active</span>
-      </div>
-      <p className="zone-sub">
-        Running automatically in the background. Open any card to see how it was resolved.
-      </p>
+    <aside className="activity-feed" aria-label="Activity feed">
+      <div className="activity-feed-inner">
+        <div className="zone-head">
+          <h2 className="zone-title">Teambridge is handling</h2>
+          <span className="zone-count">{total} active</span>
+        </div>
+        <p className="zone-sub">
+          Running automatically in the background. Open any card to see how it was resolved.
+        </p>
 
-      <div className="feed">
-        {data.activeCard && (
-          <ActivityCard
-            card={data.activeCard}
-            selected={selectedCardId === data.activeCard.id}
-            onClick={() => onSelect(data.activeCard.id)}
-          />
-        )}
-        {data.feed.map(card => (
-          <ActivityCard
-            key={card.id}
-            card={card}
-            selected={selectedCardId === card.id}
-            onClick={() => onSelect(card.id)}
-          />
-        ))}
+        <div className="feed">
+          {data.activeCard && (
+            <ActivityCard
+              card={data.activeCard}
+              selected={selectedCardId === data.activeCard.id}
+              onClick={() => onSelect(data.activeCard.id)}
+            />
+          )}
+          {data.feed.map(card => (
+            <ActivityCard
+              key={card.id}
+              card={card}
+              selected={selectedCardId === card.id}
+              onClick={() => onSelect(card.id)}
+            />
+          ))}
+        </div>
       </div>
-    </section>
+    </aside>
   )
 }
 
@@ -1571,7 +1563,7 @@ function Message({ message, onApprove }) {
 
 /* ─── Prompt panel ──────────────────────────────────────────────────────── */
 
-function PromptPanel({ industryId }) {
+function PromptPanel({ industryId, needsCards, selectedCardId, onSelect }) {
   const suggestions = PROMPT_SUGGESTIONS[industryId] ?? PROMPT_SUGGESTIONS.events
   const [input, setInput]       = useState('')
   const [messages, setMessages] = useState([])
@@ -1697,69 +1689,75 @@ function PromptPanel({ industryId }) {
   const hasChat = messages.length > 0
 
   return (
-    <aside className="prompt-panel" aria-label="Ask Teambridge">
-      <header className="prompt-panel-head">
-        <div className="prompt-panel-title">
-          <span>Ask Teambridge</span>
-        </div>
-        {hasChat && (
-          <button type="button" className="prompt-panel-clear" onClick={clear} title="New chat">
-            <XIcon size={14} />
-          </button>
+    <section className="prompt-panel" aria-label="Ask Teambridge">
+      <div className="prompt-panel-inner">
+        {!hasChat && <WelcomeHeader />}
+
+        {needsCards?.length > 0 && (
+          <div className="chat-pinned">
+            <NeedsZoneWithSelect
+              cards={needsCards}
+              selectedCardId={selectedCardId}
+              onSelect={onSelect}
+            />
+          </div>
         )}
-      </header>
 
-      {hasChat && (
-        <div className="prompt-messages" ref={scrollRef}>
-          {messages.map(m => <Message key={m.id} message={m} onApprove={handleApprove} />)}
-        </div>
-      )}
+        {hasChat && (
+          <div className="prompt-messages" ref={scrollRef}>
+            <button type="button" className="prompt-messages-clear" onClick={clear} title="Clear chat" aria-label="Clear chat">
+              <XIcon size={14} />
+            </button>
+            {messages.map(m => <Message key={m.id} message={m} onApprove={handleApprove} />)}
+          </div>
+        )}
 
-      <div className="prompt-input">
-        <textarea
-          className="prompt-input-field"
-          placeholder="Ask anything, or type @ to add context"
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault()
-              submit()
-            }
-          }}
-          rows={hasChat ? 2 : 3}
-        />
-        <div className="prompt-input-footer">
-          <button
-            type="button"
-            className="prompt-submit"
-            aria-label="Send"
-            onClick={() => submit()}
-            disabled={input.trim().length === 0}
-          >
-            <ArrowNarrowRightIcon size={14} />
-          </button>
+        <div className="prompt-input">
+          <textarea
+            className="prompt-input-field"
+            placeholder="Ask anything, or type @ to add context"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                submit()
+              }
+            }}
+            rows={hasChat ? 2 : 3}
+          />
+          <div className="prompt-input-footer">
+            <button
+              type="button"
+              className="prompt-submit"
+              aria-label="Send"
+              onClick={() => submit()}
+              disabled={input.trim().length === 0}
+            >
+              <ArrowNarrowRightIcon size={14} />
+            </button>
+          </div>
         </div>
+
+        {!hasChat && (
+          <div className="prompt-suggestions">
+            <h4 className="prompt-suggestions-title">Saved prompts</h4>
+            <ul className="prompt-suggestions-list">
+              {suggestions.map((s, i) => (
+                <li key={i}>
+                  <button type="button" className="prompt-suggestion" onClick={() => submit(s.label)}>
+                    <span className="prompt-suggestion-mark" aria-hidden="true">
+                      <TeambridgeAIIcon size={10} />
+                    </span>
+                    <span>{s.label}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
-
-      {!hasChat && (
-        <div className="prompt-suggestions">
-          <h4 className="prompt-suggestions-title">Saved prompts</h4>
-          <ul className="prompt-suggestions-list">
-            {suggestions.map((s, i) => (
-              <li key={i}>
-                <button type="button" className="prompt-suggestion" onClick={() => submit(s.label)}>
-                  <span className="prompt-suggestion-mark" aria-hidden="true">
-                    <TeambridgeAIIcon size={10} />
-                  </span>
-                  <span>{s.label}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </aside>
+    </section>
   )
 }
 
@@ -1790,17 +1788,18 @@ export default function Act1Dashboard({ industryId, onBack, onExplore }) {
         onAsk={onExplore}
       />
 
-      <main className="act1-main">
-        <div className="act1-content">
-          <Overview
-            data={data}
-            selectedCardId={selectedCardId}
-            onSelect={setSelectedCardId}
-          />
-        </div>
-      </main>
+      <PromptPanel
+        industryId={industryId}
+        needsCards={data.needsYou}
+        selectedCardId={selectedCardId}
+        onSelect={setSelectedCardId}
+      />
 
-      {!selectedCard && <PromptPanel industryId={industryId} />}
+      <ActivityFeed
+        data={data}
+        selectedCardId={selectedCardId}
+        onSelect={setSelectedCardId}
+      />
 
       {selectedCard && (
         <RecordDrawer
