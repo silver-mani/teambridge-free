@@ -1013,86 +1013,382 @@ function NeedsZoneWithSelect({ cards, selectedCardId, onSelect }) {
 
 /* ─── Right-side Prompt panel (peek at Act 2) ────────────────────────────── */
 
+/* Canned prompts + canned mock answers, keyed by industry. Clicking any
+   suggestion submits the label as a user message and appends the mock
+   response. Feels like a real prompt-driven AI. */
 const PROMPT_SUGGESTIONS = {
   healthcare: [
-    'Fill weekend gaps',
-    'Onboard new nurse',
-    'Flag PTO conflicts',
-    'Credential hires',
-    'Draft safety briefing',
+    { label: 'Fill my weekend ICU gaps',
+      answer: `Three weekend gaps today: Saturday 7a ICU, Sunday 3p ICU, Sunday 11p ICU.
+
+• Saturday 7a — Ashley P. is closest (2.1 mi), under hours, ICU-certified.
+• Sunday 3p — Priya S. is the fit, 3.1 mi, 24 hrs this week.
+• Sunday 11p — David K. (4.2 mi) but he's at 36 hrs — would trip overtime. Safer: Maria L. (5.0 mi, 22 hrs).
+
+Want me to dispatch all three offers now?` },
+    { label: 'Onboard a new hire',
+      answer: `I can clear Diana R. end-to-end:
+
+• RN license active (state board verified)
+• BLS, ACLS, PALS current through 2027
+• Background check clean
+• Requested Memorial South · 3.2 mi
+
+I'll assign her first shift Monday 7am and send her the welcome packet. Approve to run?` },
+    { label: 'Flag PTO that would thin coverage',
+      answer: `One PTO request at risk:
+
+• Keisha N. — Saturday 7a–7p. ICU will drop to 3 of 4 required nurses.
+• Ashley P. is the strongest backfill (high acceptance rate on Keisha's prior swaps).
+
+Shall I approve the PTO and auto-offer the shift to Ashley?` },
+    { label: 'Credential hires',
+      answer: `4 hires in the credentialing queue:
+
+• Sarah M. · Cleared (TABC + BLS) → assigned Monday
+• Diana R. · Ready for approval
+• Omar S. · Waiting on state-board re-verification (~2 hrs)
+• Lydia C. · Missing PALS doc (auto-requested from her)
+
+Want me to send a status summary to the hiring manager?` },
+    { label: 'Draft a pre-shift safety briefing',
+      answer: `Here's a draft for the 7am ICU huddle:
+
+• Census: 18 of 22 beds (82%). No new admits overnight.
+• High-acuity: Bay 3 (post-op, titrating pressors), Bay 7 (ECMO).
+• Staffing: 4 RNs + 1 float. Ashley P. on for Keisha.
+• Safety focus: CAUTI bundle audit today. BLS refresher for 2 new hires.
+
+Ready to dispatch to the team?` },
   ],
   staffing: [
-    'Dispatch weekend order',
-    'Review rate request',
-    'Find contractors',
-    'Low-fill-rate clients',
-    'Weekly client digest',
+    { label: 'Dispatch weekend order',
+      answer: `Meridian's weekend order (3 RNs, 96 hrs) — I have 5 qualified contractors above 4.7 rating, all under hours. Top picks: Janelle R., David K., Priya S.
+
+Want me to dispatch offers in that order?` },
+    { label: 'Review rate request',
+      answer: `David K. requested +$3/hr. Evidence:
+
+• 4.9 rating over 6 months
+• 8 placements, zero complaints, 98% attendance
+• Current rate is $2/hr below contractors with his profile
+• Meridian and Stellar both requested him by name
+
+Margin impact: minimal. Recommend approve?` },
+    { label: 'Find contractors for a new client',
+      answer: `New client Horizon Labs posted 2 RN slots for Friday. Matching against roster:
+
+• 7 contractors within 10 mi + rating ≥ 4.7
+• 4 with Horizon's required cert (CRNI)
+• Top 3 all over 95% historical acceptance
+
+Ready to push offers to the top 3?` },
+    { label: 'Show low-fill-rate clients',
+      answer: `Last 30 days — clients below 90% fill:
+
+• Stellar Events · 74% — pay rate 8% under market
+• Lakeside Clinic · 82% — late-notice pattern (avg 9 hr lead)
+
+Both have clear fixes. Want me to draft outreach?` },
+    { label: 'Draft weekly client digest',
+      answer: `This week across clients:
+
+• 11 placements dispatched, 11 filled · 97% fill rate
+• Median time-to-fill: 34 min
+• 1 cancellation (Meridian covered in 22 min)
+• Margin: +4.2% vs last week
+
+Ready to email to the client ops channel?` },
   ],
   events: [
-    'Fill Saturday roles',
-    'Draft crew briefing',
-    'Coverage by gate',
-    'Pre-brief Harbor Theater',
-    'Auto-approved swaps',
+    { label: 'Fill the last open Saturday role',
+      answer: `One open role left for 49ers vs Rams Saturday: Gate 3 usher (6:30 PM report).
+
+Top matches:
+• Jordan K. — 4.9 guest rating, worked Gate 3 twice this month
+• Priya S. — 4.7 rating, 1.9 mi, under hours
+
+Recommend offering Jordan first. Want me to send it?` },
+    { label: 'Draft the pre-game crew briefing',
+      answer: `Draft briefing for 48 staff, Saturday 5:00 PM call:
+
+• Event: 49ers vs Rams · Sellout (68,500) · Kickoff 7:15 PM
+• Gates 1–6 open at 5:00 PM. Surge crew stays post-kickoff.
+• TABC badges visible at every beverage post. Alcohol cut-off 3rd quarter.
+• Weather: clear, 62°F at kickoff
+• Roster change: Rachel Williams in for Sandra Lee at East Entry
+
+Ready to dispatch via SMS + in-app push?` },
+    { label: 'Coverage by gate for Saturday',
+      answer: `Coverage across the 6 gates:
+
+• Gate 1 (North): 8 of 8 ✓
+• Gate 2 (North): 8 of 8 ✓
+• Gate 3 (East):  7 of 8 — 1 open
+• Gate 4 (East):  8 of 8 ✓ (incl. Rachel for Sandra)
+• Gate 5 (South): 8 of 8 ✓
+• Gate 6 (South): 9 of 8 ✓ (surge +1)
+
+47 of 48 confirmed. One role pending.` },
+    { label: 'Pre-brief for Harbor Theater opener',
+      answer: `Harbor Theater opens May 1. Readiness:
+
+• 18 of 24 staff pre-staged (within 5 mi)
+• 14 of 18 have TABC. 4 cert renewals in-flight (Tuesday session).
+• 6 slots still open. I have 9 more candidates in reach.
+
+Want me to ping the 9 now?` },
+    { label: 'Summarise auto-approved swaps',
+      answer: `This week: 12 shift swaps auto-approved, 0 manager intervention.
+
+• 10 weekday shifts (usher, beverage)
+• 2 Saturday event shifts
+• Avg response time: 18 minutes
+• 0 overtime triggers, 0 one-sided-trade patterns
+
+Full audit log available in Agent Workflows.` },
   ],
   security: [
-    'Approve post swap',
-    'Stage extra coverage',
-    'Overtime watch',
-    'Verify guard license',
-    'Incident digest',
+    { label: 'Approve the armed post swap',
+      answer: `Rivera ↔ Chen Thursday armed post swap:
+
+• Both armed-certified, firearm permits current
+• Chen has worked this post 11 times; Rivera 14 times
+• No overtime risk, no client restrictions
+• Client auto-notification drafted
+
+Recommend approve — safe to auto-run.` },
+    { label: 'Stage coverage for Corporate Campus A',
+      answer: `Client requested +1 nightly patrol for 2 weeks. Plan:
+
+• 14 armed-cert guards available nightly, all under hours
+• Propose rotation: Singh, Patel, Harris across 2 weeks
+• Rate matches contract, no scope change
+
+Ready to stage and notify the three?` },
+    { label: 'Show guards nearing overtime',
+      answer: `4 guards within 4 hrs of the 40 hr cap:
+
+• Ramon G. (36 hrs) — Friday shift would trip
+• Daniela T. (37 hrs) — Saturday shift risk
+• Marcus B. (38 hrs) — Sunday at risk
+• Priya K. (36 hrs) — OK if Friday swap approved
+
+Want me to offer them keep/swap/drop SMS?` },
+    { label: 'Verify next hire\'s license',
+      answer: `Sarah M. guard license check:
+
+• State license #G-92184 — Active through Dec 2028
+• Firearm permit not required for her first post
+• Background check clean (state + federal)
+
+Cleared for North Gate Monday. Want me to send welcome + schedule?` },
+    { label: 'Draft an incident digest',
+      answer: `This week's incident log (9 events):
+
+• 5 routine (minor visitor escalations, resolved on-site)
+• 2 medical (ambulance dispatched, no follow-up needed)
+• 1 lockdown drill (all posts passed checklist)
+• 1 access-control glitch (badge reader replaced)
+
+0 escalations to client. Ready to email the summary?` },
   ],
   'light-industrial': [
-    'Peak volume surge',
-    'Renew forklift certs',
-    'Overtime watch',
-    'Draft shift reminder',
-    'Auto-approved swaps',
+    { label: 'Add associates for peak volume',
+      answer: `DC East forecast is 22% above normal for the next 5 days. Plan:
+
+• 12 forklift-certified associates available, all under hours
+• Proposal: +8 associates covers throughput with 15% buffer
+• Shift leads notified automatically
+
+Approve to add the 8?` },
+    { label: 'Renew forklift certs',
+      answer: `5 forklift certs expiring in 14 days. Batch renewal option:
+
+• $45 per associate ($225 total)
+• Thursday 2pm on-site session (2 hrs, paid as training)
+• All 5 are top performers, zero safety incidents
+
+Want me to approve and book the session?` },
+    { label: 'Show associates approaching overtime',
+      answer: `3 associates within 4 hrs of overtime this week:
+
+• Luis M. — 36 hrs · Friday shift would trip
+• Priya S. — 37 hrs · Saturday risk
+• Derek K. — 36 hrs · OK if swap approved
+
+Want me to ask each to keep/swap/drop?` },
+    { label: 'Draft shift reminder',
+      answer: `Draft for tomorrow's 5am pick-and-pack:
+
+"Reminder: your shift starts at 5am at DC East. Report to the north dock. Reply Y to confirm. — Teambridge"
+
+Dispatching to all 12 scheduled associates. Send?` },
+    { label: 'Summarise auto-approved swaps',
+      answer: `This week: 8 swaps auto-approved, 0 manager time.
+
+• Median turnaround: 22 min
+• No overtime triggers, no reciprocity imbalance
+• All 8 parties confirmed within 30 min
+
+Audit trail in Agent Workflows.` },
   ],
   construction: [
-    'Swap crews for rain',
-    'Renew OSHA certs',
-    'Crew hours by site',
-    'Morning plan',
-    'Weekly throughput',
+    { label: 'Swap crews for Thursday rain',
+      answer: `Thursday forecast: 85% chance of 1"+ rain. Framing at 5th and Main would be unsafe.
+
+Proposal:
+• Move the 5th/Main crew to Elm Street (interior drywall + trim)
+• Resume framing Friday 6am
+• No overtime risk, no comp risk, same pay rate
+
+Foreman is pre-notified. Approve the swap?` },
+    { label: 'Renew OSHA certs',
+      answer: `4 OSHA 30 certs expiring in 21 days. Group renewal:
+
+• Online self-paced (~4 hrs each)
+• $75 per crew member ($300 total)
+• Can start this week — avg completion 5 days
+
+All 4 are senior crew. Recommend approve.` },
+    { label: 'Show crew hours by site',
+      answer: `This week across active sites:
+
+• 5th and Main: 42% of target hours (rain risk Thursday)
+• Elm Street: 108% (extra interior work coming)
+• Harbor Build: 96% (on-track)
+• West Row: 91% (framing delayed 1 day)
+
+Net: on-track. Want a site-by-site throughput report?` },
+    { label: 'Draft foreman\'s morning plan',
+      answer: `Tomorrow 6am at 5th and Main:
+
+• Crew: 12 (framing lead + 9 framers + 2 apprentices)
+• Material: Truss delivery 7:30am (confirmed)
+• Focus: Section B framing, 40% complete
+• Safety: OSHA 30 audit visit window 9–11am
+• Contingency: If truss delayed, crew moves to finish Section A
+
+Dispatch to foreman + crew leads?` },
+    { label: 'Weekly throughput summary',
+      answer: `This week across 4 sites:
+
+• 98% of target hours delivered
+• 0 safety incidents
+• 2 weather adjustments (auto-handled)
+• Projected finish: 3 of 4 sites on schedule, 1 (West Row) -1 day
+
+Report available for client share?` },
   ],
+}
+
+function Message({ role, text }) {
+  return (
+    <div className={`prompt-msg prompt-msg-${role}`}>
+      {role === 'assistant' && (
+        <span className="prompt-msg-mark" aria-hidden="true">
+          <TeambridgeAIIcon size={12} />
+        </span>
+      )}
+      <div className="prompt-msg-text">{text}</div>
+    </div>
+  )
 }
 
 function PromptPanel({ industryId }) {
   const suggestions = PROMPT_SUGGESTIONS[industryId] ?? PROMPT_SUGGESTIONS.events
+  const [input, setInput]       = useState('')
+  const [messages, setMessages] = useState([])
+  const scrollRef = useRef(null)
+
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+  }, [messages])
+
+  const mockAnswer = (text) => {
+    const match = suggestions.find(s => s.label.toLowerCase() === text.toLowerCase())
+    if (match) return match.answer
+    // Fallback for free-form input — a lightly personalised generic reply.
+    return `I'll look into that across your data. Give me a few seconds and I'll come back with a recommendation.`
+  }
+
+  const submit = (text) => {
+    const t = (text ?? input).trim()
+    if (!t) return
+    setMessages(prev => [...prev, { role: 'user', text: t }, { role: 'assistant', text: mockAnswer(t) }])
+    setInput('')
+  }
+
+  const clear = () => { setMessages([]); setInput('') }
+
+  const hasChat = messages.length > 0
 
   return (
     <aside className="prompt-panel" aria-label="Ask Teambridge">
+      <header className="prompt-panel-head">
+        <div className="prompt-panel-title">
+          <span className="prompt-panel-mark" aria-hidden="true">
+            <TeambridgeAIIcon size={12} />
+          </span>
+          <span>New chat</span>
+        </div>
+        {hasChat && (
+          <button type="button" className="prompt-panel-clear" onClick={clear} title="New chat">
+            <XIcon size={14} />
+          </button>
+        )}
+      </header>
+
+      {hasChat && (
+        <div className="prompt-messages" ref={scrollRef}>
+          {messages.map((m, i) => <Message key={i} role={m.role} text={m.text} />)}
+        </div>
+      )}
+
       <div className="prompt-input">
         <textarea
           className="prompt-input-field"
           placeholder="Ask anything, or type @ to add context"
-          rows={3}
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault()
+              submit()
+            }
+          }}
+          rows={hasChat ? 2 : 3}
         />
         <div className="prompt-input-footer">
-          <span className="prompt-scope-chip">
-            <span className="prompt-scope-dot" aria-hidden="true" />
-            All data
-            <span className="prompt-scope-chev" aria-hidden="true">⌄</span>
-          </span>
-          <button type="button" className="prompt-submit" aria-label="Send" disabled>
+          <button
+            type="button"
+            className="prompt-submit"
+            aria-label="Send"
+            onClick={() => submit()}
+            disabled={input.trim().length === 0}
+          >
             <ArrowNarrowRightIcon size={14} />
           </button>
         </div>
       </div>
 
-      <ul className="prompt-suggestions-list">
-        {suggestions.map((s, i) => (
-          <li key={i}>
-            <button type="button" className="prompt-suggestion">
-              <span className="prompt-suggestion-mark" aria-hidden="true">
-                <TeambridgeAIIcon size={10} />
-              </span>
-              <span>{s}</span>
-            </button>
-          </li>
-        ))}
-      </ul>
+      {!hasChat && (
+        <div className="prompt-suggestions">
+          <h4 className="prompt-suggestions-title">Saved prompts</h4>
+          <ul className="prompt-suggestions-list">
+            {suggestions.map((s, i) => (
+              <li key={i}>
+                <button type="button" className="prompt-suggestion" onClick={() => submit(s.label)}>
+                  <span className="prompt-suggestion-mark" aria-hidden="true">
+                    <TeambridgeAIIcon size={10} />
+                  </span>
+                  <span>{s.label}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </aside>
   )
 }
