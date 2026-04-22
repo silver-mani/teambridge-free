@@ -1132,7 +1132,7 @@ Ready to email to the client ops channel?` },
         ],
       } },
     { label: 'Coverage by gate for Saturday',
-      specialist: 'atlas',
+      specialist: 'nova',
       answer: {
         segments: [
           { type: 'text', text: "47 of 48 confirmed · one role pending approval." },
@@ -1162,7 +1162,7 @@ Ready to email to the client ops channel?` },
         ],
       } },
     { label: 'Summarise auto-approved swaps',
-      specialist: 'nova',
+      // Pure summary — no action required.
       answer: {
         segments: [
           { type: 'text', text: "This week across 4 venues: **12 shift swaps auto-approved, 0 manager intervention.**" },
@@ -1470,28 +1470,20 @@ function ProgressMessage({ message, onResolved }) {
   )
 }
 
-function ActionButtons({ specialist, onApprove, onManual }) {
+function ActionButtons({ specialist, onApprove }) {
   const agent = specialist ? getAgent(specialist) : null
+  if (!agent) return null
   return (
     <div className="prompt-actions-row">
       <button type="button" className="prompt-action prompt-action-primary" onClick={onApprove}>
-        {agent ? (
-          <>
-            <span className="prompt-action-agent" style={{ backgroundImage: `url(${agent.avatar})` }} />
-            Have {agent.name} take it
-          </>
-        ) : (
-          <>Have Teambridge AI take it</>
-        )}
-      </button>
-      <button type="button" className="prompt-action prompt-action-ghost" onClick={onManual}>
-        I'll handle it
+        <span className="prompt-action-agent" style={{ backgroundImage: `url(${agent.avatar})` }} />
+        Have {agent.name} take it
       </button>
     </div>
   )
 }
 
-function Message({ message, onApprove, onManual }) {
+function Message({ message, onApprove }) {
   if (message.role === 'user') {
     return (
       <div className="prompt-msg prompt-msg-user">
@@ -1521,11 +1513,10 @@ function Message({ message, onApprove, onManual }) {
           const revealed  = isCurrent ? chars : Infinity
           return <Segment key={i} seg={seg} charsRevealed={revealed} />
         })}
-        {message.status === 'done' && message.showActions && (
+        {message.status === 'done' && message.specialist && (
           <ActionButtons
             specialist={message.specialist}
             onApprove={() => onApprove(message)}
-            onManual={() => onManual(message)}
           />
         )}
       </div>
@@ -1599,7 +1590,7 @@ function PromptPanel({ industryId }) {
     setMessages(prev => [
       ...prev,
       { id: ++idRef.current, role: 'user', content: label, status: 'done' },
-      { id: ++idRef.current, role: 'assistant', content, status: 'thinking', showActions: true, specialist },
+      { id: ++idRef.current, role: 'assistant', content, status: 'thinking', specialist: specialist ?? null },
     ])
   }
 
@@ -1636,7 +1627,7 @@ function PromptPanel({ industryId }) {
       replyText = "I'm offline from the live AI right now, but here's where I'd start: check the open role for Saturday, roster changes in the last hour, and any credentialing still in-flight. Nova can handle this when you're ready — set ANTHROPIC_API_KEY on the Vercel deploy for real answers."
     }
 
-    updateMsg(assistantId, { content: replyText, showActions: true, specialist: detectSpecialist(replyText) })
+    updateMsg(assistantId, { content: replyText, specialist: detectSpecialist(replyText) })
   }
 
   const submit = (text) => {
@@ -1656,34 +1647,19 @@ function PromptPanel({ industryId }) {
     leo:   ['Pulling overtime + cert records', 'Scanning for violations', 'Drafting advisory', 'Routing to affected workers', 'Compliance snapshot updated'],
   }
 
-  const MANUAL_STEPS = [
-    'Opening the record',
-    'Reviewing the context and options',
-    'Sending your decision',
-    'Logging the outcome',
-  ]
-
-  const spawnProgress = (kind, agentId, resolution) => {
-    const steps = kind === 'specialist' ? (SPECIALIST_STEPS[agentId] ?? SPECIALIST_STEPS.nova) : MANUAL_STEPS
-    setMessages(prev => prev.map(m => m.showActions ? { ...m, showActions: false } : m).concat({
-      id: ++idRef.current,
-      role: 'progress',
-      kind,
-      agentId: kind === 'specialist' ? agentId : null,
-      steps,
-      stepsDone: 0,
-      resolutionText: resolution,
-    }))
-  }
-
   const handleApprove = (msg) => {
     const agentId = msg.specialist ?? 'nova'
-    const agent = getAgent(agentId)
-    spawnProgress('specialist', agentId, `${agent.name} handled it — ready for your next move.`)
-  }
-
-  const handleManual = () => {
-    spawnProgress('manual', null, 'Done. Logged and ready for the next thing.')
+    const agent   = getAgent(agentId)
+    const steps   = SPECIALIST_STEPS[agentId] ?? SPECIALIST_STEPS.nova
+    setMessages(prev => prev.map(m => m.specialist ? { ...m, specialist: null } : m).concat({
+      id: ++idRef.current,
+      role: 'progress',
+      kind: 'specialist',
+      agentId,
+      steps,
+      stepsDone: 0,
+      resolutionText: `${agent.name} handled it — ready for your next move.`,
+    }))
   }
 
   const clear = () => { setMessages([]); setInput('') }
@@ -1708,7 +1684,7 @@ function PromptPanel({ industryId }) {
 
       {hasChat && (
         <div className="prompt-messages" ref={scrollRef}>
-          {messages.map(m => <Message key={m.id} message={m} onApprove={handleApprove} onManual={handleManual} />)}
+          {messages.map(m => <Message key={m.id} message={m} onApprove={handleApprove} />)}
         </div>
       )}
 
