@@ -281,8 +281,8 @@
   height: 22px;
   margin-top: 2px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--ai-grad-start) 0%, var(--ai-grad-mid) 55%, var(--ai-grad-end) 100%);
-  color: #fff;
+  background: var(--color-bg-tertiary);
+  color: var(--color-content-tertiary);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -717,11 +717,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--ai-grad-start) 0%, var(--ai-grad-mid) 55%, var(--ai-grad-end) 100%);
-  color: #fff;
+  background: var(--color-bg-tertiary);
+  color: var(--color-content-tertiary);
   flex-shrink: 0;
 }
 
