@@ -414,6 +414,141 @@
 }
 .prompt-chart-value.is-short { color: var(--color-orange-content-primary); font-weight: var(--font-weight-medium); }
 
+/* Action buttons at the end of an assistant message */
+.prompt-actions-row {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  flex-wrap: wrap;
+}
+.prompt-action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px var(--space-3);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: background-color 120ms ease, filter 120ms ease;
+}
+.prompt-action-primary {
+  background: var(--color-content-primary);
+  color: var(--color-content-inverse);
+  border: 1px solid var(--color-content-primary);
+  font-weight: var(--font-weight-medium);
+}
+.prompt-action-primary:hover { filter: brightness(1.1); }
+.prompt-action-ghost {
+  background: transparent;
+  color: var(--color-content-secondary);
+  border: 1px solid var(--color-border-opaque);
+}
+.prompt-action-ghost:hover { background: var(--color-bg-tertiary); color: var(--color-content-primary); }
+.prompt-action-agent {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-bg-tertiary) center/cover no-repeat;
+  flex-shrink: 0;
+}
+
+/* Progress message — specialist / manual working on the task */
+.prompt-msg-progress .prompt-msg-body {
+  background: var(--color-bg-tertiary);
+}
+.progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: 2px;
+}
+.progress-actor {
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-content-tertiary);
+}
+.progress-status {
+  font-size: 11px;
+  color: var(--color-content-tertiary);
+  letter-spacing: 0.02em;
+}
+.progress-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.progress-step {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  color: var(--color-content-tertiary);
+  opacity: 0;
+  animation: progress-step-in 280ms ease forwards;
+}
+.progress-step-active,
+.progress-step-done { color: var(--color-content-primary); opacity: 1; animation: none; }
+.progress-step-pending { opacity: 0.35; animation: none; }
+@keyframes progress-step-in {
+  from { opacity: 0; transform: translateY(2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.progress-step-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--color-bg-primary);
+  border: 1.5px solid var(--color-border-opaque);
+  color: var(--color-content-tertiary);
+}
+.progress-step-done .progress-step-mark {
+  background: var(--color-matcha-bg-primary);
+  border-color: var(--color-matcha-bg-primary);
+  color: #fff;
+}
+.progress-step-active .progress-step-mark {
+  background: var(--color-bg-primary);
+  border-color: color-mix(in srgb, var(--ai-grad-mid) 55%, transparent);
+}
+.progress-resolution {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-matcha-bg-tertiary);
+  color: var(--color-matcha-content-primary);
+  border-radius: 10px;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  animation: progress-resolve-in 320ms ease both;
+}
+@keyframes progress-resolve-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Progress avatar for specialist (uses agent GIF) */
+.prompt-msg-progress .prompt-msg-mark {
+  background: var(--color-bg-tertiary);
+}
+.prompt-msg-progress.is-manual .prompt-msg-mark {
+  background: var(--color-bg-tertiary);
+  color: var(--color-content-secondary);
+}
+
 /* Metrics */
 .prompt-metrics {
   display: grid;
