@@ -18,7 +18,7 @@ import { Microphone02Icon }    from '../../../src/components/icons/Microphone02I
 import { Mail01Icon }          from '../../../src/components/icons/Mail01Icon.tsx'
 import { XIcon }               from '../../../src/components/icons/XIcon.tsx'
 import { getIndustryData }     from '../data/industryData.js'
-import { getAgent }            from '../data/agents.js'
+import { getAgent, AGENTS }   from '../data/agents.js'
 import { getCardDetail }       from '../data/cardDetails.js'
 import './act1.css'
 
@@ -612,77 +612,181 @@ function Communication({ comm }) {
   )
 }
 
-/* ─── Detail panel ───────────────────────────────────────────────────────── */
+/* ─── Record drawer (fixed right) ────────────────────────────────────────── */
 
-function CardDetailPanel({ card, detail, onClose, onExplore }) {
-  const agent = card.agentId ? getAgent(card.agentId) : null
-  const animated = detail.mode === 'animated'
+const RECORD_TYPE_LABEL = {
+  shift:  'Shift',
+  event:  'Event',
+  user:   'User',
+  venue:  'Venue',
+  swap:   'Shift swap',
+  batch:  'Reminder batch',
+}
+
+function RecordField({ field }) {
+  const { label, value } = field
+  let content
+
+  if (value && typeof value === 'object' && value.kind === 'user') {
+    content = (
+      <span className="record-field-user">
+        <span className="record-field-user-avatar" style={value.avatar ? { backgroundImage: `url(${value.avatar})` } : undefined} />
+        <span>{value.name}</span>
+      </span>
+    )
+  } else {
+    content = <span>{value}</span>
+  }
+
+  return (
+    <div className="record-field">
+      <span className="record-field-label">{label}</span>
+      <span className="record-field-value">{content}</span>
+    </div>
+  )
+}
+
+function ActivityRow({ row }) {
+  const avatarStyle = row.avatar ? { backgroundImage: `url(${row.avatar})` } : undefined
+  const initials = row.actor.split(' ').map(p => p[0]).join('').slice(0, 2)
+
+  let avatarNode
+  if (row.isAgent) {
+    // Look up agent by first name; fall back to a neutral bubble.
+    const a = Object.values(AGENTS).find(x => x.name.toLowerCase() === row.actor.toLowerCase())
+              ?? { avatar: null }
+    avatarNode = (
+      <span
+        className="activity-row-avatar activity-row-avatar-agent"
+        style={a.avatar ? { backgroundImage: `url(${a.avatar})` } : undefined}
+      />
+    )
+  } else if (row.avatar) {
+    avatarNode = <span className="activity-row-avatar" style={avatarStyle} />
+  } else {
+    avatarNode = <span className="activity-row-avatar activity-row-avatar-system">{initials}</span>
+  }
+
+  return (
+    <li className="activity-row">
+      {avatarNode}
+      <span className="activity-row-text">
+        <span className="activity-row-actor">{row.actor}</span>{' '}{row.verb}
+      </span>
+      <span className="activity-row-time">{row.time}</span>
+    </li>
+  )
+}
+
+function DetailsTab({ record, fallback }) {
+  if (record?.fields?.length) {
+    return (
+      <div className="record-fields">
+        {record.fields.map((f, i) => <RecordField key={i} field={f} />)}
+      </div>
+    )
+  }
+  return (
+    <div className="record-fields">
+      {fallback && <p className="detail-panel-desc" style={{ padding: 'var(--space-3) 0' }}>{fallback}</p>}
+    </div>
+  )
+}
+
+function ActivityTab({ detail, record, animated, onExplore, animationDone }) {
+  return (
+    <>
+      {detail?.timeline?.length > 0 && (
+        <section className="activity-ai-section">
+          <h3 className="activity-section-label">AI Agent Activity</h3>
+          <TimelineList items={detail.timeline} animated={animated} />
+
+          {animated && animationDone && detail.kicker && (
+            <div className="detail-kicker">
+              <p className="kicker-text">{detail.kicker}</p>
+              <Button
+                variant="secondary"
+                size="lg"
+                trailingArtwork={<ArrowNarrowRightIcon size={18} />}
+                onClick={onExplore}
+              >
+                Want to see what else Teambridge can do?
+              </Button>
+            </div>
+          )}
+        </section>
+      )}
+
+      {record?.activity?.length > 0 && (
+        <section>
+          <h3 className="activity-section-label">Record History</h3>
+          <ul className="activity-rows">
+            {record.activity
+              .filter(r => !r.isAgent)  /* AI rows shown in the AI section above */
+              .map((r, i) => <ActivityRow key={i} row={r} />)}
+          </ul>
+        </section>
+      )}
+    </>
+  )
+}
+
+function RecordDrawer({ card, detail, onClose, onExplore }) {
+  const record   = card.record
+  const animated = detail?.mode === 'animated'
+  const [tab, setTab]                     = useState('details')
   const [animationDone, setAnimationDone] = useState(!animated)
 
   useEffect(() => {
-    if (!animated || !detail.timeline?.length) return
+    if (!animated || !detail?.timeline?.length) return
     const t = setTimeout(() => setAnimationDone(true), detail.timeline.length * 1600 + 400)
     return () => clearTimeout(t)
-  }, [animated, detail.timeline?.length])
+  }, [animated, detail?.timeline?.length])
+
+  const title    = record?.title    ?? card.title
+  const subtitle = record?.subtitle ?? card.description ?? card.summary
+  const typeLabel = RECORD_TYPE_LABEL[record?.type] ?? 'Activity'
 
   return (
-    <aside className="detail-panel" aria-label="Card detail">
-      <header className="detail-panel-head">
-        {card.subject
-          ? <SubjectHeader subject={card.subject} />
-          : (agent && <AgentHeader agent={agent} task={card.agentTask} size={36} />)}
-        <button type="button" className="detail-panel-close" onClick={onClose} aria-label="Close detail">
-          <XIcon size={16} />
-        </button>
-      </header>
-
-      <div className="detail-panel-body">
-        {card.subject && agent && (
-          <AgentFooter agent={agent} task={card.agentTask} />
-        )}
-        <div className="detail-panel-summary">
-          <h2 className="detail-panel-title">{card.title}</h2>
-          {card.description && <p className="detail-panel-desc">{card.description}</p>}
-          {card.summary && <p className="detail-panel-desc">{card.summary}</p>}
+    <aside className="detail-panel" aria-label="Record detail">
+      <header className="record-header">
+        <div className="record-header-top">
+          <span className="record-header-type">{typeLabel}</span>
+          <button type="button" className="detail-panel-close" onClick={onClose} aria-label="Close">
+            <XIcon size={16} />
+          </button>
         </div>
-
-        {detail.timeline?.length > 0 && (
-          <TimelineList items={detail.timeline} animated={animated} />
-        )}
-
-        {detail.outcome && (
-          <section className="detail-section">
-            <h3 className="detail-section-title">Outcome</h3>
-            <div className="detail-outcome">
-              <div className="detail-outcome-title">{detail.outcome.title}</div>
-              {detail.outcome.description && <p className="detail-outcome-desc">{detail.outcome.description}</p>}
-              {detail.outcome.metrics?.length > 0 && (
-                <div className="detail-outcome-metrics">
-                  {detail.outcome.metrics.map((m, i) => (
-                    <div key={i} className="detail-outcome-metric">
-                      <div className="detail-outcome-metric-value">{m.value}</div>
-                      <div className="detail-outcome-metric-label">{m.label}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </section>
-        )}
-
-        {detail.mode === 'animated' && animationDone && detail.kicker && (
-          <div className="detail-kicker">
-            <p className="kicker-text">{detail.kicker}</p>
-            <Button
-              variant="secondary"
-              size="lg"
-              trailingArtwork={<ArrowNarrowRightIcon size={18} />}
-              onClick={onExplore}
-            >
-              Want to see what else Teambridge can do?
-            </Button>
+        <h2 className="record-header-title">{title}</h2>
+        {subtitle && <p className="record-header-subtitle">{subtitle}</p>}
+        {record?.status && (
+          <div style={{ marginTop: 'var(--space-2)' }}>
+            <StatusTag status={record.status.tone ?? 'neutral'} size="sm" dot={false}>{record.status.label}</StatusTag>
           </div>
         )}
+      </header>
+
+      <div className="detail-tabs" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'details'}
+          className={`detail-tab ${tab === 'details' ? 'is-active' : ''}`}
+          onClick={() => setTab('details')}
+        >Details</button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'activity'}
+          className={`detail-tab ${tab === 'activity' ? 'is-active' : ''}`}
+          onClick={() => setTab('activity')}
+        >Activity</button>
+      </div>
+
+      <div className="detail-panel-body">
+        {tab === 'details'
+          ? <DetailsTab record={record} fallback={card.description ?? card.summary} />
+          : <ActivityTab detail={detail} record={record} animated={animated} onExplore={onExplore} animationDone={animationDone} />
+        }
       </div>
     </aside>
   )
@@ -795,10 +899,8 @@ export default function Act1Dashboard({ industryId, onBack, onExplore }) {
     [selectedCard, data],
   )
 
-  const hasSelection = !!selectedCard
-
   return (
-    <div className="act1-root">
+    <div className={`act1-root ${selectedCard ? 'drawer-open' : ''}`}>
       <LeftNav
         industryLabel={data.label}
         onBrand={onBack}
@@ -806,24 +908,24 @@ export default function Act1Dashboard({ industryId, onBack, onExplore }) {
       />
 
       <main className="act1-main">
-        <div className={`act1-content ${hasSelection ? 'act1-content-split' : ''}`}>
-          <div className="act1-list">
-            <Overview
-              data={data}
-              selectedCardId={selectedCardId}
-              onSelect={setSelectedCardId}
-            />
-          </div>
-          {hasSelection && detail && (
-            <CardDetailPanel
-              card={selectedCard}
-              detail={detail}
-              onClose={() => setSelectedCardId(null)}
-              onExplore={onExplore}
-            />
-          )}
+        <div className="act1-content">
+          <Overview
+            data={data}
+            selectedCardId={selectedCardId}
+            onSelect={setSelectedCardId}
+          />
         </div>
       </main>
+
+      {selectedCard && (
+        <RecordDrawer
+          key={selectedCard.id}
+          card={selectedCard}
+          detail={detail}
+          onClose={() => setSelectedCardId(null)}
+          onExplore={onExplore}
+        />
+      )}
     </div>
   )
 }
