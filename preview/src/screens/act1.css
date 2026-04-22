@@ -240,7 +240,6 @@
   flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-1) 0;
-  margin: 0 calc(-1 * var(--space-2));   /* let bubbles use a touch more width */
 }
 
 .prompt-msg {
@@ -593,7 +592,7 @@
   border: none;
   outline: none;
   resize: none;
-  padding: var(--space-4) var(--space-4) var(--space-2) var(--prompt-text-indent);
+  padding: var(--space-4) var(--space-4) var(--space-2);  /* equal L/R inside */
   font-family: inherit;
   font-size: var(--text-sm);
   line-height: var(--line-height-normal);
@@ -606,7 +605,7 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-4);   /* equal L/R inside */
 }
 .prompt-submit {
   display: inline-flex;
