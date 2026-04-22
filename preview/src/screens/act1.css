@@ -467,11 +467,11 @@
               0 0 0 2.5px var(--agent-ring, var(--color-border-opaque));
 }
 
-.agent-avatar-purple { --agent-ring: color-mix(in srgb, var(--color-purple-bg-primary) 70%, transparent); background: var(--color-purple-bg-tertiary); color: var(--color-purple-content-primary); }
-.agent-avatar-blue   { --agent-ring: color-mix(in srgb, var(--color-blue-bg-primary)   70%, transparent); background: var(--color-blue-bg-tertiary);   color: var(--color-blue-content-primary);   }
-.agent-avatar-matcha { --agent-ring: color-mix(in srgb, var(--color-matcha-bg-primary) 70%, transparent); background: var(--color-matcha-bg-tertiary); color: var(--color-matcha-content-primary); }
-.agent-avatar-orange { --agent-ring: color-mix(in srgb, var(--color-orange-bg-primary) 70%, transparent); background: var(--color-orange-bg-tertiary); color: var(--color-orange-content-primary); }
-.agent-avatar-pink   { --agent-ring: color-mix(in srgb, var(--color-pink-bg-primary)   70%, transparent); background: var(--color-pink-bg-tertiary);   color: var(--color-pink-content-primary);   }
+.agent-avatar-purple { --agent-ring: color-mix(in srgb, var(--color-purple-bg-primary) 70%, transparent); background-color: var(--color-purple-bg-tertiary); color: var(--color-purple-content-primary); }
+.agent-avatar-blue   { --agent-ring: color-mix(in srgb, var(--color-blue-bg-primary)   70%, transparent); background-color: var(--color-blue-bg-tertiary);   color: var(--color-blue-content-primary);   }
+.agent-avatar-matcha { --agent-ring: color-mix(in srgb, var(--color-matcha-bg-primary) 70%, transparent); background-color: var(--color-matcha-bg-tertiary); color: var(--color-matcha-content-primary); }
+.agent-avatar-orange { --agent-ring: color-mix(in srgb, var(--color-orange-bg-primary) 70%, transparent); background-color: var(--color-orange-bg-tertiary); color: var(--color-orange-content-primary); }
+.agent-avatar-pink   { --agent-ring: color-mix(in srgb, var(--color-pink-bg-primary)   70%, transparent); background-color: var(--color-pink-bg-tertiary);   color: var(--color-pink-content-primary);   }
 
 .agent-header {
   display: flex;
