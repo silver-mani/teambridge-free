@@ -6,20 +6,20 @@ import { AILoader }            from '../../../src/components/ai/AILoader/AILoade
 import { TeambridgeAIIcon }    from '../../../src/components/icons/TeambridgeAIIcon.tsx'
 import { ArrowNarrowRightIcon }from '../../../src/components/icons/ArrowNarrowRightIcon.tsx'
 import { CheckIcon }           from '../../../src/components/icons/CheckIcon.tsx'
-import { ClockIcon }           from '../../../src/components/icons/ClockIcon.tsx'
 import { EyeIcon }             from '../../../src/components/icons/EyeIcon.tsx'
 import { AlertTriangleIcon }   from '../../../src/components/icons/AlertTriangleIcon.tsx'
-import { ChevronLeftIcon }     from '../../../src/components/icons/ChevronLeftIcon.tsx'
-import { ChevronDownIcon }     from '../../../src/components/icons/ChevronDownIcon.tsx'
 import { Home02Icon }          from '../../../src/components/icons/Home02Icon.tsx'
 import { Grid01Icon }          from '../../../src/components/icons/Grid01Icon.tsx'
 import { ClipboardCheckIcon }  from '../../../src/components/icons/ClipboardCheckIcon.tsx'
 import { Users03Icon }         from '../../../src/components/icons/Users03Icon.tsx'
 import { GitBranch01Icon }     from '../../../src/components/icons/GitBranch01Icon.tsx'
 import { MessageDotsSquareIcon } from '../../../src/components/icons/MessageDotsSquareIcon.tsx'
+import { Microphone02Icon }    from '../../../src/components/icons/Microphone02Icon.tsx'
+import { Mail01Icon }          from '../../../src/components/icons/Mail01Icon.tsx'
 import { XIcon }               from '../../../src/components/icons/XIcon.tsx'
 import { getIndustryData }     from '../data/industryData.js'
 import { getAgent }            from '../data/agents.js'
+import { getCardDetail }       from '../data/cardDetails.js'
 import './act1.css'
 
 /* ─── Agent avatar (animated GIF in a color-tinted ring) ─────────────────── */
@@ -157,12 +157,12 @@ function MissionBriefing({ mission, industryLabel }) {
 
 /* ─── Activity card (used in Zone 2 + drill-in) ──────────────────────────── */
 
-function ActivityCard({ card, emphasis = 'normal', onClick, dimmed = false }) {
+function ActivityCard({ card, emphasis = 'normal', onClick, selected = false, dimmed = false }) {
   const meta = STATUS_MAP[card.status] ?? STATUS_MAP.resolved
   const { Icon, tagStatus } = meta
   const agent = card.agentId ? getAgent(card.agentId) : null
-  const isActive    = emphasis === 'active'
-  const interactive = typeof onClick === 'function' && isActive
+  const isActive    = emphasis === 'active' || emphasis === 'selected-active'
+  const interactive = typeof onClick === 'function'
 
   const inner = (
     <>
@@ -186,7 +186,7 @@ function ActivityCard({ card, emphasis = 'normal', onClick, dimmed = false }) {
         <p  className="activity-card-desc">{card.description}</p>
       </div>
 
-      {isActive && (
+      {isActive && !selected && (
         <div className="activity-card-cta" aria-hidden="true">
           Click to see how Teambridge is resolving this
           <ArrowNarrowRightIcon size={16} />
@@ -195,11 +195,15 @@ function ActivityCard({ card, emphasis = 'normal', onClick, dimmed = false }) {
     </>
   )
 
-  const className =
-    `activity-card ${isActive ? 'activity-card-active' : ''} ${dimmed ? 'activity-card-dimmed' : ''}`
+  const className = [
+    'activity-card',
+    isActive  && 'activity-card-active',
+    selected  && 'activity-card-selected',
+    dimmed    && 'activity-card-dimmed',
+  ].filter(Boolean).join(' ')
 
   return interactive ? (
-    <button type="button" className={className} onClick={onClick}>{inner}</button>
+    <button type="button" className={className} onClick={onClick} aria-pressed={selected}>{inner}</button>
   ) : (
     <div className={className}>{inner}</div>
   )
@@ -207,7 +211,7 @@ function ActivityCard({ card, emphasis = 'normal', onClick, dimmed = false }) {
 
 /* ─── Zone 1: Needs your attention ───────────────────────────────────────── */
 
-function NeedsCard({ card, expanded, onToggle, onApprove, onReject, state }) {
+function NeedsCard({ card, state, selected = false, onSelect, onApprove, onReject }) {
   const resolving = state === 'resolving'
   const resolved  = state === 'resolved'
   const agent     = card.agentId ? getAgent(card.agentId) : null
@@ -234,68 +238,44 @@ function NeedsCard({ card, expanded, onToggle, onApprove, onReject, state }) {
     )
   }
 
+  const stopAndCall = (fn) => (e) => { e.stopPropagation(); fn?.() }
+
   return (
-    <article className={`needs-card ${expanded ? 'needs-card-expanded' : ''} ${resolving ? 'needs-card-resolving' : ''}`}>
+    <article
+      className={`needs-card ${resolving ? 'needs-card-resolving' : ''} ${selected ? 'needs-card-selected' : ''}`}
+      onClick={resolving ? undefined : onSelect}
+      role="button"
+      tabIndex={resolving ? -1 : 0}
+      aria-pressed={selected}
+      onKeyDown={(e) => {
+        if (resolving) return
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect?.() }
+      }}
+    >
       <div className="needs-card-head-row">
         {agent && <AgentHeader agent={agent} task={card.agentTask} />}
-        <button
-          type="button"
-          className="needs-card-head"
-          onClick={onToggle}
-          aria-expanded={expanded}
-          aria-label={expanded ? 'Hide reasoning' : 'Show reasoning'}
-        >
-          <div className="needs-card-meta">
-            <StatusTag status="warning" size="sm" dot={false}>Needs approval</StatusTag>
-            <span className="activity-card-dot" aria-hidden="true">·</span>
-            <span className="activity-card-time">{card.timestamp}</span>
-          </div>
-          <span className="needs-card-chevron" aria-hidden="true">
-            <ChevronDownIcon size={16} />
-          </span>
-        </button>
+        <div className="needs-card-meta">
+          <StatusTag status="warning" size="sm" dot={false}>Needs approval</StatusTag>
+          <span className="activity-card-dot" aria-hidden="true">·</span>
+          <span className="activity-card-time">{card.timestamp}</span>
+        </div>
       </div>
 
       <h3 className="needs-card-title">{card.title}</h3>
       <p  className="needs-card-summary">{card.summary}</p>
 
-      {expanded && (
-        <div className="needs-card-detail">
-          <div className="needs-card-reasoning-head">
-            <span className="needs-card-reasoning-mark" aria-hidden="true">
-              <TeambridgeAIIcon size={12} />
-            </span>
-            <span>Teambridge reasoning</span>
-          </div>
-          <ul className="needs-card-reasoning">
-            {card.reasoning.map((line, i) => (
-              <li key={i}>
-                <span className="needs-card-reasoning-check" aria-hidden="true">
-                  <CheckIcon size={12} />
-                </span>
-                <span>{line}</span>
-              </li>
-            ))}
-          </ul>
-          <div className="needs-card-recommendation">
-            <span className="needs-card-recommendation-label">Recommended</span>
-            <span>{card.recommendation}</span>
-          </div>
-        </div>
-      )}
-
       <div className="needs-card-actions">
-        <Button variant="primary" size="sm" onClick={onApprove} disabled={resolving}>
+        <Button variant="primary" size="sm" onClick={stopAndCall(onApprove)} disabled={resolving}>
           {resolving ? 'Resolving...' : 'Approve'}
         </Button>
-        <Button variant="tertiary" size="sm" onClick={onToggle} disabled={resolving}>
-          {expanded ? 'Hide reasoning' : 'Adjust'}
+        <Button variant="tertiary" size="sm" onClick={stopAndCall(onSelect)} disabled={resolving}>
+          View reasoning
         </Button>
         <Button
           variant="ghost"
           size="sm"
           leadingArtwork={<XIcon size={14} />}
-          onClick={onReject}
+          onClick={stopAndCall(onReject)}
           disabled={resolving}
         >
           Reject
@@ -305,85 +285,7 @@ function NeedsCard({ card, expanded, onToggle, onApprove, onReject, state }) {
   )
 }
 
-function NeedsZone({ cards, onEmptied }) {
-  const [expandedId, setExpandedId] = useState(null)
-  const [states, setStates] = useState(() =>
-    cards.reduce((acc, c) => { acc[c.id] = 'pending'; return acc }, {})
-  )
-
-  useEffect(() => {
-    if (cards.every(c => states[c.id] === 'resolved') && cards.length > 0) {
-      const t = setTimeout(() => onEmptied?.(), 1200)
-      return () => clearTimeout(t)
-    }
-  }, [states, cards, onEmptied])
-
-  const approve = id => {
-    setStates(prev => ({ ...prev, [id]: 'resolving' }))
-    setExpandedId(prev => prev === id ? null : prev)
-    setTimeout(() => {
-      setStates(prev => ({ ...prev, [id]: 'resolved' }))
-    }, 1400)
-  }
-
-  const reject = id => {
-    setStates(prev => ({ ...prev, [id]: 'resolved' }))
-  }
-
-  const remaining = cards.filter(c => states[c.id] !== 'resolved').length
-
-  return (
-    <section className="zone zone-needs">
-      <div className="zone-head">
-        <h2 className="zone-title">Needs your attention</h2>
-        <span className="zone-count">{remaining} waiting</span>
-      </div>
-      <p className="zone-sub">
-        Teambridge has prepared recommendations. Approve to execute, or expand to review the reasoning.
-      </p>
-      <div className="needs-list">
-        {cards.map(card => (
-          <NeedsCard
-            key={card.id}
-            card={card}
-            state={states[card.id]}
-            expanded={expandedId === card.id && states[card.id] === 'pending'}
-            onToggle={() =>
-              setExpandedId(prev => prev === card.id ? null : card.id)
-            }
-            onApprove={() => approve(card.id)}
-            onReject={()  => reject(card.id)}
-          />
-        ))}
-      </div>
-    </section>
-  )
-}
-
-/* ─── Zone 2: Teambridge is handling ─────────────────────────────────────── */
-
-function HandlingZone({ data, onActivate }) {
-  return (
-    <section className="zone zone-handling">
-      <div className="zone-head">
-        <h2 className="zone-title">Teambridge is handling</h2>
-        <span className="zone-count">{1 + data.feed.length} active</span>
-      </div>
-      <p className="zone-sub">
-        Running automatically in the background. Open any card to see how it was resolved.
-      </p>
-
-      <div className="feed">
-        <ActivityCard card={data.activeCard} emphasis="active" onClick={onActivate} />
-        {data.feed.map(card => (
-          <ActivityCard key={card.id} card={card} />
-        ))}
-      </div>
-    </section>
-  )
-}
-
-/* ─── Drill-in (reasoning for Marcus cancellation) ───────────────────────── */
+/* ─── Step items (used by AnimatedSteps inside the detail panel) ─────────── */
 
 function StepItem({ step, state, winnerName }) {
   const visible = state !== 'pending'
@@ -470,11 +372,125 @@ function StepItem({ step, state, winnerName }) {
   return null
 }
 
-function DrillInPanel({ data, onExplore, onBack }) {
-  const steps = data.drillIn.steps
-  const [activeIdx, setActiveIdx] = useState(0)
-  const [resolved,  setResolved]  = useState(false)
-  const [showKicker, setShowKicker] = useState(false)
+
+/* ─── Detail panel — communications rendering ────────────────────────────── */
+
+const COMM_TYPE_META = {
+  sms:   { Icon: MessageDotsSquareIcon, label: 'SMS' },
+  call:  { Icon: Microphone02Icon,      label: 'AI Call' },
+  email: { Icon: Mail01Icon,            label: 'Email' },
+}
+
+function SmsThread({ comm }) {
+  return (
+    <div className="comm-body comm-body-sms">
+      {comm.messages.map((m, i) => (
+        <div key={i} className={`sms-bubble sms-bubble-${m.from}`}>
+          <p className="sms-bubble-text">{m.text}</p>
+          <span className="sms-bubble-time">{m.time}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function CallBody({ comm }) {
+  return (
+    <div className="comm-body comm-body-call">
+      <div className="call-summary">
+        <span className="call-summary-duration">{comm.duration}</span>
+        <span className="call-summary-sep" aria-hidden="true">·</span>
+        <span className="call-summary-outcome">{comm.outcome}</span>
+      </div>
+      {comm.transcript?.length > 0 && (
+        <div className="call-transcript">
+          {comm.transcript.map((t, i) => (
+            <div key={i} className={`call-line call-line-${t.speaker}`}>
+              <span className="call-line-speaker">{t.speaker === 'agent' ? 'Teambridge' : comm.contact}</span>
+              <span className="call-line-time">{t.time}</span>
+              <p className="call-line-text">{t.text}</p>
+            </div>
+          ))}
+        </div>
+      )}
+      {comm.summary && <p className="call-summary-note">{comm.summary}</p>}
+    </div>
+  )
+}
+
+function EmailBody({ comm }) {
+  return (
+    <div className="comm-body comm-body-email">
+      <div className="email-meta">
+        <span className="email-meta-label">To</span>
+        <span className="email-meta-value">{comm.to}</span>
+      </div>
+      <div className="email-subject">{comm.subject}</div>
+      <pre className="email-body-text">{comm.body}</pre>
+    </div>
+  )
+}
+
+function Communication({ comm }) {
+  const meta = COMM_TYPE_META[comm.type] ?? COMM_TYPE_META.sms
+  const { Icon, label } = meta
+
+  return (
+    <div className={`comm comm-${comm.type}`}>
+      <div className="comm-head">
+        <span className={`comm-icon comm-icon-${comm.type}`} aria-hidden="true">
+          <Icon size={14} />
+        </span>
+        <span className="comm-type">{label}</span>
+        <span className="comm-dot" aria-hidden="true">·</span>
+        <span className="comm-contact">{comm.contact}</span>
+        {comm.phone && (
+          <>
+            <span className="comm-dot" aria-hidden="true">·</span>
+            <span className="comm-phone">{comm.phone}</span>
+          </>
+        )}
+        {comm.status && (
+          <span className={`comm-status comm-status-${comm.status}`}>{comm.status.replace(/-/g, ' ')}</span>
+        )}
+      </div>
+      {comm.note && <p className="comm-note">{comm.note}</p>}
+
+      {comm.type === 'sms'   && <SmsThread comm={comm} />}
+      {comm.type === 'call'  && <CallBody  comm={comm} />}
+      {comm.type === 'email' && <EmailBody comm={comm} />}
+    </div>
+  )
+}
+
+/* ─── Detail panel — reasoning timelines ─────────────────────────────────── */
+
+function StaticTimeline({ items }) {
+  return (
+    <ol className="detail-timeline">
+      {items.map((it, i) => (
+        <li key={i} className="detail-timeline-item">
+          <span className="detail-timeline-icon" aria-hidden="true">
+            <CheckIcon size={12} />
+          </span>
+          <div className="detail-timeline-body">
+            <div className="detail-timeline-head">
+              <span className="detail-timeline-title">{it.title}</span>
+              <span className="detail-timeline-time">{it.time}</span>
+            </div>
+            {it.detail && <p className="detail-timeline-detail">{it.detail}</p>}
+          </div>
+        </li>
+      ))}
+    </ol>
+  )
+}
+
+/* Animated playback for the Marcus active card — wraps the existing StepItem
+   pipeline used by the old DrillInPanel, so we keep the wow-moment cadence. */
+function AnimatedSteps({ steps, onResolved }) {
+  const [activeIdx, setActiveIdx]  = useState(0)
+  const [resolved, setResolved]    = useState(false)
   const timersRef = useRef([])
 
   const winnerName = useMemo(() => {
@@ -483,6 +499,11 @@ function DrillInPanel({ data, onExplore, onBack }) {
   }, [steps])
 
   useEffect(() => {
+    setActiveIdx(0)
+    setResolved(false)
+    timersRef.current.forEach(clearTimeout)
+    timersRef.current = []
+
     let cumulative = 0
     steps.forEach((step, i) => {
       cumulative += step.delay ?? 2000
@@ -490,44 +511,92 @@ function DrillInPanel({ data, onExplore, onBack }) {
       timersRef.current.push(setTimeout(() => setActiveIdx(i), cumulative))
     })
     const resolvedAt = cumulative + 800
-    timersRef.current.push(setTimeout(() => setResolved(true),  resolvedAt))
-    timersRef.current.push(setTimeout(() => setShowKicker(true), resolvedAt + 600))
+    timersRef.current.push(setTimeout(() => { setResolved(true); onResolved?.() }, resolvedAt))
 
     return () => { timersRef.current.forEach(clearTimeout); timersRef.current = [] }
-  }, [steps])
-
-  const headerCard = resolved
-    ? { ...data.activeCard, ...data.drillIn.resolution, status: 'resolved' }
-    : data.activeCard
+  }, [steps, onResolved])
 
   return (
-    <section className="drill-in">
-      <button type="button" className="drill-back" onClick={onBack}>
-        <ChevronLeftIcon size={16} />
-        <span>Back to overview</span>
-      </button>
+    <ol className="step-list" aria-live="polite">
+      {steps.map((step, i) => {
+        let state = 'pending'
+        if (i < activeIdx) state = 'done'
+        else if (i === activeIdx && !resolved) state = 'active'
+        else if (i === activeIdx && resolved)  state = 'done'
+        else if (i < steps.length && resolved) state = 'done'
+        return (
+          <li key={step.id}>
+            <StepItem step={step} state={state} winnerName={i < activeIdx ? winnerName : ''} />
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
 
-      <ActivityCard card={headerCard} emphasis={resolved ? 'normal' : 'active'} />
+/* ─── Detail panel ───────────────────────────────────────────────────────── */
 
-      <ol className="step-list" aria-live="polite">
-        {steps.map((step, i) => {
-          let state = 'pending'
-          if (i < activeIdx) state = 'done'
-          else if (i === activeIdx && !resolved) state = 'active'
-          else if (i === activeIdx && resolved)  state = 'done'
-          else if (i < steps.length && resolved) state = 'done'
-          return (
-            <li key={step.id}>
-              <StepItem step={step} state={state} winnerName={i < activeIdx ? winnerName : ''} />
-            </li>
-          )
-        })}
-      </ol>
+function CardDetailPanel({ card, detail, onClose, onExplore }) {
+  const agent = card.agentId ? getAgent(card.agentId) : null
+  const [animationDone, setAnimationDone] = useState(false)
 
-      {showKicker && (
-        <div className="kicker">
-          <p className="kicker-text">{data.drillIn.kicker}</p>
-          <div className="kicker-actions">
+  return (
+    <aside className="detail-panel" aria-label="Card detail">
+      <header className="detail-panel-head">
+        {agent && <AgentHeader agent={agent} task={card.agentTask} size={36} />}
+        <button type="button" className="detail-panel-close" onClick={onClose} aria-label="Close detail">
+          <XIcon size={16} />
+        </button>
+      </header>
+
+      <div className="detail-panel-body">
+        <div className="detail-panel-summary">
+          <h2 className="detail-panel-title">{card.title}</h2>
+          {card.description && <p className="detail-panel-desc">{card.description}</p>}
+          {card.summary && <p className="detail-panel-desc">{card.summary}</p>}
+        </div>
+
+        <section className="detail-section">
+          <h3 className="detail-section-title">Reasoning</h3>
+          {detail.mode === 'animated' ? (
+            <AnimatedSteps steps={detail.steps} onResolved={() => setAnimationDone(true)} />
+          ) : (
+            <StaticTimeline items={detail.timeline} />
+          )}
+        </section>
+
+        {detail.communications?.length > 0 && (
+          <section className="detail-section">
+            <h3 className="detail-section-title">Communications</h3>
+            <div className="comm-list">
+              {detail.communications.map((comm, i) => <Communication key={i} comm={comm} />)}
+            </div>
+          </section>
+        )}
+
+        {detail.outcome && (
+          <section className="detail-section">
+            <h3 className="detail-section-title">Outcome</h3>
+            <div className="detail-outcome">
+              <div className="detail-outcome-title">{detail.outcome.title}</div>
+              {detail.outcome.description && <p className="detail-outcome-desc">{detail.outcome.description}</p>}
+              {detail.outcome.metrics?.length > 0 && (
+                <div className="detail-outcome-metrics">
+                  {detail.outcome.metrics.map((m, i) => (
+                    <div key={i} className="detail-outcome-metric">
+                      <div className="detail-outcome-metric-value">{m.value}</div>
+                      <div className="detail-outcome-metric-label">{m.label}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {detail.mode === 'animated' && animationDone && detail.kicker && (
+          <div className="detail-kicker">
+            <p className="kicker-text">{detail.kicker}</p>
             <Button
               variant="primary"
               size="lg"
@@ -537,21 +606,97 @@ function DrillInPanel({ data, onExplore, onBack }) {
               Want to see what else Teambridge can do?
             </Button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
+    </aside>
+  )
+}
+
+/* ─── Overview (list view) ───────────────────────────────────────────────── */
+
+function Overview({ data, selectedCardId, onSelect }) {
+  return (
+    <div className="overview">
+      <MissionBriefing mission={data.mission} industryLabel={data.label} />
+      <NeedsZoneWithSelect cards={data.needsYou} selectedCardId={selectedCardId} onSelect={onSelect} />
+      <HandlingZoneWithSelect data={data} selectedCardId={selectedCardId} onSelect={onSelect} />
+    </div>
+  )
+}
+
+function HandlingZoneWithSelect({ data, selectedCardId, onSelect }) {
+  const isActiveSelected = selectedCardId === data.activeCard.id
+  return (
+    <section className="zone zone-handling">
+      <div className="zone-head">
+        <h2 className="zone-title">Teambridge is handling</h2>
+        <span className="zone-count">{1 + data.feed.length} active</span>
+      </div>
+      <p className="zone-sub">
+        Running automatically in the background. Open any card to see how it was resolved.
+      </p>
+
+      <div className="feed">
+        <ActivityCard
+          card={data.activeCard}
+          emphasis={isActiveSelected ? 'selected-active' : 'active'}
+          selected={isActiveSelected}
+          onClick={() => onSelect(data.activeCard.id)}
+        />
+        {data.feed.map(card => (
+          <ActivityCard
+            key={card.id}
+            card={card}
+            selected={selectedCardId === card.id}
+            onClick={() => onSelect(card.id)}
+          />
+        ))}
+      </div>
     </section>
   )
 }
 
-/* ─── Overview (default phase) ───────────────────────────────────────────── */
+function NeedsZoneWithSelect({ cards, selectedCardId, onSelect }) {
+  const [states, setStates] = useState(() =>
+    cards.reduce((acc, c) => { acc[c.id] = 'pending'; return acc }, {})
+  )
 
-function Overview({ data, onActivate }) {
+  const approve = id => {
+    setStates(prev => ({ ...prev, [id]: 'resolving' }))
+    setTimeout(() => {
+      setStates(prev => ({ ...prev, [id]: 'resolved' }))
+    }, 1400)
+  }
+
+  const reject = id => {
+    setStates(prev => ({ ...prev, [id]: 'resolved' }))
+  }
+
+  const remaining = cards.filter(c => states[c.id] !== 'resolved').length
+
   return (
-    <div className="overview">
-      <MissionBriefing mission={data.mission} industryLabel={data.label} />
-      <NeedsZone cards={data.needsYou} />
-      <HandlingZone data={data} onActivate={onActivate} />
-    </div>
+    <section className="zone zone-needs">
+      <div className="zone-head">
+        <h2 className="zone-title">Needs your attention</h2>
+        <span className="zone-count">{remaining} waiting</span>
+      </div>
+      <p className="zone-sub">
+        Teambridge has prepared recommendations. Click a card to review the full agent reasoning, or approve directly.
+      </p>
+      <div className="needs-list">
+        {cards.map(card => (
+          <NeedsCard
+            key={card.id}
+            card={card}
+            state={states[card.id]}
+            selected={selectedCardId === card.id}
+            onSelect={()   => onSelect(card.id)}
+            onApprove={()  => approve(card.id)}
+            onReject={()   => reject(card.id)}
+          />
+        ))}
+      </div>
+    </section>
   )
 }
 
@@ -559,7 +704,24 @@ function Overview({ data, onActivate }) {
 
 export default function Act1Dashboard({ industryId, onBack, onExplore }) {
   const data = useMemo(() => getIndustryData(industryId), [industryId])
-  const [phase, setPhase] = useState('overview')
+  const [selectedCardId, setSelectedCardId] = useState(null)
+
+  const selectedCard = useMemo(() => {
+    if (!selectedCardId) return null
+    if (data.activeCard.id === selectedCardId) return data.activeCard
+    const fromFeed  = data.feed.find(c => c.id === selectedCardId)
+    if (fromFeed) return fromFeed
+    const fromNeeds = data.needsYou.find(c => c.id === selectedCardId)
+    if (fromNeeds) return fromNeeds
+    return null
+  }, [selectedCardId, data])
+
+  const detail = useMemo(
+    () => selectedCard ? getCardDetail(selectedCard, data) : null,
+    [selectedCard, data],
+  )
+
+  const hasSelection = !!selectedCard
 
   return (
     <div className="act1-root">
@@ -570,14 +732,20 @@ export default function Act1Dashboard({ industryId, onBack, onExplore }) {
       />
 
       <main className="act1-main">
-        <div className="act1-content">
-          {phase === 'overview' ? (
-            <Overview data={data} onActivate={() => setPhase('drill-in')} />
-          ) : (
-            <DrillInPanel
+        <div className={`act1-content ${hasSelection ? 'act1-content-split' : ''}`}>
+          <div className="act1-list">
+            <Overview
               data={data}
+              selectedCardId={selectedCardId}
+              onSelect={setSelectedCardId}
+            />
+          </div>
+          {hasSelection && detail && (
+            <CardDetailPanel
+              card={selectedCard}
+              detail={detail}
+              onClose={() => setSelectedCardId(null)}
               onExplore={onExplore}
-              onBack={() => setPhase('overview')}
             />
           )}
         </div>
