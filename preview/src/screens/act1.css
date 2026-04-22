@@ -4,10 +4,10 @@
 .act1-root {
   min-height: 100vh;
   display: grid;
-  /* Left nav · chat · activity feed (wide enough to fit the 560 px drawer
-     cleanly when it overlays the feed). Feed content is capped to ~420 px
-     via an inner wrapper so the column feels the size the user asked for. */
-  grid-template-columns: 240px 1fr 580px;
+  /* Left nav · chat · activity feed. Right column matches the drawer width
+     so the drawer lands cleanly over the feed when it opens. Feed content
+     is capped via an inner max-width for a tighter reading column. */
+  grid-template-columns: 240px 1fr 460px;
   background: var(--color-bg-secondary);
   font-family: var(--font-sans);
   color: var(--color-content-primary);
@@ -1745,13 +1745,13 @@ button.activity-card:hover:not(.activity-card-selected),
   top: 0;
   right: 0;
   bottom: 0;
-  width: min(560px, 100vw);
-  background: var(--color-bg-primary);
+  width: min(440px, 100vw);
+  background: var(--color-bg-secondary);
   border-left: 1px solid var(--color-border-opaque);
   display: flex;
   flex-direction: column;
   z-index: 30;
-  box-shadow: -20px 0 48px -16px color-mix(in srgb, var(--color-content-primary) 14%, transparent);
+  box-shadow: -16px 0 40px -16px color-mix(in srgb, var(--color-content-primary) 12%, transparent);
   animation: detail-panel-in 220ms cubic-bezier(0.2, 0, 0, 1) both;
 }
 
@@ -1787,43 +1787,43 @@ button.activity-card:hover:not(.activity-card-selected),
   border-bottom-color: var(--color-content-primary);
 }
 
-/* Record fields (Details tab) */
+/* Record fields (Details tab) — tighter, smaller */
 .record-fields {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: var(--space-4) 0 var(--space-2);
+  gap: 0;
+  padding: var(--space-3) 0 var(--space-2);
 }
 .record-field {
   display: grid;
-  grid-template-columns: 140px 1fr;
+  grid-template-columns: 120px 1fr;
   gap: var(--space-3);
-  padding: var(--space-2) 0;
+  padding: 6px 0;
   border-bottom: 1px solid var(--color-border-opaque);
   align-items: center;
-  min-height: 36px;
+  min-height: 28px;
 }
 .record-field:last-child { border-bottom: none; }
 .record-field-label {
-  font-size: var(--text-xs);
+  font-size: 10px;
   color: var(--color-content-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   font-weight: var(--font-weight-medium);
 }
 .record-field-value {
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
   color: var(--color-content-primary);
   line-height: var(--line-height-normal);
 }
 .record-field-user {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 6px;
 }
 .record-field-user-avatar {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: var(--color-bg-tertiary) center/cover no-repeat;
   flex-shrink: 0;
@@ -1982,16 +1982,16 @@ button.activity-card:hover:not(.activity-card-selected),
 }
 .activity-row {
   display: grid;
-  grid-template-columns: 24px 1fr auto;
-  column-gap: var(--space-3);
+  grid-template-columns: 20px 1fr auto;
+  column-gap: var(--space-2);
   align-items: center;
-  padding: var(--space-2) 0;
-  font-size: var(--text-sm);
+  padding: 6px 0;
+  font-size: var(--text-xs);
   line-height: var(--line-height-normal);
 }
 .activity-row-avatar {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: var(--color-bg-tertiary) center/cover no-repeat;
 }
@@ -2035,33 +2035,15 @@ button.activity-card:hover:not(.activity-card-selected),
   padding-bottom: var(--space-2);
 }
 
-/* Activity row accordion (for rows with inline comm) */
+/* Activity row (standard — same style for agent + human rows) */
 
 .activity-row-wrap {
   display: flex;
   flex-direction: column;
-  padding: var(--space-2) 0;
+  padding: 4px 0;
 }
 .activity-row-wrap + .activity-row-wrap { border-top: 1px solid var(--color-border-opaque); }
-
-/* Agent row — elevated, tinted bg + left accent in agent color */
-.activity-row-wrap-agent {
-  position: relative;
-  margin: var(--space-2) 0;
-  padding: var(--space-3) var(--space-3) var(--space-3) calc(var(--space-3) + 3px);
-  background: color-mix(in srgb, var(--agent-accent, var(--color-purple-bg-primary)) 5%, transparent);
-  border: 1px solid color-mix(in srgb, var(--agent-accent, var(--color-purple-bg-primary)) 18%, var(--color-border-opaque));
-  border-left: 3px solid var(--agent-accent, var(--color-purple-bg-primary));
-  border-radius: var(--radius-md);
-}
-.activity-row-wrap-agent + .activity-row-wrap { border-top: none; }
-.activity-row-wrap + .activity-row-wrap-agent { border-top: none; }
-
-.activity-row-wrap-agent-purple { --agent-accent: var(--color-purple-bg-primary); }
-.activity-row-wrap-agent-blue   { --agent-accent: var(--color-blue-bg-primary);   }
-.activity-row-wrap-agent-matcha { --agent-accent: var(--color-matcha-bg-primary); }
-.activity-row-wrap-agent-orange { --agent-accent: var(--color-orange-bg-primary); }
-.activity-row-wrap-agent-pink   { --agent-accent: var(--color-pink-bg-primary);   }
+.activity-row-wrap-agent-dim .activity-row-actor { color: var(--color-content-primary); }
 
 /* AI glyph + role label on agent rows */
 .activity-row-agent-glyph {
@@ -2181,20 +2163,44 @@ button.activity-card:hover:not(.activity-card-selected),
 
 /* Record header */
 .record-header {
-  padding: var(--space-5) var(--space-5) var(--space-3);
+  padding: var(--space-4) var(--space-4) var(--space-3);
   border-bottom: 1px solid var(--color-border-opaque);
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  background: var(--color-bg-secondary);
 }
 .record-header-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
-.record-header-type {
+
+/* Agent tag in the top-left of the drawer header */
+.record-header-agent {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 11px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-secondary);
+  letter-spacing: 0.01em;
+}
+.record-header-agent-avatar {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-bg-tertiary) center/cover no-repeat;
+  flex-shrink: 0;
+}
+.record-header-agent-role {
+  color: var(--color-content-tertiary);
+  font-weight: var(--font-weight-regular);
+}
+
+.record-header-type {
+  font-size: 10px;
   font-weight: var(--font-weight-medium);
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -2202,15 +2208,15 @@ button.activity-card:hover:not(.activity-card-selected),
 }
 .record-header-title {
   margin: 0;
-  font-size: var(--text-xl);
+  font-size: var(--text-base);
   font-weight: var(--font-weight-medium);
   color: var(--color-content-primary);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.005em;
   line-height: var(--line-height-snug);
 }
 .record-header-subtitle {
   margin: 0;
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
   color: var(--color-content-secondary);
   line-height: var(--line-height-normal);
 }
@@ -2247,10 +2253,11 @@ button.activity-card:hover:not(.activity-card-selected),
 .detail-panel-body {
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-5);
+  padding: var(--space-4);
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--space-4);
+  background: var(--color-bg-secondary);
 }
 
 .detail-panel-summary {
