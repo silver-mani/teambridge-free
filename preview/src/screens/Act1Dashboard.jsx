@@ -235,7 +235,7 @@ function SubjectHeader({ subject }) {
   )
 }
 
-function AgentFooter({ agent, task }) {
+function AgentFooter({ agent, task, rightNode }) {
   return (
     <div className="agent-footer">
       <AgentAvatar agent={agent} size={20} />
@@ -246,38 +246,18 @@ function AgentFooter({ agent, task }) {
           <span className="agent-footer-task">{task}</span>
         </>
       )}
+      {rightNode && <span className="agent-footer-right">{rightNode}</span>}
     </div>
   )
 }
 
 /* ─── Standardized card header row (eyebrow + right-aligned status) ──────── */
 
-function CardHeaderRow({ eyebrow, statusLabel, statusTag, timestamp, pulsing, actions }) {
+function CardHeaderRow({ eyebrow, timestamp }) {
   return (
     <div className="card-eyebrow-row">
-      <div className="card-eyebrow-left">
-        {eyebrow && <span className="card-eyebrow">{eyebrow}</span>}
-        {timestamp && actions && (
-          <>
-            <span className="card-dot" aria-hidden="true">·</span>
-            <span className="card-time">{timestamp}</span>
-          </>
-        )}
-      </div>
-      <div className="card-status-right">
-        {actions ?? (
-          <>
-            {statusLabel && <StatusTag status={statusTag} size="sm" dot={false}>{statusLabel}</StatusTag>}
-            {timestamp && (
-              <>
-                <span className="card-dot" aria-hidden="true">·</span>
-                <span className="card-time">{timestamp}</span>
-              </>
-            )}
-            {pulsing && <span className="activity-card-pulse" aria-hidden="true" />}
-          </>
-        )}
-      </div>
+      {eyebrow && <span className="card-eyebrow">{eyebrow}</span>}
+      {timestamp && <span className="card-time">{timestamp}</span>}
     </div>
   )
 }
@@ -290,17 +270,18 @@ function ActivityCard({ card, onClick, selected = false, dimmed = false }) {
   const interactive = typeof onClick === 'function'
   const pulsing = card.status === 'in-progress'
 
+  const statusNode = (
+    <>
+      {card.statusLabel && <StatusTag status={meta.tagStatus} size="sm" dot={false}>{card.statusLabel}</StatusTag>}
+      {pulsing && <span className="activity-card-pulse" aria-hidden="true" />}
+    </>
+  )
+
   const inner = card.subject ? (
     <>
-      <CardHeaderRow
-        eyebrow={card.eyebrow}
-        statusLabel={card.statusLabel}
-        statusTag={meta.tagStatus}
-        timestamp={card.timestamp}
-        pulsing={pulsing}
-      />
+      <CardHeaderRow eyebrow={card.eyebrow} timestamp={card.timestamp} />
       <SubjectHeader subject={card.subject} />
-      {agent && <AgentFooter agent={agent} task={card.agentTask} />}
+      {agent && <AgentFooter agent={agent} task={card.agentTask} rightNode={statusNode} />}
     </>
   ) : (
     <>
@@ -344,16 +325,17 @@ function NeedsCard({ card, state, selected = false, onSelect, onApprove, onRejec
   if (resolved) {
     return (
       <article className="needs-card needs-card-resolved">
-        <CardHeaderRow
-          eyebrow={card.eyebrow}
-          statusLabel="Resolved"
-          statusTag="success"
-          timestamp="Just now"
-        />
+        <CardHeaderRow eyebrow={card.eyebrow} timestamp="Just now" />
         {card.subject
           ? <SubjectHeader subject={card.subject} />
           : <h3 className="needs-card-title">{card.resolvedTitle}</h3>}
-        {agent && <AgentFooter agent={agent} task={card.agentTask} />}
+        {agent && (
+          <AgentFooter
+            agent={agent}
+            task={card.agentTask}
+            rightNode={<StatusTag status="success" size="sm" dot={false}>Resolved</StatusTag>}
+          />
+        )}
       </article>
     )
   }
@@ -361,7 +343,7 @@ function NeedsCard({ card, state, selected = false, onSelect, onApprove, onRejec
   const stopAndCall = (fn) => (e) => { e.stopPropagation(); fn?.() }
   const hasApproval = Boolean(card.reasoning || card.recommendation)
 
-  const actions = hasApproval
+  const rightNode = hasApproval
     ? (
       <div className="needs-card-actions-inline">
         <Button variant="secondary" size="sm" onClick={stopAndCall(onApprove)} disabled={resolving}>
@@ -372,6 +354,8 @@ function NeedsCard({ card, state, selected = false, onSelect, onApprove, onRejec
         </Button>
       </div>
     )
+    : card.statusLabel
+    ? <StatusTag status={STATUS_MAP[card.status]?.tagStatus ?? 'neutral'} size="sm" dot={false}>{card.statusLabel}</StatusTag>
     : null
 
   return (
@@ -386,19 +370,13 @@ function NeedsCard({ card, state, selected = false, onSelect, onApprove, onRejec
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect?.() }
       }}
     >
-      <CardHeaderRow
-        eyebrow={card.eyebrow}
-        statusLabel={hasApproval ? null : card.statusLabel}
-        statusTag={hasApproval ? 'warning' : (STATUS_MAP[card.status]?.tagStatus ?? 'neutral')}
-        timestamp={card.timestamp}
-        actions={actions}
-      />
+      <CardHeaderRow eyebrow={card.eyebrow} timestamp={card.timestamp} />
 
       {card.subject
         ? <SubjectHeader subject={card.subject} />
         : <h3 className="needs-card-title">{card.title}</h3>}
 
-      {agent && <AgentFooter agent={agent} task={card.agentTask} />}
+      {agent && <AgentFooter agent={agent} task={card.agentTask} rightNode={rightNode} />}
     </article>
   )
 }

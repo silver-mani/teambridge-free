@@ -628,21 +628,20 @@
   font-weight: var(--font-weight-regular);
 }
 
-/* ─── Card eyebrow + status row (standardized header) ────────────────────── */
+/* ─── Card eyebrow row (eyebrow left, time right) ────────────────────────── */
 
 .card-eyebrow-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  min-height: 28px;
+  min-height: 20px;
 }
 
-.card-eyebrow-left {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-width: 0;
+.card-time {
+  font-size: var(--text-xs);
+  color: var(--color-content-tertiary);
+  flex-shrink: 0;
 }
 
 .needs-card-actions-inline {
@@ -814,11 +813,12 @@
   color: var(--color-content-tertiary);
 }
 
-.agent-footer-status {
+.agent-footer-right {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
   margin-left: auto;
+  flex-shrink: 0;
 }
 
 /* Detail panel: subject in header + agent footer inside body */
