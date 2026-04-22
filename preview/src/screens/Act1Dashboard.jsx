@@ -1105,51 +1105,71 @@ Ready to email to the client ops channel?` },
   ],
   events: [
     { label: 'Fill the last open Saturday role',
-      answer: `One open role left for 49ers vs Rams Saturday: Gate 3 usher (6:30 PM report).
-
-Top matches:
-• Jordan K. — 4.9 guest rating, worked Gate 3 twice this month
-• Priya S. — 4.7 rating, 1.9 mi, under hours
-
-Recommend offering Jordan first. Want me to send it?` },
+      answer: {
+        segments: [
+          { type: 'text', text: "One role left for the 49ers vs Rams Saturday call: Gate 3 usher · 6:30 PM report. I ranked 2 strong candidates under hours:" },
+          { type: 'records', records: [
+            { name: 'Jordan K.', role: 'Usher · 4.9 rating',  avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&h=120&fit=crop&crop=faces&auto=format', meta: '1.2 mi · 28 hrs · Worked Gate 3 twice this month' },
+            { name: 'Priya S.',  role: 'Usher · 4.7 rating',  avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=120&h=120&fit=crop&crop=faces&auto=format', meta: '1.9 mi · 24 hrs · Clean attendance last 60 days' },
+          ]},
+          { type: 'cta', text: "Recommend offering Jordan first. Want me to send it?" },
+        ],
+      } },
     { label: 'Draft the pre-game crew briefing',
-      answer: `Draft briefing for 48 staff, Saturday 5:00 PM call:
-
-• Event: 49ers vs Rams · Sellout (68,500) · Kickoff 7:15 PM
-• Gates 1–6 open at 5:00 PM. Surge crew stays post-kickoff.
-• TABC badges visible at every beverage post. Alcohol cut-off 3rd quarter.
-• Weather: clear, 62°F at kickoff
-• Roster change: Rachel Williams in for Sandra Lee at East Entry
-
-Ready to dispatch via SMS + in-app push?` },
+      answer: {
+        segments: [
+          { type: 'text', text: "Draft briefing for 48 staff · Saturday 5:00 PM call:" },
+          { type: 'list', items: [
+            '**Event:** 49ers vs Rams · Sellout (68,500) · Kickoff 7:15 PM',
+            '**Gates:** 1–6 open at 5:00 PM · surge crew stays post-kickoff',
+            '**Alcohol:** TABC badges visible · cut-off 3rd quarter',
+            '**Weather:** clear · 62°F at kickoff',
+            '**Roster change:** Rachel Williams in for Sandra Lee at East Entry',
+          ]},
+          { type: 'cta', text: "Ready to dispatch via SMS + in-app push?" },
+        ],
+      } },
     { label: 'Coverage by gate for Saturday',
-      answer: `Coverage across the 6 gates:
-
-• Gate 1 (North): 8 of 8 ✓
-• Gate 2 (North): 8 of 8 ✓
-• Gate 3 (East):  7 of 8 — 1 open
-• Gate 4 (East):  8 of 8 ✓ (incl. Rachel for Sandra)
-• Gate 5 (South): 8 of 8 ✓
-• Gate 6 (South): 9 of 8 ✓ (surge +1)
-
-47 of 48 confirmed. One role pending.` },
+      answer: {
+        segments: [
+          { type: 'text', text: "47 of 48 confirmed · one role pending approval." },
+          { type: 'chart', title: 'Gate coverage · target 8 each', bars: [
+            { label: 'Gate 1 · North', value: 8, target: 8 },
+            { label: 'Gate 2 · North', value: 8, target: 8 },
+            { label: 'Gate 3 · East',  value: 7, target: 8, note: '1 open' },
+            { label: 'Gate 4 · East',  value: 8, target: 8, note: 'Rachel in for Sandra' },
+            { label: 'Gate 5 · South', value: 8, target: 8 },
+            { label: 'Gate 6 · South', value: 9, target: 8, note: 'surge +1' },
+          ]},
+          { type: 'cta', text: "Close the gap on Gate 3? I have two qualified candidates." },
+        ],
+      } },
     { label: 'Pre-brief for Harbor Theater opener',
-      answer: `Harbor Theater opens May 1. Readiness:
-
-• 18 of 24 staff pre-staged (within 5 mi)
-• 14 of 18 have TABC. 4 cert renewals in-flight (Tuesday session).
-• 6 slots still open. I have 9 more candidates in reach.
-
-Want me to ping the 9 now?` },
+      answer: {
+        segments: [
+          { type: 'text', text: "Harbor Theater opens May 1. Current readiness:" },
+          { type: 'metrics', items: [
+            { value: '18/24', label: 'Pre-staged' },
+            { value: '14/18', label: 'TABC certified' },
+            { value: '6',     label: 'Open slots' },
+            { value: '9',     label: 'In-reach candidates' },
+          ]},
+          { type: 'cta', text: "Want me to send interest pings to the 9 in-reach candidates now?" },
+        ],
+      } },
     { label: 'Summarise auto-approved swaps',
-      answer: `This week: 12 shift swaps auto-approved, 0 manager intervention.
-
-• 10 weekday shifts (usher, beverage)
-• 2 Saturday event shifts
-• Avg response time: 18 minutes
-• 0 overtime triggers, 0 one-sided-trade patterns
-
-Full audit log available in Agent Workflows.` },
+      answer: {
+        segments: [
+          { type: 'text', text: "This week across 4 venues: **12 shift swaps auto-approved, 0 manager intervention.**" },
+          { type: 'metrics', items: [
+            { value: '12',    label: 'Swaps processed' },
+            { value: '18 min', label: 'Avg response' },
+            { value: '0',     label: 'Overtime triggers' },
+            { value: '0',     label: 'Manager actions' },
+          ]},
+          { type: 'text', text: "Breakdown: 10 weekday shifts, 2 Saturday event shifts. No one-sided-trade patterns." },
+        ],
+      } },
   ],
   security: [
     { label: 'Approve the armed post swap',
@@ -1285,41 +1305,244 @@ Report available for client share?` },
   ],
 }
 
-function Message({ role, text }) {
+/* ─── Rich-answer rendering primitives ──────────────────────────────────── */
+
+function renderInlineBold(text) {
+  // Minimal **bold** handling for message segments.
+  const parts = text.split(/(\*\*[^*]+\*\*)/g)
+  return parts.map((p, i) => {
+    if (p.startsWith('**') && p.endsWith('**')) return <strong key={i}>{p.slice(2, -2)}</strong>
+    return <span key={i}>{p}</span>
+  })
+}
+
+function ThinkingDots() {
   return (
-    <div className={`prompt-msg prompt-msg-${role}`}>
-      {role === 'assistant' && (
-        <span className="prompt-msg-mark" aria-hidden="true">
-          <TeambridgeAIIcon size={12} />
-        </span>
-      )}
-      <div className="prompt-msg-text">{text}</div>
+    <span className="prompt-thinking" aria-label="Thinking">
+      <span className="prompt-thinking-dot" />
+      <span className="prompt-thinking-dot" />
+      <span className="prompt-thinking-dot" />
+    </span>
+  )
+}
+
+function RecordPromptCard({ record }) {
+  return (
+    <button type="button" className="prompt-record-card">
+      <span className="prompt-record-avatar" style={record.avatar ? { backgroundImage: `url(${record.avatar})` } : undefined} />
+      <span className="prompt-record-body">
+        <span className="prompt-record-name">{record.name}</span>
+        <span className="prompt-record-role">{record.role}</span>
+        <span className="prompt-record-meta">{record.meta}</span>
+      </span>
+      <span className="prompt-record-chev" aria-hidden="true">›</span>
+    </button>
+  )
+}
+
+function ChartBlock({ chart }) {
+  const max = Math.max(...chart.bars.map(b => Math.max(b.value, b.target)))
+  return (
+    <div className="prompt-chart">
+      {chart.title && <div className="prompt-chart-title">{chart.title}</div>}
+      <ul className="prompt-chart-bars">
+        {chart.bars.map((b, i) => {
+          const pct  = max > 0 ? (b.value / max) * 100 : 0
+          const full = b.value >= b.target
+          return (
+            <li key={i} className="prompt-chart-row">
+              <span className="prompt-chart-label">{b.label}</span>
+              <span className="prompt-chart-track">
+                <span
+                  className={`prompt-chart-fill ${full ? 'is-full' : 'is-short'}`}
+                  style={{ width: `${pct}%`, animationDelay: `${i * 60}ms` }}
+                />
+              </span>
+              <span className={`prompt-chart-value ${full ? 'is-full' : 'is-short'}`}>{b.value} / {b.target}{b.note ? ` · ${b.note}` : ''}</span>
+            </li>
+          )
+        })}
+      </ul>
     </div>
   )
 }
+
+function MetricsBlock({ items }) {
+  return (
+    <div className="prompt-metrics">
+      {items.map((m, i) => (
+        <div key={i} className="prompt-metric">
+          <div className="prompt-metric-value">{m.value}</div>
+          <div className="prompt-metric-label">{m.label}</div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function Segment({ seg, charsRevealed }) {
+  if (seg.type === 'text' || seg.type === 'cta') {
+    const text = seg.text.slice(0, charsRevealed)
+    const cls  = seg.type === 'cta' ? 'prompt-seg prompt-seg-cta' : 'prompt-seg prompt-seg-text'
+    return <div className={cls}>{renderInlineBold(text)}</div>
+  }
+  if (seg.type === 'list') {
+    return (
+      <ul className="prompt-seg prompt-seg-list">
+        {seg.items.map((item, i) => <li key={i}>{renderInlineBold(item)}</li>)}
+      </ul>
+    )
+  }
+  if (seg.type === 'records') {
+    return (
+      <div className="prompt-seg prompt-seg-records">
+        {seg.records.map((r, i) => <RecordPromptCard key={i} record={r} />)}
+      </div>
+    )
+  }
+  if (seg.type === 'chart')   return <ChartBlock chart={seg} />
+  if (seg.type === 'metrics') return <MetricsBlock items={seg.items} />
+  return null
+}
+
+function normalizeSegments(content) {
+  if (!content) return []
+  if (typeof content === 'string') return [{ type: 'text', text: content }]
+  if (Array.isArray(content.segments)) return content.segments
+  return []
+}
+
+function Message({ message }) {
+  if (message.role === 'user') {
+    return (
+      <div className="prompt-msg prompt-msg-user">
+        <div className="prompt-msg-text">{message.content}</div>
+      </div>
+    )
+  }
+
+  const segments   = normalizeSegments(message.content)
+  const isThinking = message.status === 'thinking'
+  const step       = message.step ?? 0
+  const chars      = message.chars ?? 0
+
+  return (
+    <div className="prompt-msg prompt-msg-assistant">
+      <span className="prompt-msg-mark" aria-hidden="true">
+        <TeambridgeAIIcon size={12} />
+      </span>
+      <div className="prompt-msg-body">
+        {isThinking && <ThinkingDots />}
+        {!isThinking && segments.slice(0, step + 1).map((seg, i) => {
+          const isCurrent = i === step && message.status === 'streaming'
+          const revealed  = isCurrent ? chars : Infinity
+          return <Segment key={i} seg={seg} charsRevealed={revealed} />
+        })}
+      </div>
+    </div>
+  )
+}
+
+/* ─── Prompt panel ──────────────────────────────────────────────────────── */
 
 function PromptPanel({ industryId }) {
   const suggestions = PROMPT_SUGGESTIONS[industryId] ?? PROMPT_SUGGESTIONS.events
   const [input, setInput]       = useState('')
   const [messages, setMessages] = useState([])
   const scrollRef = useRef(null)
+  const idRef     = useRef(0)
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
   }, [messages])
 
-  const mockAnswer = (text) => {
-    const match = suggestions.find(s => s.label.toLowerCase() === text.toLowerCase())
-    if (match) return match.answer
-    // Fallback for free-form input — a lightly personalised generic reply.
-    return `I'll look into that across your data. Give me a few seconds and I'll come back with a recommendation.`
+  const updateMsg = (id, patch) =>
+    setMessages(prev => prev.map(m => m.id === id ? { ...m, ...patch } : m))
+
+  // Drive the streaming state machine for any in-flight assistant message.
+  useEffect(() => {
+    const m = messages.find(x => x.role === 'assistant' && x.status !== 'done')
+    if (!m) return
+
+    if (m.status === 'thinking') {
+      if (!m.content) return          // waiting on async response
+      const t = setTimeout(() => updateMsg(m.id, { status: 'streaming', step: 0, chars: 0 }), 550)
+      return () => clearTimeout(t)
+    }
+
+    if (m.status === 'streaming') {
+      const segments = normalizeSegments(m.content)
+      const seg = segments[m.step]
+      if (!seg) {
+        updateMsg(m.id, { status: 'done' })
+        return
+      }
+      if (seg.type === 'text' || seg.type === 'cta') {
+        const full = seg.text
+        if (m.chars < full.length) {
+          const t = setTimeout(() => updateMsg(m.id, { chars: Math.min(full.length, m.chars + 6) }), 20)
+          return () => clearTimeout(t)
+        }
+        const t = setTimeout(() => updateMsg(m.id, { step: m.step + 1, chars: 0 }), 240)
+        return () => clearTimeout(t)
+      }
+      // Rich segment — pause briefly, then advance
+      const t = setTimeout(() => updateMsg(m.id, { step: m.step + 1, chars: 0 }), 420)
+      return () => clearTimeout(t)
+    }
+  }, [messages])
+
+  const submitCanned = (label, content) => {
+    setMessages(prev => [
+      ...prev,
+      { id: ++idRef.current, role: 'user', content: label, status: 'done' },
+      { id: ++idRef.current, role: 'assistant', content, status: 'thinking' },
+    ])
+  }
+
+  const submitFreeForm = async (text) => {
+    const userId      = ++idRef.current
+    const assistantId = ++idRef.current
+    const history     = [...messages].filter(m => m.role === 'user' || (m.role === 'assistant' && typeof m.content === 'string'))
+
+    setMessages(prev => [
+      ...prev,
+      { id: userId, role: 'user', content: text, status: 'done' },
+      { id: assistantId, role: 'assistant', content: null, status: 'thinking' },
+    ])
+
+    const apiMessages = [
+      ...history.map(m => ({ role: m.role, content: typeof m.content === 'string' ? m.content : '' })),
+      { role: 'user', content: text },
+    ]
+
+    let replyText = null
+    try {
+      const r = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ messages: apiMessages }),
+      })
+      if (r.ok) {
+        const data = await r.json()
+        replyText = typeof data?.text === 'string' && data.text.length > 0 ? data.text : null
+      }
+    } catch (_) { /* network error, fall through */ }
+
+    if (!replyText) {
+      replyText = "I'm offline from the live AI right now, but here's where I'd start: check the open role for Saturday, roster changes in the last hour, and any credentialing still in-flight. Set `ANTHROPIC_API_KEY` on the Vercel deploy to enable real answers here."
+    }
+
+    updateMsg(assistantId, { content: replyText })
   }
 
   const submit = (text) => {
     const t = (text ?? input).trim()
     if (!t) return
-    setMessages(prev => [...prev, { role: 'user', text: t }, { role: 'assistant', text: mockAnswer(t) }])
     setInput('')
+    const canned = suggestions.find(s => s.label.toLowerCase() === t.toLowerCase())
+    if (canned) return submitCanned(canned.label, canned.answer)
+    return submitFreeForm(t)
   }
 
   const clear = () => { setMessages([]); setInput('') }
@@ -1344,7 +1567,7 @@ function PromptPanel({ industryId }) {
 
       {hasChat && (
         <div className="prompt-messages" ref={scrollRef}>
-          {messages.map((m, i) => <Message key={i} role={m.role} text={m.text} />)}
+          {messages.map(m => <Message key={m.id} message={m} />)}
         </div>
       )}
 
