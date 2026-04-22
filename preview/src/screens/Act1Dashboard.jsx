@@ -623,17 +623,40 @@ const RECORD_TYPE_LABEL = {
   batch:  'Reminder batch',
 }
 
-function RecordField({ field }) {
+function UserChip({ user, onOpen }) {
+  return (
+    <button
+      type="button"
+      className="record-chip record-chip-user"
+      onClick={(e) => { e.stopPropagation(); onOpen(e.currentTarget, { ...user.popover, kind: 'user' }) }}
+    >
+      <span className="record-chip-avatar" style={user.avatar ? { backgroundImage: `url(${user.avatar})` } : undefined} />
+      <span className="record-chip-label">{user.name}</span>
+    </button>
+  )
+}
+
+function LinkChip({ link, onOpen }) {
+  return (
+    <button
+      type="button"
+      className="record-chip record-chip-link"
+      onClick={(e) => { e.stopPropagation(); onOpen(e.currentTarget, { ...link.popover, kind: 'link', recordType: link.recordType }) }}
+    >
+      <span className="record-chip-dot" aria-hidden="true" />
+      <span className="record-chip-label">{link.display}</span>
+    </button>
+  )
+}
+
+function RecordField({ field, onOpenPopover }) {
   const { label, value } = field
   let content
 
   if (value && typeof value === 'object' && value.kind === 'user') {
-    content = (
-      <span className="record-field-user">
-        <span className="record-field-user-avatar" style={value.avatar ? { backgroundImage: `url(${value.avatar})` } : undefined} />
-        <span>{value.name}</span>
-      </span>
-    )
+    content = <UserChip user={value} onOpen={onOpenPopover} />
+  } else if (value && typeof value === 'object' && value.kind === 'link') {
+    content = <LinkChip link={value} onOpen={onOpenPopover} />
   } else {
     content = <span>{value}</span>
   }
@@ -646,43 +669,120 @@ function RecordField({ field }) {
   )
 }
 
+function RecordPopover({ anchor, payload, onClose }) {
+  if (!anchor || !payload) return null
+  const rect = anchor.getBoundingClientRect()
+  const top  = Math.min(rect.bottom + 8, window.innerHeight - 280)
+  const left = Math.min(rect.left, window.innerWidth - 340)
+
+  return (
+    <>
+      <div className="record-popover-scrim" onClick={onClose} />
+      <div className="record-popover" style={{ top, left }} role="dialog">
+        <div className="record-popover-head">
+          <span className="record-popover-type">{payload.recordType ?? payload.kind ?? 'Record'}</span>
+          <button type="button" className="record-popover-close" onClick={onClose} aria-label="Close">
+            <XIcon size={14} />
+          </button>
+        </div>
+        <div className="record-popover-title">{payload.title}</div>
+        {payload.subtitle && <div className="record-popover-subtitle">{payload.subtitle}</div>}
+        {payload.status && (
+          <div style={{ marginTop: 'var(--space-2)' }}>
+            <StatusTag status={payload.status.tone ?? 'neutral'} size="sm" dot={false}>{payload.status.label}</StatusTag>
+          </div>
+        )}
+        {payload.fields?.length > 0 && (
+          <div className="record-popover-fields">
+            {payload.fields.map((f, i) => (
+              <div key={i} className="record-popover-field">
+                <span className="record-popover-field-label">{f.label}</span>
+                <span className="record-popover-field-value">{f.value}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="record-popover-actions">
+          <Button variant="tertiary" size="sm" disabled trailingArtwork={<ArrowNarrowRightIcon size={14} />}>
+            View {payload.recordType ?? 'record'}
+          </Button>
+        </div>
+      </div>
+    </>
+  )
+}
+
+/* Unified activity row — used for both agents and humans so they look identical. */
 function ActivityRow({ row }) {
-  const avatarStyle = row.avatar ? { backgroundImage: `url(${row.avatar})` } : undefined
   const initials = row.actor.split(' ').map(p => p[0]).join('').slice(0, 2)
+  const [open, setOpen] = useState(false)
+  const agent = row.kind === 'agent' && row.agentId ? getAgent(row.agentId) : null
 
   let avatarNode
-  if (row.isAgent) {
-    // Look up agent by first name; fall back to a neutral bubble.
-    const a = Object.values(AGENTS).find(x => x.name.toLowerCase() === row.actor.toLowerCase())
-              ?? { avatar: null }
+  if (agent) {
     avatarNode = (
       <span
-        className="activity-row-avatar activity-row-avatar-agent"
-        style={a.avatar ? { backgroundImage: `url(${a.avatar})` } : undefined}
+        className={`activity-row-avatar activity-row-avatar-agent agent-avatar-${agent.color}`}
+        style={{ backgroundImage: `url(${agent.avatar})` }}
       />
     )
   } else if (row.avatar) {
-    avatarNode = <span className="activity-row-avatar" style={avatarStyle} />
+    avatarNode = <span className="activity-row-avatar" style={{ backgroundImage: `url(${row.avatar})` }} />
   } else {
     avatarNode = <span className="activity-row-avatar activity-row-avatar-system">{initials}</span>
   }
 
+  const commMeta = row.comm ? (COMM_TYPE_META[row.comm.type] ?? COMM_TYPE_META.sms) : null
+  const commLabel = row.comm?.type === 'sms'
+    ? `${row.comm.messages?.length ?? 0} message${(row.comm.messages?.length ?? 0) === 1 ? '' : 's'}`
+    : row.comm?.type === 'email'
+    ? row.comm.subject
+    : row.comm?.type === 'call'
+    ? `${row.comm.duration ?? 'Call'} · ${row.comm.outcome ?? ''}`
+    : null
+
   return (
-    <li className="activity-row">
-      {avatarNode}
-      <span className="activity-row-text">
-        <span className="activity-row-actor">{row.actor}</span>{' '}{row.verb}
-      </span>
-      <span className="activity-row-time">{row.time}</span>
+    <li className="activity-row-wrap">
+      <div className="activity-row">
+        {avatarNode}
+        <span className="activity-row-text">
+          <span className="activity-row-actor">{row.actor}</span>{' '}{row.verb}
+        </span>
+        <span className="activity-row-time">{row.time}</span>
+      </div>
+      {row.comm && (
+        <div className="activity-row-comm">
+          <button
+            type="button"
+            className={`activity-row-comm-toggle ${open ? 'is-open' : ''}`}
+            onClick={() => setOpen(!open)}
+            aria-expanded={open}
+          >
+            <span className={`comm-icon comm-icon-${row.comm.type}`} aria-hidden="true">
+              <commMeta.Icon size={12} />
+            </span>
+            <span className="activity-row-comm-label">{commMeta.label}</span>
+            {commLabel && <span className="activity-row-comm-preview">· {commLabel}</span>}
+            <span className={`timeline-step-comm-chevron ${open ? 'is-open' : ''}`} aria-hidden="true">⌄</span>
+          </button>
+          {open && (
+            <div className="activity-row-comm-body">
+              {row.comm.type === 'sms'   && <SmsThread comm={row.comm} />}
+              {row.comm.type === 'call'  && <CallBody  comm={row.comm} />}
+              {row.comm.type === 'email' && <EmailBody comm={row.comm} />}
+            </div>
+          )}
+        </div>
+      )}
     </li>
   )
 }
 
-function DetailsTab({ record, fallback }) {
+function DetailsTab({ record, fallback, onOpenPopover }) {
   if (record?.fields?.length) {
     return (
       <div className="record-fields">
-        {record.fields.map((f, i) => <RecordField key={i} field={f} />)}
+        {record.fields.map((f, i) => <RecordField key={i} field={f} onOpenPopover={onOpenPopover} />)}
       </div>
     )
   }
@@ -693,55 +793,44 @@ function DetailsTab({ record, fallback }) {
   )
 }
 
-function ActivityTab({ detail, record, animated, onExplore, animationDone }) {
-  return (
-    <>
-      {detail?.timeline?.length > 0 && (
-        <section className="activity-ai-section">
-          <h3 className="activity-section-label">AI Agent Activity</h3>
-          <TimelineList items={detail.timeline} animated={animated} />
+function ActivityTab({ record, detail, onExplore }) {
+  // Prefer the unified record.activity (Events prototype); fall back to the
+  // old detail.timeline for industries that haven't been migrated yet.
+  const entries = record?.activity
+  if (entries?.length) {
+    return (
+      <ul className="activity-rows">
+        {entries.map((row, i) => <ActivityRow key={i} row={row} />)}
+      </ul>
+    )
+  }
 
-          {animated && animationDone && detail.kicker && (
-            <div className="detail-kicker">
-              <p className="kicker-text">{detail.kicker}</p>
-              <Button
-                variant="secondary"
-                size="lg"
-                trailingArtwork={<ArrowNarrowRightIcon size={18} />}
-                onClick={onExplore}
-              >
-                Want to see what else Teambridge can do?
-              </Button>
-            </div>
-          )}
-        </section>
-      )}
+  if (detail?.timeline?.length) {
+    return (
+      <>
+        <TimelineList items={detail.timeline} animated={detail.mode === 'animated'} />
+        {detail.mode === 'animated' && detail.kicker && (
+          <div className="detail-kicker">
+            <p className="kicker-text">{detail.kicker}</p>
+            <Button variant="secondary" size="lg" trailingArtwork={<ArrowNarrowRightIcon size={18} />} onClick={onExplore}>
+              Want to see what else Teambridge can do?
+            </Button>
+          </div>
+        )}
+      </>
+    )
+  }
 
-      {record?.activity?.length > 0 && (
-        <section>
-          <h3 className="activity-section-label">Record History</h3>
-          <ul className="activity-rows">
-            {record.activity
-              .filter(r => !r.isAgent)  /* AI rows shown in the AI section above */
-              .map((r, i) => <ActivityRow key={i} row={r} />)}
-          </ul>
-        </section>
-      )}
-    </>
-  )
+  return <p className="detail-panel-desc" style={{ padding: 'var(--space-3) 0' }}>No activity yet.</p>
 }
 
 function RecordDrawer({ card, detail, onClose, onExplore }) {
   const record   = card.record
-  const animated = detail?.mode === 'animated'
-  const [tab, setTab]                     = useState('details')
-  const [animationDone, setAnimationDone] = useState(!animated)
+  const [tab, setTab] = useState('details')
+  const [popover, setPopover] = useState(null)  // { anchor, payload } | null
 
-  useEffect(() => {
-    if (!animated || !detail?.timeline?.length) return
-    const t = setTimeout(() => setAnimationDone(true), detail.timeline.length * 1600 + 400)
-    return () => clearTimeout(t)
-  }, [animated, detail?.timeline?.length])
+  const openPopover  = (anchor, payload) => setPopover({ anchor, payload })
+  const closePopover = () => setPopover(null)
 
   const title    = record?.title    ?? card.title
   const subtitle = record?.subtitle ?? card.description ?? card.summary
@@ -784,10 +873,12 @@ function RecordDrawer({ card, detail, onClose, onExplore }) {
 
       <div className="detail-panel-body">
         {tab === 'details'
-          ? <DetailsTab record={record} fallback={card.description ?? card.summary} />
-          : <ActivityTab detail={detail} record={record} animated={animated} onExplore={onExplore} animationDone={animationDone} />
+          ? <DetailsTab record={record} fallback={card.description ?? card.summary} onOpenPopover={openPopover} />
+          : <ActivityTab record={record} detail={detail} onExplore={onExplore} />
         }
       </div>
+
+      {popover && <RecordPopover anchor={popover.anchor} payload={popover.payload} onClose={closePopover} />}
     </aside>
   )
 }
