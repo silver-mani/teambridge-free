@@ -554,6 +554,17 @@
   border-color: color-mix(in srgb, var(--ai-grad-mid) 60%, transparent);
   background: var(--color-bg-primary);
 }
+.progress-task-done .progress-task-mark {
+  background: var(--color-matcha-bg-primary);
+  border-color: var(--color-matcha-bg-primary);
+  color: #fff;
+}
+.progress-task-done .progress-task-label {
+  color: var(--color-content-secondary);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--color-content-tertiary) 60%, transparent);
+  text-decoration-thickness: 1px;
+}
 .progress-task-label { flex: 1; min-width: 0; color: var(--color-content-primary); }
 .progress-task-queued .progress-task-label { color: var(--color-content-secondary); }
 .progress-task-tag {
@@ -563,6 +574,16 @@
   letter-spacing: 0.05em;
   color: var(--ai-grad-mid);
   flex-shrink: 0;
+}
+
+/* Pill swaps to a green "Complete" tone when all tasks are done */
+.progress-status-pill.is-done {
+  background: color-mix(in srgb, var(--color-matcha-bg-primary) 16%, transparent);
+  color: var(--color-matcha-content-primary);
+}
+.progress-status-pill.is-done .progress-status-dot {
+  background: var(--color-matcha-bg-primary);
+  animation: none;
 }
 .progress-workflow-link {
   display: inline-flex;

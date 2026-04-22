@@ -1457,14 +1457,24 @@ function detectSpecialist(text) {
   return 'nova'
 }
 
-/* Progress bubble — declares the plan + a link to live tracking. We
-   intentionally don't simulate fast completion; the work happens in the
-   background and the operator can follow it in Agent Workflows. The first
-   task is marked "in progress" so it's clear the agent has started. */
+/* Progress bubble — agent is starting work. Tasks advance one at a time
+   with ~18s between transitions so it feels paced and real (not faked-fast).
+   When the last task lands, the pill flips to "Complete". */
+const PROGRESS_STEP_DURATION_MS = 18000
+
 function ProgressMessage({ message }) {
   const agent = message.agentId ? getAgent(message.agentId) : null
   const steps = message.steps ?? []
   const agentName = agent ? `${agent.name} (${agent.role})` : 'Teambridge AI'
+
+  const [activeIdx, setActiveIdx] = useState(0)
+  const allDone = activeIdx >= steps.length
+
+  useEffect(() => {
+    if (allDone) return
+    const t = setTimeout(() => setActiveIdx(i => i + 1), PROGRESS_STEP_DURATION_MS)
+    return () => clearTimeout(t)
+  }, [activeIdx, allDone])
 
   return (
     <div className="prompt-msg prompt-msg-assistant prompt-msg-progress">
@@ -1474,19 +1484,20 @@ function ProgressMessage({ message }) {
       </span>
       <div className="prompt-msg-body">
         <div className="progress-header">
-          <span className="progress-actor">{agentName} started</span>
-          <span className="progress-status-pill">
+          <span className="progress-actor">{agentName} {allDone ? 'wrapped up' : 'started'}</span>
+          <span className={`progress-status-pill ${allDone ? 'is-done' : ''}`}>
             <span className="progress-status-dot" aria-hidden="true" />
-            In progress
+            {allDone ? 'Complete' : 'In progress'}
           </span>
         </div>
         <ul className="progress-tasks">
           {steps.map((s, i) => {
-            const state = i === 0 ? 'active' : 'queued'
+            const state = i < activeIdx ? 'done' : i === activeIdx ? 'active' : 'queued'
             return (
               <li key={i} className={`progress-task progress-task-${state}`} style={{ animationDelay: `${i * 90}ms` }}>
                 <span className="progress-task-mark" aria-hidden="true">
-                  {state === 'active' ? <AILoader size="xs" variant="gradient" /> : null}
+                  {state === 'done'   && <CheckIcon size={11} />}
+                  {state === 'active' && <AILoader size="xs" variant="gradient" />}
                 </span>
                 <span className="progress-task-label">{s}</span>
                 {state === 'active' && <span className="progress-task-tag">Working on this</span>}
