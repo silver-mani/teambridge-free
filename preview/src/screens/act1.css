@@ -1858,11 +1858,7 @@ button.activity-card:hover:not(.activity-card-selected),
 }
 .activity-row-agent-role {
   color: var(--color-content-tertiary);
-  font-size: var(--text-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-weight: var(--font-weight-medium);
-  margin-right: 6px;
+  font-weight: var(--font-weight-regular);
 }
 .activity-row-verb { color: var(--color-content-secondary); }
 
