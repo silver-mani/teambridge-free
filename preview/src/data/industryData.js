@@ -667,3 +667,149 @@ INDUSTRY_DATA.events.needsYou = INDUSTRY_DATA.events.needsYou.map(card => {
   if (card.id === 'new-venue') return { ...card, eyebrow: 'New Venue Onboarding' }
   return card
 })
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Records — the thing each card is about.
+   When the operator clicks a card, the right drawer opens on this record and
+   shows its Details tab (fields) and Activity tab (AI work + record history).
+   ───────────────────────────────────────────────────────────────────────────── */
+
+const EVENTS_RECORDS = {
+  'upcoming-event': {
+    type: 'event',
+    title: '49ers vs Rams',
+    subtitle: 'Saturday Apr 26, 7:00 PM · Civic Arena',
+    status: { label: '98% staffed', tone: 'success' },
+    fields: [
+      { label: 'Venue',       value: 'Civic Arena · Section A–D, Gate 1–6' },
+      { label: 'Date',        value: 'Saturday, Apr 26, 2026' },
+      { label: 'Doors / Kickoff', value: '5:00 PM · 7:15 PM' },
+      { label: 'Expected attendance', value: '68,500 (sold out)' },
+      { label: 'Base roster',  value: '36 staff' },
+      { label: 'Surge',       value: '12 additional staff (approved)' },
+      { label: 'Coverage',    value: '98% · 1 role pending' },
+      { label: 'Client',      value: 'Civic Arena Operations' },
+    ],
+    activity: [
+      { actor: 'Teambridge AI', verb: 'flagged last-minute replacement for approval', time: '3 min ago', isAgent: true },
+      { actor: 'Sandra Lee', verb: 'cancelled her shift', time: '5 min ago', avatar: 'https://images.unsplash.com/photo-1489980557514-251d61e3eeb6?w=96&h=96&fit=crop&crop=faces&auto=format' },
+      { actor: 'Iris', verb: 'cleared Sarah M. for alcohol service', time: '45 min ago', isAgent: true },
+      { actor: 'Atlas', verb: 'staged surge plan (+12 staff)', time: '2 hrs ago', isAgent: true },
+      { actor: 'Civic Arena Ops', verb: 'confirmed final staffing plan', time: 'Wednesday', avatar: null },
+      { actor: 'Scheduling', verb: 'opened this event', time: 'Monday', avatar: null },
+    ],
+  },
+
+  'last-min-replacement': {
+    type: 'shift',
+    title: 'Usher Shift · Saturday 7pm',
+    subtitle: '49ers vs Rams · Civic Arena, East Entry',
+    status: { label: 'Awaiting approval', tone: 'warning' },
+    fields: [
+      { label: 'Event',        value: '49ers vs Rams' },
+      { label: 'Scheduled',    value: 'Sat Apr 26 · 7:00 PM – 7:00 AM CDT' },
+      { label: 'Report time',  value: '6:30 PM' },
+      { label: 'Location',     value: 'Civic Arena · East Entry' },
+      { label: 'Role',         value: 'Usher' },
+      { label: 'Rate',         value: '$28/hr + $4 night diff' },
+      { label: 'Assignee',     value: { kind: 'user', name: 'Rachel Williams', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=96&h=96&fit=crop&crop=faces&auto=format' } },
+      { label: 'Replacing',    value: { kind: 'user', name: 'Sandra Lee', avatar: 'https://images.unsplash.com/photo-1489980557514-251d61e3eeb6?w=96&h=96&fit=crop&crop=faces&auto=format' } },
+      { label: 'Published',    value: 'Yes' },
+    ],
+    activity: [
+      { actor: 'Teambridge AI', verb: 'awaiting your approval', time: 'Pending', isAgent: true },
+      { actor: 'Rachel Williams', verb: 'accepted the shift offer', time: '3 min ago', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=96&h=96&fit=crop&crop=faces&auto=format' },
+      { actor: 'Nova', verb: 'sent shift offer to Rachel Williams', time: '3 min ago', isAgent: true },
+      { actor: 'Sandra Lee', verb: 'cancelled her shift', time: '5 min ago', avatar: 'https://images.unsplash.com/photo-1489980557514-251d61e3eeb6?w=96&h=96&fit=crop&crop=faces&auto=format' },
+      { actor: 'Scheduling', verb: 'published this shift', time: 'Monday 9:15 am', avatar: null },
+    ],
+  },
+
+  'credential': {
+    type: 'user',
+    title: 'Sarah M.',
+    subtitle: 'New hire · Event staff',
+    status: { label: 'Cleared', tone: 'success' },
+    fields: [
+      { label: 'Role',             value: 'Event staff · Beverage service' },
+      { label: 'Home venue',       value: 'Civic Arena' },
+      { label: 'First shift',      value: 'Saturday Apr 26 · 49ers vs Rams' },
+      { label: 'Certifications',   value: 'Alcohol service (TABC) · Verified' },
+      { label: 'Hired',            value: 'Mar 12, 2026' },
+      { label: 'Distance to home venue', value: '3.4 mi' },
+    ],
+    activity: [
+      { actor: 'Iris', verb: 'cleared Sarah for first shift', time: '1 hr ago', isAgent: true },
+      { actor: 'Iris', verb: 'verified 4 documents with issuing authority', time: '1 hr 5 min ago', isAgent: true },
+      { actor: 'Sarah M.', verb: 'uploaded required documents', time: '1 hr 12 min ago', avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=96&h=96&fit=crop&crop=faces&auto=format' },
+      { actor: 'HR', verb: 'added Sarah to the roster', time: 'Mar 12, 2026', avatar: null },
+    ],
+  },
+
+  'new-venue': {
+    type: 'venue',
+    title: 'Harbor Theater',
+    subtitle: 'New venue · First event in 9 days',
+    status: { label: 'Awaiting approval', tone: 'warning' },
+    fields: [
+      { label: 'Address',           value: '120 Harbor Way · Downtown' },
+      { label: 'Capacity',          value: '1,800' },
+      { label: 'Contract',          value: '6-month, signed Apr 10' },
+      { label: 'First event',       value: 'May 1 · Opening Night Gala' },
+      { label: 'Staff needed',      value: '24 trained · 18 pre-staged' },
+      { label: 'Training required', value: 'Alcohol service (TABC)' },
+      { label: 'Client',            value: 'Harbor Theater Operations' },
+    ],
+    activity: [
+      { actor: 'Teambridge AI', verb: 'awaiting your approval', time: 'Pending', isAgent: true },
+      { actor: 'Sofia', verb: 'pre-staged 18 staff', time: '29 min ago', isAgent: true },
+      { actor: 'Harbor Theater', verb: 'signed the contract', time: 'Apr 10', avatar: null },
+    ],
+  },
+
+  'swaps': {
+    type: 'swap',
+    title: 'Shift Swap · Thursday usher',
+    subtitle: 'Jordan K. ↔ Ashley P.',
+    status: { label: 'Auto-approved', tone: 'success' },
+    fields: [
+      { label: 'Requester', value: { kind: 'user', name: 'Jordan K.', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=96&h=96&fit=crop&crop=faces&auto=format' } },
+      { label: 'Swapping with', value: { kind: 'user', name: 'Ashley P.', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=96&h=96&fit=crop&crop=faces&auto=format' } },
+      { label: 'Shift',  value: 'Thursday · Usher · Civic Arena concourse' },
+      { label: 'Overtime risk', value: 'None' },
+      { label: 'Outcome', value: 'Both notified, schedule locked' },
+    ],
+    activity: [
+      { actor: 'Nova', verb: 'auto-approved the swap', time: '11:49 AM', isAgent: true },
+      { actor: 'Ashley P.', verb: 'accepted the trade', time: '11:48 AM', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=96&h=96&fit=crop&crop=faces&auto=format' },
+      { actor: 'Jordan K.', verb: 'submitted swap request', time: '11:47 AM', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=96&h=96&fit=crop&crop=faces&auto=format' },
+    ],
+  },
+
+  'reminders': {
+    type: 'batch',
+    title: 'Saturday 5am Reminder Batch',
+    subtitle: 'Harbor Theater load-in',
+    status: { label: '4 of 6 confirmed', tone: 'info' },
+    fields: [
+      { label: 'Shift',     value: 'Saturday · 5:00 AM · Harbor Theater' },
+      { label: 'Reminded',  value: '6 staff' },
+      { label: 'Confirmed', value: '4' },
+      { label: 'Read',      value: '6' },
+      { label: 'Follow-up', value: '9pm auto-nudge for 2 unconfirmed' },
+    ],
+    activity: [
+      { actor: 'Sofia', verb: 'monitoring responses', time: '20 min ago', isAgent: true },
+      { actor: 'Sofia', verb: 'sent reminders to 6 staff', time: '34 min ago', isAgent: true },
+    ],
+  },
+}
+
+function applyRecord(card) {
+  const rec = EVENTS_RECORDS[card.id]
+  return rec ? { ...card, record: rec } : card
+}
+
+INDUSTRY_DATA.events.activeCard = applyRecord(INDUSTRY_DATA.events.activeCard)
+INDUSTRY_DATA.events.feed       = INDUSTRY_DATA.events.feed.map(applyRecord)
+INDUSTRY_DATA.events.needsYou   = INDUSTRY_DATA.events.needsYou.map(applyRecord)
