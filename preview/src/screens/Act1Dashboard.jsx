@@ -919,35 +919,45 @@ function RecordDrawer({ card, detail, onClose, onExplore }) {
 /* ─── Activity feed (right column) ───────────────────────────────────────── */
 
 function ActivityFeed({ data, selectedCardId, onSelect }) {
-  const total = (data.activeCard ? 1 : 0) + data.feed.length
+  const handlingCount = (data.activeCard ? 1 : 0) + data.feed.length
   return (
     <aside className="activity-feed" aria-label="Activity feed">
       <div className="activity-feed-inner">
-        <div className="zone-head">
-          <h2 className="zone-title">Teambridge is handling</h2>
-          <span className="zone-count">{total} active</span>
-        </div>
-        <p className="zone-sub">
-          Running automatically in the background. Open any card to see how it was resolved.
-        </p>
+        {data.needsYou?.length > 0 && (
+          <NeedsZoneWithSelect
+            cards={data.needsYou}
+            selectedCardId={selectedCardId}
+            onSelect={onSelect}
+          />
+        )}
 
-        <div className="feed">
-          {data.activeCard && (
-            <ActivityCard
-              card={data.activeCard}
-              selected={selectedCardId === data.activeCard.id}
-              onClick={() => onSelect(data.activeCard.id)}
-            />
-          )}
-          {data.feed.map(card => (
-            <ActivityCard
-              key={card.id}
-              card={card}
-              selected={selectedCardId === card.id}
-              onClick={() => onSelect(card.id)}
-            />
-          ))}
-        </div>
+        <section className="zone zone-handling">
+          <div className="zone-head">
+            <h2 className="zone-title">Teambridge is handling</h2>
+            <span className="zone-count">{handlingCount} active</span>
+          </div>
+          <p className="zone-sub">
+            Running automatically in the background. Open any card to see how it was resolved.
+          </p>
+
+          <div className="feed">
+            {data.activeCard && (
+              <ActivityCard
+                card={data.activeCard}
+                selected={selectedCardId === data.activeCard.id}
+                onClick={() => onSelect(data.activeCard.id)}
+              />
+            )}
+            {data.feed.map(card => (
+              <ActivityCard
+                key={card.id}
+                card={card}
+                selected={selectedCardId === card.id}
+                onClick={() => onSelect(card.id)}
+              />
+            ))}
+          </div>
+        </section>
       </div>
     </aside>
   )
@@ -1004,6 +1014,151 @@ function NeedsZoneWithSelect({ cards, selectedCardId, onSelect }) {
 /* Canned prompts + canned mock answers, keyed by industry. Clicking any
    suggestion submits the label as a user message and appends the mock
    response. Feels like a real prompt-driven AI. */
+/* Daily briefing content — the empty-state of the chat column for each
+   industry. A short narrative summary + 2-3 action chips that submit to
+   the normal chat pipeline (matching canned prompts get rich answers,
+   everything else routes through /api/chat). */
+const BRIEFING = {
+  events: {
+    time: '9:04 AM',
+    lines: [
+      "Good morning. Here's today's briefing:",
+      "",
+      "48 of 48 staff confirmed for Saturday — **49ers vs Rams** tracking at **98% coverage**.",
+      "⚠️ **Gate 3** still has 1 open usher role — 2 days until kickoff.",
+      "⚠️ **Sandra Lee** cancelled — Rachel Williams selected, awaiting your approval.",
+      "Iris cleared **Sarah M.** (alcohol service) — ready for Saturday.",
+      "",
+      "What would you like me to handle first?",
+    ],
+    actions: [
+      { label: 'Approve Rachel',   prompt: 'Approve the Rachel Williams replacement' },
+      { label: 'Fill Gate 3',      prompt: 'Fill the last open Saturday role' },
+      { label: 'Pre-brief staff',  prompt: 'Draft the pre-game crew briefing' },
+    ],
+  },
+  healthcare: {
+    time: '7:12 AM',
+    lines: [
+      "Good morning. Here's today's briefing:",
+      "",
+      "**ICU floor at 94% readiness.** 2 decisions waiting on you.",
+      "⚠️ **Keisha N.** PTO Saturday would thin ICU to 3 of 4 RNs.",
+      "⚠️ **Diana R.** cleared and waiting for a first-shift assignment.",
+      "",
+      "What would you like me to handle first?",
+    ],
+    actions: [
+      { label: 'Handle PTO',       prompt: 'Flag PTO that would thin coverage' },
+      { label: 'Fill weekend',     prompt: 'Fill my weekend ICU gaps' },
+      { label: 'Onboard Diana',    prompt: 'Onboard a new hire' },
+    ],
+  },
+  staffing: {
+    time: '8:30 AM',
+    lines: [
+      "Good morning. Here's today's briefing:",
+      "",
+      "**Fill rate 97%** across 6 clients this week.",
+      "⚠️ **Meridian Healthcare** posted a 3-RN order for the weekend — 96 hours.",
+      "⚠️ **David K.** rate-increase request is sitting on your desk.",
+      "",
+      "What would you like me to handle first?",
+    ],
+    actions: [
+      { label: 'Dispatch order',  prompt: 'Dispatch weekend order' },
+      { label: 'Rate review',     prompt: 'Review rate request' },
+      { label: 'Find contractors', prompt: 'Find contractors for a new client' },
+    ],
+  },
+  security: {
+    time: '6:45 AM',
+    lines: [
+      "Good morning. Here's today's briefing:",
+      "",
+      "**Every post manned overnight.** 2 items for you.",
+      "⚠️ **Armed post swap** (Rivera ↔ Chen) Thursday — safe to auto-approve.",
+      "⚠️ **Corporate Campus A** asked for +1 nightly patrol for 2 weeks.",
+      "",
+      "What would you like me to handle first?",
+    ],
+    actions: [
+      { label: 'Approve swap',     prompt: 'Approve the armed post swap' },
+      { label: 'Stage coverage',   prompt: 'Stage coverage for Corporate Campus A' },
+      { label: 'Overtime watch',   prompt: 'Show guards nearing overtime' },
+    ],
+  },
+  'light-industrial': {
+    time: '5:20 AM',
+    lines: [
+      "Good morning. Here's today's briefing:",
+      "",
+      "**Lines running at 96%.** 2 decisions waiting.",
+      "⚠️ **DC East** peak surge — 22% above forecast next 5 days.",
+      "⚠️ **5 forklift certs** expiring in 14 days.",
+      "",
+      "What would you like me to handle first?",
+    ],
+    actions: [
+      { label: 'Stage surge',      prompt: 'Add associates for peak volume' },
+      { label: 'Renew certs',      prompt: 'Renew forklift certs' },
+      { label: 'Overtime watch',   prompt: 'Show associates approaching overtime' },
+    ],
+  },
+  construction: {
+    time: '6:00 AM',
+    lines: [
+      "Good morning. Here's today's briefing:",
+      "",
+      "**4 sites on schedule.** 2 items for you.",
+      "⚠️ **Thursday** rain forecast — framing at 5th & Main would be unsafe.",
+      "⚠️ **4 OSHA 30** certs expiring in 21 days.",
+      "",
+      "What would you like me to handle first?",
+    ],
+    actions: [
+      { label: 'Swap for rain',    prompt: 'Swap crews for Thursday rain' },
+      { label: 'Renew OSHA',       prompt: 'Renew OSHA certs' },
+      { label: 'Morning plan',     prompt: 'Draft foreman\'s morning plan' },
+    ],
+  },
+}
+
+function DailyBriefing({ industryId, onAction }) {
+  const brief = BRIEFING[industryId] ?? BRIEFING.events
+  return (
+    <div className="briefing">
+      <header className="briefing-agent">
+        <span className="briefing-agent-status" aria-hidden="true" />
+        <div className="briefing-agent-text">
+          <div className="briefing-agent-name">Teambridge</div>
+          <div className="briefing-agent-role">Super Agent · Monitoring all</div>
+        </div>
+      </header>
+
+      <article className="briefing-message">
+        <div className="briefing-message-head">
+          <span className="briefing-message-sender">Teambridge</span>
+          <span className="briefing-message-time">{brief.time}</span>
+        </div>
+        <div className="briefing-message-body">
+          {brief.lines.map((line, i) => (
+            line === '' ? <div key={i} className="briefing-message-break" />
+                        : <p key={i} className="briefing-message-line">{renderInlineBold(line)}</p>
+          ))}
+        </div>
+        <div className="briefing-actions">
+          {brief.actions.map((a, i) => (
+            <button key={i} type="button" className="briefing-action" onClick={() => onAction(a.prompt)}>
+              {a.label}
+            </button>
+          ))}
+        </div>
+      </article>
+    </div>
+  )
+}
+
 const PROMPT_SUGGESTIONS = {
   healthcare: [
     { label: 'Fill my weekend ICU gaps',
@@ -1563,7 +1718,7 @@ function Message({ message, onApprove }) {
 
 /* ─── Prompt panel ──────────────────────────────────────────────────────── */
 
-function PromptPanel({ industryId, needsCards, selectedCardId, onSelect }) {
+function PromptPanel({ industryId }) {
   const suggestions = PROMPT_SUGGESTIONS[industryId] ?? PROMPT_SUGGESTIONS.events
   const [input, setInput]       = useState('')
   const [messages, setMessages] = useState([])
@@ -1691,31 +1846,21 @@ function PromptPanel({ industryId, needsCards, selectedCardId, onSelect }) {
   return (
     <section className="prompt-panel" aria-label="Ask Teambridge">
       <div className="prompt-panel-inner">
-        {!hasChat && <WelcomeHeader />}
-
-        {needsCards?.length > 0 && (
-          <div className="chat-pinned">
-            <NeedsZoneWithSelect
-              cards={needsCards}
-              selectedCardId={selectedCardId}
-              onSelect={onSelect}
-            />
-          </div>
-        )}
-
-        {hasChat && (
-          <div className="prompt-messages" ref={scrollRef}>
-            <button type="button" className="prompt-messages-clear" onClick={clear} title="Clear chat" aria-label="Clear chat">
-              <XIcon size={14} />
-            </button>
-            {messages.map(m => <Message key={m.id} message={m} onApprove={handleApprove} />)}
-          </div>
-        )}
+        {!hasChat
+          ? <DailyBriefing industryId={industryId} onAction={submit} />
+          : (
+            <div className="prompt-messages" ref={scrollRef}>
+              <button type="button" className="prompt-messages-clear" onClick={clear} title="Clear chat" aria-label="Clear chat">
+                <XIcon size={14} />
+              </button>
+              {messages.map(m => <Message key={m.id} message={m} onApprove={handleApprove} />)}
+            </div>
+          )}
 
         <div className="prompt-input">
           <textarea
             className="prompt-input-field"
-            placeholder="Ask anything, or type @ to add context"
+            placeholder="Ask Teambridge…"
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => {
@@ -1724,7 +1869,7 @@ function PromptPanel({ industryId, needsCards, selectedCardId, onSelect }) {
                 submit()
               }
             }}
-            rows={hasChat ? 2 : 3}
+            rows={hasChat ? 2 : 2}
           />
           <div className="prompt-input-footer">
             <button
@@ -1738,24 +1883,6 @@ function PromptPanel({ industryId, needsCards, selectedCardId, onSelect }) {
             </button>
           </div>
         </div>
-
-        {!hasChat && (
-          <div className="prompt-suggestions">
-            <h4 className="prompt-suggestions-title">Saved prompts</h4>
-            <ul className="prompt-suggestions-list">
-              {suggestions.map((s, i) => (
-                <li key={i}>
-                  <button type="button" className="prompt-suggestion" onClick={() => submit(s.label)}>
-                    <span className="prompt-suggestion-mark" aria-hidden="true">
-                      <TeambridgeAIIcon size={10} />
-                    </span>
-                    <span>{s.label}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
       </div>
     </section>
   )
@@ -1788,12 +1915,7 @@ export default function Act1Dashboard({ industryId, onBack, onExplore }) {
         onAsk={onExplore}
       />
 
-      <PromptPanel
-        industryId={industryId}
-        needsCards={data.needsYou}
-        selectedCardId={selectedCardId}
-        onSelect={setSelectedCardId}
-      />
+      <PromptPanel industryId={industryId} />
 
       <ActivityFeed
         data={data}
