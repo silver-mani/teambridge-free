@@ -2047,14 +2047,26 @@ button.activity-card:hover:not(.activity-card-selected),
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-3);
+  position: relative;
+}
+.activity-rows::before {
+  content: '';
+  position: absolute;
+  left: 9px;
+  top: 14px;
+  bottom: 14px;
+  width: 2px;
+  background: var(--color-border-opaque);
+  border-radius: 1px;
+  z-index: 0;
 }
 .activity-row {
   display: grid;
   grid-template-columns: 20px 1fr auto;
   column-gap: var(--space-2);
   align-items: center;
-  padding: 6px 0;
+  padding: 0;
   font-size: var(--text-xs);
   line-height: var(--line-height-normal);
 }
@@ -2063,6 +2075,9 @@ button.activity-card:hover:not(.activity-card-selected),
   height: 20px;
   border-radius: 50%;
   background: var(--color-bg-tertiary) center/cover no-repeat;
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 0 0 2px var(--color-bg-secondary);
 }
 .activity-row-avatar-agent {
   display: inline-flex;
@@ -2072,8 +2087,8 @@ button.activity-card:hover:not(.activity-card-selected),
   background-repeat: no-repeat;
   background-position: center;
   background-size: cover;
-  box-shadow: 0 0 0 1.5px var(--color-bg-primary),
-              0 0 0 2.5px color-mix(in srgb, var(--color-purple-bg-primary) 70%, transparent);
+  box-shadow: 0 0 0 2px var(--color-bg-secondary),
+              0 0 0 3.5px color-mix(in srgb, var(--color-purple-bg-primary) 70%, transparent);
 }
 .activity-row-avatar-system {
   background: var(--color-bg-tertiary);
@@ -2109,9 +2124,10 @@ button.activity-card:hover:not(.activity-card-selected),
 .activity-row-wrap {
   display: flex;
   flex-direction: column;
-  padding: 4px 0;
+  padding: 0;
+  position: relative;
+  z-index: 1;
 }
-.activity-row-wrap + .activity-row-wrap { border-top: 1px solid var(--color-border-opaque); }
 .activity-row-wrap-agent-dim .activity-row-actor { color: var(--color-content-primary); }
 
 /* AI glyph + role label on agent rows */
