@@ -156,72 +156,77 @@
   .drawer-open .act1-main { padding-right: var(--space-8); }
 }
 
-/* ─── Prompt panel (right-side, peek at Act 2) ───────────────────────────── */
+/* ─── Prompt panel (right-side, floating) ───────────────────────────────── */
 
 .prompt-panel {
   position: fixed;
   top: 0;
   right: 0;
   bottom: 0;
-  width: min(380px, 100vw);
-  background: var(--color-bg-primary);
-  border-left: 1px solid var(--color-border-opaque);
+  width: min(400px, 100vw);
+  background: transparent;          /* floats on the page bg, no solid panel */
+  border: none;
   display: flex;
   flex-direction: column;
-  padding: var(--space-5);
-  gap: var(--space-5);
+  padding: var(--space-8) var(--space-6);
+  gap: var(--space-4);
   z-index: 10;
   overflow-y: auto;
+  pointer-events: none;             /* let clicks fall through empty area */
 }
+.prompt-panel > * { pointer-events: auto; }
 
 @media (max-width: 1200px) {
   .prompt-panel { display: none; }
 }
 
-.prompt-panel-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
 .prompt-panel-title {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
   font-weight: var(--font-weight-medium);
-  color: var(--color-content-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-content-tertiary);
+  padding: 0 var(--space-2);
 }
 .prompt-panel-mark {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border-radius: var(--radius-full);
   background: linear-gradient(135deg, var(--ai-grad-start) 0%, var(--ai-grad-mid) 55%, var(--ai-grad-end) 100%);
   color: #fff;
 }
 
-/* Prompt input */
+/* Floating input card */
 
 .prompt-input {
   display: flex;
   flex-direction: column;
   background: var(--color-bg-primary);
-  border: 1px solid var(--color-border-opaque);
-  border-radius: var(--radius-lg);
+  border: 1px solid color-mix(in srgb, var(--color-content-primary) 5%, transparent);
+  border-radius: 20px;
   overflow: hidden;
   transition: border-color 140ms ease, box-shadow 140ms ease;
+  box-shadow:
+    0 14px 32px -12px color-mix(in srgb, var(--color-content-primary) 14%, transparent),
+    0 2px 6px -2px color-mix(in srgb, var(--color-content-primary) 6%, transparent);
 }
 .prompt-input:focus-within {
-  border-color: color-mix(in srgb, var(--ai-grad-mid) 55%, var(--color-border-opaque));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ai-grad-mid) 14%, transparent);
+  border-color: color-mix(in srgb, var(--ai-grad-mid) 45%, transparent);
+  box-shadow:
+    0 14px 32px -12px color-mix(in srgb, var(--color-content-primary) 18%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--ai-grad-mid) 14%, transparent);
 }
 .prompt-input-field {
   border: none;
   outline: none;
   resize: none;
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-4) var(--space-4) var(--space-2);
   font-family: inherit;
   font-size: var(--text-sm);
   line-height: var(--line-height-normal);
@@ -235,16 +240,14 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
-  border-top: 1px solid var(--color-border-opaque);
-  background: var(--color-bg-secondary);
+  padding: var(--space-2) var(--space-3);
 }
 .prompt-scope-chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 3px var(--space-2);
-  background: var(--color-bg-primary);
+  padding: 4px 10px;
+  background: transparent;
   border: 1px solid var(--color-border-opaque);
   border-radius: var(--radius-full);
   font-size: var(--text-xs);
@@ -265,60 +268,56 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: var(--radius-full);
   background: var(--color-content-primary);
   color: var(--color-content-inverse);
   border: none;
   cursor: pointer;
   opacity: 0.35;
+  transition: opacity 120ms ease, filter 120ms ease;
 }
 .prompt-submit:not(:disabled) { opacity: 1; }
 .prompt-submit:not(:disabled):hover { filter: brightness(1.1); }
 
-/* Suggested prompts */
+/* Suggested-prompt pills (like Claude.ai's chip row) */
 
-.prompt-suggestions { display: flex; flex-direction: column; gap: var(--space-2); }
-.prompt-suggestions-title {
-  margin: 0;
-  font-size: var(--text-xs);
-  font-weight: var(--font-weight-medium);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--color-content-tertiary);
-}
 .prompt-suggestions-list {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0 var(--space-1);
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 .prompt-suggestion {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  width: 100%;
-  padding: var(--space-2) var(--space-3);
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-button);
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-full);
   font-family: inherit;
-  font-size: var(--text-sm);
+  font-size: 12.5px;
   color: var(--color-content-primary);
   cursor: pointer;
   text-align: left;
-  transition: background-color 120ms ease;
+  white-space: nowrap;
+  transition: background-color 120ms ease, border-color 120ms ease;
+  box-shadow: 0 1px 2px -1px color-mix(in srgb, var(--color-content-primary) 6%, transparent);
 }
-.prompt-suggestion:hover { background: var(--color-bg-secondary); }
+.prompt-suggestion:hover {
+  background: var(--color-bg-primary);
+  border-color: color-mix(in srgb, var(--color-content-primary) 20%, var(--color-border-opaque));
+}
 .prompt-suggestion-mark {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--ai-grad-start) 0%, var(--ai-grad-mid) 55%, var(--ai-grad-end) 100%);
   color: #fff;

@@ -1037,46 +1037,46 @@ function NeedsZoneWithSelect({ cards, selectedCardId, onSelect }) {
 
 const PROMPT_SUGGESTIONS = {
   healthcare: [
-    'Fill my weekend ICU gaps',
-    'Onboard a new nurse in under 5 min',
-    'Show PTO that would thin coverage',
-    'Credential the next batch of hires',
-    'Draft a pre-shift safety briefing',
+    'Fill weekend gaps',
+    'Onboard new nurse',
+    'Flag PTO conflicts',
+    'Credential hires',
+    'Draft safety briefing',
   ],
   staffing: [
-    'Dispatch 3 RNs for Meridian next weekend',
-    'Approve David K.\'s rate increase',
-    'Find contractors for a high-margin order',
-    'Show clients with low fill rate',
-    'Draft weekly client summary',
+    'Dispatch weekend order',
+    'Review rate request',
+    'Find contractors',
+    'Low-fill-rate clients',
+    'Weekly client digest',
   ],
   events: [
-    'Fill the last open role for Saturday',
-    'Draft the pre-game crew briefing',
-    'Show coverage by gate for the 49ers game',
-    'Pre-brief staff for Harbor Theater opener',
-    'Summarise auto-approved swaps this week',
+    'Fill Saturday roles',
+    'Draft crew briefing',
+    'Coverage by gate',
+    'Pre-brief Harbor Theater',
+    'Auto-approved swaps',
   ],
   security: [
-    'Approve the armed post swap',
-    'Stage coverage for Corporate Campus A',
-    'Show guards nearing overtime',
-    'Verify next hire\'s guard license',
-    'Draft incident-response digest',
+    'Approve post swap',
+    'Stage extra coverage',
+    'Overtime watch',
+    'Verify guard license',
+    'Incident digest',
   ],
   'light-industrial': [
-    'Add 8 associates for peak volume at DC East',
-    'Renew 5 forklift certs Thursday',
-    'Show associates approaching overtime',
-    'Draft reminder for tomorrow\'s 5am shift',
-    'Summarise auto-approved swaps',
+    'Peak volume surge',
+    'Renew forklift certs',
+    'Overtime watch',
+    'Draft shift reminder',
+    'Auto-approved swaps',
   ],
   construction: [
-    'Swap crews for Thursday rain forecast',
-    'Renew OSHA 30 certs group',
-    'Show crew hours by site',
-    'Draft foreman\'s morning plan',
-    'Summarise week-over-week throughput',
+    'Swap crews for rain',
+    'Renew OSHA certs',
+    'Crew hours by site',
+    'Morning plan',
+    'Weekly throughput',
   ],
 }
 
@@ -1085,15 +1085,6 @@ function PromptPanel({ industryId }) {
 
   return (
     <aside className="prompt-panel" aria-label="Ask Teambridge">
-      <header className="prompt-panel-head">
-        <div className="prompt-panel-title">
-          <span className="prompt-panel-mark" aria-hidden="true">
-            <TeambridgeAIIcon size={14} />
-          </span>
-          <span>Ask Teambridge</span>
-        </div>
-      </header>
-
       <div className="prompt-input">
         <textarea
           className="prompt-input-field"
@@ -1112,21 +1103,18 @@ function PromptPanel({ industryId }) {
         </div>
       </div>
 
-      <div className="prompt-suggestions">
-        <h4 className="prompt-suggestions-title">Suggested prompts</h4>
-        <ul className="prompt-suggestions-list">
-          {suggestions.map((s, i) => (
-            <li key={i}>
-              <button type="button" className="prompt-suggestion">
-                <span className="prompt-suggestion-mark" aria-hidden="true">
-                  <TeambridgeAIIcon size={10} />
-                </span>
-                <span>{s}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
+      <ul className="prompt-suggestions-list">
+        {suggestions.map((s, i) => (
+          <li key={i}>
+            <button type="button" className="prompt-suggestion">
+              <span className="prompt-suggestion-mark" aria-hidden="true">
+                <TeambridgeAIIcon size={10} />
+              </span>
+              <span>{s}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
     </aside>
   )
 }
