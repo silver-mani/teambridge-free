@@ -252,19 +252,31 @@ function AgentFooter({ agent, task }) {
 
 /* ─── Standardized card header row (eyebrow + right-aligned status) ──────── */
 
-function CardHeaderRow({ eyebrow, statusLabel, statusTag, timestamp, pulsing }) {
+function CardHeaderRow({ eyebrow, statusLabel, statusTag, timestamp, pulsing, actions }) {
   return (
     <div className="card-eyebrow-row">
-      {eyebrow && <span className="card-eyebrow">{eyebrow}</span>}
-      <div className="card-status-right">
-        {statusLabel && <StatusTag status={statusTag} size="sm" dot={false}>{statusLabel}</StatusTag>}
-        {timestamp && (
+      <div className="card-eyebrow-left">
+        {eyebrow && <span className="card-eyebrow">{eyebrow}</span>}
+        {timestamp && actions && (
           <>
             <span className="card-dot" aria-hidden="true">·</span>
             <span className="card-time">{timestamp}</span>
           </>
         )}
-        {pulsing && <span className="activity-card-pulse" aria-hidden="true" />}
+      </div>
+      <div className="card-status-right">
+        {actions ?? (
+          <>
+            {statusLabel && <StatusTag status={statusTag} size="sm" dot={false}>{statusLabel}</StatusTag>}
+            {timestamp && (
+              <>
+                <span className="card-dot" aria-hidden="true">·</span>
+                <span className="card-time">{timestamp}</span>
+              </>
+            )}
+            {pulsing && <span className="activity-card-pulse" aria-hidden="true" />}
+          </>
+        )}
       </div>
     </div>
   )
@@ -347,6 +359,20 @@ function NeedsCard({ card, state, selected = false, onSelect, onApprove, onRejec
   }
 
   const stopAndCall = (fn) => (e) => { e.stopPropagation(); fn?.() }
+  const hasApproval = Boolean(card.reasoning || card.recommendation)
+
+  const actions = hasApproval
+    ? (
+      <div className="needs-card-actions-inline">
+        <Button variant="secondary" size="sm" onClick={stopAndCall(onApprove)} disabled={resolving}>
+          {resolving ? 'Resolving...' : 'Approve'}
+        </Button>
+        <Button variant="ghost" size="sm" onClick={stopAndCall(onReject)} disabled={resolving}>
+          Reject
+        </Button>
+      </div>
+    )
+    : null
 
   return (
     <article
@@ -362,9 +388,10 @@ function NeedsCard({ card, state, selected = false, onSelect, onApprove, onRejec
     >
       <CardHeaderRow
         eyebrow={card.eyebrow}
-        statusLabel="Awaiting approval"
-        statusTag="warning"
+        statusLabel={hasApproval ? null : card.statusLabel}
+        statusTag={hasApproval ? 'warning' : (STATUS_MAP[card.status]?.tagStatus ?? 'neutral')}
         timestamp={card.timestamp}
+        actions={actions}
       />
 
       {card.subject
@@ -372,15 +399,6 @@ function NeedsCard({ card, state, selected = false, onSelect, onApprove, onRejec
         : <h3 className="needs-card-title">{card.title}</h3>}
 
       {agent && <AgentFooter agent={agent} task={card.agentTask} />}
-
-      <div className="needs-card-actions">
-        <Button variant="secondary" size="sm" onClick={stopAndCall(onApprove)} disabled={resolving}>
-          {resolving ? 'Resolving...' : 'Approve'}
-        </Button>
-        <Button variant="ghost" size="sm" onClick={stopAndCall(onReject)} disabled={resolving}>
-          Reject
-        </Button>
-      </div>
     </article>
   )
 }
@@ -867,7 +885,7 @@ function ActivityTab({ record, detail, onExplore }) {
 
 function RecordDrawer({ card, detail, onClose, onExplore }) {
   const record   = card.record
-  const [tab, setTab] = useState('details')
+  const [tab, setTab] = useState('activity')
   const [popover, setPopover] = useState(null)  // { anchor, payload } | null
 
   const openPopover  = (anchor, payload) => setPopover({ anchor, payload })
@@ -937,22 +955,25 @@ function Overview({ data, selectedCardId, onSelect }) {
 }
 
 function HandlingZoneWithSelect({ data, selectedCardId, onSelect }) {
+  const total = (data.activeCard ? 1 : 0) + data.feed.length
   return (
     <section className="zone zone-handling">
       <div className="zone-head">
         <h2 className="zone-title">Teambridge is handling</h2>
-        <span className="zone-count">{1 + data.feed.length} active</span>
+        <span className="zone-count">{total} active</span>
       </div>
       <p className="zone-sub">
         Running automatically in the background. Open any card to see how it was resolved.
       </p>
 
       <div className="feed">
-        <ActivityCard
-          card={data.activeCard}
-          selected={selectedCardId === data.activeCard.id}
-          onClick={() => onSelect(data.activeCard.id)}
-        />
+        {data.activeCard && (
+          <ActivityCard
+            card={data.activeCard}
+            selected={selectedCardId === data.activeCard.id}
+            onClick={() => onSelect(data.activeCard.id)}
+          />
+        )}
         {data.feed.map(card => (
           <ActivityCard
             key={card.id}

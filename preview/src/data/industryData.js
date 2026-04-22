@@ -602,7 +602,9 @@ export function getIndustryData(id) {
    AI agent is the executor shown in a small footer on each card.
    ───────────────────────────────────────────────────────────────────────────── */
 
-INDUSTRY_DATA.events.activeCard = {
+// Build the upcoming-event card inline — it now lives in needsYou[1] instead
+// of as the active/hero card. BASE_URL covers GitHub Pages + Vercel paths.
+const UPCOMING_EVENT_CARD = {
   id: 'upcoming-event',
   status: 'monitoring',
   statusLabel: 'Coverage 98%',
@@ -617,7 +619,7 @@ INDUSTRY_DATA.events.activeCard = {
     primary: '49ers vs Rams',
     secondary: 'Saturday 7pm · Civic Arena · Sold out',
     metric: 'Coverage 98%',
-    image: 'https://images.unsplash.com/photo-1577223625816-7546f13df25d?w=220&h=220&fit=crop&auto=format',
+    image: `${import.meta.env.BASE_URL}events/49ers-rams.svg`,
     imageKind: 'rect',
   },
 }
@@ -661,12 +663,20 @@ INDUSTRY_DATA.events.feed = INDUSTRY_DATA.events.feed
     return card
   })
 
-// Add eyebrows to needs-your-attention cards
-INDUSTRY_DATA.events.needsYou = INDUSTRY_DATA.events.needsYou.map(card => {
-  if (card.id === 'last-min-replacement') return { ...card, eyebrow: 'Shift Replacement' }
-  if (card.id === 'new-venue') return { ...card, eyebrow: 'New Venue Onboarding' }
-  return card
-})
+// Events needsYou: Rachel replacement (1st), then the upcoming 49ers event
+// (2nd). Drop Harbor Theater / new-venue — too abstract for the anchor demo.
+// The 49ers card has no approve/reject — it's a monitoring card the operator
+// should be aware of, surfaced in the needs zone for visibility.
+INDUSTRY_DATA.events.needsYou = [
+  ...INDUSTRY_DATA.events.needsYou
+    .filter(c => c.id !== 'new-venue')
+    .map(c => c.id === 'last-min-replacement' ? { ...c, eyebrow: 'Shift Replacement' } : c),
+  UPCOMING_EVENT_CARD,
+]
+
+// No hero "active" card anymore — the Teambridge-is-handling zone just lists
+// the background feed items (swap, reminders, credential).
+INDUSTRY_DATA.events.activeCard = null
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Records — the thing each card is about.
@@ -960,6 +970,8 @@ function applyRecord(card) {
   return rec ? { ...card, record: rec } : card
 }
 
-INDUSTRY_DATA.events.activeCard = applyRecord(INDUSTRY_DATA.events.activeCard)
-INDUSTRY_DATA.events.feed       = INDUSTRY_DATA.events.feed.map(applyRecord)
-INDUSTRY_DATA.events.needsYou   = INDUSTRY_DATA.events.needsYou.map(applyRecord)
+if (INDUSTRY_DATA.events.activeCard) {
+  INDUSTRY_DATA.events.activeCard = applyRecord(INDUSTRY_DATA.events.activeCard)
+}
+INDUSTRY_DATA.events.feed     = INDUSTRY_DATA.events.feed.map(applyRecord)
+INDUSTRY_DATA.events.needsYou = INDUSTRY_DATA.events.needsYou.map(applyRecord)

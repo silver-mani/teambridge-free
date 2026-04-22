@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="San Francisco 49ers vs Los Angeles Rams">
+  <defs>
+    <clipPath id="leftTri"><polygon points="0,0 240,0 0,240"/></clipPath>
+    <clipPath id="rightTri"><polygon points="240,0 240,240 0,240"/></clipPath>
+  </defs>
+  <!-- 49ers red side -->
+  <rect width="240" height="240" fill="#AA0000" clip-path="url(#leftTri)"/>
+  <!-- Rams royal blue side -->
+  <rect width="240" height="240" fill="#003594" clip-path="url(#rightTri)"/>
+  <!-- Thin white diagonal seam -->
+  <line x1="240" y1="0" x2="0" y2="240" stroke="#ffffff" stroke-width="3"/>
+  <!-- SF mark -->
+  <g transform="translate(36 54)">
+    <ellipse cx="36" cy="28" rx="42" ry="26" fill="none" stroke="#B3995D" stroke-width="3"/>
+    <text x="36" y="38" text-anchor="middle" fill="#ffffff" font-family="'Arial Black',Arial,sans-serif" font-weight="900" font-size="34" letter-spacing="-1">SF</text>
+  </g>
+  <!-- LA mark -->
+  <g transform="translate(118 130)">
+    <text x="40" y="44" text-anchor="middle" fill="#FFD100" font-family="'Arial Black',Arial,sans-serif" font-weight="900" font-size="44" letter-spacing="-2">LA</text>
+  </g>
+</svg>
