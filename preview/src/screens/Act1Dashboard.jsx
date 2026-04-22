@@ -253,10 +253,13 @@ function AgentFooter({ agent, task, rightNode }) {
 
 /* ─── Standardized card header row (eyebrow + right-aligned status) ──────── */
 
-function CardHeaderRow({ eyebrow, timestamp }) {
+function CardHeaderRow({ eyebrow, statusBadge, timestamp }) {
   return (
     <div className="card-eyebrow-row">
-      {eyebrow && <span className="card-eyebrow">{eyebrow}</span>}
+      <div className="card-eyebrow-left">
+        {eyebrow && <span className="card-eyebrow">{eyebrow}</span>}
+        {statusBadge && <span className="card-eyebrow-status">{statusBadge}</span>}
+      </div>
       {timestamp && <span className="card-time">{timestamp}</span>}
     </div>
   )
@@ -270,18 +273,18 @@ function ActivityCard({ card, onClick, selected = false, dimmed = false }) {
   const interactive = typeof onClick === 'function'
   const pulsing = card.status === 'in-progress'
 
-  const statusNode = (
+  const statusBadge = card.statusLabel ? (
     <>
-      {card.statusLabel && <StatusTag status={meta.tagStatus} size="sm" dot={false}>{card.statusLabel}</StatusTag>}
+      <StatusTag status={meta.tagStatus} size="sm" dot={false}>{card.statusLabel}</StatusTag>
       {pulsing && <span className="activity-card-pulse" aria-hidden="true" />}
     </>
-  )
+  ) : null
 
   const inner = card.subject ? (
     <>
-      <CardHeaderRow eyebrow={card.eyebrow} timestamp={card.timestamp} />
+      <CardHeaderRow eyebrow={card.eyebrow} statusBadge={statusBadge} timestamp={card.timestamp} />
       <SubjectHeader subject={card.subject} />
-      {agent && <AgentFooter agent={agent} task={card.agentTask} rightNode={statusNode} />}
+      {agent && <AgentFooter agent={agent} task={card.agentTask} />}
     </>
   ) : (
     <>
@@ -325,17 +328,15 @@ function NeedsCard({ card, state, selected = false, onSelect, onApprove, onRejec
   if (resolved) {
     return (
       <article className="needs-card needs-card-resolved">
-        <CardHeaderRow eyebrow={card.eyebrow} timestamp="Just now" />
+        <CardHeaderRow
+          eyebrow={card.eyebrow}
+          statusBadge={<StatusTag status="success" size="sm" dot={false}>Resolved</StatusTag>}
+          timestamp="Just now"
+        />
         {card.subject
           ? <SubjectHeader subject={card.subject} />
           : <h3 className="needs-card-title">{card.resolvedTitle}</h3>}
-        {agent && (
-          <AgentFooter
-            agent={agent}
-            task={card.agentTask}
-            rightNode={<StatusTag status="success" size="sm" dot={false}>Resolved</StatusTag>}
-          />
-        )}
+        {agent && <AgentFooter agent={agent} task={card.agentTask} />}
       </article>
     )
   }
@@ -343,20 +344,22 @@ function NeedsCard({ card, state, selected = false, onSelect, onApprove, onRejec
   const stopAndCall = (fn) => (e) => { e.stopPropagation(); fn?.() }
   const hasApproval = Boolean(card.reasoning || card.recommendation)
 
-  const rightNode = hasApproval
-    ? (
-      <div className="needs-card-actions-inline">
-        <Button variant="secondary" size="sm" onClick={stopAndCall(onApprove)} disabled={resolving}>
-          {resolving ? 'Resolving...' : 'Approve'}
-        </Button>
-        <Button variant="ghost" size="sm" onClick={stopAndCall(onReject)} disabled={resolving}>
-          Reject
-        </Button>
-      </div>
-    )
+  const statusBadge = hasApproval
+    ? <StatusTag status="warning" size="sm" dot={false}>Awaiting approval</StatusTag>
     : card.statusLabel
     ? <StatusTag status={STATUS_MAP[card.status]?.tagStatus ?? 'neutral'} size="sm" dot={false}>{card.statusLabel}</StatusTag>
     : null
+
+  const actionsRight = hasApproval ? (
+    <div className="needs-card-actions-inline">
+      <Button variant="secondary" size="sm" onClick={stopAndCall(onApprove)} disabled={resolving}>
+        {resolving ? 'Resolving...' : 'Approve'}
+      </Button>
+      <Button variant="ghost" size="sm" onClick={stopAndCall(onReject)} disabled={resolving}>
+        Reject
+      </Button>
+    </div>
+  ) : null
 
   return (
     <article
@@ -370,13 +373,13 @@ function NeedsCard({ card, state, selected = false, onSelect, onApprove, onRejec
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect?.() }
       }}
     >
-      <CardHeaderRow eyebrow={card.eyebrow} timestamp={card.timestamp} />
+      <CardHeaderRow eyebrow={card.eyebrow} statusBadge={statusBadge} timestamp={card.timestamp} />
 
       {card.subject
         ? <SubjectHeader subject={card.subject} />
         : <h3 className="needs-card-title">{card.title}</h3>}
 
-      {agent && <AgentFooter agent={agent} task={card.agentTask} rightNode={rightNode} />}
+      {agent && <AgentFooter agent={agent} task={card.agentTask} rightNode={actionsRight} />}
     </article>
   )
 }
