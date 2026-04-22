@@ -454,16 +454,19 @@
   flex-shrink: 0;
 }
 
-/* Progress message — specialist / manual working on the task */
+/* Progress message — agent has been delegated; here's the plan */
 .prompt-msg-progress .prompt-msg-body {
+  background: var(--color-bg-tertiary);
+  gap: var(--space-3);
+}
+.prompt-msg-progress .prompt-msg-mark {
   background: var(--color-bg-tertiary);
 }
 .progress-header {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: var(--space-2);
-  margin-bottom: 2px;
 }
 .progress-actor {
   font-size: var(--text-xs);
@@ -476,8 +479,9 @@
   font-size: 11px;
   color: var(--color-content-tertiary);
   letter-spacing: 0.02em;
+  font-style: italic;
 }
-.progress-steps {
+.progress-plan {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -485,69 +489,48 @@
   flex-direction: column;
   gap: 6px;
 }
-.progress-step {
+.progress-plan-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-2);
   font-size: var(--text-sm);
   line-height: 1.4;
-  color: var(--color-content-tertiary);
+  color: var(--color-content-primary);
   opacity: 0;
-  animation: progress-step-in 280ms ease forwards;
+  animation: progress-plan-in 320ms ease forwards;
 }
-.progress-step-active,
-.progress-step-done { color: var(--color-content-primary); opacity: 1; animation: none; }
-.progress-step-pending { opacity: 0.35; animation: none; }
-@keyframes progress-step-in {
+@keyframes progress-plan-in {
   from { opacity: 0; transform: translateY(2px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.progress-step-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
+.progress-plan-dot {
+  margin-top: 7px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
+  background: var(--color-content-tertiary);
   flex-shrink: 0;
-  background: var(--color-bg-primary);
-  border: 1.5px solid var(--color-border-opaque);
-  color: var(--color-content-tertiary);
 }
-.progress-step-done .progress-step-mark {
-  background: var(--color-matcha-bg-primary);
-  border-color: var(--color-matcha-bg-primary);
-  color: #fff;
-}
-.progress-step-active .progress-step-mark {
-  background: var(--color-bg-primary);
-  border-color: color-mix(in srgb, var(--ai-grad-mid) 55%, transparent);
-}
-.progress-resolution {
+.progress-workflow-link {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  background: var(--color-matcha-bg-tertiary);
-  color: var(--color-matcha-content-primary);
-  border-radius: 10px;
-  font-size: var(--text-sm);
+  gap: 6px;
+  margin-top: var(--space-1);
+  padding: 6px 10px;
+  border-radius: var(--radius-full);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  font-size: var(--text-xs);
+  color: var(--color-content-primary);
+  text-decoration: none;
   font-weight: var(--font-weight-medium);
-  animation: progress-resolve-in 320ms ease both;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: background-color 120ms ease, border-color 120ms ease;
 }
-@keyframes progress-resolve-in {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* Progress avatar for specialist (uses agent GIF) */
-.prompt-msg-progress .prompt-msg-mark {
-  background: var(--color-bg-tertiary);
-}
-.prompt-msg-progress.is-manual .prompt-msg-mark {
-  background: var(--color-bg-tertiary);
-  color: var(--color-content-secondary);
+.progress-workflow-link:hover {
+  background: var(--color-bg-secondary);
+  border-color: color-mix(in srgb, var(--color-content-primary) 16%, var(--color-border-opaque));
 }
 
 /* Metrics */
