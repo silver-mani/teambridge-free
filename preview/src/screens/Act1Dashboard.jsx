@@ -741,11 +741,7 @@ function ActivityRow({ row }) {
     ? `${row.comm.duration ?? 'Call'} · ${row.comm.outcome ?? ''}`
     : null
 
-  const wrapClass = [
-    'activity-row-wrap',
-    isAgent && 'activity-row-wrap-agent',
-    isAgent && `activity-row-wrap-agent-${agent.color}`,
-  ].filter(Boolean).join(' ')
+  const wrapClass = ['activity-row-wrap', isAgent && 'activity-row-wrap-agent-dim'].filter(Boolean).join(' ')
 
   return (
     <li className={wrapClass}>
@@ -758,30 +754,6 @@ function ActivityRow({ row }) {
         </span>
         <span className="activity-row-time">{row.time}</span>
       </div>
-
-      {isAgent && row.workSteps?.length > 0 && (
-        <ul className="activity-work-steps">
-          {row.workSteps.map((s, i) => (
-            <li key={i} className="activity-work-step">
-              <span className="activity-work-step-check" aria-hidden="true">
-                <CheckIcon size={10} />
-              </span>
-              <span>{s}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {isAgent && row.metrics?.length > 0 && (
-        <div className="activity-metrics">
-          {row.metrics.map((m, i) => (
-            <span key={i} className="activity-metric">
-              <span className="activity-metric-value">{m.label}</span>
-              <span className="activity-metric-label">{m.sub}</span>
-            </span>
-          ))}
-        </div>
-      )}
 
       {row.comm && (
         <div className="activity-row-comm">
@@ -868,20 +840,29 @@ function RecordDrawer({ card, detail, onClose, onExplore }) {
   const title    = record?.title    ?? card.title
   const subtitle = record?.subtitle ?? card.description ?? card.summary
   const typeLabel = RECORD_TYPE_LABEL[record?.type] ?? 'Activity'
+  const agent    = card.agentId ? getAgent(card.agentId) : null
 
   return (
     <aside className="detail-panel" aria-label="Record detail">
       <header className="record-header">
         <div className="record-header-top">
-          <span className="record-header-type">{typeLabel}</span>
+          {agent ? (
+            <span className="record-header-agent">
+              <span className="record-header-agent-avatar" style={{ backgroundImage: `url(${agent.avatar})` }} />
+              <span>{agent.name}</span>
+              <span className="record-header-agent-role">· {agent.role}</span>
+            </span>
+          ) : (
+            <span className="record-header-type">{typeLabel}</span>
+          )}
           <button type="button" className="detail-panel-close" onClick={onClose} aria-label="Close">
-            <XIcon size={16} />
+            <XIcon size={14} />
           </button>
         </div>
         <h2 className="record-header-title">{title}</h2>
         {subtitle && <p className="record-header-subtitle">{subtitle}</p>}
         {record?.status && (
-          <div style={{ marginTop: 'var(--space-2)' }}>
+          <div style={{ marginTop: 'var(--space-1)' }}>
             <StatusTag status={record.status.tone ?? 'neutral'} size="sm" dot={false}>{record.status.label}</StatusTag>
           </div>
         )}
