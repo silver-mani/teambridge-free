@@ -137,32 +137,113 @@ function WelcomeHeader({ name = 'Alex' }) {
   )
 }
 
+/* ─── Subject header + agent footer (subject-first cards) ────────────────── */
+
+const SUBJECT_ICON_META = {
+  swap:  { color: 'blue',   glyph: '⇄' },
+  alert: { color: 'orange', glyph: '!' },
+  clock: { color: 'purple', glyph: '⏱' },
+  bell:  { color: 'matcha', glyph: '🔔' },
+}
+
+function SubjectImage({ subject, size = 56 }) {
+  const { kind, image, imageKind, icon, badge } = subject
+  const radius = kind === 'person' || imageKind === 'round' ? '50%' : 'var(--radius-md)'
+  const style = { width: size, height: size, borderRadius: radius }
+
+  if (image) {
+    return (
+      <span
+        className={`subject-image subject-image-${kind}`}
+        style={{ ...style, backgroundImage: `url(${image})` }}
+        role="img"
+        aria-label={subject.primary}
+      />
+    )
+  }
+
+  if (icon && SUBJECT_ICON_META[icon]) {
+    const { color, glyph } = SUBJECT_ICON_META[icon]
+    return (
+      <span
+        className={`subject-image subject-image-icon subject-image-icon-${color}`}
+        style={style}
+        aria-hidden="true"
+      >{glyph}</span>
+    )
+  }
+
+  if (badge) {
+    return (
+      <span
+        className={`subject-image subject-image-badge subject-image-badge-${badge.color || 'slate'}`}
+        style={style}
+        aria-hidden="true"
+      >{badge.text}</span>
+    )
+  }
+
+  return <span className="subject-image subject-image-empty" style={style} aria-hidden="true" />
+}
+
+function SubjectHeader({ subject }) {
+  return (
+    <div className="subject-header">
+      <SubjectImage subject={subject} />
+      <div className="subject-header-text">
+        <span className="subject-header-primary">{subject.primary}</span>
+        {subject.secondary && <span className="subject-header-secondary">{subject.secondary}</span>}
+        {subject.metric && <span className="subject-header-metric">{subject.metric}</span>}
+      </div>
+    </div>
+  )
+}
+
+function AgentFooter({ agent, task, statusNode }) {
+  return (
+    <div className="agent-footer">
+      <AgentAvatar agent={agent} size={20} />
+      <span className="agent-footer-role">{agent.role}</span>
+      {task && (
+        <>
+          <span className="agent-footer-sep" aria-hidden="true">·</span>
+          <span className="agent-footer-task">{task}</span>
+        </>
+      )}
+      {statusNode && <span className="agent-footer-status">{statusNode}</span>}
+    </div>
+  )
+}
+
 /* ─── Activity card (used in Zone 2 + drill-in) ──────────────────────────── */
 
 function ActivityCard({ card, emphasis = 'normal', onClick, selected = false, dimmed = false }) {
   const meta = STATUS_MAP[card.status] ?? STATUS_MAP.resolved
-  const { Icon, tagStatus } = meta
+  const { tagStatus } = meta
   const agent = card.agentId ? getAgent(card.agentId) : null
   const isActive    = emphasis === 'active' || emphasis === 'selected-active'
   const interactive = typeof onClick === 'function'
 
-  const inner = (
+  const statusNode = (
+    <>
+      <StatusTag status={tagStatus} size="sm" dot={false}>{card.statusLabel}</StatusTag>
+      <span className="activity-card-dot" aria-hidden="true">·</span>
+      <span className="activity-card-time">{card.timestamp}</span>
+      {isActive && <span className="activity-card-pulse" aria-hidden="true" />}
+    </>
+  )
+
+  const inner = card.subject ? (
+    <>
+      <SubjectHeader subject={card.subject} />
+      {agent && <AgentFooter agent={agent} task={card.agentTask} statusNode={statusNode} />}
+    </>
+  ) : (
     <>
       <div className="activity-card-head">
         {agent && <AgentHeader agent={agent} task={card.agentTask} />}
-        <div className="activity-card-status">
-          <span className={`activity-card-iconwrap activity-card-iconwrap-${meta.color}`} aria-hidden="true">
-            {card.status === 'in-progress'
-              ? <AILoader size="sm" variant="gradient" />
-              : <Icon size={14} />}
-          </span>
-          <StatusTag status={tagStatus} size="sm" dot={false}>{card.statusLabel}</StatusTag>
-          <span className="activity-card-dot" aria-hidden="true">·</span>
-          <span className="activity-card-time">{card.timestamp}</span>
-          {isActive && <span className="activity-card-pulse" aria-hidden="true" />}
-        </div>
+        <div className="activity-card-status">{statusNode}</div>
       </div>
-
       <div className="activity-card-body">
         <h3 className="activity-card-title">{card.title}</h3>
       </div>
@@ -213,6 +294,14 @@ function NeedsCard({ card, state, selected = false, onSelect, onApprove, onRejec
 
   const stopAndCall = (fn) => (e) => { e.stopPropagation(); fn?.() }
 
+  const statusNode = (
+    <>
+      <StatusTag status="warning" size="sm" dot={false}>Awaiting approval</StatusTag>
+      <span className="activity-card-dot" aria-hidden="true">·</span>
+      <span className="activity-card-time">{card.timestamp}</span>
+    </>
+  )
+
   return (
     <article
       className={`needs-card ${resolving ? 'needs-card-resolving' : ''} ${selected ? 'needs-card-selected' : ''}`}
@@ -225,16 +314,20 @@ function NeedsCard({ card, state, selected = false, onSelect, onApprove, onRejec
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect?.() }
       }}
     >
-      <div className="needs-card-head-row">
-        {agent && <AgentHeader agent={agent} task={card.agentTask} />}
-        <div className="needs-card-meta">
-          <StatusTag status="warning" size="sm" dot={false}>Needs approval</StatusTag>
-          <span className="activity-card-dot" aria-hidden="true">·</span>
-          <span className="activity-card-time">{card.timestamp}</span>
-        </div>
-      </div>
-
-      <h3 className="needs-card-title">{card.title}</h3>
+      {card.subject ? (
+        <>
+          <SubjectHeader subject={card.subject} />
+          {agent && <AgentFooter agent={agent} task={card.agentTask} statusNode={statusNode} />}
+        </>
+      ) : (
+        <>
+          <div className="needs-card-head-row">
+            {agent && <AgentHeader agent={agent} task={card.agentTask} />}
+            <div className="needs-card-meta">{statusNode}</div>
+          </div>
+          <h3 className="needs-card-title">{card.title}</h3>
+        </>
+      )}
 
       <div className="needs-card-actions">
         <Button variant="secondary" size="sm" onClick={stopAndCall(onApprove)} disabled={resolving}>
@@ -506,13 +599,18 @@ function CardDetailPanel({ card, detail, onClose, onExplore }) {
   return (
     <aside className="detail-panel" aria-label="Card detail">
       <header className="detail-panel-head">
-        {agent && <AgentHeader agent={agent} task={card.agentTask} size={36} />}
+        {card.subject
+          ? <SubjectHeader subject={card.subject} />
+          : (agent && <AgentHeader agent={agent} task={card.agentTask} size={36} />)}
         <button type="button" className="detail-panel-close" onClick={onClose} aria-label="Close detail">
           <XIcon size={16} />
         </button>
       </header>
 
       <div className="detail-panel-body">
+        {card.subject && agent && (
+          <AgentFooter agent={agent} task={card.agentTask} />
+        )}
         <div className="detail-panel-summary">
           <h2 className="detail-panel-title">{card.title}</h2>
           {card.description && <p className="detail-panel-desc">{card.description}</p>}

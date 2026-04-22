@@ -325,6 +325,12 @@ export const INDUSTRY_DATA = {
       agentTask: 'Event Certification',
       title: 'Event certification completed for new hire',
       description: 'Sarah M. cleared for alcohol service. First event Saturday.',
+      subject: {
+        kind: 'person',
+        primary: 'Sarah M.',
+        secondary: 'Alcohol service certified · First event Saturday',
+        image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=160&h=160&fit=crop&crop=faces&auto=format',
+      },
     },
     mission: {
       headline: 'Saturday is staffed. 2 surge decisions waiting.',
@@ -337,21 +343,28 @@ export const INDUSTRY_DATA = {
     },
     needsYou: [
       {
-        id: 'surge-request',
+        id: 'last-min-replacement',
         type: 'approval',
-        timestamp: '4 min ago',
-        agentId: 'atlas',
-        agentTask: 'Event Surge Planning',
-        title: 'Surge staffing for sold out show',
-        summary: 'Civic Arena confirmed sellout for Saturday. Ticket sales up 18%. Recommend adding 12 staff.',
+        timestamp: '3 min ago',
+        agentId: 'nova',
+        agentTask: 'Last Minute Replacement',
+        title: 'Rachel Williams selected to replace Sandra Lee',
+        summary: 'Sandra Lee cancelled her usher shift for 49ers vs Rams, Saturday 7pm. Rachel Williams matched, accepted. Awaiting your approval.',
         reasoning: [
-          'Historical: last 4 sellouts needed 10 to 14 extra staff for entry and concourse.',
-          'Weather clear, which increases walk up traffic.',
-          '22 staff available and under hours, all trained for this venue.',
+          'Rachel Williams is 1.7 mi from Civic Arena, worked 4 events this month with high guest rating.',
+          'Under weekly hours. No overtime risk.',
+          'Accepted in 3 minutes via SMS. Charge lead has been pre-notified.',
         ],
-        recommendation: 'Add 12 staff. Dispatch offers by seniority.',
-        resolvedTitle: 'Surge approved, 12 staff added for Saturday',
-        resolvedDescription: 'Offers sent. 12 confirmed within 40 minutes. Venue notified.',
+        recommendation: 'Confirm Rachel Williams for Saturday 7pm. Notify charge lead.',
+        resolvedTitle: 'Rachel Williams confirmed for Saturday 7pm',
+        resolvedDescription: 'Assignment locked. Rachel notified. Sandra\'s record updated.',
+        animated: true,
+        subject: {
+          kind: 'person',
+          primary: 'Rachel Williams',
+          secondary: 'Replacing Sandra Lee · 49ers vs Rams',
+          image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=160&h=160&fit=crop&crop=faces&auto=format',
+        },
       },
       {
         id: 'new-venue',
@@ -369,6 +382,13 @@ export const INDUSTRY_DATA = {
         recommendation: 'Accept venue. Pre stage 18 staff, schedule training Tuesday.',
         resolvedTitle: 'Harbor Theater onboarded',
         resolvedDescription: 'Staff pre staged. Training scheduled. First event ready.',
+        subject: {
+          kind: 'location',
+          primary: 'Harbor Theater',
+          secondary: 'First event in 9 days · Needs 24 trained staff',
+          metric: '18 pre-staged',
+          badge: { text: 'HT', color: 'purple' },
+        },
       },
     ],
   }),
@@ -575,3 +595,61 @@ export const INDUSTRY_DATA = {
 export function getIndustryData(id) {
   return INDUSTRY_DATA[id] ?? INDUSTRY_DATA.healthcare
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Events industry — subject-first card prototype.
+   Cards are about the thing you care about (an event, a person, a venue); the
+   AI agent is the executor shown in a small footer on each card.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+INDUSTRY_DATA.events.activeCard = {
+  id: 'upcoming-event',
+  status: 'monitoring',
+  statusLabel: 'Coverage 98%',
+  timestamp: 'Saturday 7pm',
+  agentId: 'atlas',
+  agentTask: 'Event Surge Planning',
+  title: '49ers vs Rams, Saturday 7pm',
+  description: 'Civic Arena. Sold out. Staffing is tracking to 98% complete. One action waiting: Rachel Williams replacement approval.',
+  subject: {
+    kind: 'event',
+    primary: '49ers vs Rams',
+    secondary: 'Saturday 7pm · Civic Arena · Sold out',
+    metric: 'Coverage 98%',
+    image: 'https://images.unsplash.com/photo-1577223625816-7546f13df25d?w=220&h=220&fit=crop&auto=format',
+    imageKind: 'rect',
+  },
+}
+
+// Give each background feed card a subject so the layout stays consistent.
+const EVENTS_FEED_SUBJECTS = {
+  swaps: {
+    kind: 'pattern',
+    primary: '2 shift swaps auto-approved',
+    secondary: 'Thursday · Civic Arena concourse',
+    icon: 'swap',
+  },
+  gaps: {
+    kind: 'pattern',
+    primary: '3 potential gaps this weekend',
+    secondary: 'Call-out pattern in 2 ushers · Flagged for early action',
+    icon: 'alert',
+  },
+  overtime: {
+    kind: 'pattern',
+    primary: '4 staff near overtime limit',
+    secondary: 'Could affect next week\'s shows at Civic Arena',
+    icon: 'clock',
+  },
+  reminders: {
+    kind: 'pattern',
+    primary: '6 staff reminded for Saturday 5am call',
+    secondary: 'Harbor Theater load-in · 4 confirmed',
+    icon: 'bell',
+  },
+}
+
+INDUSTRY_DATA.events.feed = INDUSTRY_DATA.events.feed.map(card => {
+  const subject = EVENTS_FEED_SUBJECTS[card.id]
+  return subject ? { ...card, subject } : card
+})
