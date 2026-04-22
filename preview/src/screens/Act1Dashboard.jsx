@@ -13,6 +13,7 @@ import { ClipboardCheckIcon }  from '../../../src/components/icons/ClipboardChec
 import { Users03Icon }         from '../../../src/components/icons/Users03Icon.tsx'
 import { GitBranch01Icon }     from '../../../src/components/icons/GitBranch01Icon.tsx'
 import { MessageDotsSquareIcon } from '../../../src/components/icons/MessageDotsSquareIcon.tsx'
+import { SearchSmIcon }        from '../../../src/components/icons/SearchSmIcon.tsx'
 import { Microphone02Icon }    from '../../../src/components/icons/Microphone02Icon.tsx'
 import { Mail01Icon }          from '../../../src/components/icons/Mail01Icon.tsx'
 import { XIcon }               from '../../../src/components/icons/XIcon.tsx'
@@ -384,91 +385,140 @@ function NeedsCard({ card, state, selected = false, onSelect, onApprove, onRejec
   )
 }
 
-/* ─── Step items (used by AnimatedSteps inside the detail panel) ─────────── */
+/* ─── Timeline step card + inline comm accordion ─────────────────────────── */
 
-function StepItem({ step, state, winnerName }) {
-  const visible = state !== 'pending'
-  if (!visible) return null
+const STEP_KIND_META = {
+  dropout:      { color: 'red',    Icon: AlertTriangleIcon      },
+  detect:       { color: 'blue',   Icon: EyeIcon                },
+  scan:         { color: 'blue',   Icon: SearchSmIcon           },
+  outreach:     { color: 'purple', Icon: ArrowNarrowRightIcon   },
+  conversation: { color: 'purple', Icon: MessageDotsSquareIcon  },
+  confirmed:    { color: 'matcha', Icon: CheckIcon              },
+  cleared:      { color: 'matcha', Icon: CheckIcon              },
+  approval:     { color: 'orange', Icon: AlertTriangleIcon      },
+  monitoring:   { color: 'blue',   Icon: EyeIcon                },
+  alert:        { color: 'orange', Icon: AlertTriangleIcon      },
+}
 
-  const isActive = state === 'active'
-  const cls = `step-item ${isActive ? 'step-active' : 'step-done'}`
+const COMM_KIND_LABEL = { sms: 'Text message', call: 'AI phone call', email: 'Email' }
 
-  if (step.kind === 'loading') {
+function StepStatusChip({ status }) {
+  if (!status) return null
+  if (status === 'complete') {
     return (
-      <div className={cls}>
-        <span className="step-icon">
-          {isActive
-            ? <AILoader size="sm" variant="gradient" />
-            : <CheckIcon size={16} />}
-        </span>
-        <div className="step-body">
-          <div className="step-title">{step.title}</div>
-        </div>
-      </div>
+      <span className="timeline-step-chip timeline-step-chip-complete">
+        <CheckIcon size={12} /> Complete
+      </span>
     )
   }
-
-  if (step.kind === 'status') {
+  if (status === 'pending') {
     return (
-      <div className={cls}>
-        <span className="step-icon step-icon-check">
-          <CheckIcon size={16} />
-        </span>
-        <div className="step-body">
-          <div className="step-title">{step.title}</div>
-          {step.detail && <div className="step-detail">{step.detail}</div>}
-        </div>
-      </div>
+      <span className="timeline-step-chip timeline-step-chip-pending">
+        <AlertTriangleIcon size={12} /> Pending approval
+      </span>
     )
   }
-
-  if (step.kind === 'success') {
+  if (status === 'in-progress') {
     return (
-      <div className={`${cls} step-success`}>
-        <span className="step-icon step-icon-success">
-          <CheckIcon size={16} />
-        </span>
-        <div className="step-body">
-          <div className="step-title">{step.title}</div>
-          {step.detail && <div className="step-detail">{step.detail}</div>}
-        </div>
-      </div>
+      <span className="timeline-step-chip timeline-step-chip-progress">
+        <AILoader size="xs" variant="gradient" /> In progress
+      </span>
     )
   }
-
-  if (step.kind === 'matches') {
-    return (
-      <div className={cls}>
-        <span className="step-icon step-icon-check">
-          <CheckIcon size={16} />
-        </span>
-        <div className="step-body">
-          <div className="step-title">{step.title}</div>
-          <ul className="match-list">
-            {step.matches.map(m => (
-              <li
-                key={m.name}
-                className={`match-item ${m.winner && winnerName ? 'match-winner' : ''} ${winnerName && !m.winner ? 'match-dim' : ''}`}
-              >
-                <span className="match-avatar" aria-hidden="true">
-                  {m.name.split(' ').map(p => p[0]).join('').slice(0, 2)}
-                </span>
-                <div className="match-text">
-                  <div className="match-name">{m.name}</div>
-                  <div className="match-meta">{m.meta}</div>
-                </div>
-                {m.winner && winnerName && (
-                  <StatusTag status="success" size="sm">Top match</StatusTag>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    )
-  }
-
   return null
+}
+
+function CommAccordion({ comm, defaultOpen }) {
+  const [open, setOpen] = useState(Boolean(defaultOpen))
+  const typeMeta = COMM_TYPE_META[comm.type] ?? COMM_TYPE_META.sms
+  const { Icon } = typeMeta
+  const label = COMM_KIND_LABEL[comm.type] ?? 'Message'
+
+  const preview = comm.type === 'sms' && comm.messages?.length
+    ? `${comm.messages.length} message${comm.messages.length > 1 ? 's' : ''}`
+    : comm.type === 'email' && comm.subject
+    ? comm.subject
+    : comm.type === 'call' && comm.duration
+    ? `${comm.duration} · ${comm.outcome ?? 'call'}`
+    : 'View'
+
+  return (
+    <div className={`timeline-step-comm ${open ? 'is-open' : ''}`}>
+      <button
+        type="button"
+        className="timeline-step-comm-toggle"
+        onClick={(e) => { e.stopPropagation(); setOpen(!open) }}
+        aria-expanded={open}
+      >
+        <span className={`comm-icon comm-icon-${comm.type}`} aria-hidden="true">
+          <Icon size={14} />
+        </span>
+        <span className="timeline-step-comm-label">{label}</span>
+        <span className="timeline-step-comm-sep" aria-hidden="true">·</span>
+        <span className="timeline-step-comm-contact">{comm.contact}</span>
+        <span className="timeline-step-comm-preview">{preview}</span>
+        <span className={`timeline-step-comm-chevron ${open ? 'is-open' : ''}`} aria-hidden="true">⌄</span>
+      </button>
+
+      {open && (
+        <div className="timeline-step-comm-body">
+          {comm.type === 'sms'   && <SmsThread comm={comm} />}
+          {comm.type === 'call'  && <CallBody  comm={comm} />}
+          {comm.type === 'email' && <EmailBody comm={comm} />}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TimelineStep({ item, isLast, defaultCommOpen }) {
+  const meta = STEP_KIND_META[item.kind] ?? STEP_KIND_META.scan
+  const { Icon, color } = meta
+
+  return (
+    <li className={`timeline-step ${isLast ? 'timeline-step-last' : ''}`}>
+      <span className={`timeline-dot timeline-dot-${color}`} aria-hidden="true" />
+      <article className="timeline-step-card">
+        <div className="timeline-step-head">
+          <span className={`timeline-step-eyebrow timeline-step-eyebrow-${color}`}>
+            <Icon size={12} />
+            <span>{item.eyebrow}</span>
+          </span>
+          {item.time && <span className="timeline-step-time">{item.time}</span>}
+        </div>
+
+        <h4 className="timeline-step-title">{item.title}</h4>
+        {item.subtitle && <p className="timeline-step-subtitle">{item.subtitle}</p>}
+        <StepStatusChip status={item.status} />
+
+        {item.comm && <CommAccordion comm={item.comm} defaultOpen={defaultCommOpen} />}
+      </article>
+    </li>
+  )
+}
+
+function TimelineList({ items, animated }) {
+  const [visibleCount, setVisibleCount] = useState(animated ? 1 : items.length)
+
+  useEffect(() => {
+    if (!animated) { setVisibleCount(items.length); return }
+    if (visibleCount >= items.length) return
+    const t = setTimeout(() => setVisibleCount(c => Math.min(c + 1, items.length)), 1600)
+    return () => clearTimeout(t)
+  }, [animated, visibleCount, items.length])
+
+  return (
+    <ol className="timeline-list">
+      {items.slice(0, visibleCount).map((item, i) => (
+        <TimelineStep
+          key={i}
+          item={item}
+          isLast={i === items.length - 1}
+          defaultCommOpen={item.kind === 'conversation' || item.kind === 'dropout'}
+        />
+      ))}
+    </ol>
+  )
 }
 
 
@@ -562,82 +612,18 @@ function Communication({ comm }) {
   )
 }
 
-/* ─── Detail panel — reasoning timelines ─────────────────────────────────── */
-
-function StaticTimeline({ items }) {
-  return (
-    <ol className="detail-timeline">
-      {items.map((it, i) => (
-        <li key={i} className="detail-timeline-item">
-          <span className="detail-timeline-icon" aria-hidden="true">
-            <CheckIcon size={12} />
-          </span>
-          <div className="detail-timeline-body">
-            <div className="detail-timeline-head">
-              <span className="detail-timeline-title">{it.title}</span>
-              <span className="detail-timeline-time">{it.time}</span>
-            </div>
-            {it.detail && <p className="detail-timeline-detail">{it.detail}</p>}
-          </div>
-        </li>
-      ))}
-    </ol>
-  )
-}
-
-/* Animated playback for the Marcus active card — wraps the existing StepItem
-   pipeline used by the old DrillInPanel, so we keep the wow-moment cadence. */
-function AnimatedSteps({ steps, onResolved }) {
-  const [activeIdx, setActiveIdx]  = useState(0)
-  const [resolved, setResolved]    = useState(false)
-  const timersRef = useRef([])
-
-  const winnerName = useMemo(() => {
-    const matchesStep = steps.find(s => s.kind === 'matches')
-    return matchesStep?.matches?.find(m => m.winner)?.name ?? ''
-  }, [steps])
-
-  useEffect(() => {
-    setActiveIdx(0)
-    setResolved(false)
-    timersRef.current.forEach(clearTimeout)
-    timersRef.current = []
-
-    let cumulative = 0
-    steps.forEach((step, i) => {
-      cumulative += step.delay ?? 2000
-      if (i === 0) return
-      timersRef.current.push(setTimeout(() => setActiveIdx(i), cumulative))
-    })
-    const resolvedAt = cumulative + 800
-    timersRef.current.push(setTimeout(() => { setResolved(true); onResolved?.() }, resolvedAt))
-
-    return () => { timersRef.current.forEach(clearTimeout); timersRef.current = [] }
-  }, [steps, onResolved])
-
-  return (
-    <ol className="step-list" aria-live="polite">
-      {steps.map((step, i) => {
-        let state = 'pending'
-        if (i < activeIdx) state = 'done'
-        else if (i === activeIdx && !resolved) state = 'active'
-        else if (i === activeIdx && resolved)  state = 'done'
-        else if (i < steps.length && resolved) state = 'done'
-        return (
-          <li key={step.id}>
-            <StepItem step={step} state={state} winnerName={i < activeIdx ? winnerName : ''} />
-          </li>
-        )
-      })}
-    </ol>
-  )
-}
-
 /* ─── Detail panel ───────────────────────────────────────────────────────── */
 
 function CardDetailPanel({ card, detail, onClose, onExplore }) {
   const agent = card.agentId ? getAgent(card.agentId) : null
-  const [animationDone, setAnimationDone] = useState(false)
+  const animated = detail.mode === 'animated'
+  const [animationDone, setAnimationDone] = useState(!animated)
+
+  useEffect(() => {
+    if (!animated || !detail.timeline?.length) return
+    const t = setTimeout(() => setAnimationDone(true), detail.timeline.length * 1600 + 400)
+    return () => clearTimeout(t)
+  }, [animated, detail.timeline?.length])
 
   return (
     <aside className="detail-panel" aria-label="Card detail">
@@ -660,22 +646,8 @@ function CardDetailPanel({ card, detail, onClose, onExplore }) {
           {card.summary && <p className="detail-panel-desc">{card.summary}</p>}
         </div>
 
-        <section className="detail-section">
-          <h3 className="detail-section-title">Reasoning</h3>
-          {detail.mode === 'animated' ? (
-            <AnimatedSteps steps={detail.steps} onResolved={() => setAnimationDone(true)} />
-          ) : (
-            <StaticTimeline items={detail.timeline} />
-          )}
-        </section>
-
-        {detail.communications?.length > 0 && (
-          <section className="detail-section">
-            <h3 className="detail-section-title">Communications</h3>
-            <div className="comm-list">
-              {detail.communications.map((comm, i) => <Communication key={i} comm={comm} />)}
-            </div>
-          </section>
+        {detail.timeline?.length > 0 && (
+          <TimelineList items={detail.timeline} animated={animated} />
         )}
 
         {detail.outcome && (
@@ -702,7 +674,7 @@ function CardDetailPanel({ card, detail, onClose, onExplore }) {
           <div className="detail-kicker">
             <p className="kicker-text">{detail.kicker}</p>
             <Button
-              variant="primary"
+              variant="secondary"
               size="lg"
               trailingArtwork={<ArrowNarrowRightIcon size={18} />}
               onClick={onExplore}
