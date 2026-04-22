@@ -1410,9 +1410,46 @@ function Segment({ seg, charsRevealed }) {
   return null
 }
 
+/* Light markdown-ish parser: turns a raw AI text reply into a list of segments
+   so it renders with the same structure as the canned prompts. */
+function parseMarkdownToSegments(text) {
+  const segments = []
+  const lines    = text.split(/\r?\n/)
+  let textBuf    = []
+  let listBuf    = null
+
+  const flushText = () => {
+    if (textBuf.length === 0) return
+    const joined = textBuf.join(' ').trim()
+    if (joined) segments.push({ type: 'text', text: joined })
+    textBuf = []
+  }
+  const flushList = () => {
+    if (!listBuf) return
+    segments.push({ type: 'list', items: listBuf })
+    listBuf = null
+  }
+
+  for (const raw of lines) {
+    const line = raw.trim()
+    if (!line) { flushText(); flushList(); continue }
+    const bullet = line.match(/^[•\-\*]\s+(.+)/)
+    if (bullet) {
+      flushText()
+      if (!listBuf) listBuf = []
+      listBuf.push(bullet[1])
+    } else {
+      flushList()
+      textBuf.push(line)
+    }
+  }
+  flushText(); flushList()
+  return segments
+}
+
 function normalizeSegments(content) {
   if (!content) return []
-  if (typeof content === 'string') return [{ type: 'text', text: content }]
+  if (typeof content === 'string') return parseMarkdownToSegments(content)
   if (Array.isArray(content.segments)) return content.segments
   return []
 }
@@ -1427,44 +1464,37 @@ function detectSpecialist(text) {
   return 'nova'
 }
 
-/* Animated agent-at-work checklist — renders as its own message bubble. */
-function ProgressMessage({ message, onResolved }) {
-  const agent = message.kind === 'specialist' && message.agentId ? getAgent(message.agentId) : null
+/* Progress bubble — declares the plan + a link to live tracking. We
+   intentionally don't simulate fast completion; the work happens in the
+   background and the operator can follow it in Agent Workflows. */
+function ProgressMessage({ message }) {
+  const agent = message.agentId ? getAgent(message.agentId) : null
   const steps = message.steps ?? []
-  const revealed = message.stepsDone ?? 0
-  const resolved = message.resolved
 
   return (
-    <div className={`prompt-msg prompt-msg-assistant prompt-msg-progress ${message.kind === 'manual' ? 'is-manual' : ''}`}>
+    <div className="prompt-msg prompt-msg-assistant prompt-msg-progress">
       <span className={`prompt-msg-mark ${agent ? `agent-avatar-${agent.color}` : ''}`} aria-hidden="true"
             style={agent?.avatar ? { backgroundImage: `url(${agent.avatar})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}>
         {!agent && <TeambridgeAIIcon size={12} />}
       </span>
       <div className="prompt-msg-body">
         <div className="progress-header">
-          <span className="progress-actor">{agent ? `${agent.name} · ${agent.role}` : 'You'}</span>
-          <span className="progress-status">{resolved ? 'Complete' : 'Working on it'}</span>
+          <span className="progress-actor">{agent ? `${agent.name} · ${agent.role}` : 'Teambridge AI'}</span>
+          <span className="progress-status">Taking it from here</span>
         </div>
-        <ul className="progress-steps">
-          {steps.map((s, i) => {
-            const state = i < revealed ? 'done' : i === revealed ? 'active' : 'pending'
-            return (
-              <li key={i} className={`progress-step progress-step-${state}`}>
-                <span className="progress-step-mark" aria-hidden="true">
-                  {state === 'done' && <CheckIcon size={10} />}
-                  {state === 'active' && <AILoader size="xs" variant="gradient" />}
-                </span>
-                <span className="progress-step-text">{s}</span>
-              </li>
-            )
-          })}
+        <ul className="progress-plan">
+          {steps.map((s, i) => (
+            <li key={i} className="progress-plan-item" style={{ animationDelay: `${i * 90}ms` }}>
+              <span className="progress-plan-dot" aria-hidden="true" />
+              <span>{s}</span>
+            </li>
+          ))}
         </ul>
-        {resolved && (
-          <div className="progress-resolution">
-            <CheckIcon size={14} />
-            <span>{resolved}</span>
-          </div>
-        )}
+        <a className="progress-workflow-link" href="#agent-workflows" onClick={(e) => e.preventDefault()}>
+          <GitBranch01Icon size={12} />
+          <span>View live progress in Agent Workflows</span>
+          <ArrowNarrowRightIcon size={12} />
+        </a>
       </div>
     </div>
   )
@@ -1540,48 +1570,34 @@ function PromptPanel({ industryId }) {
   const updateMsg = (id, patch) =>
     setMessages(prev => prev.map(m => m.id === id ? { ...m, ...patch } : m))
 
-  // Drive the streaming state machine for any in-flight assistant message
-  // OR any in-flight progress message.
+  // Streaming state machine for in-flight assistant messages.
   useEffect(() => {
-    const m = messages.find(x => (x.role === 'assistant' && x.status !== 'done') || (x.role === 'progress' && !x.resolved))
+    const m = messages.find(x => x.role === 'assistant' && x.status !== 'done')
     if (!m) return
 
-    if (m.role === 'assistant') {
-      if (m.status === 'thinking') {
-        if (!m.content) return
-        const t = setTimeout(() => updateMsg(m.id, { status: 'streaming', step: 0, chars: 0 }), 550)
-        return () => clearTimeout(t)
-      }
-
-      if (m.status === 'streaming') {
-        const segments = normalizeSegments(m.content)
-        const seg = segments[m.step]
-        if (!seg) {
-          updateMsg(m.id, { status: 'done' })
-          return
-        }
-        if (seg.type === 'text' || seg.type === 'cta') {
-          const full = seg.text
-          if (m.chars < full.length) {
-            const t = setTimeout(() => updateMsg(m.id, { chars: Math.min(full.length, m.chars + 6) }), 20)
-            return () => clearTimeout(t)
-          }
-          const t = setTimeout(() => updateMsg(m.id, { step: m.step + 1, chars: 0 }), 240)
-          return () => clearTimeout(t)
-        }
-        const t = setTimeout(() => updateMsg(m.id, { step: m.step + 1, chars: 0 }), 420)
-        return () => clearTimeout(t)
-      }
+    if (m.status === 'thinking') {
+      if (!m.content) return
+      const t = setTimeout(() => updateMsg(m.id, { status: 'streaming', step: 0, chars: 0 }), 550)
+      return () => clearTimeout(t)
     }
 
-    if (m.role === 'progress') {
-      const done = m.stepsDone ?? 0
-      const total = (m.steps ?? []).length
-      if (done < total) {
-        const t = setTimeout(() => updateMsg(m.id, { stepsDone: done + 1 }), 900)
+    if (m.status === 'streaming') {
+      const segments = normalizeSegments(m.content)
+      const seg = segments[m.step]
+      if (!seg) {
+        updateMsg(m.id, { status: 'done' })
+        return
+      }
+      if (seg.type === 'text' || seg.type === 'cta') {
+        const full = seg.text
+        if (m.chars < full.length) {
+          const t = setTimeout(() => updateMsg(m.id, { chars: Math.min(full.length, m.chars + 6) }), 20)
+          return () => clearTimeout(t)
+        }
+        const t = setTimeout(() => updateMsg(m.id, { step: m.step + 1, chars: 0 }), 240)
         return () => clearTimeout(t)
       }
-      const t = setTimeout(() => updateMsg(m.id, { resolved: m.resolutionText }), 500)
+      const t = setTimeout(() => updateMsg(m.id, { step: m.step + 1, chars: 0 }), 420)
       return () => clearTimeout(t)
     }
   }, [messages])
@@ -1639,26 +1655,25 @@ function PromptPanel({ industryId }) {
     return submitFreeForm(t)
   }
 
-  const SPECIALIST_STEPS = {
-    nova:  ['Pulling shift roster', 'Ranking candidates by proximity + hours', 'Dispatching SMS offer to top match', 'Waiting on response…', 'Shift locked, charge lead notified'],
-    atlas: ['Pulling historical data', 'Running surge model', 'Staging proposed roster', 'Drafting dispatch plan', 'Plan staged, ready to review'],
-    iris:  ['Fetching uploaded documents', 'Cross-checking issuing authority', 'Running background match', 'Verifying identity', 'Cleared and added to roster'],
-    sofia: ['Drafting the communication', 'Personalising for each recipient', 'Scheduling delivery window', 'Dispatching via SMS + in-app', 'Monitoring confirmations'],
-    leo:   ['Pulling overtime + cert records', 'Scanning for violations', 'Drafting advisory', 'Routing to affected workers', 'Compliance snapshot updated'],
+  // Plan items shown when an agent is delegated. These describe what the
+  // agent WILL DO — not what they've already finished. The actual work
+  // happens in the background and the operator follows it in Agent Workflows.
+  const SPECIALIST_PLAN = {
+    nova:  ['Score qualified candidates by proximity, hours, and rating', 'Dispatch shift offer to the top match', 'Confirm acceptance and notify the charge lead'],
+    atlas: ['Pull historical patterns for similar events', 'Stage the surge roster across affected positions', 'Hand the dispatch plan to Nova for offers'],
+    iris:  ['Verify documents with the issuing authority', 'Run identity + background match', 'Clear and add to the appropriate roster'],
+    sofia: ['Draft the communication with personal context', 'Stage delivery via SMS + in-app push', 'Monitor confirmations and follow up at the cut-off'],
+    leo:   ['Pull overtime + certification records', 'Flag any compliance risk', 'Notify the affected workers and your ops lead'],
   }
 
   const handleApprove = (msg) => {
     const agentId = msg.specialist ?? 'nova'
-    const agent   = getAgent(agentId)
-    const steps   = SPECIALIST_STEPS[agentId] ?? SPECIALIST_STEPS.nova
+    const steps   = SPECIALIST_PLAN[agentId] ?? SPECIALIST_PLAN.nova
     setMessages(prev => prev.map(m => m.specialist ? { ...m, specialist: null } : m).concat({
       id: ++idRef.current,
       role: 'progress',
-      kind: 'specialist',
       agentId,
       steps,
-      stepsDone: 0,
-      resolutionText: `${agent.name} handled it — ready for your next move.`,
     }))
   }
 
