@@ -1459,10 +1459,12 @@ function detectSpecialist(text) {
 
 /* Progress bubble — declares the plan + a link to live tracking. We
    intentionally don't simulate fast completion; the work happens in the
-   background and the operator can follow it in Agent Workflows. */
+   background and the operator can follow it in Agent Workflows. The first
+   task is marked "in progress" so it's clear the agent has started. */
 function ProgressMessage({ message }) {
   const agent = message.agentId ? getAgent(message.agentId) : null
   const steps = message.steps ?? []
+  const agentName = agent ? `${agent.name} (${agent.role})` : 'Teambridge AI'
 
   return (
     <div className="prompt-msg prompt-msg-assistant prompt-msg-progress">
@@ -1472,20 +1474,29 @@ function ProgressMessage({ message }) {
       </span>
       <div className="prompt-msg-body">
         <div className="progress-header">
-          <span className="progress-actor">{agent ? `${agent.name} · ${agent.role}` : 'Teambridge AI'}</span>
-          <span className="progress-status">Taking it from here</span>
+          <span className="progress-actor">{agentName} started</span>
+          <span className="progress-status-pill">
+            <span className="progress-status-dot" aria-hidden="true" />
+            In progress
+          </span>
         </div>
-        <ul className="progress-plan">
-          {steps.map((s, i) => (
-            <li key={i} className="progress-plan-item" style={{ animationDelay: `${i * 90}ms` }}>
-              <span className="progress-plan-dot" aria-hidden="true" />
-              <span>{s}</span>
-            </li>
-          ))}
+        <ul className="progress-tasks">
+          {steps.map((s, i) => {
+            const state = i === 0 ? 'active' : 'queued'
+            return (
+              <li key={i} className={`progress-task progress-task-${state}`} style={{ animationDelay: `${i * 90}ms` }}>
+                <span className="progress-task-mark" aria-hidden="true">
+                  {state === 'active' ? <AILoader size="xs" variant="gradient" /> : null}
+                </span>
+                <span className="progress-task-label">{s}</span>
+                {state === 'active' && <span className="progress-task-tag">Working on this</span>}
+              </li>
+            )
+          })}
         </ul>
         <a className="progress-workflow-link" href="#agent-workflows" onClick={(e) => e.preventDefault()}>
           <GitBranch01Icon size={12} />
-          <span>View live progress in Agent Workflows</span>
+          <span>Open this workflow in Agent Workflows</span>
           <ArrowNarrowRightIcon size={12} />
         </a>
       </div>

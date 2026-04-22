@@ -474,19 +474,38 @@
   gap: var(--space-2);
 }
 .progress-actor {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   font-weight: var(--font-weight-medium);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--color-content-tertiary);
+  color: var(--color-content-primary);
 }
-.progress-status {
+
+/* In-progress status pill */
+.progress-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  background: color-mix(in srgb, var(--color-blue-bg-primary) 12%, transparent);
+  color: var(--color-blue-content-primary);
+  border-radius: var(--radius-full);
   font-size: 11px;
-  color: var(--color-content-tertiary);
+  font-weight: var(--font-weight-medium);
   letter-spacing: 0.02em;
-  font-style: italic;
 }
-.progress-plan {
+.progress-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-blue-bg-primary);
+  animation: progress-status-pulse 1.6s ease-in-out infinite;
+}
+@keyframes progress-status-pulse {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%      { opacity: 0.4; transform: scale(0.85); }
+}
+
+/* Tasks (visual checkbox list) */
+.progress-tasks {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -494,13 +513,16 @@
   flex-direction: column;
   gap: 6px;
 }
-.progress-plan-item {
+.progress-task {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-2);
   font-size: var(--text-sm);
   line-height: 1.4;
-  color: var(--color-content-primary);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: 10px;
   opacity: 0;
   animation: progress-plan-in 320ms ease forwards;
 }
@@ -508,12 +530,33 @@
   from { opacity: 0; transform: translateY(2px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.progress-plan-dot {
-  margin-top: 7px;
-  width: 5px;
-  height: 5px;
+.progress-task-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  background: var(--color-content-tertiary);
+  flex-shrink: 0;
+  border: 1.5px solid var(--color-border-opaque);
+  background: var(--color-bg-secondary);
+}
+.progress-task-active {
+  border-color: color-mix(in srgb, var(--ai-grad-mid) 35%, var(--color-border-opaque));
+  background: color-mix(in srgb, var(--ai-grad-mid) 4%, var(--color-bg-primary));
+}
+.progress-task-active .progress-task-mark {
+  border-color: color-mix(in srgb, var(--ai-grad-mid) 60%, transparent);
+  background: var(--color-bg-primary);
+}
+.progress-task-label { flex: 1; min-width: 0; color: var(--color-content-primary); }
+.progress-task-queued .progress-task-label { color: var(--color-content-secondary); }
+.progress-task-tag {
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ai-grad-mid);
   flex-shrink: 0;
 }
 .progress-workflow-link {
