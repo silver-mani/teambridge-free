@@ -1519,6 +1519,7 @@ Ready to email to the client ops channel?` },
   events: [
     { label: 'Approve the Rachel Williams replacement',
       specialist: 'nova',
+      approveLabel: 'Confirm Rachel & notify',
       approvePlan: [
         'Send Rachel her confirmed shift brief',
         'Update the Civic Arena schedule',
@@ -1538,6 +1539,7 @@ Ready to email to the client ops channel?` },
       } },
     { label: 'Fill the last open Saturday role',
       specialist: 'nova',
+      approveLabel: 'Offer Jordan the shift',
       answer: {
         segments: [
           { type: 'text', text: "One role left for the 49ers vs Rams Saturday call: Gate 3 usher · 6:30 PM report. I ranked 2 strong candidates under hours:" },
@@ -1550,6 +1552,7 @@ Ready to email to the client ops channel?` },
       } },
     { label: 'Draft the pre-game crew briefing',
       specialist: 'sofia',
+      approveLabel: 'Dispatch brief to the team',
       answer: {
         segments: [
           { type: 'text', text: "Draft briefing for 48 staff · Saturday 5:00 PM call:" },
@@ -1571,6 +1574,7 @@ Ready to email to the client ops channel?` },
       } },
     { label: 'Build this week’s coverage report',
       specialist: 'atlas',
+      approveLabel: 'Email report to client ops',
       answer: {
         segments: [
           { type: 'text', text: "Generated this week's coverage report across Civic Arena + Harbor Theater:" },
@@ -1591,6 +1595,7 @@ Ready to email to the client ops channel?` },
       } },
     { label: 'Draft the onboarding packet for Sarah',
       specialist: 'sofia',
+      approveLabel: 'Send packet to Sarah',
       answer: {
         segments: [
           { type: 'text', text: "First-shift packet ready for Sarah M. — Saturday 7 PM Civic Arena bev-service." },
@@ -1605,6 +1610,7 @@ Ready to email to the client ops channel?` },
       } },
     { label: 'Coverage by gate for Saturday',
       specialist: 'nova',
+      approveLabel: 'Close the Gate 3 gap',
       answer: {
         segments: [
           { type: 'text', text: "47 of 48 confirmed · one role pending approval." },
@@ -1621,6 +1627,7 @@ Ready to email to the client ops channel?` },
       } },
     { label: 'Pre-brief for Harbor Theater opener',
       specialist: 'sofia',
+      approveLabel: 'Send interest pings',
       answer: {
         segments: [
           { type: 'text', text: "Harbor Theater opens May 1. Current readiness:" },
@@ -1981,21 +1988,26 @@ function normalizeSegments(content) {
 /* Detect the right follow-up for a free-form AI reply:
    - Explicit "Next: [label]" marker → a contextual action button
    - "Approve/Have/Send **Nova** to <verb> …" phrasing → a specialist approval
-   - Nothing → no button (the reply was purely informational) */
+   - Nothing → no button (the reply was purely informational)
+   When we detect an approval, we also pull out the verb phrase that
+   comes after "to …" so the button can read "Dispatch the brief"
+   instead of the generic "Have Nova take it". */
 function detectFollowup(text) {
   if (typeof text !== 'string' || !text.trim()) return null
-  // "Next: <label>" on its OWN line. /m so $ matches end-of-line, not just end-of-string.
   const nextMatch = text.match(/^[ \t]*Next:\s*\*?\*?([^\n*]+?)\*?\*?\s*$/im)
   if (nextMatch) {
     const label = nextMatch[1].trim().replace(/[.!?]+$/, '')
     if (label) return { kind: 'action', label }
   }
-  // Specialist approval phrase — require "to <verb>" after the agent to avoid
-  // false positives like "send Nova the note".
   const approveMatch = text.match(
-    /\b(?:approve|have|dispatch|send|let)\s+\*?\*?(nova|atlas|iris|sofia|leo)\*?\*?\s+to\b/i
+    /\b(?:approve|have|dispatch|send|let)\s+\*?\*?(nova|atlas|iris|sofia|leo)\*?\*?\s+to\s+([^?\n]+?)\s*[?.!]?\s*$/im
   )
-  if (approveMatch) return { kind: 'approve', agentId: approveMatch[1].toLowerCase() }
+  if (approveMatch) {
+    const agentId = approveMatch[1].toLowerCase()
+    const phrase  = approveMatch[2].trim().replace(/[.!?,]+$/, '')
+    const label   = phrase ? phrase.charAt(0).toUpperCase() + phrase.slice(1) : null
+    return { kind: 'approve', agentId, label }
+  }
   return null
 }
 
@@ -2066,7 +2078,7 @@ function ProgressMessage({ message }) {
   )
 }
 
-function ActionButtons({ specialist, actionHint, onApprove }) {
+function ActionButtons({ specialist, actionHint, approveLabel, onApprove }) {
   if (actionHint) {
     return (
       <div className="prompt-actions-row">
@@ -2078,11 +2090,12 @@ function ActionButtons({ specialist, actionHint, onApprove }) {
   }
   const agent = specialist ? getAgent(specialist) : null
   if (!agent) return null
+  const label = approveLabel ?? `Have ${agent.name} take it`
   return (
     <div className="prompt-actions-row">
       <button type="button" className="prompt-action prompt-action-primary" onClick={onApprove}>
         <span className="prompt-action-agent" style={{ backgroundImage: `url(${agent.avatar})` }} />
-        Have {agent.name} take it
+        {label}
       </button>
     </div>
   )
@@ -2122,6 +2135,7 @@ function Message({ message, onApprove }) {
           <ActionButtons
             specialist={message.specialist}
             actionHint={message.actionHint}
+            approveLabel={message.approveLabel}
             onApprove={() => onApprove(message)}
           />
         )}
@@ -2178,13 +2192,14 @@ function PromptPanel({ industryId }) {
     }
   }, [messages])
 
-  const submitCanned = (label, content, specialist, approvePlan) => {
+  const submitCanned = (label, content, specialist, approvePlan, approveLabel) => {
     setMessages(prev => [
       ...prev,
       { id: ++idRef.current, role: 'user', content: label, status: 'done' },
       { id: ++idRef.current, role: 'assistant', content, status: 'thinking',
         specialist: specialist ?? null,
-        approvePlan: approvePlan ?? null },
+        approvePlan: approvePlan ?? null,
+        approveLabel: approveLabel ?? null },
     ])
   }
 
@@ -2224,9 +2239,10 @@ function PromptPanel({ industryId }) {
     const followup = detectFollowup(replyText)
     const visibleText = followup?.kind === 'action' ? stripFollowupLine(replyText) : replyText
     updateMsg(assistantId, {
-      content:     visibleText,
-      specialist:  followup?.kind === 'approve' ? followup.agentId : null,
-      actionHint:  followup?.kind === 'action'  ? followup.label   : null,
+      content:      visibleText,
+      specialist:   followup?.kind === 'approve' ? followup.agentId : null,
+      actionHint:   followup?.kind === 'action'  ? followup.label   : null,
+      approveLabel: followup?.kind === 'approve' ? followup.label   : null,
     })
   }
 
@@ -2235,7 +2251,7 @@ function PromptPanel({ industryId }) {
     if (!t) return
     setInput('')
     const canned = suggestions.find(s => s.label.toLowerCase() === t.toLowerCase())
-    if (canned) return submitCanned(canned.label, canned.answer, canned.specialist, canned.approvePlan)
+    if (canned) return submitCanned(canned.label, canned.answer, canned.specialist, canned.approvePlan, canned.approveLabel)
     return submitFreeForm(t)
   }
 
