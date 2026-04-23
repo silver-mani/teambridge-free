@@ -279,14 +279,21 @@ function ActivityCard({ card, expanded = false, onToggle, dimmed = false }) {
   const agent = card.agentId ? getAgent(card.agentId) : null
   const pulsing = card.status === 'in-progress'
 
-  const activityEntries = card.record?.activity
-  const expandable = !!activityEntries?.length && typeof onToggle === 'function'
+  const summary       = card.record?.summary
+  const dataChanges   = card.record?.dataChanges
+  const conversations = card.record?.conversations
+  const workflow      = card.record?.workflow
+  const expandable = (
+    (!!dataChanges?.length || !!conversations?.length || !!workflow)
+    && typeof onToggle === 'function'
+  )
   const showBody = expandable && expanded
 
-  const description = card.subject?.secondary ?? card.description ?? card.title
+  const headline = summary?.headline ?? card.description ?? card.title
+  const actorLabel = agent?.name ?? card.subject?.primary ?? null
 
   const inner = (
-    <div className="activity-card-compact">
+    <div className="activity-card-compact-oneline">
       {agent ? (
         <span
           className={`activity-card-compact-main-avatar agent-avatar-${agent.color}`}
@@ -296,14 +303,13 @@ function ActivityCard({ card, expanded = false, onToggle, dimmed = false }) {
       ) : card.subject ? (
         <SubjectImage subject={card.subject} size={24} />
       ) : null}
-      <div className="activity-card-compact-text">
-        <div className="activity-card-compact-lead">
-          {card.eyebrow && (
-            <span className={`activity-card-compact-eyebrow ${agent ? `activity-card-compact-eyebrow-${agent.color}` : ''}`}>{card.eyebrow}</span>
-          )}
-        </div>
-        <div className="activity-card-compact-desc">{description}</div>
-      </div>
+      <p className="activity-card-compact-headline">
+        {actorLabel && (
+          <span className="activity-card-compact-actor">{actorLabel}</span>
+        )}
+        {actorLabel && <span> </span>}
+        <span>{headline}</span>
+      </p>
       <div className="activity-card-compact-right">
         {card.statusLabel && (
           <StatusTag status={meta.tagStatus} size="sm" dot={false}>{card.statusLabel}</StatusTag>
@@ -338,39 +344,172 @@ function ActivityCard({ card, expanded = false, onToggle, dimmed = false }) {
       </button>
       {showBody && (
         <div className="activity-card-body">
-          <ul className="activity-rows">
-            {activityEntries.map((row, i) => {
-              const prev = activityEntries[i - 1]
-              const sameAsPrev = !!prev
-                && prev.kind === row.kind
-                && (prev.agentId ?? prev.actor) === (row.agentId ?? row.actor)
-              return <ActivityRow key={i} row={row} suppressAvatar={sameAsPrev} />
-            })}
-          </ul>
-          {card.record.summary && (
-            <div className="activity-card-summary">
-              <div className="activity-card-summary-head">
-                <span className="activity-card-summary-check" aria-hidden="true">✓</span>
-                <span className="activity-card-summary-title">{card.record.summary.outcome}</span>
-              </div>
-              <dl className="activity-card-summary-metrics">
-                <div className="activity-card-summary-metric">
-                  <dt>Agent time</dt>
-                  <dd>{card.record.summary.duration}</dd>
-                </div>
-                <div className="activity-card-summary-metric">
-                  <dt>Manual</dt>
-                  <dd>{card.record.summary.manual}</dd>
-                </div>
-                <div className="activity-card-summary-metric activity-card-summary-metric-saved">
-                  <dt>Time saved</dt>
-                  <dd>{card.record.summary.saved}</dd>
-                </div>
-              </dl>
-            </div>
-          )}
+          {!!dataChanges?.length   && <DataChangeBlock changes={dataChanges} />}
+          {!!conversations?.length && <ConversationsBlock conversations={conversations} />}
+          {workflow                && <WorkflowLink workflow={workflow} />}
+          {summary                 && <OutcomeSummary summary={summary} />}
         </div>
       )}
+    </div>
+  )
+}
+
+/* ─── Data-change diff block ─────────────────────────────────────────────── */
+function DataChangeBlock({ changes }) {
+  return (
+    <section className="card-body-section">
+      <h4 className="body-section-label">Data change</h4>
+      <div className="data-change-rows">
+        {changes.map((c, i) => (
+          <div key={i} className="data-change-row">
+            <div className="data-change-field">{c.field}</div>
+            <div className="data-change-diff">
+              <DataChangeChip node={c.before} tone="before" />
+              <span className="data-change-arrow" aria-hidden="true">→</span>
+              <DataChangeChip node={c.after} tone="after" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function DataChangeChip({ node, tone }) {
+  return (
+    <span className={`data-change-chip data-change-chip-${tone}`}>
+      {node.avatar && <span className="data-change-chip-avatar" style={{ backgroundImage: `url(${node.avatar})` }} />}
+      <span>{node.name ?? node.value}</span>
+    </span>
+  )
+}
+
+/* ─── Conversations block (pills + inline expansion) ─────────────────────── */
+function ConversationsBlock({ conversations }) {
+  const [openId, setOpenId] = useState(null)
+  const open = conversations.find(c => c.id === openId) ?? null
+  return (
+    <section className="card-body-section">
+      <h4 className="body-section-label">Conversations</h4>
+      <div className="conversation-pills">
+        {conversations.map(c => {
+          const M = COMM_TYPE_META[c.kind] ?? COMM_TYPE_META.sms
+          const isOpen = c.id === openId
+          return (
+            <button
+              key={c.id}
+              type="button"
+              className={`conversation-pill conversation-pill-${c.kind} ${isOpen ? 'is-open' : ''}`}
+              onClick={e => { e.stopPropagation(); setOpenId(isOpen ? null : c.id) }}
+              aria-expanded={isOpen}
+            >
+              <span className={`comm-icon comm-icon-${c.kind}`} aria-hidden="true"><M.Icon size={12} /></span>
+              <span className="conversation-pill-label">{c.contact}</span>
+              {c.summary && <span className="conversation-pill-meta">· {c.summary}</span>}
+            </button>
+          )
+        })}
+      </div>
+      {open && (
+        <div className="conversation-body" onClick={e => e.stopPropagation()}>
+          {open.kind === 'voice' && <VoiceCallPlayer call={open} />}
+          {open.kind === 'sms'   && <SmsThread comm={open} />}
+          {open.kind === 'email' && <EmailBody comm={open} />}
+        </div>
+      )}
+    </section>
+  )
+}
+
+/* ─── Voice-call player — plays mp3 + shows transcript ───────────────────── */
+function VoiceCallPlayer({ call }) {
+  const audioRef = useRef(null)
+  const [playing, setPlaying] = useState(false)
+  const [progress, setProgress] = useState(0)
+
+  const toggle = (e) => {
+    e.stopPropagation()
+    const a = audioRef.current
+    if (!a) return
+    if (playing) { a.pause() } else { a.play().catch(() => {}) }
+  }
+
+  return (
+    <div className="voice-call">
+      <audio
+        ref={audioRef}
+        src={call.audio}
+        preload="none"
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onEnded={() => { setPlaying(false); setProgress(0) }}
+        onTimeUpdate={e => {
+          const el = e.currentTarget
+          if (el.duration) setProgress(el.currentTime / el.duration)
+        }}
+      />
+      <div className="voice-call-head">
+        <button type="button" className="voice-call-play" onClick={toggle} aria-label={playing ? 'Pause' : 'Play'}>
+          {playing ? '⏸' : '▶'}
+        </button>
+        <div className="voice-call-meta">
+          <div className="voice-call-title">
+            <span>{call.contact}</span>
+            {call.duration && <span className="voice-call-duration">· {call.duration}</span>}
+          </div>
+          <div className="voice-call-progress"><span style={{ width: `${progress * 100}%` }} /></div>
+        </div>
+      </div>
+      {!!call.turns?.length && (
+        <ol className="voice-call-transcript">
+          {call.turns.map((t, i) => (
+            <li key={i} className={`voice-turn voice-turn-${t.speaker}`}>
+              <span className="voice-turn-speaker">{t.speakerName ?? (t.speaker === 'agent' ? 'Agent' : call.contact)}</span>
+              <span className="voice-turn-text">{t.text}</span>
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
+  )
+}
+
+/* ─── Workflow link button ───────────────────────────────────────────────── */
+function WorkflowLink({ workflow }) {
+  return (
+    <a
+      className="workflow-link"
+      href={workflow.url ?? '#'}
+      onClick={e => e.stopPropagation()}
+    >
+      <span className="workflow-link-label">Open in Agent Workflows</span>
+      <span className="workflow-link-arrow" aria-hidden="true">→</span>
+    </a>
+  )
+}
+
+/* ─── Outcome summary (existing) ─────────────────────────────────────────── */
+function OutcomeSummary({ summary }) {
+  return (
+    <div className="activity-card-summary">
+      <div className="activity-card-summary-head">
+        <span className="activity-card-summary-check" aria-hidden="true">✓</span>
+        <span className="activity-card-summary-title">{summary.outcome}</span>
+      </div>
+      <dl className="activity-card-summary-metrics">
+        <div className="activity-card-summary-metric">
+          <dt>Agent time</dt>
+          <dd>{summary.duration}</dd>
+        </div>
+        <div className="activity-card-summary-metric">
+          <dt>Manual</dt>
+          <dd>{summary.manual}</dd>
+        </div>
+        <div className="activity-card-summary-metric activity-card-summary-metric-saved">
+          <dt>Time saved</dt>
+          <dd>{summary.saved}</dd>
+        </div>
+      </dl>
     </div>
   )
 }

@@ -1473,6 +1473,34 @@
   gap: var(--space-3);
   align-items: center;
 }
+.activity-card-compact-oneline {
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  gap: var(--space-3);
+  align-items: center;
+}
+.activity-card-compact-oneline .subject-image,
+.activity-card-compact-oneline .activity-card-compact-main-avatar { flex-shrink: 0; }
+.activity-card-compact-headline {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--color-content-secondary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.activity-card-compact-actor {
+  color: var(--color-content-primary);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  border-bottom: 1px dashed transparent;
+}
+.activity-card-compact-actor:hover {
+  border-bottom-color: color-mix(in srgb, var(--color-content-primary) 40%, transparent);
+  cursor: default;
+}
 .activity-card-compact .subject-image { flex-shrink: 0; }
 .activity-card-compact-text { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .activity-card-compact-lead {
@@ -1662,6 +1690,178 @@ button.activity-card { cursor: pointer; }
   line-height: 1.25;
 }
 .activity-card-summary-metric-saved dd { color: var(--color-success-content); }
+
+/* ─── Expanded card body — new structure ─────────────────────────────────── */
+.card-body-section { margin-bottom: var(--space-4); }
+.card-body-section:last-child { margin-bottom: 0; }
+.body-section-label {
+  margin: 0 0 var(--space-2);
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Data-change diff */
+.data-change-rows { display: flex; flex-direction: column; gap: var(--space-2); }
+.data-change-row {
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: 8px;
+}
+.data-change-field {
+  font-size: 11px;
+  color: var(--color-content-tertiary);
+  margin-bottom: 4px;
+}
+.data-change-diff {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+.data-change-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px 3px 3px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-full);
+  color: var(--color-content-primary);
+}
+.data-change-chip-before { color: var(--color-content-tertiary); text-decoration: line-through; }
+.data-change-chip-after  { background: var(--color-success-bg); border-color: var(--color-success-border); color: var(--color-success-content); }
+.data-change-chip-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-bg-tertiary) center/cover no-repeat;
+  flex-shrink: 0;
+}
+.data-change-arrow {
+  color: var(--color-content-tertiary);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+/* Conversation pills */
+.conversation-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.conversation-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px var(--space-2);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-full);
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--color-content-primary);
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+.conversation-pill:hover { background: var(--color-bg-tertiary); }
+.conversation-pill.is-open {
+  background: var(--color-purple-bg-primary);
+  border-color: var(--color-purple-border-primary);
+  color: var(--color-purple-content-primary);
+}
+.conversation-pill-label { font-weight: var(--font-weight-medium); }
+.conversation-pill-meta  { color: var(--color-content-tertiary); }
+.conversation-pill.is-open .conversation-pill-meta { color: inherit; opacity: 0.75; }
+.conversation-body {
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: 8px;
+}
+.conversation-body .comm-body-sms,
+.conversation-body .comm-body-call,
+.conversation-body .comm-body-email { padding: 0; }
+
+/* Voice call player */
+.voice-call { display: flex; flex-direction: column; gap: var(--space-3); }
+.voice-call-head { display: flex; align-items: center; gap: var(--space-3); }
+.voice-call-play {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--color-purple-bg-primary);
+  color: var(--color-bg-primary);
+  border: 0;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding-left: 2px;
+}
+.voice-call-play:hover { background: var(--color-purple-content-primary); }
+.voice-call-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.voice-call-title {
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+}
+.voice-call-duration { color: var(--color-content-tertiary); font-weight: var(--font-weight-regular); margin-left: 2px; }
+.voice-call-progress {
+  height: 3px;
+  background: var(--color-border-opaque);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.voice-call-progress > span {
+  display: block;
+  height: 100%;
+  background: var(--color-purple-bg-primary);
+  transition: width 100ms linear;
+}
+.voice-call-transcript {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.voice-turn { color: var(--color-content-secondary); }
+.voice-turn-speaker {
+  color: var(--color-content-primary);
+  font-weight: var(--font-weight-medium);
+  margin-right: 6px;
+}
+.voice-turn-agent .voice-turn-speaker { color: var(--color-purple-content-primary); }
+
+/* Workflow link button */
+.workflow-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px var(--space-3);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+.workflow-link:hover { background: var(--color-bg-tertiary); }
+.workflow-link-arrow { color: var(--color-content-tertiary); }
 
 /* Soft-lift hover — no border-color change */
 .activity-card-expandable:hover:not(.activity-card-open),
