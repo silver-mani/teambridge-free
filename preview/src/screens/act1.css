@@ -254,18 +254,29 @@
   flex-shrink: 0;
 }
 
-/* Scrollable messages area (grows) */
-
-.prompt-messages {
+/* Unified scroll area — briefing + chat messages + follow-up chips all
+   flow inside this single container so the operator never sees two
+   independent scrollbars on the chat column. The compose input lives
+   outside, pinned at the bottom. */
+.prompt-scroll {
   position: relative;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
   padding: var(--space-1) 0 var(--space-12);
   scroll-padding-bottom: var(--space-12);
+}
+
+/* Message list is just a flex column inside the scroller — no independent
+   overflow. */
+.prompt-messages {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
 /* Top-bar Clear-chat control — sits above the chat messages, right-aligned */
@@ -410,15 +421,65 @@
 .prompt-seg-list li { display: flex; gap: 8px; line-height: var(--line-height-loose); }
 .prompt-seg-list li::before { content: '•'; color: var(--color-content-tertiary); }
 
+/* Activity-detected card — transparent fill + light grey stroke, shown
+   just before a reasoning block so the operator sees what real-world
+   event triggered the AI's thinking (e.g. "Sandra cancelled her shift"). */
+.prompt-seg-signal {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-3);
+  align-items: start;
+  padding: var(--space-3);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--color-content-tertiary) 22%, transparent);
+  border-radius: 10px;
+}
+.prompt-seg-signal-icon {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-warning-fill, #F59E0B) 14%, transparent);
+  color: var(--color-warning-fill, #B45309);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.prompt-seg-signal-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.prompt-seg-signal-eyebrow {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-content-tertiary);
+  font-weight: var(--font-weight-medium);
+}
+.prompt-seg-signal-title {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+  line-height: 1.35;
+}
+.prompt-seg-signal-detail {
+  font-size: 12px;
+  color: var(--color-content-tertiary);
+  line-height: 1.5;
+}
+
 /* Claude-style reasoning block — muted text in a left-ruled column so the
    chain of logic reads as "the agent is thinking" rather than a finished
    answer. Lines reveal in sync with the normal streaming state machine. */
 .prompt-seg-thinking {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   padding: 2px 0 2px 12px;
-  border-left: 2px solid color-mix(in srgb, var(--color-content-tertiary) 35%, transparent);
+  border-left: 2px solid color-mix(in srgb, var(--color-content-disabled) 35%, transparent);
 }
 .prompt-seg-thinking-eyebrow {
   display: inline-flex;
@@ -427,7 +488,7 @@
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--color-content-tertiary);
+  color: var(--color-content-disabled);
   font-weight: var(--font-weight-medium);
 }
 .prompt-seg-thinking-pulse {
@@ -441,17 +502,56 @@
   0%, 100% { opacity: 0.35; transform: scale(0.9); }
   50%      { opacity: 1;    transform: scale(1.1); }
 }
-.prompt-seg-thinking-body {
+.prompt-seg-thinking-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.prompt-seg-thinking-step {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
-.prompt-seg-thinking-line {
-  margin: 0;
+/* Title is the clickable accordion head. Chevron on the left rotates
+   90° when the step is open. Uses --color-content-disabled for an extra
+   soft grey so the whole reasoning reads as muted internal monologue. */
+.prompt-seg-thinking-step-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  font-family: inherit;
   font-size: 13px;
-  line-height: 1.5;
-  color: var(--color-content-tertiary);
-  font-style: italic;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-disabled);
+  line-height: 1.35;
+  cursor: pointer;
+  text-align: left;
+  transition: color 120ms ease;
+}
+.prompt-seg-thinking-step-title:hover { color: var(--color-content-tertiary); }
+.prompt-seg-thinking-step-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  color: var(--color-content-disabled);
+  transition: transform 140ms cubic-bezier(0.2, 0, 0, 1);
+}
+.prompt-seg-thinking-step.is-open .prompt-seg-thinking-step-chevron {
+  transform: rotate(90deg);
+}
+.prompt-seg-thinking-step-detail {
+  font-size: 12px;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--color-content-disabled) 85%, transparent);
+  padding-left: 18px;
 }
 
 /* Attachment card — record-style (person/event/chart) artifact in an AI answer */
@@ -990,8 +1090,12 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  flex: 1;
-  min-height: 0;
+  /* The briefing used to be the fill element of the chat column, so it
+     flexed and allowed itself to shrink below content size. Now it's
+     one item in .prompt-scroll's flow — if it shrinks below content,
+     the situation cards leak past the box and overlap the sibling
+     message list. Drop the flex/min-height pair; the scroll container
+     handles overflow for the whole thread. */
 }
 
 /* Agent identity pill at the top — "Teambridge / Super Agent · Monitoring all" */
@@ -1147,6 +1251,11 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  /* Container query root — when the situations column is narrow (e.g. the
+     pay/schedule/people views shrink the chat column to 360px), the
+     individual cards wrap their action button to a new row instead of
+     squeezing the text into a skinny gutter. */
+  container-type: inline-size;
 }
 @keyframes briefing-enter {
   from { opacity: 0; transform: translateY(6px); }
@@ -1207,6 +1316,20 @@
 .briefing-situation-action:hover {
   background: var(--color-bg-tertiary);
   border-color: color-mix(in srgb, var(--color-content-primary) 18%, transparent);
+}
+
+/* Narrow chat column (pay/schedule/people views compress it to ~360px):
+   wrap the action button to its own row below the text instead of
+   cramming it into a side gutter that truncates the title. */
+@container (max-width: 380px) {
+  .briefing-situation {
+    grid-template-columns: 10px 1fr;
+    row-gap: var(--space-2);
+  }
+  .briefing-situation-action {
+    grid-column: 2;
+    justify-self: start;
+  }
 }
 
 /* ─── Zones ──────────────────────────────────────────────────────────────── */
