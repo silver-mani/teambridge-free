@@ -1581,12 +1581,12 @@ button.activity-card { cursor: pointer; }
   transform: translateY(-50%);
 }
 
-/* Green outcome summary — sits at the bottom of an expanded card */
+/* Green outcome summary — matches the "Resolved" status tag palette */
 .activity-card-summary {
   margin-top: var(--space-3);
   padding: var(--space-3);
-  background: color-mix(in srgb, var(--color-matcha-bg-primary) 30%, var(--color-bg-primary));
-  border: 1px solid color-mix(in srgb, var(--color-matcha-border-primary) 70%, transparent);
+  background: var(--color-success-bg);
+  border: 1px solid var(--color-success-border);
   border-radius: 10px;
 }
 .activity-card-summary-head {
@@ -1599,8 +1599,8 @@ button.activity-card { cursor: pointer; }
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: var(--color-matcha-bg-primary);
-  color: var(--color-matcha-content-primary);
+  background: var(--color-success-fill);
+  color: var(--color-bg-primary);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1611,7 +1611,7 @@ button.activity-card { cursor: pointer; }
 .activity-card-summary-title {
   font-size: var(--text-sm);
   font-weight: var(--font-weight-medium);
-  color: var(--color-matcha-content-primary);
+  color: var(--color-success-content);
   line-height: 1.35;
 }
 .activity-card-summary-metrics {
@@ -1637,7 +1637,7 @@ button.activity-card { cursor: pointer; }
   font-variant-numeric: tabular-nums;
   line-height: 1.25;
 }
-.activity-card-summary-metric-saved dd { color: var(--color-matcha-content-primary); }
+.activity-card-summary-metric-saved dd { color: var(--color-success-content); }
 
 /* Soft-lift hover — no border-color change */
 .activity-card-expandable:hover:not(.activity-card-open),
