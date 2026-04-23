@@ -1445,14 +1445,20 @@ function DailyBriefing({ industryId, view = 'overview', onAction }) {
         <article className="briefing-compact">
           <div className="briefing-compact-head">
             <span className="briefing-compact-time">{brief.time}</span>
-            <p className="briefing-compact-greeting">{brief.greeting}</p>
+            <p className="briefing-compact-greeting">
+              {brief.greeting.split(/(\s+)/).map((tok, i) => (
+                /\S/.test(tok)
+                  ? <span key={i} className="briefing-word" style={{ animationDelay: `${i * 90}ms` }}>{tok}</span>
+                  : <span key={i}>{tok}</span>
+              ))}
+            </p>
           </div>
           <ul className="briefing-situations">
             {brief.situations.map((s, i) => (
               <li
                 key={s.id}
                 className={`briefing-situation briefing-situation-${s.tone}`}
-                style={{ animationDelay: `${360 + i * 180}ms` }}
+                style={{ animationDelay: `${2200 + i * 420}ms` }}
               >
                 <span className="briefing-situation-dot" aria-hidden="true" />
                 <div className="briefing-situation-text">
