@@ -1444,7 +1444,7 @@
 
 .activity-feed .activity-card {
   padding: var(--space-3) var(--space-3);
-  background: var(--color-bg-tertiary);
+  background: var(--color-bg-primary);
   border-color: transparent;
   color: var(--color-content-secondary);
 }
@@ -1457,12 +1457,12 @@
   transform: none;
 }
 .activity-feed .activity-card-open { box-shadow: none; }
-/* Drill-down body sits on the card's grey bg, so retune avatar rails */
+/* Drill-down body sits on the card's white bg */
 .activity-feed .activity-card-body .activity-row-avatar {
-  box-shadow: 0 0 0 2px var(--color-bg-tertiary);
+  box-shadow: 0 0 0 2px var(--color-bg-primary);
 }
 .activity-feed .activity-card-body .activity-row-avatar-agent {
-  box-shadow: 0 0 0 2px var(--color-bg-tertiary),
+  box-shadow: 0 0 0 2px var(--color-bg-primary),
               0 0 0 3.5px color-mix(in srgb, var(--color-purple-bg-primary) 70%, transparent);
 }
 .activity-card-compact {
