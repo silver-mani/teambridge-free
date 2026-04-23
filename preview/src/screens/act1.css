@@ -410,6 +410,50 @@
 .prompt-seg-list li { display: flex; gap: 8px; line-height: var(--line-height-loose); }
 .prompt-seg-list li::before { content: '•'; color: var(--color-content-tertiary); }
 
+/* Claude-style reasoning block — muted text in a left-ruled column so the
+   chain of logic reads as "the agent is thinking" rather than a finished
+   answer. Lines reveal in sync with the normal streaming state machine. */
+.prompt-seg-thinking {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 2px 0 2px 12px;
+  border-left: 2px solid color-mix(in srgb, var(--color-content-tertiary) 35%, transparent);
+}
+.prompt-seg-thinking-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-content-tertiary);
+  font-weight: var(--font-weight-medium);
+}
+.prompt-seg-thinking-pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-content-tertiary);
+  animation: prompt-seg-thinking-pulse 1400ms ease-in-out infinite;
+}
+@keyframes prompt-seg-thinking-pulse {
+  0%, 100% { opacity: 0.35; transform: scale(0.9); }
+  50%      { opacity: 1;    transform: scale(1.1); }
+}
+.prompt-seg-thinking-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.prompt-seg-thinking-line {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-content-secondary);
+  font-style: italic;
+}
+
 /* Attachment card — record-style (person/event/chart) artifact in an AI answer */
 .prompt-seg-attachment {
   display: grid;

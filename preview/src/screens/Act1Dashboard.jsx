@@ -1208,29 +1208,46 @@ function RecordDrawer({ card, detail, onClose, onExplore }) {
 
 /* ─── Activity feed (right column) ───────────────────────────────────────── */
 
-function ActivityFeed({ data }) {
+function ActivityFeed({ data, injectedCard, cardOverrides }) {
   const [expandedId, setExpandedId] = useState(null)
   const toggle = id => setExpandedId(curr => curr === id ? null : id)
+  // When the scripted scene has posted a live card, render it above the
+  // data-driven cards so it reads as the freshest event.
+  const applyOverride = (card) => cardOverrides?.[card.id] ? { ...card, ...cardOverrides[card.id] } : card
   return (
     <aside className="activity-feed" aria-label="Activity">
       <div className="activity-feed-inner">
         <h2 className="activity-feed-title">Activity</h2>
         <div className="feed">
+          {injectedCard && (() => {
+            const shown = applyOverride(injectedCard)
+            return (
+              <ActivityCard
+                key={shown.id}
+                card={shown}
+                expanded={expandedId === shown.id}
+                onToggle={() => toggle(shown.id)}
+              />
+            )
+          })()}
           {data.activeCard && (
             <ActivityCard
-              card={data.activeCard}
+              card={applyOverride(data.activeCard)}
               expanded={expandedId === data.activeCard.id}
               onToggle={() => toggle(data.activeCard.id)}
             />
           )}
-          {data.feed.map(card => (
-            <ActivityCard
-              key={card.id}
-              card={card}
-              expanded={expandedId === card.id}
-              onToggle={() => toggle(card.id)}
-            />
-          ))}
+          {data.feed.map(card => {
+            const shown = applyOverride(card)
+            return (
+              <ActivityCard
+                key={shown.id}
+                card={shown}
+                expanded={expandedId === shown.id}
+                onToggle={() => toggle(shown.id)}
+              />
+            )
+          })}
         </div>
       </div>
     </aside>
@@ -1297,10 +1314,6 @@ const BRIEFING = {
     time: '9:04 AM',
     greeting: "Good morning. Here's your Saturday briefing.",
     situations: [
-      { id: 'rachel', tone: 'warning',
-        title: 'Sandra Lee cancelled',
-        desc:  'Rachel Williams selected · awaiting your approval.',
-        action: { label: 'Approve Rachel', prompt: 'Approve the Rachel Williams replacement' } },
       { id: 'coverage-chart', tone: 'warning',
         title: 'Gate coverage for Saturday',
         desc:  '47 of 48 confirmed · 1 open role at Gate 3.',
@@ -1309,10 +1322,6 @@ const BRIEFING = {
         title: 'Pre-game crew brief not drafted',
         desc:  '48 staff report Saturday at 5 PM.',
         action: { label: 'Draft brief', prompt: 'Draft the pre-game crew briefing' } },
-      { id: 'weekly', tone: 'info',
-        title: 'Weekly coverage recap',
-        desc:  'Civic Arena + Harbor Theater · ready for the client.',
-        action: { label: 'Build report', prompt: 'Build this week’s coverage report' } },
     ],
   },
   healthcare: {
@@ -2132,6 +2141,28 @@ function Segment({ seg, charsRevealed }) {
     const cls  = seg.type === 'cta' ? 'prompt-seg prompt-seg-cta' : 'prompt-seg prompt-seg-text'
     return <div className={cls}>{renderInlineBold(text)}</div>
   }
+  if (seg.type === 'thinking') {
+    // Reasoning block — mirrors Claude's thinking style. Lines reveal as a
+    // single continuous char stream so the state machine's existing timing
+    // (6 chars / 20ms) applies. Each line takes a row in the block.
+    const lines = seg.lines ?? []
+    const joined = lines.join('\n')
+    const revealedText = joined.slice(0, charsRevealed)
+    const revealedLines = revealedText.split('\n')
+    return (
+      <div className="prompt-seg prompt-seg-thinking">
+        <div className="prompt-seg-thinking-eyebrow">
+          <span className="prompt-seg-thinking-pulse" aria-hidden="true" />
+          Thinking
+        </div>
+        <div className="prompt-seg-thinking-body">
+          {revealedLines.map((line, i) => (
+            <p key={i} className="prompt-seg-thinking-line">{line}</p>
+          ))}
+        </div>
+      </div>
+    )
+  }
   if (seg.type === 'list') {
     return (
       <ul className="prompt-seg prompt-seg-list">
@@ -2307,15 +2338,18 @@ function ProgressMessage({ message }) {
   const steps = message.steps ?? []
   const agentName = agent ? `${agent.name} (${agent.role})` : 'Teambridge AI'
   const isThinking = message.status === 'thinking'
+  // Per-message override so scripted scenes can advance faster than the
+  // default 18s pacing used for background workflows.
+  const stepDuration = message.stepDurationMs ?? PROGRESS_STEP_DURATION_MS
 
   const [activeIdx, setActiveIdx] = useState(0)
   const allDone = !isThinking && activeIdx >= steps.length
 
   useEffect(() => {
     if (isThinking || allDone) return
-    const t = setTimeout(() => setActiveIdx(i => i + 1), PROGRESS_STEP_DURATION_MS)
+    const t = setTimeout(() => setActiveIdx(i => i + 1), stepDuration)
     return () => clearTimeout(t)
-  }, [activeIdx, allDone, isThinking])
+  }, [activeIdx, allDone, isThinking, stepDuration])
 
   if (isThinking) {
     return (
@@ -2486,9 +2520,101 @@ function Message({ message, onApprove }) {
   )
 }
 
+/* ─── Scripted "Sandra cancelled" scene ───────────────────────────────────
+   Four message specs that play back sequentially when the user lands on
+   the Events home with an empty chat. Shape matches the normal assistant
+   message shape so the streaming state machine animates them naturally. */
+const RACHEL_ATTACHMENT = {
+  type: 'attachment',
+  avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=160&h=160&fit=crop&crop=faces&auto=format',
+  title: 'Rachel Williams · Usher',
+  subtitle: '1.7 mi · 18 hrs this week · 4 events this month · 100% last-min accept rate',
+  actions: [{ label: 'View shift' }],
+}
+
+const SANDRA_SCENE = {
+  // 1) The first message the prospect sees — AI reasoning through the
+  //    replacement search, ending with a canned "Yes, reach out" button.
+  reachOutPrompt: {
+    content: { segments: [
+      { type: 'thinking', lines: [
+        'Sandra Lee just cancelled her Saturday 7pm usher shift at Civic Auditorium. 3.5 hrs notice.',
+        'Pulling Civic-credentialed ushers in a sensible commute radius who are under 32 hrs this week, so no one gets pushed into overtime.',
+        '64 ushers in range → 38 Civic-qualified → 21 free at 7pm → 18 under OT cap → 12 opted in to last-min offers.',
+        'Ranking by proximity (traffic-adjusted), 90-day performance, last-min accept rate, and hours fairness so the same people aren\'t always on call.',
+      ] },
+      { type: 'text', text: "Found **12 qualified replacements**. Top 3 are inside 4 miles with 90%+ accept rates. Want me to reach out to them in parallel?" },
+    ] },
+    specialist: 'nova',
+    approveLabel: 'Yes, reach out',
+    approvePlan: [
+      'Offer the Saturday 7pm shift to the top 3 matches in parallel',
+      'Monitor responses (cut-off: 90 seconds)',
+      'Confirm the winner and lock the schedule',
+    ],
+    stepDurationMs: 1800,
+    sceneAfter: ({ postAssistant }) => postAssistant(SANDRA_SCENE.rachelAccepted),
+  },
+
+  // 2) Outcome of reach-out — Rachel accepted. Prospect clicks Approve.
+  rachelAccepted: {
+    content: { segments: [
+      { type: 'text', text: "**Rachel Williams** accepted at the posted rate — no pay change needed. Offered in **47 seconds**." },
+      RACHEL_ATTACHMENT,
+      { type: 'cta', text: "Send her the pre-shift brief and lock the schedule?" },
+    ] },
+    specialist: 'nova',
+    approveLabel: 'Approve & notify',
+    approvePlan: [
+      'Send the pre-shift brief to Rachel',
+      'Update the Saturday schedule at Civic Auditorium',
+      'Log the swap with Miguel (event lead)',
+    ],
+    stepDurationMs: 1200,
+    sceneAfter: ({ postAssistant, overrideActivityCard }) => {
+      overrideActivityCard?.('sandra-cancellation-live', {
+        status: 'resolved',
+        statusLabel: 'Resolved',
+        description: 'Rachel Williams picked up the shift · 47s to fill · no pay delta.',
+      })
+      postAssistant(SANDRA_SCENE.success)
+    },
+  },
+
+  // 3) Covered. Metrics block + offer to codify the pattern.
+  success: {
+    content: { segments: [
+      { type: 'text', text: "Shift covered. Schedule is locked and Miguel is notified." },
+      { type: 'metrics', items: [
+        { value: '✓',    label: 'Coverage' },
+        { value: '47 s', label: 'Time to fill' },
+        { value: '$0',   label: 'Pay delta' },
+        { value: 'None', label: 'OT risk' },
+      ] },
+      { type: 'cta', text: "Want to save this as a **Last-min Replacement** workflow? Nova will handle cancellations the same way next time — no approval required unless something's off." },
+    ] },
+    specialist: 'nova',
+    approveLabel: 'Save as workflow',
+    approvePlan: [
+      'Capture the ranking rules and notification policy',
+      'Save as "Last-min Replacement" workflow · owner: you',
+    ],
+    stepDurationMs: 1200,
+    sceneAfter: ({ postAssistant }) => postAssistant(SANDRA_SCENE.savedConfirmation),
+  },
+
+  // 4) Final bubble — saved. Offers a link to the workflow editor.
+  savedConfirmation: {
+    content: { segments: [
+      { type: 'text', text: "Saved. Nova will auto-run **Last-min Replacement** next time someone cancels — I'll only ping you if hours are tight or a pay bump is needed." },
+      { type: 'cta', text: "Open in **Agent Workflows** to tweak the rules." },
+    ] },
+  },
+}
+
 /* ─── Prompt panel ──────────────────────────────────────────────────────── */
 
-function PromptPanel({ industryId, view = 'overview', paySubRoute }) {
+function PromptPanel({ industryId, view = 'overview', paySubRoute, onInjectActivityCard, onOverrideActivityCard, onResetScene }) {
   const suggestions = PROMPT_SUGGESTIONS[industryId] ?? PROMPT_SUGGESTIONS.events
   const [input, setInput]       = useState('')
   const [messages, setMessages] = useState([])
@@ -2542,10 +2668,13 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute }) {
         updateMsg(m.id, { status: 'done' })
         return
       }
-      if (seg.type === 'text' || seg.type === 'cta') {
-        const full = seg.text
+      if (seg.type === 'text' || seg.type === 'cta' || seg.type === 'thinking') {
+        const full = seg.type === 'thinking' ? (seg.lines ?? []).join('\n') : seg.text
+        // Reasoning blocks stream ~1.6× as fast as normal copy so the chain
+        // of reasoning lands in a few seconds, not a minute.
+        const charsPerTick = seg.type === 'thinking' ? 10 : 6
         if (m.chars < full.length) {
-          const t = setTimeout(() => updateMsg(m.id, { chars: Math.min(full.length, m.chars + 6) }), 20)
+          const t = setTimeout(() => updateMsg(m.id, { chars: Math.min(full.length, m.chars + charsPerTick) }), 20)
           return () => clearTimeout(t)
         }
         const t = setTimeout(() => updateMsg(m.id, { step: m.step + 1, chars: 0 }), 240)
@@ -2639,22 +2768,91 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute }) {
     const agentId = msg.specialist ?? 'nova'
     const steps   = msg.approvePlan ?? SPECIALIST_PLAN[agentId] ?? SPECIALIST_PLAN.nova
     const userLabel = msg.approveLabel ?? `Have ${getAgent(agentId)?.name ?? 'Nova'} take it`
+    const stepDurationMs = msg.stepDurationMs ?? PROGRESS_STEP_DURATION_MS
     const progressId = ++idRef.current
     // 1) Post the user's "click" as a chat bubble right away, and drop a
     //    placeholder assistant bubble showing thinking dots.
     setMessages(prev => [
       ...prev.map(m => m.specialist ? { ...m, specialist: null, approveLabel: null } : m),
       { id: ++idRef.current, role: 'user', content: userLabel, status: 'done' },
-      { id: progressId, role: 'progress', agentId, steps, status: 'thinking' },
+      { id: progressId, role: 'progress', agentId, steps, status: 'thinking', stepDurationMs },
     ])
     // 2) After a beat, flip the progress bubble into its running state so
     //    the plan reveals sequentially from zero.
     setTimeout(() => {
       setMessages(prev => prev.map(m => m.id === progressId ? { ...m, status: 'running' } : m))
     }, 900)
+    // 3) Scripted scenes can queue a follow-up assistant message to land
+    //    after the progress completes. Each step takes `stepDurationMs`
+    //    before the next one advances, plus the 900ms thinking→running
+    //    preamble and a small buffer for the final "Complete" pill.
+    if (typeof msg.sceneAfter === 'function') {
+      const total = 900 + steps.length * stepDurationMs + 500
+      setTimeout(() => msg.sceneAfter({ postAssistant, overrideActivityCard: onOverrideActivityCard }), total)
+    }
   }
 
-  const clear = () => { setMessages([]); setInput('') }
+  /* Low-level post helper used by the scripted scene. Goes through the
+     normal streaming state machine so every scene message animates like a
+     real agent reply. */
+  const postAssistant = (spec) => {
+    const id = ++idRef.current
+    setMessages(prev => [...prev, { id, role: 'assistant', content: spec.content, status: 'thinking',
+      specialist:    spec.specialist ?? null,
+      approveLabel:  spec.approveLabel ?? null,
+      approvePlan:   spec.approvePlan ?? null,
+      stepDurationMs: spec.stepDurationMs,
+      sceneAfter:    spec.sceneAfter,
+    }])
+  }
+
+  /* ── Scripted "Sandra cancelled" live scene ─────────────────────────
+     Plays only when the operator lands on the Events home with an empty
+     chat. Deterministic timeline; the orchestrator re-runs on any empty
+     state so Clear-chat replays it cleanly. */
+  const sceneStartedRef = useRef(false)
+  useEffect(() => {
+    if (industryId !== 'events' || view !== 'overview') {
+      sceneStartedRef.current = false
+      return
+    }
+    if (messages.length > 0) {
+      sceneStartedRef.current = false
+      return
+    }
+    if (sceneStartedRef.current) return
+    sceneStartedRef.current = true
+
+    const activityTimer = setTimeout(() => {
+      onInjectActivityCard?.({
+        id: 'sandra-cancellation-live',
+        eyebrow: 'Shift replacement',
+        agentId: 'nova',
+        status: 'in-progress',
+        statusLabel: 'Working on it',
+        timestamp: 'Just now',
+        title: 'Sandra Lee cancelled — Saturday 7pm usher',
+        description: 'Civic Auditorium · 3.5 hrs notice. Nova scoring replacements.',
+        subject: {
+          kind: 'person',
+          primary: 'Sandra Lee',
+          secondary: 'Usher · Civic Auditorium · Sat 7:00p',
+          image: 'https://images.unsplash.com/photo-1489980557514-251d61e3eeb6?w=160&h=160&fit=crop&crop=faces&auto=format',
+        },
+      })
+    }, 3000)
+
+    const chatTimer = setTimeout(() => {
+      postAssistant(SANDRA_SCENE.reachOutPrompt)
+    }, 3200)
+
+    return () => {
+      clearTimeout(activityTimer)
+      clearTimeout(chatTimer)
+    }
+  }, [industryId, view, messages.length]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const clear = () => { setMessages([]); setInput(''); onResetScene?.() }
 
   const hasChat = messages.length > 0
 
@@ -2747,12 +2945,27 @@ export default function Act1Dashboard({ industryId, view = 'overview', onBack, o
   // (home → period → user) alongside top-level view changes.
   const [paySubRoute, setPaySubRoute] = useState({ screen: 'home' })
 
+  // Scripted-scene state, owned here so the chat (PromptPanel) can post
+  // reasoning while the activity feed (ActivityFeed) renders a live card.
+  // Null means the scene has not injected anything yet.
+  const [sceneInjectedCard, setSceneInjectedCard] = useState(null)
+  const [sceneCardOverrides, setSceneCardOverrides] = useState({})
+
   // Reset the pay drill-down whenever the user leaves the Pay tab or
   // switches industries; otherwise chat briefings would reference stale
   // period/person state on re-entry.
   useEffect(() => {
     if (view !== 'pay') setPaySubRoute({ screen: 'home' })
   }, [view, industryId])
+
+  // Scene state is scoped to events/overview; wipe on industry or view change
+  // so a user bouncing through Schedule/Pay doesn't return to a stale card.
+  useEffect(() => {
+    if (industryId !== 'events' || view !== 'overview') {
+      setSceneInjectedCard(null)
+      setSceneCardOverrides({})
+    }
+  }, [industryId, view])
 
   return (
     <div className={`act1-root${view === 'overview' ? '' : ` act1-root--${view}`}`}>
@@ -2764,12 +2977,19 @@ export default function Act1Dashboard({ industryId, view = 'overview', onBack, o
         onSelectView={onSelectView}
       />
 
-      <PromptPanel industryId={industryId} view={view} paySubRoute={paySubRoute} />
+      <PromptPanel
+        industryId={industryId}
+        view={view}
+        paySubRoute={paySubRoute}
+        onInjectActivityCard={setSceneInjectedCard}
+        onOverrideActivityCard={(id, patch) => setSceneCardOverrides(prev => ({ ...prev, [id]: { ...(prev[id] ?? {}), ...patch } }))}
+        onResetScene={() => { setSceneInjectedCard(null); setSceneCardOverrides({}) }}
+      />
 
       {view === 'schedule' ? <ScheduleCalendar data={data} onDemo={() => showDemoToast()} />
        : view === 'people' ? <PeopleList       data={data} onDemo={() => showDemoToast()} />
        : view === 'pay'    ? <PayView          industryId={industryId} route={paySubRoute} onChangeRoute={setPaySubRoute} onDemo={() => showDemoToast()} />
-       :                     <ActivityFeed     data={data} />}
+       :                     <ActivityFeed     data={data} injectedCard={sceneInjectedCard} cardOverrides={sceneCardOverrides} />}
 
       <ToastHost />
     </div>
