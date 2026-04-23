@@ -1442,7 +1442,29 @@
   width: 100%;
 }
 
-.activity-feed .activity-card { padding: var(--space-3) var(--space-3); }
+.activity-feed .activity-card {
+  padding: var(--space-3) var(--space-3);
+  background: var(--color-bg-tertiary);
+  border-color: transparent;
+  color: var(--color-content-secondary);
+}
+.activity-feed .activity-card-compact-eyebrow { color: var(--color-content-secondary); }
+.activity-feed .activity-card-compact-desc { color: var(--color-content-secondary); }
+/* Flat feed cards — no lift, no shadow */
+.activity-feed .activity-card-expandable:hover:not(.activity-card-open),
+.activity-feed button.activity-card:hover {
+  box-shadow: none;
+  transform: none;
+}
+.activity-feed .activity-card-open { box-shadow: none; }
+/* Drill-down body sits on the card's grey bg, so retune avatar rails */
+.activity-feed .activity-card-body .activity-row-avatar {
+  box-shadow: 0 0 0 2px var(--color-bg-tertiary);
+}
+.activity-feed .activity-card-body .activity-row-avatar-agent {
+  box-shadow: 0 0 0 2px var(--color-bg-tertiary),
+              0 0 0 3.5px color-mix(in srgb, var(--color-purple-bg-primary) 70%, transparent);
+}
 .activity-card-compact {
   display: grid;
   grid-template-columns: auto 1fr auto;
