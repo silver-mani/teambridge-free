@@ -2037,7 +2037,7 @@ function ProgressMessage({ message }) {
         </ul>
         <a className="progress-workflow-link" href="#agent-workflows" onClick={(e) => e.preventDefault()}>
           <GitBranch01Icon size={12} />
-          <span>Open this workflow in Agent Workflows</span>
+          <span>Upgrade workflow to add this notification</span>
           <ArrowNarrowRightIcon size={12} />
         </a>
       </div>
