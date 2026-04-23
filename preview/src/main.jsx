@@ -11,7 +11,9 @@ const VALID_INDUSTRIES = new Set([
 function parseHash() {
   const raw = (window.location.hash || '').replace(/^#/, '').replace(/^\//, '').trim()
   if (!raw) return null
-  return VALID_INDUSTRIES.has(raw) ? raw : null
+  const [industry, view = 'overview'] = raw.split('/')
+  if (!VALID_INDUSTRIES.has(industry)) return null
+  return { industry, view: view === 'schedule' ? 'schedule' : 'overview' }
 }
 
 function setHash(path) {
@@ -27,15 +29,15 @@ function setHash(path) {
  * `#/events`, `#/healthcare`, etc. deep-link straight into a dashboard.
  */
 function App() {
-  const [industry, setIndustry] = useState(() => parseHash())
+  const [route, setRoute] = useState(() => parseHash())
 
   useEffect(() => {
-    const sync = () => setIndustry(parseHash())
+    const sync = () => setRoute(parseHash())
     window.addEventListener('hashchange', sync)
     return () => window.removeEventListener('hashchange', sync)
   }, [])
 
-  if (!industry) {
+  if (!route) {
     return (
       <IndustrySelector
         onSelect={id => setHash(`/${id}`)}
@@ -45,8 +47,10 @@ function App() {
 
   return (
     <Act1Dashboard
-      industryId={industry}
+      industryId={route.industry}
+      view={route.view}
       onBack={() => setHash('/')}
+      onSelectView={(v) => setHash(v === 'overview' ? `/${route.industry}` : `/${route.industry}/${v}`)}
       onExplore={() => { /* Act 2 not built yet */ }}
     />
   )

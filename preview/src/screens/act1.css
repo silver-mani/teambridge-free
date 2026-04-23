@@ -11,10 +11,18 @@
   background: var(--color-bg-secondary);
   font-family: var(--font-sans);
   color: var(--color-content-primary);
+  transition: grid-template-columns 360ms cubic-bezier(0.2, 0, 0, 1);
 
   --ai-grad-start: #8C4FE2;
   --ai-grad-mid:   #446CFF;
   --ai-grad-end:   #1EDFDE;
+}
+
+/* Activity feed fades out smoothly when the schedule view kicks in,
+   so the grid-template-columns transition can play without the feed
+   snapping to display:none mid-slide. */
+.activity-feed {
+  transition: opacity 220ms ease 80ms;
 }
 
 /* ─── Left nav ────────────────────────────────────────────────────────────── */
@@ -3579,7 +3587,7 @@ button.activity-card:hover:not(.activity-card-selected),
 .act1-root--schedule {
   grid-template-columns: 240px 360px 1fr;
 }
-.act1-root--schedule .activity-feed { display: none; }
+.act1-root--schedule .activity-feed { opacity: 0; pointer-events: none; }
 .act1-root--schedule .prompt-panel-inner {
   max-width: none;
   padding: 28px var(--space-4) var(--space-8);

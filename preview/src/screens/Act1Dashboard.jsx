@@ -1398,8 +1398,37 @@ const BRIEFING = {
   },
 }
 
-function DailyBriefing({ industryId, onAction }) {
-  const brief = BRIEFING[industryId] ?? BRIEFING.events
+/* Briefing set when the user is viewing the Schedule — insights focus on
+   coverage, no-shows, overtime risk, and upcoming shift reminders. Events-only
+   for now; other industries fall back to the home briefing. */
+const SCHEDULE_BRIEFING = {
+  events: {
+    time: '9:04 AM',
+    greeting: "Looking at this week's schedule — here's what to act on.",
+    situations: [
+      { id: 'no-shows', tone: 'warning',
+        title: '2 no-shows logged this week',
+        desc:  'Sandra (Wed) and Ashley (Tue) missed their call times.',
+        action: { label: 'Review no-shows', prompt: "Summarise this week's no-shows" } },
+      { id: 'saturday', tone: 'warning',
+        title: 'Saturday coverage at 98%',
+        desc:  'Gate 3 still has one open usher role 2 days out.',
+        action: { label: 'Fill Gate 3', prompt: 'Fill the last open Saturday role' } },
+      { id: 'ot-miguel', tone: 'info',
+        title: 'Miguel projecting 32 hrs',
+        desc:  'Event-lead load is on the overtime edge for Saturday.',
+        action: { label: 'Check OT risk', prompt: 'Check overtime risk for Saturday' } },
+      { id: 'reminders', tone: 'info',
+        title: "Tomorrow's early call",
+        desc:  '6 staff report 5 AM at Harbor Theater load-in.',
+        action: { label: 'Send reminders', prompt: 'Draft the pre-game crew briefing' } },
+    ],
+  },
+}
+
+function DailyBriefing({ industryId, view = 'overview', onAction }) {
+  const set = view === 'schedule' ? SCHEDULE_BRIEFING : BRIEFING
+  const brief = set[industryId] ?? set.events ?? BRIEFING.events
   const hasSituations = Array.isArray(brief.situations)
 
   return (
@@ -2207,7 +2236,7 @@ function Message({ message, onApprove }) {
 
 /* ─── Prompt panel ──────────────────────────────────────────────────────── */
 
-function PromptPanel({ industryId }) {
+function PromptPanel({ industryId, view = 'overview' }) {
   const suggestions = PROMPT_SUGGESTIONS[industryId] ?? PROMPT_SUGGESTIONS.events
   const [input, setInput]       = useState('')
   const [messages, setMessages] = useState([])
@@ -2372,7 +2401,7 @@ function PromptPanel({ industryId }) {
         )}
 
         {!hasChat
-          ? <DailyBriefing industryId={industryId} onAction={submit} />
+          ? <DailyBriefing industryId={industryId} view={view} onAction={submit} />
           : (
             <div className="prompt-messages" ref={scrollRef}>
               {messages.map(m => <Message key={m.id} message={m} onApprove={handleApprove} />)}
@@ -2425,9 +2454,8 @@ function PromptPanel({ industryId }) {
   )
 }
 
-export default function Act1Dashboard({ industryId, onBack, onExplore }) {
+export default function Act1Dashboard({ industryId, view = 'overview', onBack, onExplore, onSelectView }) {
   const data = useMemo(() => getIndustryData(industryId), [industryId])
-  const [view, setView] = useState('overview')
 
   return (
     <div className={`act1-root${view === 'schedule' ? ' act1-root--schedule' : ''}`}>
@@ -2436,10 +2464,10 @@ export default function Act1Dashboard({ industryId, onBack, onExplore }) {
         view={view}
         onBrand={onBack}
         onAsk={onExplore}
-        onSelectView={setView}
+        onSelectView={onSelectView}
       />
 
-      <PromptPanel industryId={industryId} />
+      <PromptPanel industryId={industryId} view={view} />
 
       {view === 'schedule'
         ? <ScheduleCalendar data={data} onDemo={() => showDemoToast()} />
