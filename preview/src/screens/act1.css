@@ -1486,6 +1486,21 @@
   box-shadow: 0 0 0 1px var(--color-bg-secondary);
   flex-shrink: 0;
 }
+/* Main avatar slot — used when the card has an agentId, so the specialist
+   IS the profile image on the compact row. */
+.activity-card-compact-main-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--color-bg-tertiary) center/cover no-repeat;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--color-purple-bg-primary) 70%, transparent);
+}
+.activity-card-compact-main-avatar.agent-avatar-purple { box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--color-purple-bg-primary) 75%, transparent); }
+.activity-card-compact-main-avatar.agent-avatar-blue   { box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--color-blue-bg-primary)   75%, transparent); }
+.activity-card-compact-main-avatar.agent-avatar-matcha { box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--color-matcha-bg-primary) 75%, transparent); }
+.activity-card-compact-main-avatar.agent-avatar-orange { box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--color-orange-bg-primary) 75%, transparent); }
+.activity-card-compact-main-avatar.agent-avatar-pink   { box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--color-pink-bg-primary)   75%, transparent); }
 .activity-card-compact-desc {
   font-size: 12px;
   color: var(--color-content-secondary);
@@ -1530,11 +1545,12 @@ button.activity-card { cursor: pointer; }
   outline-offset: -2px;
 }
 .activity-card-body {
-  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-3);
+  padding: var(--space-3);
   border-top: 1px solid var(--color-border-opaque);
   max-height: 420px;
   overflow-y: auto;
 }
+.activity-card-body .activity-rows { gap: var(--space-2); }
 /* Avatars in the card body sit on --color-bg-primary (card bg), not on
    the drawer's --color-bg-secondary, so retune the rail punch-through. */
 .activity-card-body .activity-row-avatar {
@@ -1556,39 +1572,59 @@ button.activity-card { cursor: pointer; }
 .activity-card-summary {
   margin-top: var(--space-3);
   padding: var(--space-3);
-  background: color-mix(in srgb, var(--color-matcha-bg-primary) 35%, var(--color-bg-primary));
+  background: color-mix(in srgb, var(--color-matcha-bg-primary) 30%, var(--color-bg-primary));
   border: 1px solid color-mix(in srgb, var(--color-matcha-border-primary) 70%, transparent);
   border-radius: 10px;
+}
+.activity-card-summary-head {
   display: flex;
-  gap: var(--space-3);
-  align-items: flex-start;
+  align-items: center;
+  gap: var(--space-2);
 }
 .activity-card-summary-check {
   flex-shrink: 0;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: var(--color-matcha-bg-primary);
   color: var(--color-matcha-content-primary);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: var(--font-weight-medium);
   line-height: 1;
 }
-.activity-card-summary-body { flex: 1; min-width: 0; }
 .activity-card-summary-title {
   font-size: var(--text-sm);
   font-weight: var(--font-weight-medium);
   color: var(--color-matcha-content-primary);
   line-height: 1.35;
 }
-.activity-card-summary-manual {
-  font-size: var(--text-xs);
-  color: var(--color-content-secondary);
-  margin-top: 2px;
+.activity-card-summary-metrics {
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
 }
+.activity-card-summary-metric { margin: 0; min-width: 0; }
+.activity-card-summary-metric dt {
+  font-size: 11px;
+  color: var(--color-content-tertiary);
+  text-transform: none;
+  letter-spacing: 0;
+  margin: 0 0 2px;
+}
+.activity-card-summary-metric dd {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+}
+.activity-card-summary-metric-saved dd { color: var(--color-matcha-content-primary); }
 
 /* Soft-lift hover — no border-color change */
 .activity-card-expandable:hover:not(.activity-card-open),
