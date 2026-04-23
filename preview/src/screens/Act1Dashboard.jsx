@@ -2137,6 +2137,55 @@ function MetricsBlock({ items }) {
   )
 }
 
+/* Total char count a thinking segment will stream, derived from its titled
+   steps. Must mirror the per-char accounting done by revealThinkingSteps
+   so the streaming state machine knows when to advance to the next
+   segment. Title + '\n' + detail, joined by '\n' between steps. */
+function thinkingSegmentLength(seg) {
+  const steps = seg.steps ?? []
+  if (!steps.length) return 0
+  let total = 0
+  steps.forEach((s, i) => {
+    total += (s.title?.length ?? 0) + 1 + (s.detail?.length ?? 0)
+    if (i < steps.length - 1) total += 1 // separator between steps
+  })
+  return total
+}
+
+/* Walk through the steps consuming `charsRevealed` chars — title first,
+   then detail (prefixed by one char for the title/detail separator), then
+   move to the next step (skipping one more char for the step separator). */
+function revealThinkingSteps(steps, charsRevealed) {
+  if (charsRevealed === Infinity) return steps.map(s => ({ title: s.title, detail: s.detail }))
+  const out = []
+  let remaining = charsRevealed
+  for (const step of steps) {
+    if (remaining <= 0) break
+    const titleLen = step.title?.length ?? 0
+    if (remaining < titleLen) {
+      out.push({ title: step.title.slice(0, remaining), detail: '' })
+      remaining = 0
+      break
+    }
+    remaining -= titleLen
+    // One char gap between title and detail.
+    if (remaining <= 0) { out.push({ title: step.title, detail: '' }); break }
+    remaining -= 1
+    const detailLen = step.detail?.length ?? 0
+    if (remaining < detailLen) {
+      out.push({ title: step.title, detail: step.detail.slice(0, remaining) })
+      remaining = 0
+      break
+    }
+    remaining -= detailLen
+    out.push({ title: step.title, detail: step.detail })
+    // One char gap between this step and the next.
+    if (remaining <= 0) break
+    remaining -= 1
+  }
+  return out
+}
+
 function Segment({ seg, charsRevealed }) {
   if (seg.type === 'text' || seg.type === 'cta') {
     const text = seg.text.slice(0, charsRevealed)
@@ -2144,24 +2193,26 @@ function Segment({ seg, charsRevealed }) {
     return <div className={cls}>{renderInlineBold(text)}</div>
   }
   if (seg.type === 'thinking') {
-    // Reasoning block — mirrors Claude's thinking style. Lines reveal as a
-    // single continuous char stream so the state machine's existing timing
-    // (6 chars / 20ms) applies. Each line takes a row in the block.
-    const lines = seg.lines ?? []
-    const joined = lines.join('\n')
-    const revealedText = joined.slice(0, charsRevealed)
-    const revealedLines = revealedText.split('\n')
+    // Reasoning block — titled steps (title + detail) like Claude's "Used
+    // N tools" blocks. Titles bold, details muted. Each pair reveals in
+    // lockstep with the state machine's char stream so the progression
+    // reads as the agent thinking out loud.
+    const steps = seg.steps ?? []
+    const revealed = revealThinkingSteps(steps, charsRevealed)
     return (
       <div className="prompt-seg prompt-seg-thinking">
         <div className="prompt-seg-thinking-eyebrow">
           <span className="prompt-seg-thinking-pulse" aria-hidden="true" />
           Thinking
         </div>
-        <div className="prompt-seg-thinking-body">
-          {revealedLines.map((line, i) => (
-            <p key={i} className="prompt-seg-thinking-line">{line}</p>
+        <ul className="prompt-seg-thinking-steps">
+          {revealed.map((r, i) => (
+            <li key={i} className="prompt-seg-thinking-step">
+              <div className="prompt-seg-thinking-step-title">{r.title}</div>
+              {r.detail && <div className="prompt-seg-thinking-step-detail">{r.detail}</div>}
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     )
   }
@@ -2539,11 +2590,15 @@ const SANDRA_SCENE = {
   //    replacement search, ending with a canned "Yes, reach out" button.
   reachOutPrompt: {
     content: { segments: [
-      { type: 'thinking', lines: [
-        'Sandra Lee just cancelled her Saturday 7pm usher shift at Civic Auditorium. 3.5 hrs notice.',
-        'Pulling Civic-credentialed ushers in a sensible commute radius who are under 32 hrs this week, so no one gets pushed into overtime.',
-        '64 ushers in range → 38 Civic-qualified → 21 free at 7pm → 18 under OT cap → 12 opted in to last-min offers.',
-        'Ranking by proximity (traffic-adjusted), 90-day performance, last-min accept rate, and hours fairness so the same people aren\'t always on call.',
+      { type: 'thinking', steps: [
+        { title: 'Parsed the cancellation',
+          detail: 'Sandra Lee cancelled her Saturday 7pm usher shift at Civic Auditorium. 3.5 hrs notice.' },
+        { title: 'Pulled the candidate pool',
+          detail: 'Civic-credentialed ushers in a sensible commute radius who are under 32 hrs this week, so no one gets pushed into overtime.' },
+        { title: 'Filtered down to 12',
+          detail: '64 ushers in range → 38 Civic-qualified → 21 free at 7pm → 18 under OT cap → 12 opted in to last-min offers.' },
+        { title: 'Ranked the 12',
+          detail: 'Proximity (traffic-adjusted), 90-day performance, last-min accept rate, and hours fairness so the same people aren\'t always on call.' },
       ] },
       { type: 'text', text: "Found **12 qualified replacements**. Top 3 are inside 4 miles with 90%+ accept rates. Want me to reach out to them in parallel?" },
     ] },
@@ -2674,17 +2729,17 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, onInjectActiv
         return
       }
       if (seg.type === 'text' || seg.type === 'cta' || seg.type === 'thinking') {
-        const full = seg.type === 'thinking' ? (seg.lines ?? []).join('\n') : seg.text
+        const isThinking = seg.type === 'thinking'
+        const fullLen = isThinking ? thinkingSegmentLength(seg) : seg.text.length
         // Thinking deliberately types slower than a normal answer — the
         // reasoning is the product here, so each line should land as a
         // considered thought, not a blur. 2 chars every 35ms ≈ 57 chars/s
-        // so the ~470-char Sandra reasoning lands in roughly 8 seconds.
+        // so a ~470-char Sandra reasoning lands in roughly 8 seconds.
         // Normal text still pings in at 6 chars / 20ms.
-        const isThinking = seg.type === 'thinking'
         const charsPerTick = isThinking ? 2 : 6
         const tickMs       = isThinking ? 35 : 20
-        if (m.chars < full.length) {
-          const t = setTimeout(() => updateMsg(m.id, { chars: Math.min(full.length, m.chars + charsPerTick) }), tickMs)
+        if (m.chars < fullLen) {
+          const t = setTimeout(() => updateMsg(m.id, { chars: Math.min(fullLen, m.chars + charsPerTick) }), tickMs)
           return () => clearTimeout(t)
         }
         const t = setTimeout(() => updateMsg(m.id, { step: m.step + 1, chars: 0 }), 240)
@@ -2901,34 +2956,33 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, onInjectActiv
           </div>
         )}
 
-        {/* The Daily Briefing is the operator's starting context. Once a
-            conversation kicks in we normally swap it for the message list,
-            but on the Events home we keep it pinned above the chat so the
-            original greeting + situation cards aren't wiped out when the
-            scripted Sandra scene (or any mid-chat reaction) starts. */}
-        {(!hasChat || (industryId === 'events' && view === 'overview')) && (
-          <DailyBriefing industryId={industryId} view={view} paySubRoute={paySubRoute} briefKey={briefKey} onAction={submit} />
-        )}
-        {hasChat && (
-          <div className="prompt-messages" ref={scrollRef}>
-            {messages.map(m => <Message key={m.id} message={m} onApprove={handleApprove} />)}
-          </div>
-        )}
-
-        {hasChat && followupChips.length > 0 && (
-          <div className="prompt-input-chips" role="list">
-            {followupChips.map(s => (
-              <button
-                key={s.label}
-                type="button"
-                className="prompt-input-chip"
-                onClick={() => submit(s.label)}
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
-        )}
+        {/* Unified scroll column: briefing + messages + follow-up chips
+            all live in one flow so the operator never sees a second inner
+            scrollbar. Only the compose input below stays pinned. */}
+        <div className="prompt-scroll" ref={scrollRef}>
+          {(!hasChat || (industryId === 'events' && view === 'overview')) && (
+            <DailyBriefing industryId={industryId} view={view} paySubRoute={paySubRoute} briefKey={briefKey} onAction={submit} />
+          )}
+          {hasChat && (
+            <div className="prompt-messages">
+              {messages.map(m => <Message key={m.id} message={m} onApprove={handleApprove} />)}
+            </div>
+          )}
+          {hasChat && followupChips.length > 0 && (
+            <div className="prompt-input-chips" role="list">
+              {followupChips.map(s => (
+                <button
+                  key={s.label}
+                  type="button"
+                  className="prompt-input-chip"
+                  onClick={() => submit(s.label)}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="prompt-input">
           <textarea

@@ -254,18 +254,29 @@
   flex-shrink: 0;
 }
 
-/* Scrollable messages area (grows) */
-
-.prompt-messages {
+/* Unified scroll area — briefing + chat messages + follow-up chips all
+   flow inside this single container so the operator never sees two
+   independent scrollbars on the chat column. The compose input lives
+   outside, pinned at the bottom. */
+.prompt-scroll {
   position: relative;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
   padding: var(--space-1) 0 var(--space-12);
   scroll-padding-bottom: var(--space-12);
+}
+
+/* Message list is just a flex column inside the scroller — no independent
+   overflow. */
+.prompt-messages {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
 /* Top-bar Clear-chat control — sits above the chat messages, right-aligned */
@@ -441,17 +452,30 @@
   0%, 100% { opacity: 0.35; transform: scale(0.9); }
   50%      { opacity: 1;    transform: scale(1.1); }
 }
-.prompt-seg-thinking-body {
+.prompt-seg-thinking-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 10px;
 }
-.prompt-seg-thinking-line {
-  margin: 0;
+.prompt-seg-thinking-step {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.prompt-seg-thinking-step-title {
   font-size: 13px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-secondary);
+  line-height: 1.35;
+}
+.prompt-seg-thinking-step-detail {
+  font-size: 12px;
   line-height: 1.5;
   color: var(--color-content-tertiary);
-  font-style: italic;
+  padding-left: 2px;
 }
 
 /* Attachment card — record-style (person/event/chart) artifact in an AI answer */
