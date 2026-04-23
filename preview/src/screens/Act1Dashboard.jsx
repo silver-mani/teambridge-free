@@ -1448,8 +1448,12 @@ function DailyBriefing({ industryId, view = 'overview', onAction }) {
             <p className="briefing-compact-greeting">{brief.greeting}</p>
           </div>
           <ul className="briefing-situations">
-            {brief.situations.map((s) => (
-              <li key={s.id} className={`briefing-situation briefing-situation-${s.tone}`}>
+            {brief.situations.map((s, i) => (
+              <li
+                key={s.id}
+                className={`briefing-situation briefing-situation-${s.tone}`}
+                style={{ animationDelay: `${360 + i * 180}ms` }}
+              >
                 <span className="briefing-situation-dot" aria-hidden="true" />
                 <div className="briefing-situation-text">
                   <div className="briefing-situation-title">{s.title}</div>
