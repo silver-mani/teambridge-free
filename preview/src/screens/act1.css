@@ -320,20 +320,20 @@
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  padding: 5px var(--space-3);
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border-opaque);
+  padding: 4px 10px;
+  background: color-mix(in srgb, var(--color-content-primary) 6%, transparent);
+  border: none;
   border-radius: var(--radius-full);
   font-family: inherit;
   font-size: 12px;
-  color: var(--color-content-primary);
+  color: var(--color-content-secondary);
   cursor: pointer;
   white-space: nowrap;
-  transition: background-color 120ms ease, border-color 120ms ease;
+  transition: background-color 120ms ease, color 120ms ease;
 }
 .prompt-input-chip:hover {
-  background: var(--color-bg-tertiary);
-  border-color: color-mix(in srgb, var(--color-content-primary) 18%, transparent);
+  background: color-mix(in srgb, var(--color-content-primary) 12%, transparent);
+  color: var(--color-content-primary);
 }
 
 .prompt-msg {
@@ -421,8 +421,8 @@
   gap: var(--space-3);
   align-items: center;
   padding: var(--space-3);
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border-opaque);
+  background: var(--color-bg-secondary);
+  border: none;
   border-radius: 10px;
 }
 .prompt-seg-attachment .attachment-avatar {
@@ -680,8 +680,8 @@
   font-size: var(--text-sm);
   line-height: 1.4;
   padding: var(--space-2) var(--space-3);
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border-opaque);
+  background: var(--color-bg-secondary);
+  border: none;
   border-radius: 10px;
   opacity: 0;
   animation: progress-plan-in 320ms ease forwards;
@@ -745,22 +745,20 @@
   align-items: center;
   gap: 6px;
   margin-top: var(--space-1);
-  padding: 6px 10px;
-  border-radius: var(--radius-full);
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border-opaque);
+  padding: 2px 0;
+  background: transparent;
+  border: none;
   font-size: var(--text-xs);
-  color: var(--color-content-primary);
+  color: var(--color-content-secondary);
   text-decoration: none;
   font-weight: var(--font-weight-medium);
   cursor: pointer;
   align-self: flex-start;
-  transition: background-color 120ms ease, border-color 120ms ease;
+  transition: color 120ms ease;
 }
-.progress-workflow-link:hover {
-  background: var(--color-bg-secondary);
-  border-color: color-mix(in srgb, var(--color-content-primary) 16%, var(--color-border-opaque));
-}
+.progress-workflow-link span { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, var(--color-content-primary) 22%, transparent); }
+.progress-workflow-link:hover { color: var(--color-content-primary); }
+.progress-workflow-link:hover span { text-decoration-color: var(--color-content-primary); }
 
 /* Metrics */
 .prompt-metrics {
@@ -770,8 +768,8 @@
 }
 .prompt-metric {
   padding: var(--space-2) var(--space-3);
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border-opaque);
+  background: var(--color-bg-secondary);
+  border: none;
   border-radius: 10px;
   display: flex;
   flex-direction: column;
@@ -2058,31 +2056,28 @@ button.activity-card { cursor: pointer; }
 .voice-turn-agent .voice-turn-speaker { color: var(--color-purple-content-primary); }
 
 /* Workflow link button — feels like a link, opens an external modal */
+/* Links (not buttons): no background, no border — they read as text you click. */
 .workflow-link {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px var(--space-3);
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border-opaque);
-  border-radius: 8px;
+  padding: 0;
+  background: transparent;
+  border: none;
   font-size: 13px;
   font-weight: var(--font-weight-medium);
-  color: var(--color-content-primary);
+  color: var(--color-content-secondary);
   text-decoration: none;
   cursor: pointer;
-  transition: background-color 120ms ease, border-color 120ms ease;
+  transition: color 120ms ease;
 }
 .workflow-link-label {
   text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--color-content-primary) 35%, transparent);
+  text-decoration-color: color-mix(in srgb, var(--color-content-primary) 25%, transparent);
   text-underline-offset: 3px;
   text-decoration-thickness: 1px;
 }
-.workflow-link:hover {
-  background: var(--color-bg-tertiary);
-  border-color: color-mix(in srgb, var(--color-content-primary) 18%, transparent);
-}
+.workflow-link:hover { color: var(--color-content-primary); }
 .workflow-link:hover .workflow-link-label {
   text-decoration-color: var(--color-content-primary);
 }
