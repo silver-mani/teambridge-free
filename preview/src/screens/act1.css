@@ -3874,7 +3874,18 @@ button.activity-card:hover:not(.activity-card-selected),
   font-variant-numeric: tabular-nums;
 }
 .schedule-shift-body { display: inline-flex; gap: 4px; flex-wrap: wrap; }
-.schedule-shift-role,
+.schedule-shift-role {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+  /* Role chip is role-typed, not status-typed — stays consistent across
+     blue/green/red cells to match the design reference. */
+  background: #E0E7FF;
+  color: #4F5ED4;
+}
 .schedule-shift-venue {
   display: inline-flex;
   align-items: center;
@@ -3886,29 +3897,27 @@ button.activity-card:hover:not(.activity-card-selected),
   color: var(--color-content-secondary);
 }
 
+/* Cell tints — keep them faint so the shift reads as a subtle wash, with
+   the role chip carrying the color weight. */
 .schedule-shift-upcoming {
-  background: #E8EEFF;
-  border-color: #C7D2FE;
-}
-.schedule-shift-upcoming .schedule-shift-role {
-  background: #DBE4FF;
-  color: #3E4FBD;
+  background: #F1F3FE;
+  border-color: #DDE2FA;
 }
 .schedule-shift-completed {
-  background: #EAF5E0;
-  border-color: #C3E0A3;
+  background: #F3F8EB;
+  border-color: #D9E8C2;
 }
 .schedule-shift-completed .schedule-shift-role {
-  background: #D6EBC0;
-  color: #4C7A22;
+  background: #E2EFD1;
+  color: #516D2A;
 }
 .schedule-shift-no-show {
-  background: #FDE7E7;
-  border-color: #F6B8B8;
+  background: #FCEFEF;
+  border-color: #F3CECE;
 }
 .schedule-shift-no-show .schedule-shift-role {
-  background: #F8CCCC;
-  color: #B03A3A;
+  background: #F6DEDE;
+  color: #9B3A3A;
 }
 
 @media (max-width: 1200px) {
