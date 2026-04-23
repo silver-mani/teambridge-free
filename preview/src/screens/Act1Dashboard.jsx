@@ -1275,6 +1275,24 @@ Both have clear fixes. Want me to draft outreach?` },
 Ready to email to the client ops channel?` },
   ],
   events: [
+    { label: 'Approve the Rachel Williams replacement',
+      specialist: 'nova',
+      approvePlan: [
+        'Send Rachel her confirmed shift brief',
+        'Update the Civic Arena schedule',
+        'Log the replacement with Miguel',
+      ],
+      answer: {
+        segments: [
+          { type: 'text', text: "Rachel Williams is locked in for Sandra Lee's Saturday 7pm usher shift at Civic Arena. Rachel already accepted over SMS — this just confirms and notifies." },
+          { type: 'list', items: [
+            '**Rachel** confirmed for usher role, 49ers vs Rams (Apr 26, 7pm)',
+            '**Sandra Lee** shift marked covered in the schedule',
+            'No other gaps open on Saturday — coverage at 98%',
+          ]},
+          { type: 'cta', text: "Approve **Nova** to send Rachel her brief and lock the schedule?" },
+        ],
+      } },
     { label: 'Fill the last open Saturday role',
       specialist: 'nova',
       answer: {
@@ -1795,11 +1813,13 @@ function PromptPanel({ industryId }) {
     }
   }, [messages])
 
-  const submitCanned = (label, content, specialist) => {
+  const submitCanned = (label, content, specialist, approvePlan) => {
     setMessages(prev => [
       ...prev,
       { id: ++idRef.current, role: 'user', content: label, status: 'done' },
-      { id: ++idRef.current, role: 'assistant', content, status: 'thinking', specialist: specialist ?? null },
+      { id: ++idRef.current, role: 'assistant', content, status: 'thinking',
+        specialist: specialist ?? null,
+        approvePlan: approvePlan ?? null },
     ])
   }
 
@@ -1844,7 +1864,7 @@ function PromptPanel({ industryId }) {
     if (!t) return
     setInput('')
     const canned = suggestions.find(s => s.label.toLowerCase() === t.toLowerCase())
-    if (canned) return submitCanned(canned.label, canned.answer, canned.specialist)
+    if (canned) return submitCanned(canned.label, canned.answer, canned.specialist, canned.approvePlan)
     return submitFreeForm(t)
   }
 
@@ -1861,7 +1881,7 @@ function PromptPanel({ industryId }) {
 
   const handleApprove = (msg) => {
     const agentId = msg.specialist ?? 'nova'
-    const steps   = SPECIALIST_PLAN[agentId] ?? SPECIALIST_PLAN.nova
+    const steps   = msg.approvePlan ?? SPECIALIST_PLAN[agentId] ?? SPECIALIST_PLAN.nova
     setMessages(prev => prev.map(m => m.specialist ? { ...m, specialist: null } : m).concat({
       id: ++idRef.current,
       role: 'progress',
