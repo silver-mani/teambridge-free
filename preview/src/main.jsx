@@ -13,7 +13,8 @@ function parseHash() {
   if (!raw) return null
   const [industry, view = 'overview'] = raw.split('/')
   if (!VALID_INDUSTRIES.has(industry)) return null
-  return { industry, view: view === 'schedule' ? 'schedule' : 'overview' }
+  const viewOk = new Set(['overview', 'schedule', 'people'])
+  return { industry, view: viewOk.has(view) ? view : 'overview' }
 }
 
 function setHash(path) {

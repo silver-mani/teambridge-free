@@ -21,6 +21,7 @@ import { getIndustryData }     from '../data/industryData.js'
 import { getAgent, AGENTS }   from '../data/agents.js'
 import { getCardDetail }       from '../data/cardDetails.js'
 import ScheduleCalendar        from './ScheduleCalendar.jsx'
+import PeopleList              from './PeopleList.jsx'
 import './act1.css'
 
 /* ─── Agent avatar (animated GIF in a color-tinted ring) ─────────────────── */
@@ -130,6 +131,7 @@ function LeftNav({ industryLabel, view, onBrand, onAsk, onSelectView }) {
               item.id === 'ask'      ? onAsk
             : item.id === 'overview' ? () => onSelectView?.('overview')
             : item.id === 'schedule' ? () => onSelectView?.('schedule')
+            : item.id === 'people'   ? () => onSelectView?.('people')
             : () => showDemoToast()
           return (
             <button
@@ -1426,8 +1428,41 @@ const SCHEDULE_BRIEFING = {
   },
 }
 
+/* Briefing set when the user is on the People page — insights focus on
+   credentials, new hires, leaves, and overtime risk across the roster. */
+const PEOPLE_BRIEFING = {
+  events: {
+    time: '9:04 AM',
+    greeting: "Scanning your people — here's what needs attention.",
+    situations: [
+      { id: 'cert-expiring', tone: 'warning',
+        title: '2 TABC certs expire this week',
+        desc:  'Priya and Lydia — renewal session Tuesday.',
+        action: { label: 'Renew certs', prompt: 'Renew expiring TABC certs' } },
+      { id: 'new-hires', tone: 'info',
+        title: '3 new hires pending',
+        desc:  'Diego, Sarah, Elena — first-shift packets due.',
+        action: { label: 'Draft packets', prompt: 'Draft the onboarding packet for Sarah' } },
+      { id: 'sandra-leave', tone: 'warning',
+        title: 'Sandra still on leave',
+        desc:  'No projected return date — covering 2 shifts this week.',
+        action: { label: 'Follow up', prompt: 'Follow up with Sandra on return date' } },
+      { id: 'ot-marcus', tone: 'warning',
+        title: 'Marcus J. at 38 of 40 hrs',
+        desc:  'Drop Saturday or shift to Sunday to avoid overtime.',
+        action: { label: 'Check OT', prompt: 'Check overtime risk for Saturday' } },
+    ],
+  },
+}
+
+function briefingFor(view) {
+  if (view === 'schedule') return SCHEDULE_BRIEFING
+  if (view === 'people')   return PEOPLE_BRIEFING
+  return BRIEFING
+}
+
 function DailyBriefing({ industryId, view = 'overview', onAction }) {
-  const set = view === 'schedule' ? SCHEDULE_BRIEFING : BRIEFING
+  const set = briefingFor(view)
   const brief = set[industryId] ?? set.events ?? BRIEFING.events
   const hasSituations = Array.isArray(brief.situations)
 
@@ -2314,7 +2349,7 @@ function PromptPanel({ industryId, view = 'overview' }) {
     lastViewRef.current = view
     if (view === prev) return
     if (messages.length === 0) return  // empty state already renders the briefing
-    const set = view === 'schedule' ? SCHEDULE_BRIEFING : BRIEFING
+    const set = briefingFor(view)
     const brief = set[industryId] ?? set.events
     if (!brief?.situations?.length) return
     setMessages(prev => [
@@ -2466,12 +2501,11 @@ function PromptPanel({ industryId, view = 'overview' }) {
   // On the Schedule page, follow-up chips mirror the schedule briefing's
   // action prompts instead of the home canned suggestions. On overview (and
   // any other view) we fall back to the industry's PROMPT_SUGGESTIONS.
-  const chipPool = view === 'schedule'
-    ? ((SCHEDULE_BRIEFING[industryId] ?? SCHEDULE_BRIEFING.events)?.situations ?? [])
-        .map(s => s.action)
-        .filter(Boolean)
-        .map(a => ({ label: a.prompt }))
-    : (suggestions ?? [])
+  const viewBriefingSet = briefingFor(view)
+  const viewBrief = viewBriefingSet[industryId] ?? viewBriefingSet.events
+  const chipPool = (view === 'overview' || !viewBrief?.situations?.length)
+    ? (suggestions ?? [])
+    : viewBrief.situations.map(s => s.action).filter(Boolean).map(a => ({ label: a.prompt }))
   const followupChips = chipPool
     .filter(s => !askedLabels.has(s.label.toLowerCase()))
     .slice(0, 3)
@@ -2548,7 +2582,7 @@ export default function Act1Dashboard({ industryId, view = 'overview', onBack, o
   const data = useMemo(() => getIndustryData(industryId), [industryId])
 
   return (
-    <div className={`act1-root${view === 'schedule' ? ' act1-root--schedule' : ''}`}>
+    <div className={`act1-root${view === 'overview' ? '' : ` act1-root--${view}`}`}>
       <LeftNav
         industryLabel={data.label}
         view={view}
@@ -2559,9 +2593,9 @@ export default function Act1Dashboard({ industryId, view = 'overview', onBack, o
 
       <PromptPanel industryId={industryId} view={view} />
 
-      {view === 'schedule'
-        ? <ScheduleCalendar data={data} onDemo={() => showDemoToast()} />
-        : <ActivityFeed data={data} />}
+      {view === 'schedule' ? <ScheduleCalendar data={data} onDemo={() => showDemoToast()} />
+       : view === 'people' ? <PeopleList       data={data} onDemo={() => showDemoToast()} />
+       :                     <ActivityFeed     data={data} />}
 
       <ToastHost />
     </div>
