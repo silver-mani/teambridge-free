@@ -1601,16 +1601,16 @@ Ready to email to the client ops channel?` },
       answer: {
         segments: [
           { type: 'text', text: "Generated this week's coverage report across Civic Arena + Harbor Theater:" },
-          { type: 'metrics', items: [
-            { value: '98%',  label: 'Coverage' },
-            { value: '12',   label: 'Swaps · auto' },
-            { value: '1m 52s', label: 'Avg fill time' },
-            { value: '0',    label: 'No-shows' },
-          ]},
           { type: 'attachment',
             icon: 'chart',
             title: 'Weekly Coverage Report',
             subtitle: 'Civic Arena + Harbor Theater · Apr 20–26',
+            metrics: [
+              { value: '98%',    label: 'Coverage' },
+              { value: '12',     label: 'Swaps · auto' },
+              { value: '1m 52s', label: 'Avg fill' },
+              { value: '0',      label: 'No-shows' },
+            ],
             actions: [{ label: 'Open report' }],
           },
           { type: 'cta', text: "Email this to Miguel + the venue client ops channel?" },
@@ -1914,9 +1914,9 @@ function Segment({ seg, charsRevealed }) {
 }
 
 function AttachmentBlock({ attachment }) {
-  const { title, subtitle, avatar, icon, actions } = attachment
+  const { title, subtitle, avatar, icon, actions, metrics } = attachment
   return (
-    <div className="prompt-seg prompt-seg-attachment">
+    <div className={`prompt-seg prompt-seg-attachment ${metrics?.length ? 'prompt-seg-attachment-with-stats' : ''}`}>
       {avatar ? (
         <span className="attachment-avatar" style={{ backgroundImage: `url(${avatar})` }} aria-hidden="true" />
       ) : (
@@ -1940,6 +1940,16 @@ function AttachmentBlock({ attachment }) {
           </button>
         ))}
       </div>
+      {metrics?.length > 0 && (
+        <div className="attachment-stats">
+          {metrics.map((m, i) => (
+            <div key={i} className="attachment-stat">
+              <div className="attachment-stat-value">{m.value}</div>
+              <div className="attachment-stat-label">{m.label}</div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
