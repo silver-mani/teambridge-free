@@ -810,6 +810,68 @@ INDUSTRY_DATA.events.needsYou = [
 INDUSTRY_DATA.events.activeCard = null
 
 /* ─────────────────────────────────────────────────────────────────────────────
+   Schedule — week view grid, one shift per user per day max.
+   Week: Sun Apr 19 – Sat Apr 25, 2026 (today is Thursday).
+   Status tones: completed (past) · upcoming (future) · no-show (rare, past).
+   ───────────────────────────────────────────────────────────────────────────── */
+INDUSTRY_DATA.events.schedule = {
+  weekLabel: 'Apr 19 – Apr 25, 2026, PDT',
+  todayId: 'thu',
+  rows: [
+    { userId: 'rachel', name: 'Rachel Williams', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=96&h=96&fit=crop&crop=faces&auto=format',
+      estPay: '$528', estHours: '22 hrs',
+      shifts: {
+        sun: { start: '10:00a', end: '2:00p',  role: 'Usher', venue: 'Civic',  status: 'completed' },
+        tue: { start: '5:00p',  end: '9:00p',  role: 'Usher', venue: 'Civic',  status: 'completed' },
+        thu: { start: '3:00p',  end: '6:00p',  role: 'Usher', venue: 'Civic',  status: 'completed' },
+        sat: { start: '6:30p',  end: '12:00a', role: 'Usher', venue: 'Civic',  status: 'upcoming'  },
+      } },
+    { userId: 'sandra', name: 'Sandra Lee', avatar: 'https://images.unsplash.com/photo-1489980557514-251d61e3eeb6?w=96&h=96&fit=crop&crop=faces&auto=format',
+      estPay: '$384', estHours: '16 hrs',
+      shifts: {
+        mon: { start: '12:00p', end: '4:00p',  role: 'Usher', venue: 'Civic',  status: 'completed' },
+        wed: { start: '5:00p',  end: '9:00p',  role: 'Usher', venue: 'Civic',  status: 'no-show'   },
+        thu: { start: '1:00p',  end: '5:00p',  role: 'Usher', venue: 'Civic',  status: 'completed' },
+      } },
+    { userId: 'sarah', name: 'Sarah M.', avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=96&h=96&fit=crop&crop=faces&auto=format',
+      estPay: '$312', estHours: '13 hrs',
+      shifts: {
+        mon: { start: '4:00p',  end: '8:00p',  role: 'Bev Service', venue: 'Civic',  status: 'completed' },
+        thu: { start: '5:00p',  end: '9:00p',  role: 'Bev Service', venue: 'Civic',  status: 'completed' },
+        sat: { start: '6:30p',  end: '12:00a', role: 'Bev Service', venue: 'Civic',  status: 'upcoming'  },
+      } },
+    { userId: 'jordan', name: 'Jordan K.', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=96&h=96&fit=crop&crop=faces&auto=format',
+      estPay: '$672', estHours: '28 hrs',
+      shifts: {
+        sun: { start: '7:00p',  end: '11:00p', role: 'Usher', venue: 'Civic',  status: 'completed' },
+        tue: { start: '3:00p',  end: '7:00p',  role: 'Usher', venue: 'Civic',  status: 'completed' },
+        wed: { start: '6:00p',  end: '10:00p', role: 'Usher', venue: 'Harbor', status: 'completed' },
+        thu: { start: '7:00p',  end: '11:00p', role: 'Usher', venue: 'Civic',  status: 'upcoming'  },
+        fri: { start: '4:00p',  end: '8:00p',  role: 'Usher', venue: 'Civic',  status: 'upcoming'  },
+        sat: { start: '7:00p',  end: '3:00a',  role: 'Usher', venue: 'Civic',  status: 'upcoming'  },
+      } },
+    { userId: 'ashley', name: 'Ashley P.', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=96&h=96&fit=crop&crop=faces&auto=format',
+      estPay: '$720', estHours: '30 hrs',
+      shifts: {
+        mon: { start: '3:00p',  end: '7:00p',  role: 'Usher', venue: 'Civic',  status: 'completed' },
+        tue: { start: '4:00p',  end: '8:00p',  role: 'Usher', venue: 'Civic',  status: 'no-show'   },
+        wed: { start: '6:00p',  end: '10:00p', role: 'Usher', venue: 'Civic',  status: 'completed' },
+        thu: { start: '7:00p',  end: '11:00p', role: 'Usher', venue: 'Civic',  status: 'upcoming'  },
+        sat: { start: '6:30p',  end: '12:00a', role: 'Usher', venue: 'Civic',  status: 'upcoming'  },
+      } },
+    { userId: 'miguel', name: 'Miguel R.', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=96&h=96&fit=crop&crop=faces&auto=format',
+      estPay: '$960', estHours: '32 hrs',
+      shifts: {
+        mon: { start: '9:00a',  end: '5:00p',  role: 'Event Lead', venue: 'Civic',  status: 'completed' },
+        tue: { start: '9:00a',  end: '5:00p',  role: 'Event Lead', venue: 'Civic',  status: 'completed' },
+        wed: { start: '9:00a',  end: '5:00p',  role: 'Event Lead', venue: 'Civic',  status: 'completed' },
+        thu: { start: '9:00a',  end: '5:00p',  role: 'Event Lead', venue: 'Civic',  status: 'completed' },
+        sat: { start: '3:00p',  end: '12:00a', role: 'Event Lead', venue: 'Civic',  status: 'upcoming'  },
+      } },
+  ],
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
    Records — the thing each card is about.
    When the operator clicks a card, the right drawer opens on this record and
    shows its Details tab (fields) and Activity tab (AI work + record history).

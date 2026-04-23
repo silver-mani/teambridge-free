@@ -20,6 +20,7 @@ import { XIcon }               from '../../../src/components/icons/XIcon.tsx'
 import { getIndustryData }     from '../data/industryData.js'
 import { getAgent, AGENTS }   from '../data/agents.js'
 import { getCardDetail }       from '../data/cardDetails.js'
+import ScheduleCalendar        from './ScheduleCalendar.jsx'
 import './act1.css'
 
 /* ─── Agent avatar (animated GIF in a color-tinted ring) ─────────────────── */
@@ -104,7 +105,7 @@ const NAV_ITEMS = [
   { id: 'ask',           label: 'Ask Teambridge',  Icon: MessageDotsSquareIcon, ai: true },
 ]
 
-function LeftNav({ industryLabel, onBrand, onAsk }) {
+function LeftNav({ industryLabel, view, onBrand, onAsk, onSelectView }) {
   return (
     <aside className="act1-nav" aria-label="Primary">
       <button
@@ -124,8 +125,12 @@ function LeftNav({ industryLabel, onBrand, onAsk }) {
 
       <nav className="act1-nav-list">
         {NAV_ITEMS.map(item => {
-          const active = item.id === 'overview'
-          const onClick = item.id === 'ask' ? onAsk : undefined
+          const active = item.id === view || (item.id === 'overview' && view === 'overview')
+          const onClick =
+              item.id === 'ask'      ? onAsk
+            : item.id === 'overview' ? () => onSelectView?.('overview')
+            : item.id === 'schedule' ? () => onSelectView?.('schedule')
+            : () => showDemoToast()
           return (
             <button
               key={item.id}
@@ -2399,18 +2404,23 @@ function PromptPanel({ industryId }) {
 
 export default function Act1Dashboard({ industryId, onBack, onExplore }) {
   const data = useMemo(() => getIndustryData(industryId), [industryId])
+  const [view, setView] = useState('overview')
 
   return (
-    <div className="act1-root">
+    <div className={`act1-root${view === 'schedule' ? ' act1-root--schedule' : ''}`}>
       <LeftNav
         industryLabel={data.label}
+        view={view}
         onBrand={onBack}
         onAsk={onExplore}
+        onSelectView={setView}
       />
 
       <PromptPanel industryId={industryId} />
 
-      <ActivityFeed data={data} />
+      {view === 'schedule'
+        ? <ScheduleCalendar data={data} onDemo={() => showDemoToast()} />
+        : <ActivityFeed data={data} />}
 
       <ToastHost />
     </div>
