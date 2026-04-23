@@ -1618,7 +1618,7 @@ function briefingFor(view, industryId, paySubRoute) {
   return BRIEFING
 }
 
-function DailyBriefing({ industryId, view = 'overview', paySubRoute, onAction }) {
+function DailyBriefing({ industryId, view = 'overview', paySubRoute, briefKey, onAction }) {
   const set = briefingFor(view, industryId, paySubRoute)
   const brief = set[industryId] ?? set.events ?? BRIEFING.events
   const hasSituations = Array.isArray(brief.situations)
@@ -1634,7 +1634,10 @@ function DailyBriefing({ industryId, view = 'overview', paySubRoute, onAction })
       </header>
 
       {hasSituations ? (
-        <article className="briefing-compact">
+        /* Keying the article on briefKey remounts the animated content when
+           the user drills into a Pay sub-screen, so the greeting re-types and
+           the situation cards re-stagger in. */
+        <article key={briefKey} className="briefing-compact">
           <div className="briefing-compact-head">
             <span className="briefing-compact-time">{brief.time}</span>
             <p className="briefing-compact-greeting">
@@ -2685,7 +2688,7 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute }) {
         )}
 
         {!hasChat
-          ? <DailyBriefing industryId={industryId} view={view} paySubRoute={paySubRoute} onAction={submit} />
+          ? <DailyBriefing industryId={industryId} view={view} paySubRoute={paySubRoute} briefKey={briefKey} onAction={submit} />
           : (
             <div className="prompt-messages" ref={scrollRef}>
               {messages.map(m => <Message key={m.id} message={m} onApprove={handleApprove} />)}
