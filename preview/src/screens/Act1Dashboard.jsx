@@ -387,36 +387,36 @@ function DataChangeChip({ node, tone }) {
 /* ─── Conversations block (pills + inline expansion) ─────────────────────── */
 function ConversationsBlock({ conversations }) {
   const [openId, setOpenId] = useState(null)
-  const open = conversations.find(c => c.id === openId) ?? null
   return (
     <section className="card-body-section">
       <h4 className="body-section-label">Conversations</h4>
-      <div className="conversation-pills">
+      <div className="conversation-items">
         {conversations.map(c => {
           const M = COMM_TYPE_META[c.kind] ?? COMM_TYPE_META.sms
           const isOpen = c.id === openId
           return (
-            <button
-              key={c.id}
-              type="button"
-              className={`conversation-pill conversation-pill-${c.kind} ${isOpen ? 'is-open' : ''}`}
-              onClick={e => { e.stopPropagation(); setOpenId(isOpen ? null : c.id) }}
-              aria-expanded={isOpen}
-            >
-              <span className={`comm-icon comm-icon-${c.kind}`} aria-hidden="true"><M.Icon size={12} /></span>
-              <span className="conversation-pill-label">{c.contact}</span>
-              {c.summary && <span className="conversation-pill-meta">· {c.summary}</span>}
-            </button>
+            <div key={c.id} className={`conversation-item ${isOpen ? 'is-open' : ''}`}>
+              <button
+                type="button"
+                className={`conversation-pill conversation-pill-${c.kind} ${isOpen ? 'is-open' : ''}`}
+                onClick={e => { e.stopPropagation(); setOpenId(isOpen ? null : c.id) }}
+                aria-expanded={isOpen}
+              >
+                <span className={`comm-icon comm-icon-${c.kind}`} aria-hidden="true"><M.Icon size={12} /></span>
+                <span className="conversation-pill-label">{c.contact}</span>
+                {c.summary && <span className="conversation-pill-meta">· {c.summary}</span>}
+              </button>
+              {isOpen && (
+                <div className="conversation-body" onClick={e => e.stopPropagation()}>
+                  {c.kind === 'voice' && <VoiceCallPlayer call={c} />}
+                  {c.kind === 'sms'   && <SmsThread comm={c} />}
+                  {c.kind === 'email' && <EmailBody comm={c} />}
+                </div>
+              )}
+            </div>
           )
         })}
       </div>
-      {open && (
-        <div className="conversation-body" onClick={e => e.stopPropagation()}>
-          {open.kind === 'voice' && <VoiceCallPlayer call={open} />}
-          {open.kind === 'sms'   && <SmsThread comm={open} />}
-          {open.kind === 'email' && <EmailBody comm={open} />}
-        </div>
-      )}
     </section>
   )
 }
@@ -426,12 +426,59 @@ function VoiceCallPlayer({ call }) {
   const audioRef = useRef(null)
   const [playing, setPlaying] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [ttsMode, setTtsMode] = useState(false)
+
+  // Stop any in-flight TTS speech when the component unmounts.
+  useEffect(() => () => window.speechSynthesis?.cancel(), [])
+
+  const pickVoices = () => {
+    const synth = window.speechSynthesis
+    const voices = synth?.getVoices() ?? []
+    if (!voices.length) return { agent: null, other: null }
+    const agent = voices.find(v => /samantha|victoria|karen|zira|google us english female/i.test(v.name))
+      ?? voices.find(v => /female/i.test(v.name))
+      ?? voices[0]
+    const other = voices.find(v => v !== agent && /daniel|alex|google uk english male|male/i.test(v.name))
+      ?? voices.find(v => v !== agent)
+      ?? voices[0]
+    return { agent, other }
+  }
+
+  const speakTurns = () => {
+    const synth = window.speechSynthesis
+    if (!synth || !call.turns?.length) return
+    synth.cancel()
+    setPlaying(true)
+    const { agent, other } = pickVoices()
+    call.turns.forEach((t, i) => {
+      const u = new SpeechSynthesisUtterance(t.text)
+      u.voice = t.speaker === 'agent' ? agent : other
+      u.rate = 1.0
+      if (i === call.turns.length - 1) {
+        u.onend = () => { setPlaying(false); setProgress(0) }
+      }
+      synth.speak(u)
+    })
+  }
+
+  const stopTts = () => {
+    window.speechSynthesis?.cancel()
+    setPlaying(false)
+  }
 
   const toggle = (e) => {
     e.stopPropagation()
+    if (ttsMode) {
+      if (playing) { stopTts() } else { speakTurns() }
+      return
+    }
     const a = audioRef.current
-    if (!a) return
-    if (playing) { a.pause() } else { a.play().catch(() => {}) }
+    if (!a) { setTtsMode(true); speakTurns(); return }
+    if (playing) { a.pause(); return }
+    const attempt = a.play()
+    if (attempt?.then) {
+      attempt.catch(() => { setTtsMode(true); speakTurns() })
+    }
   }
 
   return (
@@ -443,6 +490,7 @@ function VoiceCallPlayer({ call }) {
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
         onEnded={() => { setPlaying(false); setProgress(0) }}
+        onError={() => setTtsMode(true)}
         onTimeUpdate={e => {
           const el = e.currentTarget
           if (el.duration) setProgress(el.currentTime / el.duration)
@@ -456,6 +504,7 @@ function VoiceCallPlayer({ call }) {
           <div className="voice-call-title">
             <span>{call.contact}</span>
             {call.duration && <span className="voice-call-duration">· {call.duration}</span>}
+            {ttsMode && <span className="voice-call-mode">· synthesized</span>}
           </div>
           <div className="voice-call-progress"><span style={{ width: `${progress * 100}%` }} /></div>
         </div>
@@ -483,7 +532,7 @@ function WorkflowLink({ workflow }) {
       onClick={e => e.stopPropagation()}
     >
       <span className="workflow-link-label">Open in Agent Workflows</span>
-      <span className="workflow-link-arrow" aria-hidden="true">→</span>
+      <ArrowNarrowRightIcon size={14} />
     </a>
   )
 }
