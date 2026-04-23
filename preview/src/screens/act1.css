@@ -1201,6 +1201,11 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  /* Container query root — when the situations column is narrow (e.g. the
+     pay/schedule/people views shrink the chat column to 360px), the
+     individual cards wrap their action button to a new row instead of
+     squeezing the text into a skinny gutter. */
+  container-type: inline-size;
 }
 @keyframes briefing-enter {
   from { opacity: 0; transform: translateY(6px); }
@@ -1261,6 +1266,20 @@
 .briefing-situation-action:hover {
   background: var(--color-bg-tertiary);
   border-color: color-mix(in srgb, var(--color-content-primary) 18%, transparent);
+}
+
+/* Narrow chat column (pay/schedule/people views compress it to ~360px):
+   wrap the action button to its own row below the text instead of
+   cramming it into a side gutter that truncates the title. */
+@container (max-width: 380px) {
+  .briefing-situation {
+    grid-template-columns: 10px 1fr;
+    row-gap: var(--space-2);
+  }
+  .briefing-situation-action {
+    grid-column: 2;
+    justify-self: start;
+  }
 }
 
 /* ─── Zones ──────────────────────────────────────────────────────────────── */
