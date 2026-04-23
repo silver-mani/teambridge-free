@@ -310,7 +310,7 @@ function CardHeaderRow({ eyebrow, statusBadge, timestamp }) {
 
 /* ─── Activity card (used in Zone 2 + drill-in) ──────────────────────────── */
 
-function ActivityCard({ card, expanded = false, onToggle, dimmed = false }) {
+function ActivityCard({ card, expanded = false, onToggle, dimmed = false, live = false }) {
   const meta = STATUS_MAP[card.status] ?? STATUS_MAP.resolved
   const agent = card.agentId ? getAgent(card.agentId) : null
   const pulsing = card.status === 'in-progress'
@@ -362,6 +362,7 @@ function ActivityCard({ card, expanded = false, onToggle, dimmed = false }) {
     expandable && 'activity-card-expandable',
     showBody   && 'activity-card-open',
     dimmed     && 'activity-card-dimmed',
+    live       && 'activity-card-live-in',
   ].filter(Boolean).join(' ')
 
   if (!expandable) {
@@ -1227,6 +1228,7 @@ function ActivityFeed({ data, injectedCard, cardOverrides }) {
                 card={shown}
                 expanded={expandedId === shown.id}
                 onToggle={() => toggle(shown.id)}
+                live
               />
             )
           })()}
@@ -2673,11 +2675,16 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, onInjectActiv
       }
       if (seg.type === 'text' || seg.type === 'cta' || seg.type === 'thinking') {
         const full = seg.type === 'thinking' ? (seg.lines ?? []).join('\n') : seg.text
-        // Reasoning blocks stream ~1.6× as fast as normal copy so the chain
-        // of reasoning lands in a few seconds, not a minute.
-        const charsPerTick = seg.type === 'thinking' ? 10 : 6
+        // Thinking deliberately types slower than a normal answer — the
+        // reasoning is the product here, so each line should land as a
+        // considered thought, not a blur. 2 chars every 35ms ≈ 57 chars/s
+        // so the ~470-char Sandra reasoning lands in roughly 8 seconds.
+        // Normal text still pings in at 6 chars / 20ms.
+        const isThinking = seg.type === 'thinking'
+        const charsPerTick = isThinking ? 2 : 6
+        const tickMs       = isThinking ? 35 : 20
         if (m.chars < full.length) {
-          const t = setTimeout(() => updateMsg(m.id, { chars: Math.min(full.length, m.chars + charsPerTick) }), 20)
+          const t = setTimeout(() => updateMsg(m.id, { chars: Math.min(full.length, m.chars + charsPerTick) }), tickMs)
           return () => clearTimeout(t)
         }
         const t = setTimeout(() => updateMsg(m.id, { step: m.step + 1, chars: 0 }), 240)
