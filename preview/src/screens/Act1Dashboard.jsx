@@ -2095,7 +2095,6 @@ function ProgressMessage({ message }) {
                   {state === 'active' && <AILoader size="xs" variant="gradient" />}
                 </span>
                 <span className="progress-task-label">{s}</span>
-                {state === 'active' && <span className="progress-task-tag">Working on this</span>}
               </li>
             )
           })}
