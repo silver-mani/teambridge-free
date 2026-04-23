@@ -21,6 +21,7 @@ import { XIcon }               from '../../../src/components/icons/XIcon.tsx'
 import { getIndustryData }     from '../data/industryData.js'
 import { getAgent, AGENTS }   from '../data/agents.js'
 import { getCardDetail }       from '../data/cardDetails.js'
+import { getPeriodSummary, getUserPeriod, fmt } from '../data/payData.js'
 import ScheduleCalendar        from './ScheduleCalendar.jsx'
 import PeopleList              from './PeopleList.jsx'
 import PayView                 from './PayView.jsx'
@@ -1456,42 +1457,169 @@ const PEOPLE_BRIEFING = {
   },
 }
 
-/* Briefing set when the user is on the Pay page — insights focus on
-   approvals, OT, instant pay usage, and adjustments needing review. */
-const PAY_BRIEFING = {
+/* Pay briefings — static for the home (dashboard) screen, dynamically
+   computed for the period and user drill-ins so every number in the chat
+   matches the number on screen. */
+const PAY_HOME_BRIEFING = {
   events: {
     time: '9:04 AM',
-    greeting: 'Reviewing this period — here\'s what to clear before approval.',
+    greeting: 'Scanning payroll across open periods — here\'s what to tackle first.',
     situations: [
       { id: 'pending', tone: 'warning',
-        title: '4 timecards still pending',
-        desc:  'Jordan, Ashley, Marcus and Priya — manager review outstanding.',
-        action: { label: 'Approve cleanly', prompt: 'Approve the 4 pending timecards' } },
+        title: '12 timecards pending across 2 open periods',
+        desc:  'Feb 16–29 is in approval; Jan 16–31 still has workers outstanding.',
+        action: { label: 'Open Feb 16–29', prompt: 'Open the Feb 16–29 pay period' } },
       { id: 'instant-pay', tone: 'info',
-        title: 'Instant Pay at 6% of gross',
-        desc:  'Within plan. 8 workers used early payouts this period.',
+        title: 'Instant Pay at 4% of current-period gross',
+        desc:  'Well within plan. Three workers pulled early payouts this period.',
         action: { label: 'See breakdown', prompt: 'Break down instant pay usage by worker' } },
-      { id: 'ot-marcus', tone: 'warning',
-        title: 'Marcus J. logged 6 hrs OT',
-        desc:  'Confirm coverage approval before sign-off.',
-        action: { label: 'Verify OT', prompt: 'Show Marcus\'s OT shifts for this period' } },
       { id: 'adjustments', tone: 'info',
-        title: '3 adjustments waiting',
-        desc:  'Mileage + 1 manual time correction need a sign-off.',
+        title: '4 adjustments waiting approval',
+        desc:  'Mileage, coverage bonuses, and a manual time correction.',
         action: { label: 'Review adjustments', prompt: 'Open the adjustments queue' } },
     ],
   },
 }
 
-function briefingFor(view) {
+/* Build a period-specific briefing from the actual summary data so copy and
+   numbers stay in lockstep with the table on screen. */
+function buildPeriodBriefing(industryId, periodId) {
+  const summary = getPeriodSummary(industryId, periodId)
+  const { period, rows, totals } = summary
+  const pct = totals.totalGross ? Math.round((totals.totalInstantPay / totals.totalGross) * 100) : 0
+  const otWorkers = rows
+    .filter(r => r.otHours > 0 || r.dotHours > 0)
+    .sort((a, b) => (b.otHours + b.dotHours) - (a.otHours + a.dotHours))
+  const topOt = otWorkers[0]
+
+  const situations = []
+  if (totals.pendingApproval > 0) {
+    situations.push({
+      id: 'pending', tone: 'warning',
+      title: `${totals.pendingApproval} timecard${totals.pendingApproval === 1 ? '' : 's'} still pending`,
+      desc:  `Approve to close ${period.short} cleanly. Total gross ${fmt(totals.totalGross)}.`,
+      action: { label: 'Approve remaining', prompt: `Approve the ${totals.pendingApproval} pending timecards` },
+    })
+  }
+  situations.push({
+    id: 'instant-pay', tone: 'info',
+    title: `Instant Pay at ${pct}% of gross`,
+    desc:  `${fmt(totals.totalInstantPay)} issued · ${totals.workers} workers this period.`,
+    action: { label: 'See breakdown', prompt: 'Break down instant pay usage by worker' },
+  })
+  if (topOt) {
+    const hrs = topOt.otHours + topOt.dotHours
+    const first = topOt.person.name.split(' ')[0]
+    situations.push({
+      id: 'ot', tone: 'warning',
+      title: `${first} logged ${hrs} hrs at OT rates`,
+      desc:  `Premium pay ${fmt(topOt.overtime + topOt.doubleOt)}. Verify coverage approval.`,
+      action: { label: 'Verify OT', prompt: `Show ${topOt.person.name}'s OT shifts this period` },
+    })
+  }
+  if (totals.adjustmentsCount > 0) {
+    situations.push({
+      id: 'adjustments', tone: 'info',
+      title: `${totals.adjustmentsCount} adjustment${totals.adjustmentsCount === 1 ? '' : 's'} this period`,
+      desc:  `Net ${totals.totalAdjustments >= 0 ? '+' : ''}${fmt(totals.totalAdjustments)} across mileage + corrections.`,
+      action: { label: 'Review adjustments', prompt: 'Open the adjustments queue' },
+    })
+  }
+  return {
+    time: '9:04 AM',
+    greeting: `Zoomed in on ${period.short} — here's what's outstanding.`,
+    situations,
+  }
+}
+
+/* Build a user-in-period briefing. Maximally specific: this person, this
+   period, their gross/net/OT/adjustment lines straight off their breakdown. */
+function buildUserBriefing(industryId, periodId, personId) {
+  const detail = getUserPeriod(industryId, periodId, personId)
+  const { period, person, breakdown, shifts, timeOff } = detail
+  const first = person.name.split(' ')[0]
+
+  const situations = []
+  situations.push({
+    id: 'summary', tone: 'info',
+    title: `${first}'s gross: ${fmt(breakdown.gross)}`,
+    desc:  `Net ${fmt(breakdown.net)} after ${fmt(breakdown.instantPay)} instant pay · ${breakdown.regularHours + breakdown.otHours + breakdown.dotHours + breakdown.holidayHours} hrs total.`,
+    action: { label: 'Open profile', prompt: `Open ${person.name}'s profile` },
+  })
+
+  const premiumHours = breakdown.otHours + breakdown.dotHours
+  if (premiumHours > 0) {
+    situations.push({
+      id: 'ot', tone: 'warning',
+      title: `${premiumHours} hrs at OT rates`,
+      desc:  `Premium pay ${fmt(breakdown.overtime + breakdown.doubleOt)}. Confirm approval before sign-off.`,
+      action: { label: 'Review OT shifts', prompt: `Show ${first}'s OT shifts this period` },
+    })
+  }
+
+  if (breakdown.adjustments.length > 0) {
+    const a = breakdown.adjustments[0]
+    situations.push({
+      id: 'adj', tone: 'info',
+      title: a.label,
+      desc:  `${a.amount >= 0 ? '+' : ''}${fmt(a.amount)} applied to ${first}'s net pay.`,
+      action: { label: 'View adjustment', prompt: `Show the ${a.label.toLowerCase()} adjustment for ${first}` },
+    })
+  }
+
+  if (breakdown.instantPay > 0) {
+    situations.push({
+      id: 'instant', tone: 'info',
+      title: `Instant Pay: ${fmt(breakdown.instantPay)}`,
+      desc:  `Already paid out · nets against this period's gross.`,
+      action: { label: 'Audit trail', prompt: `Show ${first}'s instant pay history` },
+    })
+  }
+
+  const pendingShifts = shifts.filter(s => !s.paid).length
+  if (pendingShifts > 0) {
+    situations.push({
+      id: 'pending', tone: 'warning',
+      title: `${pendingShifts} shift${pendingShifts === 1 ? '' : 's'} pending approval`,
+      desc:  `${first}'s most recent shifts haven't been signed off yet.`,
+      action: { label: 'Approve shifts', prompt: `Approve ${first}'s pending shifts` },
+    })
+  }
+
+  if (timeOff.length > 0) {
+    const t = timeOff[0]
+    situations.push({
+      id: 'pto', tone: 'info',
+      title: `${t.type} on ${t.endTime}`,
+      desc:  `${t.hours} hrs · ${t.paid ? 'Paid' : 'Unpaid'}.`,
+      action: { label: 'Review PTO', prompt: `Show ${first}'s time off` },
+    })
+  }
+
+  return {
+    time: '9:04 AM',
+    greeting: `${person.name} · ${period.short} — here's the snapshot.`,
+    situations,
+  }
+}
+
+function briefingFor(view, industryId, paySubRoute) {
   if (view === 'schedule') return SCHEDULE_BRIEFING
   if (view === 'people')   return PEOPLE_BRIEFING
-  if (view === 'pay')      return PAY_BRIEFING
+  if (view === 'pay') {
+    if (paySubRoute?.screen === 'user' && paySubRoute.periodId && paySubRoute.personId) {
+      return { events: buildUserBriefing(industryId, paySubRoute.periodId, paySubRoute.personId) }
+    }
+    if (paySubRoute?.screen === 'period' && paySubRoute.periodId) {
+      return { events: buildPeriodBriefing(industryId, paySubRoute.periodId) }
+    }
+    return PAY_HOME_BRIEFING
+  }
   return BRIEFING
 }
 
-function DailyBriefing({ industryId, view = 'overview', onAction }) {
-  const set = briefingFor(view)
+function DailyBriefing({ industryId, view = 'overview', paySubRoute, onAction }) {
+  const set = briefingFor(view, industryId, paySubRoute)
   const brief = set[industryId] ?? set.events ?? BRIEFING.events
   const hasSituations = Array.isArray(brief.situations)
 
@@ -2357,35 +2485,38 @@ function Message({ message, onApprove }) {
 
 /* ─── Prompt panel ──────────────────────────────────────────────────────── */
 
-function PromptPanel({ industryId, view = 'overview' }) {
+function PromptPanel({ industryId, view = 'overview', paySubRoute }) {
   const suggestions = PROMPT_SUGGESTIONS[industryId] ?? PROMPT_SUGGESTIONS.events
   const [input, setInput]       = useState('')
   const [messages, setMessages] = useState([])
   const scrollRef   = useRef(null)
   const idRef       = useRef(0)
-  const lastViewRef = useRef(view)
+  // Compound key so the reignite effect fires not just on top-level view
+  // changes but also on pay drill-downs (home → period → user).
+  const briefKey = `${view}|${paySubRoute?.screen ?? ''}|${paySubRoute?.periodId ?? ''}|${paySubRoute?.personId ?? ''}`
+  const lastBriefKeyRef = useRef(briefKey)
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
   }, [messages])
 
-  // Mid-conversation, when the user switches views (e.g. overview → schedule),
-  // append a matching briefing as an inline AI message so the chat scrolls
-  // naturally to the new insights instead of leaving them hidden behind the
-  // existing history.
+  // Mid-conversation, when the briefing context changes (switch views, click
+  // into a pay period, open a specific worker), append a matching briefing
+  // as an inline AI message so the chat scrolls naturally to the new
+  // insights instead of leaving them hidden behind existing history.
   useEffect(() => {
-    const prev = lastViewRef.current
-    lastViewRef.current = view
-    if (view === prev) return
+    const prev = lastBriefKeyRef.current
+    lastBriefKeyRef.current = briefKey
+    if (briefKey === prev) return
     if (messages.length === 0) return  // empty state already renders the briefing
-    const set = briefingFor(view)
+    const set = briefingFor(view, industryId, paySubRoute)
     const brief = set[industryId] ?? set.events
     if (!brief?.situations?.length) return
     setMessages(prev => [
       ...prev,
       { id: ++idRef.current, role: 'briefing', brief, onAction: (prompt) => submitRef.current?.(prompt) },
     ])
-  }, [view, industryId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [briefKey, industryId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const updateMsg = (id, patch) =>
     setMessages(prev => prev.map(m => m.id === id ? { ...m, ...patch } : m))
@@ -2530,7 +2661,7 @@ function PromptPanel({ industryId, view = 'overview' }) {
   // On the Schedule page, follow-up chips mirror the schedule briefing's
   // action prompts instead of the home canned suggestions. On overview (and
   // any other view) we fall back to the industry's PROMPT_SUGGESTIONS.
-  const viewBriefingSet = briefingFor(view)
+  const viewBriefingSet = briefingFor(view, industryId, paySubRoute)
   const viewBrief = viewBriefingSet[industryId] ?? viewBriefingSet.events
   const chipPool = (view === 'overview' || !viewBrief?.situations?.length)
     ? (suggestions ?? [])
@@ -2554,7 +2685,7 @@ function PromptPanel({ industryId, view = 'overview' }) {
         )}
 
         {!hasChat
-          ? <DailyBriefing industryId={industryId} view={view} onAction={submit} />
+          ? <DailyBriefing industryId={industryId} view={view} paySubRoute={paySubRoute} onAction={submit} />
           : (
             <div className="prompt-messages" ref={scrollRef}>
               {messages.map(m => <Message key={m.id} message={m} onApprove={handleApprove} />)}
@@ -2609,6 +2740,16 @@ function PromptPanel({ industryId, view = 'overview' }) {
 
 export default function Act1Dashboard({ industryId, view = 'overview', onBack, onExplore, onSelectView }) {
   const data = useMemo(() => getIndustryData(industryId), [industryId])
+  // Pay sub-route lives here so the chat panel can observe drill-downs
+  // (home → period → user) alongside top-level view changes.
+  const [paySubRoute, setPaySubRoute] = useState({ screen: 'home' })
+
+  // Reset the pay drill-down whenever the user leaves the Pay tab or
+  // switches industries; otherwise chat briefings would reference stale
+  // period/person state on re-entry.
+  useEffect(() => {
+    if (view !== 'pay') setPaySubRoute({ screen: 'home' })
+  }, [view, industryId])
 
   return (
     <div className={`act1-root${view === 'overview' ? '' : ` act1-root--${view}`}`}>
@@ -2620,11 +2761,11 @@ export default function Act1Dashboard({ industryId, view = 'overview', onBack, o
         onSelectView={onSelectView}
       />
 
-      <PromptPanel industryId={industryId} view={view} />
+      <PromptPanel industryId={industryId} view={view} paySubRoute={paySubRoute} />
 
       {view === 'schedule' ? <ScheduleCalendar data={data} onDemo={() => showDemoToast()} />
        : view === 'people' ? <PeopleList       data={data} onDemo={() => showDemoToast()} />
-       : view === 'pay'    ? <PayView          industryId={industryId} onDemo={() => showDemoToast()} />
+       : view === 'pay'    ? <PayView          industryId={industryId} route={paySubRoute} onChangeRoute={setPaySubRoute} onDemo={() => showDemoToast()} />
        :                     <ActivityFeed     data={data} />}
 
       <ToastHost />
