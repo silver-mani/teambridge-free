@@ -1259,22 +1259,28 @@ function NeedsZoneWithSelect({ cards, selectedCardId, onSelect }) {
 const BRIEFING = {
   events: {
     time: '9:04 AM',
-    lines: [
-      "Good morning. Here's today's briefing:",
-      "",
-      "48 of 48 staff confirmed for Saturday — **49ers vs Rams** tracking at **98% coverage**.",
-      "⚠️ **Gate 3** still has 1 open usher role — 2 days until kickoff.",
-      "⚠️ **Sandra Lee** cancelled — Rachel Williams selected, awaiting your approval.",
-      "Iris cleared **Sarah M.** (alcohol service) — ready for Saturday.",
-      "",
-      "What would you like me to handle first?",
-    ],
-    actions: [
-      { label: 'Approve Rachel',        prompt: 'Approve the Rachel Williams replacement' },
-      { label: 'Fill Gate 3',           prompt: 'Fill the last open Saturday role' },
-      { label: 'Pre-brief staff',       prompt: 'Draft the pre-game crew briefing' },
-      { label: 'Weekly coverage report', prompt: 'Build this week’s coverage report' },
-      { label: 'Sarah’s first shift',   prompt: 'Draft the onboarding packet for Sarah' },
+    greeting: "Good morning. Here's your Saturday briefing.",
+    situations: [
+      { id: 'rachel', tone: 'warning',
+        title: 'Sandra Lee cancelled',
+        desc:  'Rachel Williams selected · awaiting your approval.',
+        action: { label: 'Approve Rachel', prompt: 'Approve the Rachel Williams replacement' } },
+      { id: 'gate3',  tone: 'warning',
+        title: 'Gate 3 · 1 open usher role',
+        desc:  '2 days until kickoff · overall coverage 98%.',
+        action: { label: 'Fill Gate 3', prompt: 'Fill the last open Saturday role' } },
+      { id: 'prebrief', tone: 'info',
+        title: 'Pre-game crew brief not drafted',
+        desc:  '48 staff report Saturday at 5 PM.',
+        action: { label: 'Draft brief', prompt: 'Draft the pre-game crew briefing' } },
+      { id: 'sarah', tone: 'success',
+        title: 'Sarah M. cleared',
+        desc:  'Alcohol service · ready for Saturday.',
+        action: { label: 'First-shift packet', prompt: 'Draft the onboarding packet for Sarah' } },
+      { id: 'weekly', tone: 'info',
+        title: 'Weekly coverage recap',
+        desc:  'Civic Arena + Harbor Theater · ready for the client.',
+        action: { label: 'Build report', prompt: 'Build this week’s coverage report' } },
     ],
   },
   healthcare: {
@@ -1366,6 +1372,8 @@ const BRIEFING = {
 
 function DailyBriefing({ industryId, onAction }) {
   const brief = BRIEFING[industryId] ?? BRIEFING.events
+  const hasSituations = Array.isArray(brief.situations)
+
   return (
     <div className="briefing">
       <header className="briefing-agent">
@@ -1376,25 +1384,50 @@ function DailyBriefing({ industryId, onAction }) {
         </div>
       </header>
 
-      <article className="briefing-message">
-        <div className="briefing-message-head">
-          <span className="briefing-message-sender">Teambridge</span>
-          <span className="briefing-message-time">{brief.time}</span>
-        </div>
-        <div className="briefing-message-body">
-          {brief.lines.map((line, i) => (
-            line === '' ? <div key={i} className="briefing-message-break" />
-                        : <p key={i} className="briefing-message-line">{renderInlineBold(line)}</p>
-          ))}
-        </div>
-        <div className="briefing-actions">
-          {brief.actions.map((a, i) => (
-            <button key={i} type="button" className="briefing-action" onClick={() => onAction(a.prompt)}>
-              {a.label}
-            </button>
-          ))}
-        </div>
-      </article>
+      {hasSituations ? (
+        <article className="briefing-compact">
+          <div className="briefing-compact-head">
+            <span className="briefing-compact-time">{brief.time}</span>
+            <p className="briefing-compact-greeting">{brief.greeting}</p>
+          </div>
+          <ul className="briefing-situations">
+            {brief.situations.map((s) => (
+              <li key={s.id} className={`briefing-situation briefing-situation-${s.tone}`}>
+                <span className="briefing-situation-dot" aria-hidden="true" />
+                <div className="briefing-situation-text">
+                  <div className="briefing-situation-title">{s.title}</div>
+                  {s.desc && <div className="briefing-situation-desc">{s.desc}</div>}
+                </div>
+                {s.action && (
+                  <button type="button" className="briefing-situation-action" onClick={() => onAction(s.action.prompt)}>
+                    {s.action.label}
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        </article>
+      ) : (
+        <article className="briefing-message">
+          <div className="briefing-message-head">
+            <span className="briefing-message-sender">Teambridge</span>
+            <span className="briefing-message-time">{brief.time}</span>
+          </div>
+          <div className="briefing-message-body">
+            {brief.lines.map((line, i) => (
+              line === '' ? <div key={i} className="briefing-message-break" />
+                          : <p key={i} className="briefing-message-line">{renderInlineBold(line)}</p>
+            ))}
+          </div>
+          <div className="briefing-actions">
+            {brief.actions.map((a, i) => (
+              <button key={i} type="button" className="briefing-action" onClick={() => onAction(a.prompt)}>
+                {a.label}
+              </button>
+            ))}
+          </div>
+        </article>
+      )}
     </div>
   )
 }
