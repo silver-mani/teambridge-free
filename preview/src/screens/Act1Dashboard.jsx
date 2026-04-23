@@ -289,8 +289,8 @@ function ActivityCard({ card, expanded = false, onToggle, dimmed = false }) {
   )
   const showBody = expandable && expanded
 
-  const headline = summary?.headline ?? card.description ?? card.title
-  const actorLabel = agent?.name ?? card.subject?.primary ?? null
+  const headline = summary?.headline ?? card.description ?? card.subject?.secondary ?? card.title
+  const actorLabel = agent?.name ?? null
 
   const inner = (
     <div className="activity-card-compact-oneline">
