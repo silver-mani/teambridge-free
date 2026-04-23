@@ -2194,9 +2194,13 @@ function revealThinkingSteps(steps, charsRevealed) {
 function ThinkingSegment({ seg, charsRevealed }) {
   const steps = seg.steps ?? []
   const revealed = revealThinkingSteps(steps, charsRevealed)
-  const [collapsed, setCollapsed] = useState({})
-  const isCollapsed = (i) => !!collapsed[i]
-  const toggle = (i) => setCollapsed(prev => ({ ...prev, [i]: !prev[i] }))
+  // Steps collapse to just their titles by default — the operator scans
+  // the chain of reasoning at a glance and opens any one that's worth a
+  // closer look. Track per-step open state explicitly so an early user
+  // click doesn't get undone when more steps stream in.
+  const [open, setOpen] = useState({})
+  const isOpen = (i) => !!open[i]
+  const toggle = (i) => setOpen(prev => ({ ...prev, [i]: !prev[i] }))
 
   return (
     <div className="prompt-seg prompt-seg-thinking">
@@ -2207,14 +2211,14 @@ function ThinkingSegment({ seg, charsRevealed }) {
       <ul className="prompt-seg-thinking-steps">
         {revealed.map((r, i) => {
           const hasDetail = !!r.detail
-          const open = !isCollapsed(i)
+          const expanded = isOpen(i)
           return (
-            <li key={i} className={`prompt-seg-thinking-step${open ? ' is-open' : ''}`}>
+            <li key={i} className={`prompt-seg-thinking-step${expanded ? ' is-open' : ''}`}>
               <button
                 type="button"
                 className="prompt-seg-thinking-step-title"
                 onClick={hasDetail ? () => toggle(i) : undefined}
-                aria-expanded={hasDetail ? open : undefined}
+                aria-expanded={hasDetail ? expanded : undefined}
               >
                 <span className="prompt-seg-thinking-step-chevron" aria-hidden="true">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -2223,7 +2227,7 @@ function ThinkingSegment({ seg, charsRevealed }) {
                 </span>
                 <span className="prompt-seg-thinking-step-label">{r.title}</span>
               </button>
-              {hasDetail && open && (
+              {hasDetail && expanded && (
                 <div className="prompt-seg-thinking-step-detail">{r.detail}</div>
               )}
             </li>
