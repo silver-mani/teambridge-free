@@ -287,18 +287,19 @@ function ActivityCard({ card, expanded = false, onToggle, dimmed = false }) {
 
   const inner = (
     <div className="activity-card-compact">
-      {card.subject && <SubjectImage subject={card.subject} size={24} />}
+      {agent ? (
+        <span
+          className={`activity-card-compact-main-avatar agent-avatar-${agent.color}`}
+          style={{ backgroundImage: `url(${agent.avatar})` }}
+          aria-label={agent.name}
+        />
+      ) : card.subject ? (
+        <SubjectImage subject={card.subject} size={24} />
+      ) : null}
       <div className="activity-card-compact-text">
         <div className="activity-card-compact-lead">
           {card.eyebrow && (
             <span className={`activity-card-compact-eyebrow ${agent ? `activity-card-compact-eyebrow-${agent.color}` : ''}`}>{card.eyebrow}</span>
-          )}
-          {card.eyebrow && agent && <span className="activity-card-compact-sep" aria-hidden="true">·</span>}
-          {agent && (
-            <span className="activity-card-compact-agent">
-              <span className="activity-card-compact-agent-avatar" style={{ backgroundImage: `url(${agent.avatar})` }} />
-              <span>{agent.name}</span>
-            </span>
           )}
         </div>
         <div className="activity-card-compact-desc">{description}</div>
@@ -348,11 +349,24 @@ function ActivityCard({ card, expanded = false, onToggle, dimmed = false }) {
           </ul>
           {card.record.summary && (
             <div className="activity-card-summary">
-              <span className="activity-card-summary-check" aria-hidden="true">✓</span>
-              <div className="activity-card-summary-body">
-                <div className="activity-card-summary-title">{card.record.summary.outcome}</div>
-                <div className="activity-card-summary-manual">Manual: {card.record.summary.manualTime}</div>
+              <div className="activity-card-summary-head">
+                <span className="activity-card-summary-check" aria-hidden="true">✓</span>
+                <span className="activity-card-summary-title">{card.record.summary.outcome}</span>
               </div>
+              <dl className="activity-card-summary-metrics">
+                <div className="activity-card-summary-metric">
+                  <dt>Agent time</dt>
+                  <dd>{card.record.summary.duration}</dd>
+                </div>
+                <div className="activity-card-summary-metric">
+                  <dt>Manual</dt>
+                  <dd>{card.record.summary.manual}</dd>
+                </div>
+                <div className="activity-card-summary-metric activity-card-summary-metric-saved">
+                  <dt>Time saved</dt>
+                  <dd>{card.record.summary.saved}</dd>
+                </div>
+              </dl>
             </div>
           )}
         </div>

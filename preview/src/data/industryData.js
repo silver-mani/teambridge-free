@@ -930,8 +930,10 @@ const EVENTS_RECORDS = {
                 body: `Hi Miguel,\n\nSandra Lee cancelled her Saturday 7pm usher shift. Replacement selected pending manager approval.\n\nCovering: Rachel Williams\nArrival: 6:30 PM\nExperience: 4 events this month, high guest rating\nOvertime status: clear\n\nWill confirm once approved.\n\n— Teambridge` } },
     ],
     summary: {
-      outcome: 'Replacement found and 1-tap-pending in 1m 52s — well inside the 4-hour window.',
-      manualTime: '30–45 minutes of phone calls, texts, and schedule lookups.',
+      outcome: 'Replacement found and confirmed in 1m 52s — well inside the 4-hour window.',
+      duration: '1m 52s',
+      manual:   '30–45 min',
+      saved:    '~43 min',
     },
   },
 
@@ -977,8 +979,10 @@ const EVENTS_RECORDS = {
                 ] } },
     ],
     summary: {
-      outcome: 'Sarah cleared and staffed for Saturday — 1m 12s of agent work.',
-      manualTime: '2–3 business days of manual review, calls, and emails.',
+      outcome: 'Sarah cleared and staffed for Saturday.',
+      duration: '1m 12s',
+      manual:   '2–3 days',
+      saved:    '~3 days',
     },
   },
 
@@ -1047,7 +1051,9 @@ const EVENTS_RECORDS = {
     ],
     summary: {
       outcome: 'Swap approved and confirmed in 43 seconds.',
-      manualTime: '1–2 days of back-and-forth between Jordan, Ashley, and Miguel.',
+      duration: '43s',
+      manual:   '1–2 days',
+      saved:    '~2 days',
     },
   },
 
@@ -1080,7 +1086,9 @@ const EVENTS_RECORDS = {
     ],
     summary: {
       outcome: '6 reminders sent, 4 confirmed in under 15 minutes.',
-      manualTime: '3–4 hours of texting and phone calls by a scheduler.',
+      duration: '14 min',
+      manual:   '3–4 hrs',
+      saved:    '~3.5 hrs',
     },
   },
 }
