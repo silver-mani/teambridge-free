@@ -421,8 +421,8 @@
   gap: var(--space-3);
   align-items: center;
   padding: var(--space-3);
-  background: var(--color-bg-secondary);
-  border: none;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--color-content-primary) 10%, transparent);
   border-radius: 10px;
 }
 .prompt-seg-attachment .attachment-avatar {
