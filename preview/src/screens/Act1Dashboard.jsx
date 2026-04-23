@@ -2072,15 +2072,30 @@ function ProgressMessage({ message }) {
   const agent = message.agentId ? getAgent(message.agentId) : null
   const steps = message.steps ?? []
   const agentName = agent ? `${agent.name} (${agent.role})` : 'Teambridge AI'
+  const isThinking = message.status === 'thinking'
 
   const [activeIdx, setActiveIdx] = useState(0)
-  const allDone = activeIdx >= steps.length
+  const allDone = !isThinking && activeIdx >= steps.length
 
   useEffect(() => {
-    if (allDone) return
+    if (isThinking || allDone) return
     const t = setTimeout(() => setActiveIdx(i => i + 1), PROGRESS_STEP_DURATION_MS)
     return () => clearTimeout(t)
-  }, [activeIdx, allDone])
+  }, [activeIdx, allDone, isThinking])
+
+  if (isThinking) {
+    return (
+      <div className="prompt-msg prompt-msg-assistant prompt-msg-progress">
+        <span className={`prompt-msg-mark ${agent ? `agent-avatar-${agent.color}` : ''}`} aria-hidden="true"
+              style={agent?.avatar ? { backgroundImage: `url(${agent.avatar})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}>
+          {!agent && <TeambridgeAIIcon size={12} />}
+        </span>
+        <div className="prompt-msg-body">
+          <ThinkingDots />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="prompt-msg prompt-msg-assistant prompt-msg-progress">
@@ -2316,15 +2331,19 @@ function PromptPanel({ industryId }) {
     const agentId = msg.specialist ?? 'nova'
     const steps   = msg.approvePlan ?? SPECIALIST_PLAN[agentId] ?? SPECIALIST_PLAN.nova
     const userLabel = msg.approveLabel ?? `Have ${getAgent(agentId)?.name ?? 'Nova'} take it`
+    const progressId = ++idRef.current
+    // 1) Post the user's "click" as a chat bubble right away, and drop a
+    //    placeholder assistant bubble showing thinking dots.
     setMessages(prev => [
-      // Clear the approve affordance off any prior message so the button
-      // can't be clicked twice.
       ...prev.map(m => m.specialist ? { ...m, specialist: null, approveLabel: null } : m),
-      // Echo what the user just "said" as a real user bubble.
       { id: ++idRef.current, role: 'user', content: userLabel, status: 'done' },
-      // Then the agent's progress response.
-      { id: ++idRef.current, role: 'progress', agentId, steps },
+      { id: progressId, role: 'progress', agentId, steps, status: 'thinking' },
     ])
+    // 2) After a beat, flip the progress bubble into its running state so
+    //    the plan reveals sequentially from zero.
+    setTimeout(() => {
+      setMessages(prev => prev.map(m => m.id === progressId ? { ...m, status: 'running' } : m))
+    }, 900)
   }
 
   const clear = () => { setMessages([]); setInput('') }
