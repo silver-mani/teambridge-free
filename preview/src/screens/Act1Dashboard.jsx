@@ -2836,8 +2836,8 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, onInjectActiv
         status: 'watching',
         statusLabel: 'New',
         timestamp: 'Just now',
-        title: 'Sandra Lee called out',
-        description: 'Cancelled her Saturday 7pm usher shift at Civic Auditorium · 3.5 hrs notice',
+        title: 'Sandra Lee cancelled her Saturday 7pm usher shift',
+        description: 'Sandra Lee cancelled her Saturday 7pm usher shift · Civic Auditorium · 3.5 hrs notice',
         subject: {
           kind: 'person',
           primary: 'Sandra Lee',
@@ -2894,13 +2894,19 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, onInjectActiv
           </div>
         )}
 
-        {!hasChat
-          ? <DailyBriefing industryId={industryId} view={view} paySubRoute={paySubRoute} briefKey={briefKey} onAction={submit} />
-          : (
-            <div className="prompt-messages" ref={scrollRef}>
-              {messages.map(m => <Message key={m.id} message={m} onApprove={handleApprove} />)}
-            </div>
-          )}
+        {/* The Daily Briefing is the operator's starting context. Once a
+            conversation kicks in we normally swap it for the message list,
+            but on the Events home we keep it pinned above the chat so the
+            original greeting + situation cards aren't wiped out when the
+            scripted Sandra scene (or any mid-chat reaction) starts. */}
+        {(!hasChat || (industryId === 'events' && view === 'overview')) && (
+          <DailyBriefing industryId={industryId} view={view} paySubRoute={paySubRoute} briefKey={briefKey} onAction={submit} />
+        )}
+        {hasChat && (
+          <div className="prompt-messages" ref={scrollRef}>
+            {messages.map(m => <Message key={m.id} message={m} onApprove={handleApprove} />)}
+          </div>
+        )}
 
         {hasChat && followupChips.length > 0 && (
           <div className="prompt-input-chips" role="list">
