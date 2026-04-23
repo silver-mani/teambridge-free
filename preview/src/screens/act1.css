@@ -1445,7 +1445,7 @@
 .activity-feed .activity-card {
   padding: var(--space-2) var(--space-3);
   background: color-mix(in srgb, var(--color-bg-secondary) 50%, white 50%);
-  border-color: transparent;
+  border: 1px solid color-mix(in srgb, var(--color-content-primary) 6%, transparent);
   color: var(--color-content-secondary);
 }
 .activity-feed .activity-card-trigger { padding: var(--space-2) var(--space-3); }
