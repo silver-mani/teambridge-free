@@ -2335,7 +2335,9 @@ function PromptPanel({ industryId }) {
         {hasChat && (
           <div className="prompt-panel-topbar">
             <button type="button" className="prompt-panel-clear" onClick={clear}>
-              <XIcon size={12} />
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M3 12a9 9 0 0 1 15.5-6.2M21 4v5h-5M21 12a9 9 0 0 1-15.5 6.2M3 20v-5h5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
               <span>Clear chat</span>
             </button>
           </div>
