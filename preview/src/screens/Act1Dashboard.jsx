@@ -2463,7 +2463,16 @@ function PromptPanel({ industryId, view = 'overview' }) {
   const askedLabels = new Set(
     messages.filter(m => m.role === 'user' && typeof m.content === 'string').map(m => m.content.toLowerCase())
   )
-  const followupChips = (suggestions ?? [])
+  // On the Schedule page, follow-up chips mirror the schedule briefing's
+  // action prompts instead of the home canned suggestions. On overview (and
+  // any other view) we fall back to the industry's PROMPT_SUGGESTIONS.
+  const chipPool = view === 'schedule'
+    ? ((SCHEDULE_BRIEFING[industryId] ?? SCHEDULE_BRIEFING.events)?.situations ?? [])
+        .map(s => s.action)
+        .filter(Boolean)
+        .map(a => ({ label: a.prompt }))
+    : (suggestions ?? [])
+  const followupChips = chipPool
     .filter(s => !askedLabels.has(s.label.toLowerCase()))
     .slice(0, 3)
 
