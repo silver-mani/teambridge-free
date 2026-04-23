@@ -410,6 +410,50 @@
 .prompt-seg-list li { display: flex; gap: 8px; line-height: var(--line-height-loose); }
 .prompt-seg-list li::before { content: '•'; color: var(--color-content-tertiary); }
 
+/* Claude-style reasoning block — muted text in a left-ruled column so the
+   chain of logic reads as "the agent is thinking" rather than a finished
+   answer. Lines reveal in sync with the normal streaming state machine. */
+.prompt-seg-thinking {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 2px 0 2px 12px;
+  border-left: 2px solid color-mix(in srgb, var(--color-content-tertiary) 35%, transparent);
+}
+.prompt-seg-thinking-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-content-tertiary);
+  font-weight: var(--font-weight-medium);
+}
+.prompt-seg-thinking-pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-content-tertiary);
+  animation: prompt-seg-thinking-pulse 1400ms ease-in-out infinite;
+}
+@keyframes prompt-seg-thinking-pulse {
+  0%, 100% { opacity: 0.35; transform: scale(0.9); }
+  50%      { opacity: 1;    transform: scale(1.1); }
+}
+.prompt-seg-thinking-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.prompt-seg-thinking-line {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-content-tertiary);
+  font-style: italic;
+}
+
 /* Attachment card — record-style (person/event/chart) artifact in an AI answer */
 .prompt-seg-attachment {
   display: grid;
@@ -1673,6 +1717,24 @@
   transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease, background-color 140ms ease;
   overflow: hidden;
   width: 100%;
+}
+
+/* Live-scene activity cards (e.g. Sandra's cancellation) land with a
+   soft slide-down + fade and a brief highlight ring so the operator's
+   eye tracks the change without it feeling jarring. */
+.activity-card-live-in {
+  animation:
+    activity-card-slide-in 560ms cubic-bezier(0.2, 0.8, 0.2, 1) both,
+    activity-card-highlight 1800ms cubic-bezier(0.2, 0, 0, 1) 560ms both;
+}
+@keyframes activity-card-slide-in {
+  0%   { opacity: 0; transform: translateY(-10px) scale(0.98); }
+  60%  { opacity: 1; }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes activity-card-highlight {
+  0%   { box-shadow: 0 0 0 2px color-mix(in srgb, var(--ai-grad-mid, #446CFF) 35%, transparent), 0 6px 20px rgba(0, 0, 0, 0.08); }
+  100% { box-shadow: 0 0 0 0 transparent, 0 0 0 rgba(0, 0, 0, 0); }
 }
 
 .activity-feed .activity-card {

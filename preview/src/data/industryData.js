@@ -790,8 +790,10 @@ const LAST_MIN_REPLACEMENT_FEED_CARD = {
   },
 }
 
+// The Sandra/Rachel replacement now plays out live on the homepage at T=3s
+// (see PromptPanel scene orchestrator), so we keep the resolved version
+// out of the feed — a done card on the same page would undercut the scene.
 INDUSTRY_DATA.events.feed = [
-  LAST_MIN_REPLACEMENT_FEED_CARD,
   ...INDUSTRY_DATA.events.feed,
   ...EVENTS_FEED_EXTRA,
 ]
