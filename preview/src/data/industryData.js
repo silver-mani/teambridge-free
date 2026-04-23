@@ -916,6 +916,49 @@ INDUSTRY_DATA.events.schedule = {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
+   People — flat roster for the People page list view.
+   ───────────────────────────────────────────────────────────────────────────── */
+INDUSTRY_DATA.events.people = {
+  stats: [
+    { id: 'active',  label: 'Active staff',         value: '48', tone: 'blue'    },
+    { id: 'pending', label: 'Awaiting clearance',   value: '3',  tone: 'warning' },
+    { id: 'avg-hrs', label: 'Avg weekly hours',     value: '24', tone: 'success' },
+  ],
+  rows: [
+    { id: 'rachel', name: 'Rachel Williams', role: 'Usher',       venue: 'Civic Arena',   hours: '22 / 40', certs: 'Guest svc',              status: 'active',
+      avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=96&h=96&fit=crop&crop=faces&auto=format' },
+    { id: 'sandra', name: 'Sandra Lee',      role: 'Usher',       venue: 'Civic Arena',   hours: '0 / 40',  certs: 'Guest svc',              status: 'on-leave',
+      avatar: 'https://images.unsplash.com/photo-1489980557514-251d61e3eeb6?w=96&h=96&fit=crop&crop=faces&auto=format' },
+    { id: 'sarah',  name: 'Sarah M.',        role: 'Bev Service', venue: 'Civic Arena',   hours: '13 / 30', certs: 'TABC · Verified',         status: 'new-hire',
+      avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=96&h=96&fit=crop&crop=faces&auto=format' },
+    { id: 'jordan', name: 'Jordan K.',       role: 'Usher',       venue: 'Civic Arena',   hours: '28 / 40', certs: 'Guest svc',              status: 'active',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=96&h=96&fit=crop&crop=faces&auto=format' },
+    { id: 'ashley', name: 'Ashley P.',       role: 'Usher',       venue: 'Civic Arena',   hours: '30 / 40', certs: 'Guest svc',              status: 'active',
+      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=96&h=96&fit=crop&crop=faces&auto=format' },
+    { id: 'miguel', name: 'Miguel R.',       role: 'Event Lead',  venue: 'Civic Arena',   hours: '32 / 40', certs: 'Lead · Safety',          status: 'active',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=96&h=96&fit=crop&crop=faces&auto=format' },
+    { id: 'priya',  name: 'Priya S.',        role: 'Usher',       venue: 'Civic Arena',   hours: '13 / 40', certs: 'TABC · Expires Apr 30',  status: 'cert-expiring',
+      avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=96&h=96&fit=crop&crop=faces&auto=format' },
+    { id: 'diego',  name: 'Diego P.',        role: 'Gate Crew',   venue: 'Civic Arena',   hours: '9 / 30',  certs: '—',                      status: 'new-hire',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=96&h=96&fit=crop&crop=faces&auto=format' },
+    { id: 'marcus', name: 'Marcus J.',       role: 'Usher',       venue: 'Civic Arena',   hours: '38 / 40', certs: 'Guest svc',              status: 'ot-risk',
+      avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=96&h=96&fit=crop&crop=faces&auto=format' },
+    { id: 'tasha',  name: 'Tasha K.',        role: 'Bev Service', venue: 'Civic Arena',   hours: '15 / 40', certs: 'TABC · Verified',        status: 'active',
+      avatar: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=96&h=96&fit=crop&crop=faces&auto=format' },
+    { id: 'nate',   name: 'Nate H.',         role: 'Gate Crew',   venue: 'Civic Arena',   hours: '12 / 30', certs: 'Safety',                  status: 'active',
+      avatar: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=96&h=96&fit=crop&crop=faces&auto=format' },
+    { id: 'kelly',  name: 'Kelly T.',        role: 'Usher',       venue: 'Civic Arena',   hours: '11 / 40', certs: 'Guest svc',              status: 'active',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=96&h=96&fit=crop&crop=faces&auto=format' },
+    { id: 'harbor-staff-1', name: 'Elena V.', role: 'Bev Service', venue: 'Harbor Theater', hours: '6 / 20',  certs: 'TABC · Pending',          status: 'pending',
+      avatar: 'https://images.unsplash.com/photo-1554151228-14d9def656e4?w=96&h=96&fit=crop&crop=faces&auto=format' },
+    { id: 'harbor-staff-2', name: 'Omar K.',  role: 'Load-in',    venue: 'Harbor Theater', hours: '18 / 30', certs: '—',                      status: 'active',
+      avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=96&h=96&fit=crop&crop=faces&auto=format' },
+    { id: 'harbor-staff-3', name: 'Lydia C.', role: 'Usher',      venue: 'Harbor Theater', hours: '14 / 30', certs: 'Guest svc · Pending',    status: 'cert-expiring',
+      avatar: 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=96&h=96&fit=crop&crop=faces&auto=format' },
+  ],
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
    Records — the thing each card is about.
    When the operator clicks a card, the right drawer opens on this record and
    shows its Details tab (fields) and Activity tab (AI work + record history).
