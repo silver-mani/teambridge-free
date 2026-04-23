@@ -2315,12 +2315,16 @@ function PromptPanel({ industryId }) {
   const handleApprove = (msg) => {
     const agentId = msg.specialist ?? 'nova'
     const steps   = msg.approvePlan ?? SPECIALIST_PLAN[agentId] ?? SPECIALIST_PLAN.nova
-    setMessages(prev => prev.map(m => m.specialist ? { ...m, specialist: null } : m).concat({
-      id: ++idRef.current,
-      role: 'progress',
-      agentId,
-      steps,
-    }))
+    const userLabel = msg.approveLabel ?? `Have ${getAgent(agentId)?.name ?? 'Nova'} take it`
+    setMessages(prev => [
+      // Clear the approve affordance off any prior message so the button
+      // can't be clicked twice.
+      ...prev.map(m => m.specialist ? { ...m, specialist: null, approveLabel: null } : m),
+      // Echo what the user just "said" as a real user bubble.
+      { id: ++idRef.current, role: 'user', content: userLabel, status: 'done' },
+      // Then the agent's progress response.
+      { id: ++idRef.current, role: 'progress', agentId, steps },
+    ])
   }
 
   const clear = () => { setMessages([]); setInput('') }
