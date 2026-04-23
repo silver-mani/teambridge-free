@@ -427,9 +427,9 @@
 .prompt-seg-thinking {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   padding: 2px 0 2px 12px;
-  border-left: 2px solid color-mix(in srgb, var(--color-content-tertiary) 35%, transparent);
+  border-left: 2px solid color-mix(in srgb, var(--color-content-disabled) 35%, transparent);
 }
 .prompt-seg-thinking-eyebrow {
   display: inline-flex;
@@ -438,7 +438,7 @@
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--color-content-tertiary);
+  color: var(--color-content-disabled);
   font-weight: var(--font-weight-medium);
 }
 .prompt-seg-thinking-pulse {
@@ -458,24 +458,50 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 .prompt-seg-thinking-step {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
+/* Title is the clickable accordion head. Chevron on the left rotates
+   90° when the step is open. Uses --color-content-disabled for an extra
+   soft grey so the whole reasoning reads as muted internal monologue. */
 .prompt-seg-thinking-step-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  font-family: inherit;
   font-size: 13px;
   font-weight: var(--font-weight-medium);
-  color: var(--color-content-secondary);
+  color: var(--color-content-disabled);
   line-height: 1.35;
+  cursor: pointer;
+  text-align: left;
+  transition: color 120ms ease;
+}
+.prompt-seg-thinking-step-title:hover { color: var(--color-content-tertiary); }
+.prompt-seg-thinking-step-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  color: var(--color-content-disabled);
+  transition: transform 140ms cubic-bezier(0.2, 0, 0, 1);
+}
+.prompt-seg-thinking-step.is-open .prompt-seg-thinking-step-chevron {
+  transform: rotate(90deg);
 }
 .prompt-seg-thinking-step-detail {
   font-size: 12px;
-  line-height: 1.5;
-  color: var(--color-content-tertiary);
-  padding-left: 2px;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--color-content-disabled) 85%, transparent);
+  padding-left: 18px;
 }
 
 /* Attachment card — record-style (person/event/chart) artifact in an AI answer */

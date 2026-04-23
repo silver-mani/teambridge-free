@@ -2186,6 +2186,54 @@ function revealThinkingSteps(steps, charsRevealed) {
   return out
 }
 
+/* Reasoning block — titled steps (title + detail) like Claude's "Used N
+   tools" accordions. Each title is clickable to collapse or expand its
+   detail; default expanded so the chain of reasoning reads naturally
+   as it streams in, but the operator can fold any step away once it's
+   landed. */
+function ThinkingSegment({ seg, charsRevealed }) {
+  const steps = seg.steps ?? []
+  const revealed = revealThinkingSteps(steps, charsRevealed)
+  const [collapsed, setCollapsed] = useState({})
+  const isCollapsed = (i) => !!collapsed[i]
+  const toggle = (i) => setCollapsed(prev => ({ ...prev, [i]: !prev[i] }))
+
+  return (
+    <div className="prompt-seg prompt-seg-thinking">
+      <div className="prompt-seg-thinking-eyebrow">
+        <span className="prompt-seg-thinking-pulse" aria-hidden="true" />
+        Thinking
+      </div>
+      <ul className="prompt-seg-thinking-steps">
+        {revealed.map((r, i) => {
+          const hasDetail = !!r.detail
+          const open = !isCollapsed(i)
+          return (
+            <li key={i} className={`prompt-seg-thinking-step${open ? ' is-open' : ''}`}>
+              <button
+                type="button"
+                className="prompt-seg-thinking-step-title"
+                onClick={hasDetail ? () => toggle(i) : undefined}
+                aria-expanded={hasDetail ? open : undefined}
+              >
+                <span className="prompt-seg-thinking-step-chevron" aria-hidden="true">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+                <span className="prompt-seg-thinking-step-label">{r.title}</span>
+              </button>
+              {hasDetail && open && (
+                <div className="prompt-seg-thinking-step-detail">{r.detail}</div>
+              )}
+            </li>
+          )
+        })}
+      </ul>
+    </div>
+  )
+}
+
 function Segment({ seg, charsRevealed }) {
   if (seg.type === 'text' || seg.type === 'cta') {
     const text = seg.text.slice(0, charsRevealed)
@@ -2193,28 +2241,7 @@ function Segment({ seg, charsRevealed }) {
     return <div className={cls}>{renderInlineBold(text)}</div>
   }
   if (seg.type === 'thinking') {
-    // Reasoning block — titled steps (title + detail) like Claude's "Used
-    // N tools" blocks. Titles bold, details muted. Each pair reveals in
-    // lockstep with the state machine's char stream so the progression
-    // reads as the agent thinking out loud.
-    const steps = seg.steps ?? []
-    const revealed = revealThinkingSteps(steps, charsRevealed)
-    return (
-      <div className="prompt-seg prompt-seg-thinking">
-        <div className="prompt-seg-thinking-eyebrow">
-          <span className="prompt-seg-thinking-pulse" aria-hidden="true" />
-          Thinking
-        </div>
-        <ul className="prompt-seg-thinking-steps">
-          {revealed.map((r, i) => (
-            <li key={i} className="prompt-seg-thinking-step">
-              <div className="prompt-seg-thinking-step-title">{r.title}</div>
-              {r.detail && <div className="prompt-seg-thinking-step-detail">{r.detail}</div>}
-            </li>
-          ))}
-        </ul>
-      </div>
-    )
+    return <ThinkingSegment seg={seg} charsRevealed={charsRevealed} />
   }
   if (seg.type === 'list') {
     return (
@@ -2956,9 +2983,9 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, onInjectActiv
           </div>
         )}
 
-        {/* Unified scroll column: briefing + messages + follow-up chips
-            all live in one flow so the operator never sees a second inner
-            scrollbar. Only the compose input below stays pinned. */}
+        {/* Unified scroll column: briefing + messages flow inside this
+            single container so the operator never sees a second inner
+            scrollbar. Follow-up chips + compose input stay pinned below. */}
         <div className="prompt-scroll" ref={scrollRef}>
           {(!hasChat || (industryId === 'events' && view === 'overview')) && (
             <DailyBriefing industryId={industryId} view={view} paySubRoute={paySubRoute} briefKey={briefKey} onAction={submit} />
@@ -2968,21 +2995,22 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, onInjectActiv
               {messages.map(m => <Message key={m.id} message={m} onApprove={handleApprove} />)}
             </div>
           )}
-          {hasChat && followupChips.length > 0 && (
-            <div className="prompt-input-chips" role="list">
-              {followupChips.map(s => (
-                <button
-                  key={s.label}
-                  type="button"
-                  className="prompt-input-chip"
-                  onClick={() => submit(s.label)}
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
+
+        {hasChat && followupChips.length > 0 && (
+          <div className="prompt-input-chips" role="list">
+            {followupChips.map(s => (
+              <button
+                key={s.label}
+                type="button"
+                className="prompt-input-chip"
+                onClick={() => submit(s.label)}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="prompt-input">
           <textarea
