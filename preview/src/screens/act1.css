@@ -1750,6 +1750,13 @@ button.activity-card { cursor: pointer; }
 }
 
 /* Conversation pills */
+.conversation-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.conversation-item { display: flex; flex-direction: column; align-items: flex-start; }
+.conversation-item .conversation-body { align-self: stretch; margin-top: 6px; }
 .conversation-pills {
   display: flex;
   flex-wrap: wrap;
@@ -1815,6 +1822,7 @@ button.activity-card { cursor: pointer; }
   color: var(--color-content-primary);
 }
 .voice-call-duration { color: var(--color-content-tertiary); font-weight: var(--font-weight-regular); margin-left: 2px; }
+.voice-call-mode { color: var(--color-content-tertiary); font-weight: var(--font-weight-regular); margin-left: 2px; font-style: italic; }
 .voice-call-progress {
   height: 3px;
   background: var(--color-border-opaque);
@@ -1845,7 +1853,7 @@ button.activity-card { cursor: pointer; }
 }
 .voice-turn-agent .voice-turn-speaker { color: var(--color-purple-content-primary); }
 
-/* Workflow link button */
+/* Workflow link button — feels like a link, opens an external modal */
 .workflow-link {
   display: inline-flex;
   align-items: center;
@@ -1859,10 +1867,23 @@ button.activity-card { cursor: pointer; }
   color: var(--color-content-primary);
   text-decoration: none;
   cursor: pointer;
-  transition: background-color 120ms ease;
+  transition: background-color 120ms ease, border-color 120ms ease;
 }
-.workflow-link:hover { background: var(--color-bg-tertiary); }
-.workflow-link-arrow { color: var(--color-content-tertiary); }
+.workflow-link-label {
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--color-content-primary) 35%, transparent);
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+.workflow-link:hover {
+  background: var(--color-bg-tertiary);
+  border-color: color-mix(in srgb, var(--color-content-primary) 18%, transparent);
+}
+.workflow-link:hover .workflow-link-label {
+  text-decoration-color: var(--color-content-primary);
+}
+.workflow-link svg { color: var(--color-content-tertiary); }
+.workflow-link:hover svg { color: var(--color-content-primary); }
 
 /* Soft-lift hover — no border-color change */
 .activity-card-expandable:hover:not(.activity-card-open),
