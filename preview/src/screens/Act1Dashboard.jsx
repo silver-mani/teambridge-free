@@ -2281,6 +2281,13 @@ function PromptPanel({ industryId }) {
 
   const hasChat = messages.length > 0
 
+  const askedLabels = new Set(
+    messages.filter(m => m.role === 'user' && typeof m.content === 'string').map(m => m.content.toLowerCase())
+  )
+  const followupChips = (suggestions ?? [])
+    .filter(s => !askedLabels.has(s.label.toLowerCase()))
+    .slice(0, 3)
+
   return (
     <section className="prompt-panel" aria-label="Ask Teambridge">
       <div className="prompt-panel-inner">
@@ -2288,12 +2295,29 @@ function PromptPanel({ industryId }) {
           ? <DailyBriefing industryId={industryId} onAction={submit} />
           : (
             <div className="prompt-messages" ref={scrollRef}>
-              <button type="button" className="prompt-messages-clear" onClick={clear} title="Clear chat" aria-label="Clear chat">
-                <XIcon size={14} />
-              </button>
               {messages.map(m => <Message key={m.id} message={m} onApprove={handleApprove} />)}
             </div>
           )}
+
+        {hasChat && (followupChips.length > 0 || messages.length > 0) && (
+          <div className="prompt-input-hints">
+            <div className="prompt-input-chips">
+              {followupChips.map(s => (
+                <button
+                  key={s.label}
+                  type="button"
+                  className="prompt-input-chip"
+                  onClick={() => submit(s.label)}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+            <button type="button" className="prompt-input-clear" onClick={clear}>
+              Clear chat
+            </button>
+          </div>
+        )}
 
         <div className="prompt-input">
           <textarea
