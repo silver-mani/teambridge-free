@@ -2147,7 +2147,7 @@ function ProgressMessage({ message }) {
           <span className="progress-actor">{agentName} {allDone ? 'wrapped up' : 'started'}</span>
           <span className={`progress-status-pill ${allDone ? 'is-done' : ''}`}>
             <span className="progress-status-dot" aria-hidden="true" />
-            {allDone ? 'Complete' : 'In progress'}
+            {allDone ? 'Complete' : 'Working'}
           </span>
         </div>
         <ul className="progress-tasks">
