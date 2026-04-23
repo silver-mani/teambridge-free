@@ -1561,11 +1561,24 @@ button.activity-card { cursor: pointer; }
               0 0 0 3.5px color-mix(in srgb, var(--color-purple-bg-primary) 70%, transparent);
 }
 /* Spacer used when consecutive rows share the same actor — avatar is
-   suppressed but the grid slot stays so text alignment doesn't shift. */
+   suppressed but the grid slot stays so text alignment doesn't shift.
+   A short tick extending from the rail indicates the step is still a node. */
 .activity-row-avatar-spacer {
   width: 20px;
   height: 20px;
   display: inline-block;
+  position: relative;
+}
+.activity-row-avatar-spacer::before {
+  content: '';
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  width: 8px;
+  height: 2px;
+  background: var(--color-border-opaque);
+  border-radius: 1px;
+  transform: translateY(-50%);
 }
 
 /* Green outcome summary — sits at the bottom of an expanded card */

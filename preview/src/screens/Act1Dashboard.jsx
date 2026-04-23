@@ -814,7 +814,9 @@ function ActivityRow({ row, suppressAvatar = false }) {
               {' '}
             </>
           )}
-          <span className="activity-row-verb">{row.verb}</span>
+          <span className="activity-row-verb">
+            {suppressAvatar && row.verb ? row.verb.charAt(0).toUpperCase() + row.verb.slice(1) : row.verb}
+          </span>
         </span>
         <span className="activity-row-time">{row.time}</span>
       </div>
