@@ -2240,6 +2240,23 @@ function Segment({ seg, charsRevealed }) {
     const cls  = seg.type === 'cta' ? 'prompt-seg prompt-seg-cta' : 'prompt-seg prompt-seg-text'
     return <div className={cls}>{renderInlineBold(text)}</div>
   }
+  if (seg.type === 'signal') {
+    // "We noticed something" card — transparent fill, light grey stroke,
+    // shown BEFORE the thinking block so the operator sees what event
+    // triggered the reasoning. Non-streaming; appears as a single unit.
+    return (
+      <div className="prompt-seg prompt-seg-signal">
+        <span className="prompt-seg-signal-icon" aria-hidden="true">
+          <AlertTriangleIcon size={14} />
+        </span>
+        <div className="prompt-seg-signal-text">
+          {seg.eyebrow && <div className="prompt-seg-signal-eyebrow">{seg.eyebrow}</div>}
+          <div className="prompt-seg-signal-title">{seg.title}</div>
+          {seg.detail && <div className="prompt-seg-signal-detail">{seg.detail}</div>}
+        </div>
+      </div>
+    )
+  }
   if (seg.type === 'thinking') {
     return <ThinkingSegment seg={seg} charsRevealed={charsRevealed} />
   }
@@ -2617,6 +2634,10 @@ const SANDRA_SCENE = {
   //    replacement search, ending with a canned "Yes, reach out" button.
   reachOutPrompt: {
     content: { segments: [
+      { type: 'signal',
+        eyebrow: 'Activity flagged · might need resolution',
+        title: 'Sandra Lee cancelled her Saturday 7pm usher shift',
+        detail: 'Civic Auditorium · 3.5 hrs notice' },
       { type: 'thinking', steps: [
         { title: 'Parsed the cancellation',
           detail: 'Sandra Lee cancelled her Saturday 7pm usher shift at Civic Auditorium. 3.5 hrs notice.' },

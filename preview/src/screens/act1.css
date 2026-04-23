@@ -421,6 +421,56 @@
 .prompt-seg-list li { display: flex; gap: 8px; line-height: var(--line-height-loose); }
 .prompt-seg-list li::before { content: '•'; color: var(--color-content-tertiary); }
 
+/* Activity-detected card — transparent fill + light grey stroke, shown
+   just before a reasoning block so the operator sees what real-world
+   event triggered the AI's thinking (e.g. "Sandra cancelled her shift"). */
+.prompt-seg-signal {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-3);
+  align-items: start;
+  padding: var(--space-3);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--color-content-tertiary) 22%, transparent);
+  border-radius: 10px;
+}
+.prompt-seg-signal-icon {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-warning-fill, #F59E0B) 14%, transparent);
+  color: var(--color-warning-fill, #B45309);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.prompt-seg-signal-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.prompt-seg-signal-eyebrow {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-content-tertiary);
+  font-weight: var(--font-weight-medium);
+}
+.prompt-seg-signal-title {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+  line-height: 1.35;
+}
+.prompt-seg-signal-detail {
+  font-size: 12px;
+  color: var(--color-content-tertiary);
+  line-height: 1.5;
+}
+
 /* Claude-style reasoning block — muted text in a left-ruled column so the
    chain of logic reads as "the agent is thinking" rather than a finished
    answer. Lines reveal in sync with the normal streaming state machine. */
