@@ -2548,11 +2548,14 @@ const SANDRA_SCENE = {
     specialist: 'nova',
     approveLabel: 'Yes, reach out',
     approvePlan: [
-      'Offer the Saturday 7pm shift to the top 3 matches in parallel',
-      'Monitor responses (cut-off: 90 seconds)',
-      'Confirm the winner and lock the schedule',
+      'Dispatching offers to Rachel W., David K., Priya S.',
+      'Monitoring responses (cut-off: 90 seconds)',
+      'Confirming the winner and locking the schedule',
     ],
-    stepDurationMs: 1800,
+    // Reach-out should feel like real work, not a blink. ~3.5s per step is
+    // the sweet spot — fast enough to keep momentum, long enough that the
+    // prospect reads each step and trusts Nova isn't faking it.
+    stepDurationMs: 3500,
     sceneAfter: ({ postAssistant }) => postAssistant(SANDRA_SCENE.rachelAccepted),
   },
 
@@ -2823,16 +2826,18 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, onInjectActiv
     if (sceneStartedRef.current) return
     sceneStartedRef.current = true
 
+    // T=3s — Sandra's cancellation event arrives on its own. No agent is
+    // attached yet; the card is anchored to the person so the prospect sees
+    // it as a raw inbound event before the AI reacts.
     const activityTimer = setTimeout(() => {
       onInjectActivityCard?.({
         id: 'sandra-cancellation-live',
-        eyebrow: 'Shift replacement',
-        agentId: 'nova',
-        status: 'in-progress',
-        statusLabel: 'Working on it',
+        eyebrow: 'Shift update',
+        status: 'watching',
+        statusLabel: 'New',
         timestamp: 'Just now',
-        title: 'Sandra Lee cancelled — Saturday 7pm usher',
-        description: 'Civic Auditorium · 3.5 hrs notice. Nova scoring replacements.',
+        title: 'Sandra Lee called out',
+        description: 'Cancelled her Saturday 7pm usher shift at Civic Auditorium · 3.5 hrs notice',
         subject: {
           kind: 'person',
           primary: 'Sandra Lee',
@@ -2842,9 +2847,19 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, onInjectActiv
       })
     }, 3000)
 
+    // T=~6s — only after the operator has had time to notice the activity
+    // popup does the chat react. We first stash the visible daily briefing
+    // as an inline chat card so it isn't swallowed when the empty state
+    // flips to conversation mode, then the AI starts reasoning.
     const chatTimer = setTimeout(() => {
+      const set = briefingFor(view, industryId, paySubRoute)
+      const brief = set[industryId] ?? set.events
+      const briefingMsg = brief?.situations?.length
+        ? [{ id: ++idRef.current, role: 'briefing', brief, onAction: (prompt) => submitRef.current?.(prompt) }]
+        : []
+      setMessages(prev => [...prev, ...briefingMsg])
       postAssistant(SANDRA_SCENE.reachOutPrompt)
-    }, 3200)
+    }, 6000)
 
     return () => {
       clearTimeout(activityTimer)
