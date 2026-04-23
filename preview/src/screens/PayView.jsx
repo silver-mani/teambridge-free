@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { ChevronDownIcon }      from '../../../src/components/icons/ChevronDownIcon.tsx'
 import { ChevronRightIcon }     from '../../../src/components/icons/ChevronRightIcon.tsx'
 import { ListBulletIcon }       from '../../../src/components/icons/ListBulletIcon.tsx'
@@ -17,12 +17,13 @@ import {
   PERIOD_STATUS_META, fmt, fmtCompact,
 } from '../data/payData.js'
 
-/* PayView is a self-contained tri-screen experience: dashboard → pay period
-   → individual user. Sub-screen state lives here so the surrounding chat
-   panel and outer routing stay untouched. */
-export default function PayView({ industryId, onDemo }) {
-  const [route, setRoute] = useState({ screen: 'home' })
+/* PayView is a controlled tri-screen experience: dashboard → pay period →
+   individual user. Sub-screen state is owned by the parent (Act1Dashboard)
+   so the surrounding chat panel can reignite briefings when the user drills
+   down, without PayView needing to know the chat exists. */
+export default function PayView({ industryId, route = { screen: 'home' }, onChangeRoute, onDemo }) {
   const buzz = () => onDemo?.()
+  const setRoute = (next) => onChangeRoute?.(next)
 
   if (route.screen === 'user') {
     return (
