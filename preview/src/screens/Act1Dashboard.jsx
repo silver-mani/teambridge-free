@@ -98,12 +98,11 @@ function formatToday() {
 /* ─── Left nav ────────────────────────────────────────────────────────────── */
 
 const NAV_ITEMS = [
-  { id: 'overview',      label: 'Overview',        Icon: Home02Icon        },
-  { id: 'schedule',      label: 'Schedule',        Icon: Grid01Icon        },
-  { id: 'time',          label: 'Time & Attendance', Icon: ClipboardCheckIcon },
-  { id: 'people',        label: 'People',          Icon: Users03Icon       },
-  { id: 'workflows',     label: 'Agent Workflows', Icon: GitBranch01Icon   },
-  { id: 'ask',           label: 'Ask Teambridge',  Icon: MessageDotsSquareIcon, ai: true },
+  { id: 'overview',  label: 'Home',             Icon: Home02Icon         },
+  { id: 'people',    label: 'People',           Icon: Users03Icon        },
+  { id: 'schedule',  label: 'Schedule',         Icon: Grid01Icon         },
+  { id: 'pay',       label: 'Pay',              Icon: ClipboardCheckIcon },
+  { id: 'workflows', label: 'Agent Workflows',  Icon: GitBranch01Icon    },
 ]
 
 function LeftNav({ industryLabel, view, onBrand, onAsk, onSelectView }) {
@@ -128,8 +127,7 @@ function LeftNav({ industryLabel, view, onBrand, onAsk, onSelectView }) {
         {NAV_ITEMS.map(item => {
           const active = item.id === view || (item.id === 'overview' && view === 'overview')
           const onClick =
-              item.id === 'ask'      ? onAsk
-            : item.id === 'overview' ? () => onSelectView?.('overview')
+              item.id === 'overview' ? () => onSelectView?.('overview')
             : item.id === 'schedule' ? () => onSelectView?.('schedule')
             : item.id === 'people'   ? () => onSelectView?.('people')
             : () => showDemoToast()
