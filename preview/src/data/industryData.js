@@ -930,11 +930,45 @@ const EVENTS_RECORDS = {
                 body: `Hi Miguel,\n\nSandra Lee cancelled her Saturday 7pm usher shift. Replacement selected pending manager approval.\n\nCovering: Rachel Williams\nArrival: 6:30 PM\nExperience: 4 events this month, high guest rating\nOvertime status: clear\n\nWill confirm once approved.\n\n— Teambridge` } },
     ],
     summary: {
+      headline: "found a replacement for Sandra Lee's cancellation",
       outcome: 'Replacement found and confirmed in 1m 52s — well inside the 4-hour window.',
       duration: '1m 52s',
       manual:   '30–45 min',
       saved:    '~43 min',
     },
+    dataChanges: [
+      { field: 'Saturday 7pm usher · Civic Arena · Gate 3',
+        before: { name: 'Sandra Lee',      avatar: SANDRA.avatar },
+        after:  { name: 'Rachel Williams', avatar: RACHEL.avatar } },
+    ],
+    conversations: [
+      { id: 'sandra-call', kind: 'voice', contact: 'Sandra Lee',
+        summary: '1:22 · Cancelled',
+        duration: '1:22',
+        audio: `${import.meta.env.BASE_URL}audio/last-min-replacement/sandra-call.mp3`,
+        turns: [
+          { speaker: 'them',  speakerName: 'Sandra', text: "Hi, can't make my 7pm usher shift Saturday at Civic Arena — family emergency came up." },
+          { speaker: 'agent', speakerName: 'Nova',   text: "Got it Sandra, no penalty on your record. I'll find the replacement — you take care of yourself." },
+        ],
+      },
+      { id: 'rachel-call', kind: 'voice', contact: 'Rachel Williams',
+        summary: '0:48 · Accepted',
+        duration: '0:48',
+        audio: `${import.meta.env.BASE_URL}audio/last-min-replacement/rachel-call.mp3`,
+        turns: [
+          { speaker: 'agent', speakerName: 'Nova',   text: "Hi Rachel, Nova from Teambridge — Sandra just cancelled her 7pm usher shift Saturday. You're the closest qualified usher with strong guest ratings. Can you take it?" },
+          { speaker: 'them',  speakerName: 'Rachel', text: "Yes! I'm available, count me in." },
+          { speaker: 'agent', speakerName: 'Nova',   text: "Perfect — approval pending. Report 6:30 PM to the east entry. Details in your app." },
+        ],
+      },
+      { id: 'miguel-email', kind: 'email', contact: 'Miguel R., Event Lead',
+        summary: 'Replacement summary',
+        to: 'miguel.r@civicarena.events',
+        subject: 'Replacement selected: Sandra → Rachel (Saturday 7pm)',
+        body: "Hi Miguel,\n\nSandra Lee cancelled her Saturday 7pm usher shift. Replacement selected pending manager approval.\n\nCovering: Rachel Williams\nArrival: 6:30 PM\nExperience: 4 events this month, high guest rating\nOvertime status: clear\n\nWill confirm once approved.\n\n— Nova",
+      },
+    ],
+    workflow: { id: 'nova-replacement', label: 'Last-min shift replacement', url: '#' },
   },
 
   'credential': {
@@ -979,11 +1013,28 @@ const EVENTS_RECORDS = {
                 ] } },
     ],
     summary: {
+      headline: 'cleared Sarah M. for her first shift',
       outcome: 'Sarah cleared and staffed for Saturday.',
       duration: '1m 12s',
       manual:   '2–3 days',
       saved:    '~3 days',
     },
+    dataChanges: [
+      { field: 'Sarah M. · Clearance status',
+        before: { value: 'Pending documents' },
+        after:  { value: 'Cleared for Saturday' } },
+    ],
+    conversations: [
+      { id: 'sarah-sms', kind: 'sms', contact: 'Sarah M.',
+        summary: '2 messages',
+        phone: '+1 (415) 555-0181',
+        messages: [
+          { from: 'agent', text: "Sarah — you're cleared! First shift Saturday 7pm at Civic Arena. Report 6:30pm to the bev-service area. Welcome aboard.", time: '4:12 PM' },
+          { from: 'them',  text: 'Thanks! See you Saturday.', time: '4:14 PM' },
+        ],
+      },
+    ],
+    workflow: { id: 'iris-onboarding', label: 'Credentialing · New hire', url: '#' },
   },
 
   'new-venue': {
@@ -1050,11 +1101,28 @@ const EVENTS_RECORDS = {
                 ] } },
     ],
     summary: {
+      headline: "auto-approved Jordan K. ↔ Ashley P.'s Thursday swap",
       outcome: 'Swap approved and confirmed in 43 seconds.',
       duration: '43s',
       manual:   '1–2 days',
       saved:    '~2 days',
     },
+    dataChanges: [
+      { field: 'Thursday 7pm usher · Civic Arena',
+        before: { name: 'Jordan K.', avatar: JORDAN.avatar },
+        after:  { name: 'Ashley P.', avatar: ASHLEY.avatar } },
+    ],
+    conversations: [
+      { id: 'ashley-sms', kind: 'sms', contact: 'Ashley P.',
+        summary: '2 messages',
+        phone: '+1 (415) 555-0129',
+        messages: [
+          { from: 'agent', text: 'Your swap with Jordan on Thursday is approved. New shift: Thurs 7p–3a at Civic Arena.', time: '11:49 AM' },
+          { from: 'them',  text: 'Thanks!', time: '11:52 AM' },
+        ],
+      },
+    ],
+    workflow: { id: 'nova-swaps', label: 'Shift swaps · Auto-approve', url: '#' },
   },
 
   'reminders': {
@@ -1085,11 +1153,30 @@ const EVENTS_RECORDS = {
       { kind: 'agent', agentId: 'sofia', actor: 'Sofia', verb: 'monitoring — 4 of 6 confirmed, 2 still pending',               time: '+14m' },
     ],
     summary: {
+      headline: 'sent shift reminders to 6 staff for Saturday load-in',
       outcome: '6 reminders sent, 4 confirmed in under 15 minutes.',
       duration: '14 min',
       manual:   '3–4 hrs',
       saved:    '~3.5 hrs',
     },
+    dataChanges: [
+      { field: 'Saturday 5am · Harbor Theater · Reminder batch',
+        before: { value: '0 of 6 confirmed' },
+        after:  { value: '4 of 6 confirmed' } },
+    ],
+    conversations: [
+      { id: 'batch-sms', kind: 'sms', contact: '6 workers',
+        summary: '1 outbound · 4 replies',
+        messages: [
+          { from: 'agent', text: 'Reminder: your shift starts at 5am tomorrow at Harbor Theater. Reply Y to confirm.', time: '4:26 PM' },
+          { from: 'them',  text: 'Y (Jordan K.)',  time: '4:29 PM' },
+          { from: 'them',  text: 'Y (Ashley P.)',  time: '4:32 PM' },
+          { from: 'them',  text: 'Y (Marcus J.)',  time: '4:36 PM' },
+          { from: 'them',  text: 'Y (Priya S.)',   time: '4:37 PM' },
+        ],
+      },
+    ],
+    workflow: { id: 'sofia-reminders', label: 'Shift reminders · Batch', url: '#' },
   },
 }
 
