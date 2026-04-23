@@ -2291,6 +2291,15 @@ function PromptPanel({ industryId }) {
   return (
     <section className="prompt-panel" aria-label="Ask Teambridge">
       <div className="prompt-panel-inner">
+        {hasChat && (
+          <div className="prompt-panel-topbar">
+            <button type="button" className="prompt-panel-clear" onClick={clear}>
+              <XIcon size={12} />
+              <span>Clear chat</span>
+            </button>
+          </div>
+        )}
+
         {!hasChat
           ? <DailyBriefing industryId={industryId} onAction={submit} />
           : (
@@ -2299,23 +2308,18 @@ function PromptPanel({ industryId }) {
             </div>
           )}
 
-        {hasChat && (followupChips.length > 0 || messages.length > 0) && (
-          <div className="prompt-input-hints">
-            <div className="prompt-input-chips">
-              {followupChips.map(s => (
-                <button
-                  key={s.label}
-                  type="button"
-                  className="prompt-input-chip"
-                  onClick={() => submit(s.label)}
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
-            <button type="button" className="prompt-input-clear" onClick={clear}>
-              Clear chat
-            </button>
+        {hasChat && followupChips.length > 0 && (
+          <div className="prompt-input-chips" role="list">
+            {followupChips.map(s => (
+              <button
+                key={s.label}
+                type="button"
+                className="prompt-input-chip"
+                onClick={() => submit(s.label)}
+              >
+                {s.label}
+              </button>
+            ))}
           </div>
         )}
 
