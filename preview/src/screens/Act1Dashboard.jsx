@@ -10,6 +10,7 @@ import { AlertTriangleIcon }   from '../../../src/components/icons/AlertTriangle
 import { Home02Icon }          from '../../../src/components/icons/Home02Icon.tsx'
 import { Grid01Icon }          from '../../../src/components/icons/Grid01Icon.tsx'
 import { ClipboardCheckIcon }  from '../../../src/components/icons/ClipboardCheckIcon.tsx'
+import { CurrencyDollarCircleIcon } from '../../../src/components/icons/CurrencyDollarCircleIcon.tsx'
 import { Users03Icon }         from '../../../src/components/icons/Users03Icon.tsx'
 import { GitBranch01Icon }     from '../../../src/components/icons/GitBranch01Icon.tsx'
 import { MessageDotsSquareIcon } from '../../../src/components/icons/MessageDotsSquareIcon.tsx'
@@ -22,6 +23,7 @@ import { getAgent, AGENTS }   from '../data/agents.js'
 import { getCardDetail }       from '../data/cardDetails.js'
 import ScheduleCalendar        from './ScheduleCalendar.jsx'
 import PeopleList              from './PeopleList.jsx'
+import PayView                 from './PayView.jsx'
 import './act1.css'
 
 /* ─── Agent avatar (animated GIF in a color-tinted ring) ─────────────────── */
@@ -98,11 +100,11 @@ function formatToday() {
 /* ─── Left nav ────────────────────────────────────────────────────────────── */
 
 const NAV_ITEMS = [
-  { id: 'overview',  label: 'Home',             Icon: Home02Icon         },
-  { id: 'people',    label: 'People',           Icon: Users03Icon        },
-  { id: 'schedule',  label: 'Schedule',         Icon: Grid01Icon         },
-  { id: 'pay',       label: 'Pay',              Icon: ClipboardCheckIcon },
-  { id: 'workflows', label: 'Agent Workflows',  Icon: GitBranch01Icon    },
+  { id: 'overview',  label: 'Home',             Icon: Home02Icon              },
+  { id: 'people',    label: 'People',           Icon: Users03Icon             },
+  { id: 'schedule',  label: 'Schedule',         Icon: Grid01Icon              },
+  { id: 'pay',       label: 'Pay',              Icon: CurrencyDollarCircleIcon },
+  { id: 'workflows', label: 'Agent Workflows',  Icon: GitBranch01Icon         },
 ]
 
 function LeftNav({ industryLabel, view, onBrand, onAsk, onSelectView }) {
@@ -130,6 +132,7 @@ function LeftNav({ industryLabel, view, onBrand, onAsk, onSelectView }) {
               item.id === 'overview' ? () => onSelectView?.('overview')
             : item.id === 'schedule' ? () => onSelectView?.('schedule')
             : item.id === 'people'   ? () => onSelectView?.('people')
+            : item.id === 'pay'      ? () => onSelectView?.('pay')
             : () => showDemoToast()
           return (
             <button
@@ -1453,9 +1456,37 @@ const PEOPLE_BRIEFING = {
   },
 }
 
+/* Briefing set when the user is on the Pay page — insights focus on
+   approvals, OT, instant pay usage, and adjustments needing review. */
+const PAY_BRIEFING = {
+  events: {
+    time: '9:04 AM',
+    greeting: 'Reviewing this period — here\'s what to clear before approval.',
+    situations: [
+      { id: 'pending', tone: 'warning',
+        title: '4 timecards still pending',
+        desc:  'Jordan, Ashley, Marcus and Priya — manager review outstanding.',
+        action: { label: 'Approve cleanly', prompt: 'Approve the 4 pending timecards' } },
+      { id: 'instant-pay', tone: 'info',
+        title: 'Instant Pay at 6% of gross',
+        desc:  'Within plan. 8 workers used early payouts this period.',
+        action: { label: 'See breakdown', prompt: 'Break down instant pay usage by worker' } },
+      { id: 'ot-marcus', tone: 'warning',
+        title: 'Marcus J. logged 6 hrs OT',
+        desc:  'Confirm coverage approval before sign-off.',
+        action: { label: 'Verify OT', prompt: 'Show Marcus\'s OT shifts for this period' } },
+      { id: 'adjustments', tone: 'info',
+        title: '3 adjustments waiting',
+        desc:  'Mileage + 1 manual time correction need a sign-off.',
+        action: { label: 'Review adjustments', prompt: 'Open the adjustments queue' } },
+    ],
+  },
+}
+
 function briefingFor(view) {
   if (view === 'schedule') return SCHEDULE_BRIEFING
   if (view === 'people')   return PEOPLE_BRIEFING
+  if (view === 'pay')      return PAY_BRIEFING
   return BRIEFING
 }
 
@@ -2593,6 +2624,7 @@ export default function Act1Dashboard({ industryId, view = 'overview', onBack, o
 
       {view === 'schedule' ? <ScheduleCalendar data={data} onDemo={() => showDemoToast()} />
        : view === 'people' ? <PeopleList       data={data} onDemo={() => showDemoToast()} />
+       : view === 'pay'    ? <PayView          industryId={industryId} onDemo={() => showDemoToast()} />
        :                     <ActivityFeed     data={data} />}
 
       <ToastHost />

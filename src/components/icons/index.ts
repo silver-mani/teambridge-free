@@ -131,6 +131,7 @@ export { CheckCircleDashedIcon }         from './CheckCircleDashedIcon';
 export { Code02Icon }                    from './Code02Icon';
 export { CoinsStacked03Icon }            from './CoinsStacked03Icon';
 export { CurrencyDollarIcon }            from './CurrencyDollarIcon';
+export { CurrencyDollarCircleIcon }      from './CurrencyDollarCircleIcon';
 export { Globe01Icon }                   from './Globe01Icon';
 export { Image01Icon }                   from './Image01Icon';
 export { LineChartUp02Icon }             from './LineChartUp02Icon';
