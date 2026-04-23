@@ -2,6 +2,10 @@ import { AlertTriangleIcon }   from '../../../src/components/icons/AlertTriangle
 import { ArrowNarrowRightIcon } from '../../../src/components/icons/ArrowNarrowRightIcon.tsx'
 import { ChevronLeftIcon }      from '../../../src/components/icons/ChevronLeftIcon.tsx'
 import { ChevronRightIcon }     from '../../../src/components/icons/ChevronRightIcon.tsx'
+import { ChevronDownIcon }      from '../../../src/components/icons/ChevronDownIcon.tsx'
+import { PlusIcon }             from '../../../src/components/icons/PlusIcon.tsx'
+import { ListBulletIcon }       from '../../../src/components/icons/ListBulletIcon.tsx'
+import { TeambridgeAIIcon }     from '../../../src/components/icons/TeambridgeAIIcon.tsx'
 
 const DAYS = [
   { id: 'sun', label: 'Sunday' },
@@ -26,20 +30,38 @@ export default function ScheduleCalendar({ data, onDemo }) {
       <header className="schedule-head">
         <h1 className="schedule-title">Schedule</h1>
         <div className="schedule-head-actions">
-          <button type="button" className="schedule-btn" onClick={buzz}>+ New shift</button>
+          <button type="button" className="schedule-btn" onClick={buzz}>
+            <PlusIcon size={14} /> New shift
+          </button>
           <button type="button" className="schedule-btn schedule-btn-dark" onClick={buzz}>
             Publish all <ArrowNarrowRightIcon size={14} />
+          </button>
+          <button type="button" className="schedule-icon-btn" onClick={buzz} aria-label="Open menu">
+            <ListBulletIcon size={16} />
+          </button>
+          <button type="button" className="schedule-icon-btn schedule-icon-btn-ai" onClick={buzz} aria-label="Ask Teambridge">
+            <TeambridgeAIIcon size={16} />
           </button>
         </div>
       </header>
 
       <div className="schedule-toolbar">
-        <button type="button" className="schedule-filter" onClick={buzz}>Group by: <b>User</b></button>
-        <button type="button" className="schedule-filter" onClick={buzz}>Week view</button>
-        <button type="button" className="schedule-filter" onClick={buzz}>+ Filter</button>
+        <button type="button" className="schedule-filter" onClick={buzz}>
+          Group by: <b>User</b> <ChevronDownIcon size={12} />
+        </button>
+        <button type="button" className="schedule-filter" onClick={buzz}>
+          Week view <ChevronDownIcon size={12} />
+        </button>
+        <button type="button" className="schedule-filter" onClick={buzz}>
+          <PlusIcon size={12} /> Filter
+        </button>
         <div className="schedule-toolbar-spacer" />
-        <button type="button" className="schedule-filter" onClick={buzz}>Color coding</button>
-        <button type="button" className="schedule-filter" onClick={buzz}>Columns</button>
+        <button type="button" className="schedule-filter" onClick={buzz}>
+          <span className="schedule-filter-dot" aria-hidden="true" /> Color coding <ChevronDownIcon size={12} />
+        </button>
+        <button type="button" className="schedule-filter" onClick={buzz}>
+          Columns <ChevronDownIcon size={12} />
+        </button>
       </div>
 
       <div className="schedule-daybar">
@@ -48,9 +70,15 @@ export default function ScheduleCalendar({ data, onDemo }) {
         <button type="button" className="schedule-daybar-icon" onClick={buzz} aria-label="Next week"><ChevronRightIcon size={14} /></button>
         <span className="schedule-range">{weekLabel}</span>
         <div className="schedule-toolbar-spacer" />
+        <button type="button" className="schedule-daybar-icon" onClick={buzz} aria-label="Search">
+          <SearchGlyph />
+        </button>
         <span className="schedule-counter schedule-counter-alert"><AlertTriangleIcon size={12} /> 1</span>
         <span className="schedule-counter schedule-counter-warn">2</span>
         <span className="schedule-counter">5</span>
+        <button type="button" className="schedule-daybar-icon" onClick={buzz} aria-label="Jump forward">
+          <ChevronRightIcon size={14} />
+        </button>
       </div>
 
       <div className="schedule-grid" role="grid">
@@ -94,5 +122,14 @@ function ShiftCell({ shift, onClick }) {
         {shift.venue && <span className="schedule-shift-venue">{shift.venue}</span>}
       </div>
     </button>
+  )
+}
+
+function SearchGlyph() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M20 20l-3.5-3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
   )
 }

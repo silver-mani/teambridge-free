@@ -3643,6 +3643,38 @@ button.activity-card:hover:not(.activity-card-selected),
 }
 .schedule-btn-dark:hover { background: color-mix(in srgb, var(--color-content-primary) 88%, white); }
 
+.schedule-icon-btn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: 8px;
+  color: var(--color-content-secondary);
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.schedule-icon-btn:hover { background: var(--color-bg-tertiary); color: var(--color-content-primary); }
+.schedule-icon-btn-ai {
+  color: var(--color-purple-content-primary);
+  border-color: color-mix(in srgb, var(--color-purple-border-primary) 50%, var(--color-border-opaque));
+  background: color-mix(in srgb, var(--color-purple-bg-primary) 12%, var(--color-bg-primary));
+}
+.schedule-icon-btn-ai:hover {
+  background: color-mix(in srgb, var(--color-purple-bg-primary) 22%, var(--color-bg-primary));
+}
+
+.schedule-filter-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: linear-gradient(135deg, #ef4444 0 33%, #facc15 33% 66%, #3b82f6 66% 100%);
+  display: inline-block;
+  margin-right: 2px;
+}
+
 .schedule-toolbar,
 .schedule-daybar {
   display: flex;
@@ -3755,9 +3787,12 @@ button.activity-card:hover:not(.activity-card-selected),
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  background: var(--color-bg-secondary);
+  background: var(--color-bg-primary);
   border-right: 1px solid var(--color-border-opaque);
   min-width: 0;
+  position: sticky;
+  left: 0;
+  z-index: 1;
 }
 .schedule-user-avatar {
   width: 32px;
@@ -3831,16 +3866,28 @@ button.activity-card:hover:not(.activity-card-selected),
 }
 
 .schedule-shift-upcoming {
-  background: color-mix(in srgb, var(--color-blue-bg-primary) 22%, var(--color-bg-primary));
-  border-color: color-mix(in srgb, var(--color-blue-border-primary) 55%, transparent);
+  background: #E8EEFF;
+  border-color: #C7D2FE;
+}
+.schedule-shift-upcoming .schedule-shift-role {
+  background: #DBE4FF;
+  color: #3E4FBD;
 }
 .schedule-shift-completed {
-  background: color-mix(in srgb, var(--color-success-bg) 65%, var(--color-bg-primary));
-  border-color: color-mix(in srgb, var(--color-success-border) 60%, transparent);
+  background: #EAF5E0;
+  border-color: #C3E0A3;
+}
+.schedule-shift-completed .schedule-shift-role {
+  background: #D6EBC0;
+  color: #4C7A22;
 }
 .schedule-shift-no-show {
-  background: color-mix(in srgb, #FEE2E2 80%, var(--color-bg-primary));
-  border-color: color-mix(in srgb, #F87171 60%, transparent);
+  background: #FDE7E7;
+  border-color: #F6B8B8;
+}
+.schedule-shift-no-show .schedule-shift-role {
+  background: #F8CCCC;
+  color: #B03A3A;
 }
 
 @media (max-width: 1200px) {
