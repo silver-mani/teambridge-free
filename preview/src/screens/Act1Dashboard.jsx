@@ -2201,6 +2201,49 @@ function ActionButtons({ specialist, actionHint, approveLabel, onApprove }) {
   )
 }
 
+/* A chat-embedded version of the briefing card. Used when we inject a new
+   briefing on view-change (e.g., entering Schedule mid-conversation) so the
+   existing chat history stays intact and the new insights scroll into view. */
+function InlineBriefing({ brief, onAction }) {
+  if (!brief) return null
+  return (
+    <div className="prompt-msg prompt-msg-assistant">
+      <span className="prompt-msg-mark" aria-hidden="true">
+        <TeambridgeAIIcon size={12} />
+      </span>
+      <div className="prompt-msg-body">
+        <p className="briefing-compact-greeting">
+          {(brief.greeting ?? '').split(/(\s+)/).map((tok, i) => (
+            /\S/.test(tok)
+              ? <span key={i} className="briefing-word" style={{ animationDelay: `${i * 90}ms` }}>{tok}</span>
+              : <span key={i}>{tok}</span>
+          ))}
+        </p>
+        <ul className="briefing-situations">
+          {(brief.situations ?? []).map((s, i) => (
+            <li
+              key={s.id}
+              className={`briefing-situation briefing-situation-${s.tone}`}
+              style={{ animationDelay: `${2200 + i * 420}ms` }}
+            >
+              <span className="briefing-situation-dot" aria-hidden="true" />
+              <div className="briefing-situation-text">
+                <div className="briefing-situation-title">{s.title}</div>
+                {s.desc && <div className="briefing-situation-desc">{s.desc}</div>}
+              </div>
+              {s.action && (
+                <button type="button" className="briefing-situation-action" onClick={() => onAction?.(s.action.prompt)}>
+                  {s.action.label}
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  )
+}
+
 function Message({ message, onApprove }) {
   if (message.role === 'user') {
     return (
@@ -2212,6 +2255,10 @@ function Message({ message, onApprove }) {
 
   if (message.role === 'progress') {
     return <ProgressMessage message={message} />
+  }
+
+  if (message.role === 'briefing') {
+    return <InlineBriefing brief={message.brief} onAction={message.onAction} />
   }
 
   const segments   = normalizeSegments(message.content)
@@ -2250,12 +2297,31 @@ function PromptPanel({ industryId, view = 'overview' }) {
   const suggestions = PROMPT_SUGGESTIONS[industryId] ?? PROMPT_SUGGESTIONS.events
   const [input, setInput]       = useState('')
   const [messages, setMessages] = useState([])
-  const scrollRef = useRef(null)
-  const idRef     = useRef(0)
+  const scrollRef   = useRef(null)
+  const idRef       = useRef(0)
+  const lastViewRef = useRef(view)
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
   }, [messages])
+
+  // Mid-conversation, when the user switches views (e.g. overview → schedule),
+  // append a matching briefing as an inline AI message so the chat scrolls
+  // naturally to the new insights instead of leaving them hidden behind the
+  // existing history.
+  useEffect(() => {
+    const prev = lastViewRef.current
+    lastViewRef.current = view
+    if (view === prev) return
+    if (messages.length === 0) return  // empty state already renders the briefing
+    const set = view === 'schedule' ? SCHEDULE_BRIEFING : BRIEFING
+    const brief = set[industryId] ?? set.events
+    if (!brief?.situations?.length) return
+    setMessages(prev => [
+      ...prev,
+      { id: ++idRef.current, role: 'briefing', brief, onAction: (prompt) => submitRef.current?.(prompt) },
+    ])
+  }, [view, industryId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const updateMsg = (id, patch) =>
     setMessages(prev => prev.map(m => m.id === id ? { ...m, ...patch } : m))
@@ -2354,6 +2420,11 @@ function PromptPanel({ industryId, view = 'overview' }) {
     if (canned) return submitCanned(canned.label, canned.answer, canned.specialist, canned.approvePlan, canned.approveLabel)
     return submitFreeForm(t)
   }
+
+  // Keep a live ref to `submit` so the briefing-injection effect above can
+  // wire click handlers on InlineBriefing without stale-closure pitfalls.
+  const submitRef = useRef(submit)
+  useEffect(() => { submitRef.current = submit })
 
   // Plan items shown when an agent is delegated. These describe what the
   // agent WILL DO — not what they've already finished. The actual work
