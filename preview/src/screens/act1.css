@@ -157,7 +157,7 @@
   overflow-y: auto;
   padding: 36px var(--space-5) var(--space-10);
   border-left: 1px solid var(--color-border-opaque);
-  background: var(--color-bg-secondary);
+  background: var(--color-bg-tertiary);
   transition: visibility 220ms cubic-bezier(0.2, 0, 0, 1);
 }
 .activity-feed-inner {
@@ -1443,13 +1443,15 @@
 }
 
 .activity-feed .activity-card {
-  padding: var(--space-3) var(--space-3);
-  background: var(--color-bg-primary);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-bg-secondary);
   border-color: transparent;
   color: var(--color-content-secondary);
 }
-.activity-feed .activity-card-compact-eyebrow { color: var(--color-content-secondary); }
-.activity-feed .activity-card-compact-desc { color: var(--color-content-secondary); }
+.activity-feed .activity-card-trigger { padding: var(--space-2) var(--space-3); }
+.activity-feed .activity-card-compact-eyebrow { color: var(--color-content-secondary); font-size: 13px; }
+.activity-feed .activity-card-compact-desc { color: var(--color-content-secondary); font-size: 13px; }
+.activity-feed .activity-card-compact-time { font-size: 12px; }
 /* Flat feed cards — no lift, no shadow */
 .activity-feed .activity-card-expandable:hover:not(.activity-card-open),
 .activity-feed button.activity-card:hover {
@@ -1457,12 +1459,12 @@
   transform: none;
 }
 .activity-feed .activity-card-open { box-shadow: none; }
-/* Drill-down body sits on the card's white bg */
+/* Drill-down body sits on the card's secondary bg */
 .activity-feed .activity-card-body .activity-row-avatar {
-  box-shadow: 0 0 0 2px var(--color-bg-primary);
+  box-shadow: 0 0 0 2px var(--color-bg-secondary);
 }
 .activity-feed .activity-card-body .activity-row-avatar-agent {
-  box-shadow: 0 0 0 2px var(--color-bg-primary),
+  box-shadow: 0 0 0 2px var(--color-bg-secondary),
               0 0 0 3.5px color-mix(in srgb, var(--color-purple-bg-primary) 70%, transparent);
 }
 .activity-card-compact {
