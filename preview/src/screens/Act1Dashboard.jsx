@@ -2848,16 +2848,10 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, onInjectActiv
     }, 3000)
 
     // T=~6s — only after the operator has had time to notice the activity
-    // popup does the chat react. We first stash the visible daily briefing
-    // as an inline chat card so it isn't swallowed when the empty state
-    // flips to conversation mode, then the AI starts reasoning.
+    // popup does the chat react. We deliberately do NOT re-post the daily
+    // briefing into the chat: the empty-state greeting has already typed
+    // itself and re-rendering it would look like the AI was retyping.
     const chatTimer = setTimeout(() => {
-      const set = briefingFor(view, industryId, paySubRoute)
-      const brief = set[industryId] ?? set.events
-      const briefingMsg = brief?.situations?.length
-        ? [{ id: ++idRef.current, role: 'briefing', brief, onAction: (prompt) => submitRef.current?.(prompt) }]
-        : []
-      setMessages(prev => [...prev, ...briefingMsg])
       postAssistant(SANDRA_SCENE.reachOutPrompt)
     }, 6000)
 
