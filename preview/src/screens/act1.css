@@ -583,11 +583,9 @@
 
 /* Progress message — agent has been delegated; here's the plan */
 .prompt-msg-progress .prompt-msg-body {
-  background: var(--color-bg-tertiary);
+  background: transparent;
+  padding: 0;
   gap: var(--space-3);
-}
-.prompt-msg-progress .prompt-msg-mark {
-  background: var(--color-bg-tertiary);
 }
 .progress-header {
   display: flex;
