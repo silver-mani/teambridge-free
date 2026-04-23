@@ -1823,6 +1823,15 @@ button.activity-card { cursor: pointer; }
 }
 .voice-call-duration { color: var(--color-content-tertiary); font-weight: var(--font-weight-regular); margin-left: 2px; }
 .voice-call-mode { color: var(--color-content-tertiary); font-weight: var(--font-weight-regular); margin-left: 2px; font-style: italic; }
+.voice-call-mode-error { color: var(--color-warning-content, var(--color-content-tertiary)); }
+.voice-call-play:disabled { opacity: 0.6; cursor: progress; }
+.voice-turn.is-speaking {
+  background: var(--color-purple-bg-primary);
+  color: var(--color-purple-content-primary);
+  border-radius: 6px;
+  padding: 2px 6px;
+  margin: 0 -6px;
+}
 .voice-call-progress {
   height: 3px;
   background: var(--color-border-opaque);

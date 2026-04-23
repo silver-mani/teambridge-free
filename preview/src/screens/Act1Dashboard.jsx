@@ -421,98 +421,117 @@ function ConversationsBlock({ conversations }) {
   )
 }
 
-/* ─── Voice-call player — plays mp3 + shows transcript ───────────────────── */
+/* ─── Voice-call player — streams ElevenLabs TTS for the scripted turns ── */
+const AGENT_VOICE_ID  = 'EXAVITQu4vr4xnSDxMaL' // Bella — warm female, used for agents
+const CALLER_VOICE_ID = '21m00Tcm4TlvDq8ikWAM' // Rachel — natural female, used for workers
+
+function voiceIdFor(turn) {
+  if (turn.voiceId) return turn.voiceId
+  return turn.speaker === 'agent' ? AGENT_VOICE_ID : CALLER_VOICE_ID
+}
+
 function VoiceCallPlayer({ call }) {
-  const audioRef = useRef(null)
-  const [playing, setPlaying] = useState(false)
-  const [progress, setProgress] = useState(0)
-  const [ttsMode, setTtsMode] = useState(false)
+  const audioRef    = useRef(null)
+  const cacheRef    = useRef({})          // key `${voiceId}:${text}` → blob URL
+  const abortRef    = useRef(false)
+  const [playing, setPlaying]     = useState(false)
+  const [loading, setLoading]     = useState(false)
+  const [currentIdx, setCurrentIdx] = useState(-1)
+  const [errored, setErrored]     = useState(false)
 
-  // Stop any in-flight TTS speech when the component unmounts.
-  useEffect(() => () => window.speechSynthesis?.cancel(), [])
+  useEffect(() => () => {
+    // Cleanup: stop audio + revoke blob URLs on unmount.
+    abortRef.current = true
+    audioRef.current?.pause()
+    Object.values(cacheRef.current).forEach(url => URL.revokeObjectURL(url))
+  }, [])
 
-  const pickVoices = () => {
-    const synth = window.speechSynthesis
-    const voices = synth?.getVoices() ?? []
-    if (!voices.length) return { agent: null, other: null }
-    const agent = voices.find(v => /samantha|victoria|karen|zira|google us english female/i.test(v.name))
-      ?? voices.find(v => /female/i.test(v.name))
-      ?? voices[0]
-    const other = voices.find(v => v !== agent && /daniel|alex|google uk english male|male/i.test(v.name))
-      ?? voices.find(v => v !== agent)
-      ?? voices[0]
-    return { agent, other }
-  }
-
-  const speakTurns = () => {
-    const synth = window.speechSynthesis
-    if (!synth || !call.turns?.length) return
-    synth.cancel()
-    setPlaying(true)
-    const { agent, other } = pickVoices()
-    call.turns.forEach((t, i) => {
-      const u = new SpeechSynthesisUtterance(t.text)
-      u.voice = t.speaker === 'agent' ? agent : other
-      u.rate = 1.0
-      if (i === call.turns.length - 1) {
-        u.onend = () => { setPlaying(false); setProgress(0) }
-      }
-      synth.speak(u)
+  const fetchTurn = async (turn) => {
+    const voiceId = voiceIdFor(turn)
+    const key = `${voiceId}:${turn.text}`
+    if (cacheRef.current[key]) return cacheRef.current[key]
+    const r = await fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ text: turn.text, voiceId }),
     })
+    if (!r.ok) throw new Error(await r.text().catch(() => r.statusText))
+    const blob = await r.blob()
+    const url  = URL.createObjectURL(blob)
+    cacheRef.current[key] = url
+    return url
   }
 
-  const stopTts = () => {
-    window.speechSynthesis?.cancel()
+  const stop = () => {
+    abortRef.current = true
+    const a = audioRef.current
+    if (a) { a.pause(); a.currentTime = 0 }
     setPlaying(false)
+    setCurrentIdx(-1)
+  }
+
+  const play = async () => {
+    if (!call.turns?.length) return
+    abortRef.current = false
+    setErrored(false)
+    setPlaying(true)
+    setLoading(true)
+    try {
+      // Pre-fetch all turns in parallel so playback is gapless.
+      const urls = await Promise.all(call.turns.map(fetchTurn))
+      if (abortRef.current) return
+      setLoading(false)
+      for (let i = 0; i < urls.length; i++) {
+        if (abortRef.current) break
+        setCurrentIdx(i)
+        const audio = audioRef.current
+        if (!audio) break
+        audio.src = urls[i]
+        audio.currentTime = 0
+        await new Promise((resolve) => {
+          audio.onended = () => resolve()
+          audio.onerror = () => resolve()
+          audio.play().catch(() => resolve())
+        })
+      }
+    } catch (e) {
+      console.error('TTS error:', e)
+      setErrored(true)
+    } finally {
+      setPlaying(false)
+      setLoading(false)
+      setCurrentIdx(-1)
+    }
   }
 
   const toggle = (e) => {
     e.stopPropagation()
-    if (ttsMode) {
-      if (playing) { stopTts() } else { speakTurns() }
-      return
-    }
-    const a = audioRef.current
-    if (!a) { setTtsMode(true); speakTurns(); return }
-    if (playing) { a.pause(); return }
-    const attempt = a.play()
-    if (attempt?.then) {
-      attempt.catch(() => { setTtsMode(true); speakTurns() })
-    }
+    if (playing) { stop() } else { play() }
   }
 
   return (
     <div className="voice-call">
-      <audio
-        ref={audioRef}
-        src={call.audio}
-        preload="none"
-        onPlay={() => setPlaying(true)}
-        onPause={() => setPlaying(false)}
-        onEnded={() => { setPlaying(false); setProgress(0) }}
-        onError={() => setTtsMode(true)}
-        onTimeUpdate={e => {
-          const el = e.currentTarget
-          if (el.duration) setProgress(el.currentTime / el.duration)
-        }}
-      />
+      <audio ref={audioRef} preload="none" />
       <div className="voice-call-head">
-        <button type="button" className="voice-call-play" onClick={toggle} aria-label={playing ? 'Pause' : 'Play'}>
-          {playing ? '⏸' : '▶'}
+        <button type="button" className="voice-call-play" onClick={toggle} aria-label={playing ? 'Pause' : 'Play'} disabled={loading && !playing}>
+          {loading ? '…' : playing ? '⏸' : '▶'}
         </button>
         <div className="voice-call-meta">
           <div className="voice-call-title">
             <span>{call.contact}</span>
             {call.duration && <span className="voice-call-duration">· {call.duration}</span>}
-            {ttsMode && <span className="voice-call-mode">· synthesized</span>}
+            {loading && <span className="voice-call-mode">· loading</span>}
+            {errored && <span className="voice-call-mode voice-call-mode-error">· audio unavailable</span>}
           </div>
-          <div className="voice-call-progress"><span style={{ width: `${progress * 100}%` }} /></div>
+          <div className="voice-call-progress">
+            <span style={{ width: call.turns?.length ? `${((currentIdx + 1) / call.turns.length) * 100}%` : 0 }} />
+          </div>
         </div>
       </div>
       {!!call.turns?.length && (
         <ol className="voice-call-transcript">
           {call.turns.map((t, i) => (
-            <li key={i} className={`voice-turn voice-turn-${t.speaker}`}>
+            <li key={i} className={`voice-turn voice-turn-${t.speaker} ${i === currentIdx ? 'is-speaking' : ''}`}>
               <span className="voice-turn-speaker">{t.speakerName ?? (t.speaker === 'agent' ? 'Agent' : call.contact)}</span>
               <span className="voice-turn-text">{t.text}</span>
             </li>
