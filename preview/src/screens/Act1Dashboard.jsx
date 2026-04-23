@@ -1270,9 +1270,11 @@ const BRIEFING = {
       "What would you like me to handle first?",
     ],
     actions: [
-      { label: 'Approve Rachel',   prompt: 'Approve the Rachel Williams replacement' },
-      { label: 'Fill Gate 3',      prompt: 'Fill the last open Saturday role' },
-      { label: 'Pre-brief staff',  prompt: 'Draft the pre-game crew briefing' },
+      { label: 'Approve Rachel',        prompt: 'Approve the Rachel Williams replacement' },
+      { label: 'Fill Gate 3',           prompt: 'Fill the last open Saturday role' },
+      { label: 'Pre-brief staff',       prompt: 'Draft the pre-game crew briefing' },
+      { label: 'Weekly coverage report', prompt: 'Build this week’s coverage report' },
+      { label: 'Sarah’s first shift',   prompt: 'Draft the onboarding packet for Sarah' },
     ],
   },
   healthcare: {
@@ -1524,7 +1526,61 @@ Ready to email to the client ops channel?` },
             '**Weather:** clear · 62°F at kickoff',
             '**Roster change:** Rachel Williams in for Sandra Lee at East Entry',
           ]},
+          { type: 'attachment',
+            title: 'Saturday Pre-Game Brief',
+            subtitle: 'Document · MD · 1.8 KB',
+            filename: 'saturday-pregame-brief.md',
+            mimeType: 'text/markdown',
+            content: `# Saturday Pre-Game Brief\n\n**Event:** 49ers vs Rams (Saturday, Apr 26) · Sellout — 68,500 expected\n**Venue:** Civic Arena · Gates 1–6\n**Kickoff:** 7:15 PM · Doors 5:00 PM\n\n## Call times\n- 4:30 PM — surge leads + charge crew\n- 5:00 PM — full crew (48 total) report at assigned gates\n\n## Key policies\n- TABC badges must be visible at all beverage posts; cut-off end of 3rd quarter.\n- Coat-check surge stays post-kickoff until gate sweep.\n- Weather: clear, 62°F at kickoff — no rain protocol tonight.\n\n## Roster updates\n- Rachel Williams in for Sandra Lee · East Entry · Gate 3\n- Sarah M. cleared for alcohol service · first shift\n- Diego P. with Priya (buddy) · Gate 2\n\n## Safety\n- Medical team at Sections 112 and 418.\n- Active-shooter response refresher complete for 6 staff this week.\n- Report anything unusual to charge lead on Channel 2.\n\n— Drafted by Sofia, People Ops Agent`,
+            actions: [
+              { kind: 'drive', url: '#' },
+              { kind: 'download', label: 'Download' },
+            ],
+          },
           { type: 'cta', text: "Ready to dispatch via SMS + in-app push?" },
+        ],
+      } },
+    { label: 'Build this week’s coverage report',
+      specialist: 'atlas',
+      answer: {
+        segments: [
+          { type: 'text', text: "Generated this week's coverage report across Civic Arena + Harbor Theater:" },
+          { type: 'metrics', items: [
+            { value: '98%',  label: 'Coverage' },
+            { value: '12',   label: 'Swaps · auto' },
+            { value: '1m 52s', label: 'Avg fill time' },
+            { value: '0',    label: 'No-shows' },
+          ]},
+          { type: 'attachment',
+            title: 'Weekly Coverage Report',
+            subtitle: 'Spreadsheet · CSV · 3.4 KB',
+            filename: 'coverage-report-apr-20-26.csv',
+            mimeType: 'text/csv',
+            content: `Day,Venue,Shifts,Staffed,Coverage,Swaps,Avg Fill Time\nMon,Civic Arena,12,12,100%,1,2m 04s\nTue,Civic Arena,8,8,100%,0,\nWed,Harbor Theater,6,6,100%,2,1m 18s\nThu,Civic Arena,14,14,100%,3,1m 42s\nFri,Harbor Theater,10,10,100%,1,2m 30s\nSat,Civic Arena,48,47,98%,5,1m 52s\nSun,Civic Arena,10,10,100%,0,\n`,
+            actions: [
+              { kind: 'drive', url: '#' },
+              { kind: 'download', label: 'Download' },
+            ],
+          },
+          { type: 'cta', text: "Email this to Miguel + the venue client ops channel?" },
+        ],
+      } },
+    { label: 'Draft the onboarding packet for Sarah',
+      specialist: 'sofia',
+      answer: {
+        segments: [
+          { type: 'text', text: "First-shift packet ready for Sarah M. — Saturday 7 PM Civic Arena bev-service." },
+          { type: 'attachment',
+            title: 'Sarah M. — First-Shift Packet',
+            subtitle: 'Document · MD · 1.2 KB',
+            filename: 'sarah-m-first-shift-packet.md',
+            mimeType: 'text/markdown',
+            content: `# First-Shift Packet — Sarah M.\n\n**Shift:** Saturday Apr 26 · 6:30 PM report · 49ers vs Rams\n**Venue:** Civic Arena · Beverage service · East Concourse\n**Buddy:** Priya S.\n\n## Bring\n- TABC badge (already on file)\n- Comfortable shoes, closed-toe\n- Water bottle\n\n## On arrival\n1. Check in at Staff Entry (east side).\n2. Pick up apron + badge from Miguel R.\n3. Priya will walk you through bev post setup.\n\n## Policy reminders\n- Alcohol cut-off: end of 3rd quarter.\n- ID scan required for any patron looking under 35.\n- Cash handling: tray stays locked; report discrepancies to lead immediately.\n\n## After shift\n- Clock out at the Staff Entry kiosk.\n- Weekly paychecks arrive every Friday after 10 AM.\n\nWelcome to the team!\n— Sofia, People Ops Agent`,
+            actions: [
+              { kind: 'download', label: 'Download' },
+            ],
+          },
+          { type: 'cta', text: "Send the packet to Sarah via SMS + email?" },
         ],
       } },
     { label: 'Coverage by gate for Saturday',
@@ -1803,7 +1859,72 @@ function Segment({ seg, charsRevealed }) {
   }
   if (seg.type === 'chart')   return <ChartBlock chart={seg} />
   if (seg.type === 'metrics') return <MetricsBlock items={seg.items} />
+  if (seg.type === 'attachment') return <AttachmentBlock attachment={seg} />
   return null
+}
+
+function AttachmentBlock({ attachment }) {
+  const { title, subtitle, content, filename, mimeType, actions } = attachment
+  const handleDownload = () => {
+    const body = content ?? ''
+    const blob = new Blob([body], { type: mimeType ?? 'text/plain' })
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href = url
+    a.download = filename ?? 'download.txt'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
+  return (
+    <div className="prompt-seg prompt-seg-attachment">
+      <span className="attachment-icon" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M14 2v6h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </span>
+      <div className="attachment-meta">
+        <div className="attachment-title">{title}</div>
+        {subtitle && <div className="attachment-subtitle">{subtitle}</div>}
+      </div>
+      <div className="attachment-actions">
+        {(actions ?? []).map((a, i) => {
+          if (a.kind === 'drive') {
+            return (
+              <a key={i} className="attachment-btn attachment-btn-icon" href={a.url ?? '#'} onClick={e => e.stopPropagation()} aria-label="Open in Drive" title="Open in Drive">
+                <DriveGlyph />
+              </a>
+            )
+          }
+          if (a.kind === 'download') {
+            return (
+              <button key={i} type="button" className="attachment-btn" onClick={handleDownload}>
+                {a.label ?? 'Download'}
+              </button>
+            )
+          }
+          return (
+            <a key={i} className="attachment-btn" href={a.url ?? '#'} onClick={e => e.stopPropagation()}>{a.label}</a>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function DriveGlyph() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L27.5 53H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+      <path d="M43.65 25 29.9 1.2c-1.35.8-2.5 1.9-3.3 3.3L1.2 48.5c-.8 1.4-1.2 2.95-1.2 4.5h27.5z" fill="#00ac47"/>
+      <path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H59.81l5.85 11.5z" fill="#ea4335"/>
+      <path d="M43.65 25 57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+      <path d="M59.8 53H27.5L13.75 76.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+      <path d="M73.4 26.5 60.55 4.5c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25l16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+    </svg>
+  )
 }
 
 /* Light markdown-ish parser: turns a raw AI text reply into a list of segments
