@@ -338,8 +338,23 @@ function ActivityCard({ card, expanded = false, onToggle, dimmed = false }) {
       {showBody && (
         <div className="activity-card-body">
           <ul className="activity-rows">
-            {activityEntries.map((row, i) => <ActivityRow key={i} row={row} />)}
+            {activityEntries.map((row, i) => {
+              const prev = activityEntries[i - 1]
+              const sameAsPrev = !!prev
+                && prev.kind === row.kind
+                && (prev.agentId ?? prev.actor) === (row.agentId ?? row.actor)
+              return <ActivityRow key={i} row={row} suppressAvatar={sameAsPrev} />
+            })}
           </ul>
+          {card.record.summary && (
+            <div className="activity-card-summary">
+              <span className="activity-card-summary-check" aria-hidden="true">✓</span>
+              <div className="activity-card-summary-body">
+                <div className="activity-card-summary-title">{card.record.summary.outcome}</div>
+                <div className="activity-card-summary-manual">Manual: {card.record.summary.manualTime}</div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -740,14 +755,16 @@ function RecordPopover({ anchor, payload, onClose }) {
 }
 
 /* Unified activity row — used for both agents and humans so they look identical. */
-function ActivityRow({ row }) {
+function ActivityRow({ row, suppressAvatar = false }) {
   const initials = row.actor.split(' ').map(p => p[0]).join('').slice(0, 2)
   const [open, setOpen] = useState(false)
   const agent = row.kind === 'agent' && row.agentId ? getAgent(row.agentId) : null
   const isAgent = !!agent
 
   let avatarNode
-  if (agent) {
+  if (suppressAvatar) {
+    avatarNode = <span className="activity-row-avatar-spacer" aria-hidden="true" />
+  } else if (agent) {
     avatarNode = (
       <span
         className={`activity-row-avatar activity-row-avatar-agent agent-avatar-${agent.color}`}
@@ -776,9 +793,14 @@ function ActivityRow({ row }) {
       <div className="activity-row">
         {avatarNode}
         <span className="activity-row-text">
-          <span className="activity-row-actor">{row.actor}</span>
-          {isAgent && <span className="activity-row-agent-role"> ({agent.role})</span>}
-          <span className="activity-row-verb">{' '}{row.verb}</span>
+          {!suppressAvatar && (
+            <>
+              <span className="activity-row-actor">{row.actor}</span>
+              {isAgent && <span className="activity-row-agent-role"> ({agent.role})</span>}
+              {' '}
+            </>
+          )}
+          <span className="activity-row-verb">{row.verb}</span>
         </span>
         <span className="activity-row-time">{row.time}</span>
       </div>

@@ -746,7 +746,33 @@ const EVENTS_FEED_EXTRA = [
                image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=96&h=96&fit=crop&crop=faces&auto=format' } },
 ]
 
-INDUSTRY_DATA.events.feed = [...INDUSTRY_DATA.events.feed, ...EVENTS_FEED_EXTRA]
+// Last-min replacement — high-urgency card pinned to the top of the feed.
+// Its record (EVENTS_RECORDS['last-min-replacement']) has a rich reasoning
+// timeline that expands inline.
+const LAST_MIN_REPLACEMENT_FEED_CARD = {
+  id: 'last-min-replacement',
+  eyebrow: 'Last-min shift replacement',
+  agentId: 'nova',
+  status: 'in-progress',
+  statusLabel: 'Pending approval',
+  timestamp: '3 min ago',
+  description: 'Sandra Lee cancelled Saturday 7pm · Rachel Williams lined up',
+  subject: {
+    kind: 'pair',
+    primary: 'Sandra Lee → Rachel Williams',
+    secondary: 'Sandra Lee cancelled Saturday 7pm · Rachel Williams lined up',
+    images: [
+      'https://images.unsplash.com/photo-1489980557514-251d61e3eeb6?w=160&h=160&fit=crop&crop=faces&auto=format',
+      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=160&h=160&fit=crop&crop=faces&auto=format',
+    ],
+  },
+}
+
+INDUSTRY_DATA.events.feed = [
+  LAST_MIN_REPLACEMENT_FEED_CARD,
+  ...INDUSTRY_DATA.events.feed,
+  ...EVENTS_FEED_EXTRA,
+]
 
 // Events needsYou: 49ers event (1st — the thing you care about), then the
 // Rachel replacement (2nd — the action you need to take). Drop Harbor Theater.
@@ -873,33 +899,40 @@ const EVENTS_RECORDS = {
       { label: 'Shift ID',        value: 'SHF-04-0426-U14' },
     ],
     activity: [
-      { kind: 'agent', agentId: 'nova', actor: 'Nova', verb: 'awaiting your approval', time: 'Pending',
-        comm: { type: 'email', contact: 'Miguel R., Event Lead', to: 'miguel.r@civicarena.events',
-                subject: 'Replacement selected: Sandra → Rachel (Saturday 7pm)',
-                body: `Hi Miguel,\n\nSandra Lee cancelled her Saturday 7pm usher shift. Replacement selected pending manager approval.\n\nCovering: Rachel Williams\nArrival: 6:30 PM\nExperience: 4 events this month, high guest rating\nOvertime status: clear\n\nWill confirm once approved.\n\n— Teambridge` } },
-      { kind: 'user',  actor: 'Rachel Williams', avatar: RACHEL.avatar, verb: 'accepted the shift offer', time: '3 min ago',
+      { kind: 'user',  actor: 'Scheduling', verb: 'published this shift',                                        time: 'Monday 9:15 AM' },
+      { kind: 'user',  actor: 'Miguel R.',  verb: 'approved the final event roster',                             time: 'Wednesday 4:20 PM' },
+      { kind: 'user',  actor: 'Sandra Lee', avatar: SANDRA.avatar, verb: 'cancelled her shift — family emergency', time: '5 min ago',
+        comm: { type: 'sms', contact: 'Sandra Lee', phone: '+1 (415) 555-0142',
+                messages: [
+                  { from: 'them',  text: 'Hi, can\'t make my 7pm usher shift Saturday at Civic Arena — family emergency.', time: '2:58 PM' },
+                  { from: 'agent', text: 'Got it Sandra, no penalty on your record. I\'ll find the replacement.', time: '2:58 PM' },
+                ] } },
+      { kind: 'agent', agentId: 'sofia', actor: 'Sofia', verb: 'acknowledged Sandra and logged the cancellation', time: '+0s' },
+      { kind: 'agent', agentId: 'nova',  actor: 'Nova',  verb: 'opened shift-coverage workflow for SHF-04-0426-U14', time: '+2s' },
+      { kind: 'agent', agentId: 'nova',  actor: 'Nova',  verb: 'pulled 42 candidates within 6 miles of Civic Arena', time: '+4s' },
+      { kind: 'agent', agentId: 'nova',  actor: 'Nova',  verb: 'filtered to available, non-overlapping: 18 remain',  time: '+6s' },
+      { kind: 'agent', agentId: 'leo',   actor: 'Leo',   verb: 'overtime guard — removed 4 above 36 hrs this week',  time: '+8s' },
+      { kind: 'agent', agentId: 'iris',  actor: 'Iris',  verb: 'verified guest-services cert — 11 qualify',          time: '+11s' },
+      { kind: 'agent', agentId: 'nova',  actor: 'Nova',  verb: 'scored candidates on proximity + rating + past no-shows', time: '+14s' },
+      { kind: 'agent', agentId: 'nova',  actor: 'Nova',  verb: 'ranked top 3: Rachel Williams, Jordan K., Priya S.',  time: '+17s' },
+      { kind: 'agent', agentId: 'nova',  actor: 'Nova',  verb: 'sent SMS offer to Rachel Williams (highest score)',   time: '+19s' },
+      { kind: 'user',  actor: 'Rachel Williams', avatar: RACHEL.avatar, verb: 'accepted the shift offer',             time: '+1m 44s',
         comm: { type: 'sms', contact: 'Rachel Williams', phone: '+1 (415) 555-0187',
                 messages: [
                   { from: 'agent', text: 'Hi Rachel, this is Teambridge. Sandra Lee just cancelled her 7pm usher shift at Civic Arena for 49ers vs Rams Saturday. You\'re the closest qualified usher with a strong guest rating. Can you take it?', time: '3:00 PM' },
                   { from: 'them',  text: 'Yes! I\'m available, count me in.', time: '3:01 PM' },
                   { from: 'agent', text: 'Perfect — pending manager approval. Report 6:30pm to the east entry. Details in your app.', time: '3:01 PM' },
                 ] } },
-      { kind: 'agent', agentId: 'nova', actor: 'Nova', verb: 'sent shift offer to Rachel Williams', time: '3 min ago' },
-      { kind: 'agent', agentId: 'nova', actor: 'Nova', verb: 'ranked 3 qualified replacements', time: '4 min ago' },
-      { kind: 'agent', agentId: 'leo',  actor: 'Leo',  verb: 'cleared overtime guard (top 3 all under 40 hrs)', time: '4 min ago' },
-      { kind: 'agent', agentId: 'iris', actor: 'Iris', verb: 'confirmed guest-services cert for top candidates', time: '4 min ago' },
-      { kind: 'agent', agentId: 'nova', actor: 'Nova', verb: 'started replacement search', time: '5 min ago' },
-      { kind: 'user',  actor: 'Sandra Lee', avatar: SANDRA.avatar, verb: 'cancelled her shift', time: '5 min ago',
-        comm: { type: 'sms', contact: 'Sandra Lee', phone: '+1 (415) 555-0142',
-                messages: [
-                  { from: 'them',  text: 'Hi, can\'t make my 7pm usher shift Saturday at Civic Arena — family emergency.', time: '2:58 PM' },
-                  { from: 'agent', text: 'Got it Sandra, no penalty on your record. I\'ll find the replacement.', time: '2:58 PM' },
-                ] } },
-      { kind: 'agent', agentId: 'sofia', actor: 'Sofia', verb: 'acknowledged Sandra and logged the cancellation', time: '5 min ago' },
-      { kind: 'user',  actor: 'Miguel R.', verb: 'approved the final roster', time: 'Wednesday 4:20 pm' },
-      { kind: 'agent', agentId: 'sofia', actor: 'Sofia', verb: 'sent assignment confirmation to Sandra', time: 'Tuesday 10:04 am' },
-      { kind: 'user',  actor: 'Scheduling', verb: 'published this shift', time: 'Monday 9:15 am' },
+      { kind: 'agent', agentId: 'nova',  actor: 'Nova',  verb: 'held assignment pending manager approval',            time: '+1m 47s' },
+      { kind: 'agent', agentId: 'nova',  actor: 'Nova',  verb: 'emailed Miguel with replacement summary',             time: '+1m 52s',
+        comm: { type: 'email', contact: 'Miguel R., Event Lead', to: 'miguel.r@civicarena.events',
+                subject: 'Replacement selected: Sandra → Rachel (Saturday 7pm)',
+                body: `Hi Miguel,\n\nSandra Lee cancelled her Saturday 7pm usher shift. Replacement selected pending manager approval.\n\nCovering: Rachel Williams\nArrival: 6:30 PM\nExperience: 4 events this month, high guest rating\nOvertime status: clear\n\nWill confirm once approved.\n\n— Teambridge` } },
     ],
+    summary: {
+      outcome: 'Replacement found and 1-tap-pending in 1m 52s — well inside the 4-hour window.',
+      manualTime: '30–45 minutes of phone calls, texts, and schedule lookups.',
+    },
   },
 
   'credential': {
@@ -920,21 +953,33 @@ const EVENTS_RECORDS = {
       { label: 'User ID',          value: 'USR-0311-SM' },
     ],
     activity: [
-      { kind: 'agent', agentId: 'iris', actor: 'Iris', verb: 'cleared Sarah for first shift',           time: '1 hr ago' },
-      { kind: 'agent', agentId: 'iris', actor: 'Iris', verb: 'assigned Saturday Civic Arena · alcohol', time: '1 hr ago' },
-      { kind: 'agent', agentId: 'sofia', actor: 'Sofia', verb: 'sent welcome packet + first-shift info', time: '1 hr ago',
+      { kind: 'user',  actor: 'HR',          verb: 'added Sarah to the roster',                               time: 'Mar 12, 2026' },
+      { kind: 'user',  actor: 'Miguel R.',   verb: 'reviewed Sarah\'s interview notes',                       time: 'Yesterday 11:04 AM' },
+      { kind: 'user',  actor: 'Sarah M.', avatar: SARAH.avatar, verb: 'uploaded 6 required documents',        time: '1 hr 12 min ago' },
+      { kind: 'agent', agentId: 'iris', actor: 'Iris', verb: 'opened clearance workflow — 3-stage gate',       time: '+0s' },
+      { kind: 'agent', agentId: 'iris', actor: 'Iris', verb: 'OCR-scanned uploads — 6 of 6 legible',           time: '+3s' },
+      { kind: 'agent', agentId: 'iris', actor: 'Iris', verb: 'parsed driver license + work authorization',    time: '+8s' },
+      { kind: 'agent', agentId: 'iris', actor: 'Iris', verb: 'matched DL ↔ I-9 — identity confirmed',         time: '+12s' },
+      { kind: 'agent', agentId: 'iris', actor: 'Iris', verb: 'DMV cross-check — license active, no flags',   time: '+18s' },
+      { kind: 'agent', agentId: 'iris', actor: 'Iris', verb: 'queried Texas ABC registry for TABC license',  time: '+22s' },
+      { kind: 'agent', agentId: 'iris', actor: 'Iris', verb: 'TABC verified — active through Mar 2028',      time: '+26s' },
+      { kind: 'agent', agentId: 'iris', actor: 'Iris', verb: 'ran background check across 3 databases',      time: '+31s' },
+      { kind: 'agent', agentId: 'iris', actor: 'Iris', verb: 'no adverse records — 7-year window',           time: '+38s' },
+      { kind: 'agent', agentId: 'iris', actor: 'Iris', verb: 'OFAC / sanctions screen — clear',              time: '+44s' },
+      { kind: 'agent', agentId: 'iris', actor: 'Iris', verb: 'decision score 94 / 100 — auto-clear gate met', time: '+48s' },
+      { kind: 'agent', agentId: 'iris', actor: 'Iris', verb: 'cleared Sarah for first shift',                time: '+51s' },
+      { kind: 'agent', agentId: 'iris', actor: 'Iris', verb: 'assigned Saturday Civic Arena · beverage svc', time: '+54s' },
+      { kind: 'agent', agentId: 'sofia', actor: 'Sofia', verb: 'sent welcome packet + first-shift info',     time: '+1m 12s',
         comm: { type: 'sms', contact: 'Sarah M.', phone: '+1 (415) 555-0181',
                 messages: [
                   { from: 'agent', text: 'Sarah — you\'re cleared! First shift Saturday 7pm at Civic Arena. Report 6:30pm to the bev-service area. Welcome aboard.', time: '4:12 PM' },
                   { from: 'them',  text: 'Thanks! See you Saturday.', time: '4:14 PM' },
                 ] } },
-      { kind: 'agent', agentId: 'iris', actor: 'Iris', verb: 'background check — no adverse records',  time: '1 hr 5 min ago' },
-      { kind: 'agent', agentId: 'iris', actor: 'Iris', verb: 'verified TABC license with the state',   time: '1 hr 8 min ago' },
-      { kind: 'agent', agentId: 'iris', actor: 'Iris', verb: 'parsed driver license + work auth',      time: '1 hr 10 min ago' },
-      { kind: 'user',  actor: 'Sarah M.', avatar: SARAH.avatar, verb: 'uploaded required documents',   time: '1 hr 12 min ago' },
-      { kind: 'user',  actor: 'Miguel R.', verb: 'reviewed Sarah\'s interview notes',                  time: 'Yesterday' },
-      { kind: 'user',  actor: 'HR', verb: 'added Sarah to the roster',                                 time: 'Mar 12, 2026' },
     ],
+    summary: {
+      outcome: 'Sarah cleared and staffed for Saturday — 1m 12s of agent work.',
+      manualTime: '2–3 business days of manual review, calls, and emails.',
+    },
   },
 
   'new-venue': {
@@ -984,19 +1029,26 @@ const EVENTS_RECORDS = {
       { label: 'Swap ID',        value: 'SWP-04-0424-L9' },
     ],
     activity: [
-      { kind: 'agent', agentId: 'nova', actor: 'Nova', verb: 'auto-approved the swap', time: '11:49 AM',
+      { kind: 'user',  actor: 'Miguel R.', verb: 'assigned original shifts to both',                              time: 'Monday 9:12 AM' },
+      { kind: 'user',  actor: 'Jordan K.', avatar: JORDAN.avatar, verb: 'submitted swap request with Ashley',     time: '11:47 AM' },
+      { kind: 'agent', agentId: 'nova', actor: 'Nova', verb: 'validated requested shift — Thursday usher · Civic Arena', time: '+0s' },
+      { kind: 'agent', agentId: 'nova', actor: 'Nova', verb: 'confirmed Ashley is off and qualified for the slot', time: '+2s' },
+      { kind: 'agent', agentId: 'nova', actor: 'Nova', verb: 'notified Ashley of Jordan\'s request',              time: '+4s' },
+      { kind: 'user',  actor: 'Ashley P.', avatar: ASHLEY.avatar, verb: 'accepted the trade',                     time: '+38s' },
+      { kind: 'agent', agentId: 'leo',  actor: 'Leo',  verb: 'overtime guard — both under 40 hrs',                time: '+40s' },
+      { kind: 'agent', agentId: 'nova', actor: 'Nova', verb: 'checked reciprocity — 2 swaps each way, balanced',  time: '+41s' },
+      { kind: 'agent', agentId: 'nova', actor: 'Nova', verb: 'ran swap-policy gate — all 4 conditions pass',      time: '+42s' },
+      { kind: 'agent', agentId: 'nova', actor: 'Nova', verb: 'auto-approved the swap + logged to manager journal', time: '+43s',
         comm: { type: 'sms', contact: 'Ashley P.', phone: '+1 (415) 555-0129',
                 messages: [
                   { from: 'agent', text: 'Your swap with Jordan on Thursday is approved. New shift: Thurs 7p–3a at Civic Arena.', time: '11:49 AM' },
                   { from: 'them',  text: 'Thanks!', time: '11:52 AM' },
                 ] } },
-      { kind: 'agent', agentId: 'leo',  actor: 'Leo',  verb: 'cleared overtime guard — both under 40 hrs',        time: '11:48 AM' },
-      { kind: 'agent', agentId: 'nova', actor: 'Nova', verb: 'verified reciprocity history (2 swaps each way)',   time: '11:48 AM' },
-      { kind: 'user',  actor: 'Ashley P.', avatar: ASHLEY.avatar, verb: 'accepted the trade',                     time: '11:48 AM' },
-      { kind: 'agent', agentId: 'nova', actor: 'Nova', verb: 'notified Ashley of Jordan\'s request',              time: '11:47 AM' },
-      { kind: 'user',  actor: 'Jordan K.', avatar: JORDAN.avatar, verb: 'submitted swap request',                 time: '11:47 AM' },
-      { kind: 'user',  actor: 'Miguel R.', verb: 'assigned original shifts to both',                              time: 'Monday' },
     ],
+    summary: {
+      outcome: 'Swap approved and confirmed in 43 seconds.',
+      manualTime: '1–2 days of back-and-forth between Jordan, Ashley, and Miguel.',
+    },
   },
 
   'reminders': {
@@ -1014,16 +1066,22 @@ const EVENTS_RECORDS = {
       { label: 'Batch ID',    value: 'REM-04-0425-05' },
     ],
     activity: [
-      { kind: 'agent', agentId: 'sofia', actor: 'Sofia', verb: 'monitoring responses — 4 of 6 confirmed', time: '20 min ago' },
-      { kind: 'user',  actor: 'Priya S.',   verb: 'confirmed (read)',                                     time: '22 min ago' },
-      { kind: 'user',  actor: 'Marcus J.',  verb: 'confirmed (read)',                                     time: '24 min ago' },
-      { kind: 'user',  actor: 'Ashley P.',  avatar: ASHLEY.avatar, verb: 'confirmed (read)',              time: '28 min ago' },
-      { kind: 'user',  actor: 'Jordan K.',  avatar: JORDAN.avatar, verb: 'confirmed (read)',              time: '31 min ago' },
-      { kind: 'agent', agentId: 'sofia', actor: 'Sofia', verb: 'sent reminders to 6 staff', time: '34 min ago',
+      { kind: 'agent', agentId: 'sofia', actor: 'Sofia', verb: 'pulled Saturday 5am roster — 6 staff, Harbor Theater load-in', time: '34 min ago' },
+      { kind: 'agent', agentId: 'sofia', actor: 'Sofia', verb: 'drafted reminder copy + YES/NO reply mapping',                 time: '+3s' },
+      { kind: 'agent', agentId: 'sofia', actor: 'Sofia', verb: 'sent reminders to 6 staff via SMS',                             time: '+5s',
         comm: { type: 'sms', contact: '6 workers',
-                messages: [{ from: 'agent', text: 'Reminder: your shift starts at 5am tomorrow at Harbor Theater. Reply Y to confirm.', time: '34 min ago' }] } },
-      { kind: 'agent', agentId: 'sofia', actor: 'Sofia', verb: 'scheduled 9pm auto-nudge for unconfirmed', time: '34 min ago' },
+                messages: [{ from: 'agent', text: 'Reminder: your shift starts at 5am tomorrow at Harbor Theater. Reply Y to confirm.', time: '4:26 PM' }] } },
+      { kind: 'agent', agentId: 'sofia', actor: 'Sofia', verb: 'scheduled 9pm auto-nudge for anyone still unconfirmed',         time: '+6s' },
+      { kind: 'user',  actor: 'Jordan K.', avatar: JORDAN.avatar, verb: 'confirmed (read)',                                    time: '+3m 12s' },
+      { kind: 'user',  actor: 'Ashley P.', avatar: ASHLEY.avatar, verb: 'confirmed (read)',                                    time: '+6m 04s' },
+      { kind: 'user',  actor: 'Marcus J.',                        verb: 'confirmed (read)',                                    time: '+9m 47s' },
+      { kind: 'user',  actor: 'Priya S.',                         verb: 'confirmed (read)',                                    time: '+11m 22s' },
+      { kind: 'agent', agentId: 'sofia', actor: 'Sofia', verb: 'monitoring — 4 of 6 confirmed, 2 still pending',               time: '+14m' },
     ],
+    summary: {
+      outcome: '6 reminders sent, 4 confirmed in under 15 minutes.',
+      manualTime: '3–4 hours of texting and phone calls by a scheduler.',
+    },
   },
 }
 

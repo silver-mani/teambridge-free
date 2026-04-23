@@ -1544,6 +1544,51 @@ button.activity-card { cursor: pointer; }
   box-shadow: 0 0 0 2px var(--color-bg-primary),
               0 0 0 3.5px color-mix(in srgb, var(--color-purple-bg-primary) 70%, transparent);
 }
+/* Spacer used when consecutive rows share the same actor — avatar is
+   suppressed but the grid slot stays so text alignment doesn't shift. */
+.activity-row-avatar-spacer {
+  width: 20px;
+  height: 20px;
+  display: inline-block;
+}
+
+/* Green outcome summary — sits at the bottom of an expanded card */
+.activity-card-summary {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  background: color-mix(in srgb, var(--color-matcha-bg-primary) 35%, var(--color-bg-primary));
+  border: 1px solid color-mix(in srgb, var(--color-matcha-border-primary) 70%, transparent);
+  border-radius: 10px;
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+.activity-card-summary-check {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-matcha-bg-primary);
+  color: var(--color-matcha-content-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+}
+.activity-card-summary-body { flex: 1; min-width: 0; }
+.activity-card-summary-title {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-matcha-content-primary);
+  line-height: 1.35;
+}
+.activity-card-summary-manual {
+  font-size: var(--text-xs);
+  color: var(--color-content-secondary);
+  margin-top: 2px;
+}
 
 /* Soft-lift hover — no border-color change */
 .activity-card-expandable:hover:not(.activity-card-open),
