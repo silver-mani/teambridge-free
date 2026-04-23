@@ -243,23 +243,6 @@
   color: #fff;
   flex-shrink: 0;
 }
-.prompt-panel-clear {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: none;
-  background: transparent;
-  border-radius: var(--radius-button);
-  color: var(--color-content-tertiary);
-  cursor: pointer;
-  transition: background-color 120ms ease, color 120ms ease;
-}
-.prompt-panel-clear:hover {
-  background: var(--color-bg-primary);
-  color: var(--color-content-primary);
-}
 
 /* Scrollable messages area (grows) */
 
@@ -285,17 +268,18 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
+  padding: 5px 10px;
   background: transparent;
   border: 1px solid var(--color-border-opaque);
-  border-radius: var(--radius-full);
+  border-radius: 8px;
   font-family: inherit;
   font-size: 12px;
-  color: var(--color-content-tertiary);
+  color: var(--color-content-secondary);
   white-space: nowrap;
   cursor: pointer;
   transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
 }
+.prompt-panel-clear svg { flex-shrink: 0; }
 .prompt-panel-clear:hover {
   color: var(--color-content-primary);
   background: var(--color-bg-tertiary);
