@@ -1,20 +1,25 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { TeambridgeAIIcon }     from '../../../src/components/icons/TeambridgeAIIcon.tsx'
 import { ArrowNarrowRightIcon } from '../../../src/components/icons/ArrowNarrowRightIcon.tsx'
 import { ChevronLeftIcon }      from '../../../src/components/icons/ChevronLeftIcon.tsx'
-import { ChevronRightIcon }     from '../../../src/components/icons/ChevronRightIcon.tsx'
 import { ChevronDownIcon }      from '../../../src/components/icons/ChevronDownIcon.tsx'
 import { PlusIcon }             from '../../../src/components/icons/PlusIcon.tsx'
 import { SearchSmIcon }         from '../../../src/components/icons/SearchSmIcon.tsx'
 import { ClockIcon }            from '../../../src/components/icons/ClockIcon.tsx'
 import { CheckCircleIcon }      from '../../../src/components/icons/CheckCircleIcon.tsx'
+import { CheckCircleDashedIcon } from '../../../src/components/icons/CheckCircleDashedIcon.tsx'
 import { AlertTriangleIcon }    from '../../../src/components/icons/AlertTriangleIcon.tsx'
 import { GitBranch01Icon }      from '../../../src/components/icons/GitBranch01Icon.tsx'
 import { Target04Icon }         from '../../../src/components/icons/Target04Icon.tsx'
 import { XIcon }                from '../../../src/components/icons/XIcon.tsx'
-import { ArrowUpRightIcon }     from '../../../src/components/icons/ArrowUpRightIcon.tsx'
 import { ListBulletIcon }       from '../../../src/components/icons/ListBulletIcon.tsx'
-import { WORKFLOWS, getWorkflow } from '../data/workflowData.js'
+import {
+  WORKFLOWS,
+  getWorkflow,
+  flattenNodes,
+  firstNodeId,
+  nodeAgent,
+} from '../data/workflowData.js'
 
 /* ─── Entry view ──────────────────────────────────────────────────────────
    Controlled list → detail routing (same pattern as PayView). `pendingId`
@@ -100,7 +105,7 @@ function WorkflowListScreen({ onOpen, onDemo }) {
               </div>
             </div>
             <div className="wf-list-cell">{w.owner}</div>
-            <div className="wf-list-cell">{w.nodes[0]?.title ?? '—'}</div>
+            <div className="wf-list-cell">{w.stream?.[0]?.title ?? '—'}</div>
             <div className="wf-list-cell">{w.lastEdited}</div>
             <div className="wf-list-cell">
               <span className={`wf-status wf-status-${w.status}`}>
@@ -119,12 +124,11 @@ function WorkflowListScreen({ onOpen, onDemo }) {
 
 function WorkflowDetailScreen({ id, onBack, onDemo }) {
   const workflow = useMemo(() => getWorkflow(id), [id])
-  const [selectedId, setSelectedId] = useState(workflow.nodes[0]?.id ?? null)
+  const nodeIndex = useMemo(() => flattenNodes(workflow.stream), [workflow])
+  const [selectedId, setSelectedId] = useState(firstNodeId(workflow))
   const buzz = () => onDemo?.()
 
-  const selected = selectedId
-    ? workflow.nodes.find(n => n.id === selectedId) ?? null
-    : null
+  const selected = selectedId ? nodeIndex[selectedId] ?? null : null
 
   return (
     <section className="wf-detail" aria-label={workflow.title}>
@@ -205,33 +209,90 @@ function AssistantColumn({ onDemo }) {
   )
 }
 
-/* ─── Canvas ────────────────────────────────────────────────────────── */
+/* ─── Canvas ──────────────────────────────────────────────────────────
+   Renders a vertical stream of nodes. If a node has `branches`, a split
+   fans out below it into N parallel sub-streams, each with its own label
+   on the connecting line. Streams render recursively so splits can nest. */
 
 function CanvasColumn({ workflow, selectedId, onSelect, onDemo }) {
-  const buzz = () => onDemo?.()
   return (
     <div
       className="wf-canvas"
       onClick={(e) => {
-        // Click-off closes the right panel unless the click was on a node.
         if (e.target === e.currentTarget) onSelect(null)
       }}
     >
-      <div className="wf-canvas-inner">
-        {workflow.nodes.map((node, i) => (
-          <div key={node.id} className="wf-canvas-row">
+      <div
+        className="wf-canvas-inner"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) onSelect(null)
+        }}
+      >
+        <Stream
+          nodes={workflow.stream}
+          selectedId={selectedId}
+          onSelect={onSelect}
+          onDemo={onDemo}
+        />
+      </div>
+    </div>
+  )
+}
+
+function Stream({ nodes, selectedId, onSelect, onDemo }) {
+  return (
+    <div className="wf-stream">
+      {nodes.map((node, i) => {
+        const hasBranches = Array.isArray(node.branches) && node.branches.length > 0
+        const isLast = i === nodes.length - 1
+        return (
+          <Fragment key={node.id}>
             <WorkflowNode
               node={node}
               selected={selectedId === node.id}
-              onSelect={() => onSelect(node.id === selectedId ? null : node.id)}
-              onMore={buzz}
+              onSelect={() => onSelect(selectedId === node.id ? null : node.id)}
+              onMore={onDemo}
             />
-            {i < workflow.nodes.length - 1 && (
-              <WorkflowEdge
-                toKind={workflow.nodes[i + 1].kind}
-                onAdd={buzz}
+            {hasBranches && (
+              <BranchSplit
+                branches={node.branches}
+                selectedId={selectedId}
+                onSelect={onSelect}
+                onDemo={onDemo}
               />
             )}
+            {!hasBranches && !isLast && <WorkflowEdge onAdd={onDemo} />}
+          </Fragment>
+        )
+      })}
+    </div>
+  )
+}
+
+/* Horizontal split directly underneath a branching node. We draw a small
+   SVG "fork" on top that connects the node above to each sub-stream head. */
+function BranchSplit({ branches, selectedId, onSelect, onDemo }) {
+  const count = branches.length
+  return (
+    <div className={`wf-split wf-split-${count}`}>
+      <ForkSvg count={count} />
+      <div className="wf-split-streams">
+        {branches.map((b, i) => (
+          <div
+            key={i}
+            className={`wf-split-col wf-split-col-${b.tone ?? 'mute'}${
+              count === 2 ? (i === 0 ? ' wf-split-col-left' : ' wf-split-col-right') : ''
+            }`}
+          >
+            <span className={`wf-split-label wf-split-label-${b.tone ?? 'mute'}`}>
+              {b.label}
+            </span>
+            <Stream
+              nodes={b.stream}
+              selectedId={selectedId}
+              onSelect={onSelect}
+              onDemo={onDemo}
+            />
           </div>
         ))}
       </div>
@@ -239,26 +300,103 @@ function CanvasColumn({ workflow, selectedId, onSelect, onDemo }) {
   )
 }
 
+/* SVG that draws the fork from a single top point down into N columns. */
+function ForkSvg({ count }) {
+  const width = 320
+  const height = 44
+  const centerX = width / 2
+  const topY = 0
+  const midY = 22
+  const bottomY = height
+  const spread = count === 2 ? 140 : count === 3 ? 200 : 140
+  const step = count > 1 ? spread / (count - 1) : 0
+  const startX = centerX - spread / 2
+  return (
+    <svg className="wf-fork" width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
+      <path
+        d={`M ${centerX} ${topY} L ${centerX} ${midY}`}
+        stroke="currentColor"
+        strokeWidth="1.5"
+        fill="none"
+        strokeLinecap="round"
+      />
+      {count > 1 && (
+        <path
+          d={`M ${startX} ${midY} L ${startX + spread} ${midY}`}
+          stroke="currentColor"
+          strokeWidth="1.5"
+          fill="none"
+          strokeLinecap="round"
+        />
+      )}
+      {Array.from({ length: count }).map((_, i) => {
+        const x = count > 1 ? startX + step * i : centerX
+        return (
+          <path
+            key={i}
+            d={`M ${x} ${midY} L ${x} ${bottomY - 6}`}
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+            strokeLinecap="round"
+          />
+        )
+      })}
+      {Array.from({ length: count }).map((_, i) => {
+        const x = count > 1 ? startX + step * i : centerX
+        return (
+          <path
+            key={`a-${i}`}
+            d={`M ${x - 4} ${bottomY - 10} L ${x} ${bottomY - 4} L ${x + 4} ${bottomY - 10}`}
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        )
+      })}
+    </svg>
+  )
+}
+
 function WorkflowNode({ node, selected, onSelect, onMore }) {
+  const agent = nodeAgent(node)
   const KindIcon = nodeGlyph(node.kind)
   return (
     <div className="wf-node-wrap">
       <button
         type="button"
-        className={`wf-node wf-node-${node.kind}${selected ? ' is-selected' : ''}`}
+        className={`wf-node wf-node-${node.kind}${selected ? ' is-selected' : ''}${
+          agent ? ` wf-node-agent-${agent.color}` : ''
+        }`}
         onClick={onSelect}
         aria-pressed={selected}
       >
-        <span className="wf-node-icon" aria-hidden="true"><KindIcon size={14} /></span>
+        {agent ? (
+          <span
+            className={`wf-node-avatar agent-avatar agent-avatar-${agent.color}`}
+            style={{ backgroundImage: `url(${agent.avatar})` }}
+            aria-label={agent.name}
+            role="img"
+          />
+        ) : (
+          <span className="wf-node-icon" aria-hidden="true">
+            <KindIcon size={14} />
+          </span>
+        )}
         <span className="wf-node-text">
-          <span className="wf-node-title">{node.title}</span>
+          <span className="wf-node-title-row">
+            <span className="wf-node-title">{node.title}</span>
+            {agent && <span className="wf-node-agent-tag">{agent.name}</span>}
+          </span>
           {node.subtitle && <span className="wf-node-sub">{node.subtitle}</span>}
         </span>
       </button>
       <button
         type="button"
         className="wf-node-more"
-        onClick={(e) => { e.stopPropagation(); onMore() }}
+        onClick={(e) => { e.stopPropagation(); onMore?.() }}
         aria-label="Node actions"
       >
         ···
@@ -267,8 +405,8 @@ function WorkflowNode({ node, selected, onSelect, onMore }) {
   )
 }
 
-/* Vertical 1-col edge: line + down-chevron, with a + handle hovered between
-   nodes so the operator can drop a new node into the chain. */
+/* Vertical single-column edge: line + down-chevron, with a + handle hovered
+   between nodes so the operator can drop a new node into the chain. */
 function WorkflowEdge({ onAdd }) {
   return (
     <div className="wf-edge" aria-hidden="true">
@@ -276,7 +414,7 @@ function WorkflowEdge({ onAdd }) {
       <button
         type="button"
         className="wf-edge-add"
-        onClick={(e) => { e.stopPropagation(); onAdd() }}
+        onClick={(e) => { e.stopPropagation(); onAdd?.() }}
         aria-label="Add node"
       >
         <PlusIcon size={10} />
@@ -296,6 +434,8 @@ function nodeGlyph(kind) {
   if (kind === 'timer')     return ClockIcon
   if (kind === 'condition') return Target04Icon
   if (kind === 'action')    return CheckCircleIcon
+  if (kind === 'agent')     return TeambridgeAIIcon
+  if (kind === 'end')       return CheckCircleDashedIcon
   return ArrowNarrowRightIcon
 }
 
@@ -304,15 +444,25 @@ function nodeGlyph(kind) {
 function NodeDetailsPanel({ node, onClose, onDemo }) {
   const buzz = () => onDemo?.()
   const { heading, description, promptPlaceholder, fields, chips } = node.panel
+  const agent = nodeAgent(node)
   const KindIcon = nodeGlyph(node.kind)
 
   return (
     <aside className={`wf-panel wf-panel-${node.kind}`} aria-label={heading}>
       <header className="wf-panel-head">
         <div className="wf-panel-head-title">
-          <span className={`wf-panel-kind wf-panel-kind-${node.kind}`} aria-hidden="true">
-            <KindIcon size={14} />
-          </span>
+          {agent ? (
+            <span
+              className={`wf-panel-agent agent-avatar agent-avatar-${agent.color}`}
+              style={{ backgroundImage: `url(${agent.avatar})` }}
+              aria-label={agent.name}
+              role="img"
+            />
+          ) : (
+            <span className={`wf-panel-kind wf-panel-kind-${node.kind}`} aria-hidden="true">
+              <KindIcon size={14} />
+            </span>
+          )}
           <span>{heading}</span>
         </div>
         <button type="button" className="wf-icon-btn" onClick={onClose} aria-label="Close details">
@@ -439,6 +589,7 @@ function CanvasToolbar({ onDemo }) {
     { Icon: ArrowNarrowRightIcon, label: 'Trigger' },
     { Icon: Target04Icon,         label: 'Condition' },
     { Icon: CheckCircleIcon,      label: 'Action' },
+    { Icon: TeambridgeAIIcon,     label: 'AI action' },
     { Icon: ClockIcon,            label: 'Wait' },
     { Icon: GitBranch01Icon,      label: 'Branch' },
     { Icon: AlertTriangleIcon,    label: 'Alert' },

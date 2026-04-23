@@ -5272,19 +5272,93 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   background-color: var(--color-bg-secondary);
   min-height: 0;
 }
+/* Pushes the tree out to a comfortable tree-width so branches don't crush
+   each other even when the details panel is open. Canvas scrolls if needed. */
+.wf-canvas > .wf-canvas-inner { min-width: 820px; }
 .wf-canvas-inner {
-  max-width: 520px;
-  margin: 0 auto;
+  min-width: 100%;
+  padding: 0 var(--space-6);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0;
 }
+/* Legacy row container (kept so any stale references stay harmless). */
 .wf-canvas-row {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0;
+}
+
+/* A stream is one vertical track of nodes — the top-level flow, or a single
+   branch beneath a split. Nested streams are what make the tree render. */
+.wf-stream {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+/* ── Branch split: sits directly under a condition/branching node. A small
+   SVG "fork" draws the connectors, and each branch gets a labeled column
+   underneath. Columns are flex-1 so they share the horizontal space evenly. */
+.wf-split {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  gap: 0;
+  color: color-mix(in srgb, var(--color-content-tertiary) 55%, transparent);
+}
+.wf-fork {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.wf-split-streams {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  width: 100%;
+  gap: var(--space-6);
+  padding-top: 2px;
+}
+.wf-split-col {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+.wf-split-label {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.02em;
+  margin-bottom: 8px;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  color: var(--color-content-secondary);
+  white-space: nowrap;
+}
+.wf-split-label-primary {
+  background: #DCFCE7;
+  border-color: color-mix(in srgb, #16A34A 30%, transparent);
+  color: #0F3D1E;
+}
+.wf-split-label-warn {
+  background: #FEF3C7;
+  border-color: color-mix(in srgb, #B45309 30%, transparent);
+  color: #5E2A0B;
+}
+.wf-split-label-mute {
+  background: var(--color-bg-primary);
+  border-color: var(--color-border-opaque);
+  color: var(--color-content-secondary);
 }
 
 .wf-node-wrap {
@@ -5325,15 +5399,37 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   flex-direction: column;
   min-width: 0;
 }
+.wf-node-title-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
 .wf-node-title {
   font-size: 13px;
   font-weight: var(--font-weight-medium);
   color: var(--color-content-primary);
 }
+.wf-node-agent-tag {
+  font-size: 10px;
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.02em;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--agent-ring, var(--color-border-opaque)) 55%, transparent);
+  color: var(--color-content-primary);
+  text-transform: uppercase;
+}
 .wf-node-sub {
   font-size: 11px;
   color: var(--color-content-tertiary);
   line-height: 1.35;
+}
+.wf-node-avatar {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 50%;
 }
 .wf-node-more {
   width: 24px;
@@ -5379,6 +5475,34 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
 }
 .wf-node-action .wf-node-icon { background: #1D4ED8; color: #FFFFFF; }
 .wf-node-action .wf-node-title { color: #0F274F; }
+
+/* Agent (AI action) — tinted to the agent's color family so each named
+   specialist reads as its own step. Avatar GIF sits where the icon would. */
+.wf-node-agent {
+  background: var(--color-bg-primary);
+  border-color: color-mix(in srgb, var(--agent-ring, var(--color-border-opaque)) 80%, var(--color-border-opaque));
+  padding-left: 6px;
+}
+.wf-node-agent-purple { background: var(--color-purple-bg-tertiary); --agent-ring: color-mix(in srgb, var(--color-purple-bg-primary) 70%, transparent); }
+.wf-node-agent-blue   { background: var(--color-blue-bg-tertiary);   --agent-ring: color-mix(in srgb, var(--color-blue-bg-primary)   70%, transparent); }
+.wf-node-agent-matcha { background: var(--color-matcha-bg-tertiary); --agent-ring: color-mix(in srgb, var(--color-matcha-bg-primary) 70%, transparent); }
+.wf-node-agent-orange { background: var(--color-orange-bg-tertiary); --agent-ring: color-mix(in srgb, var(--color-orange-bg-primary) 70%, transparent); }
+.wf-node-agent-pink   { background: var(--color-pink-bg-tertiary);   --agent-ring: color-mix(in srgb, var(--color-pink-bg-primary)   70%, transparent); }
+
+.wf-node-agent .wf-node-title { color: var(--color-content-primary); }
+.wf-node-agent .wf-node-sub   { color: color-mix(in srgb, var(--color-content-primary) 55%, transparent); }
+
+/* End — dashed, muted. Signals a dead-end branch without looking broken. */
+.wf-node-end {
+  background: var(--color-bg-primary);
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--color-content-tertiary) 45%, transparent);
+}
+.wf-node-end .wf-node-icon {
+  background: var(--color-bg-tertiary);
+  color: var(--color-content-tertiary);
+}
+.wf-node-end .wf-node-title { color: var(--color-content-secondary); }
 
 /* Edge between two adjacent rows. */
 .wf-edge {
@@ -5463,6 +5587,16 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
 .wf-panel-kind-timer     { background: #B45309; }
 .wf-panel-kind-condition { background: var(--color-content-tertiary); }
 .wf-panel-kind-action    { background: #1D4ED8; }
+.wf-panel-kind-end       { background: var(--color-bg-tertiary); color: var(--color-content-tertiary); }
+
+/* Agent panel avatar — swaps in for .wf-panel-kind when the node is an
+   AI action, so the right panel header shows the specialist's GIF. */
+.wf-panel-agent {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
 
 .wf-panel-desc {
   margin: 0;
