@@ -1980,15 +1980,32 @@ function normalizeSegments(content) {
 /* Heuristic — find which specialist the AI recommended in a free-form answer. */
 /* Detect the right follow-up for a free-form AI reply:
    - Explicit "Next: [label]" marker → a contextual action button
-   - "Approve/Have/Send **Nova** to ..." phrasing → a specialist approval button
+   - "Approve/Have/Send **Nova** to <verb> …" phrasing → a specialist approval
    - Nothing → no button (the reply was purely informational) */
 function detectFollowup(text) {
   if (typeof text !== 'string' || !text.trim()) return null
-  const nextMatch = text.match(/(?:^|\n)\s*Next:\s*\*?\*?([^\n*]+?)\*?\*?\s*$/i)
-  if (nextMatch) return { kind: 'action', label: nextMatch[1].trim().replace(/\.$/, '') }
-  const approveMatch = text.match(/\b(?:approve|have|dispatch|send|let)\s+\*?\*?(nova|atlas|iris|sofia|leo)\*?\*?\b/i)
+  // "Next: <label>" on its OWN line. /m so $ matches end-of-line, not just end-of-string.
+  const nextMatch = text.match(/^[ \t]*Next:\s*\*?\*?([^\n*]+?)\*?\*?\s*$/im)
+  if (nextMatch) {
+    const label = nextMatch[1].trim().replace(/[.!?]+$/, '')
+    if (label) return { kind: 'action', label }
+  }
+  // Specialist approval phrase — require "to <verb>" after the agent to avoid
+  // false positives like "send Nova the note".
+  const approveMatch = text.match(
+    /\b(?:approve|have|dispatch|send|let)\s+\*?\*?(nova|atlas|iris|sofia|leo)\*?\*?\s+to\b/i
+  )
   if (approveMatch) return { kind: 'approve', agentId: approveMatch[1].toLowerCase() }
   return null
+}
+
+/* Strip the "Next: …" line from the visible reply body so it only surfaces as
+   a button. Also trims trailing markdown dividers Claude sometimes appends. */
+function stripFollowupLine(text) {
+  return text
+    .replace(/^[ \t]*Next:[^\n]*\n?/im, '')
+    .replace(/\n?[-—_]{3,}\s*$/m, '')
+    .trimEnd()
 }
 
 /* Progress bubble — agent is starting work. Tasks advance one at a time
@@ -2205,9 +2222,7 @@ function PromptPanel({ industryId }) {
     }
 
     const followup = detectFollowup(replyText)
-    const visibleText = followup?.kind === 'action'
-      ? replyText.replace(/(?:^|\n)\s*Next:\s*[^\n]+$/i, '').trimEnd()
-      : replyText
+    const visibleText = followup?.kind === 'action' ? stripFollowupLine(replyText) : replyText
     updateMsg(assistantId, {
       content:     visibleText,
       specialist:  followup?.kind === 'approve' ? followup.agentId : null,
