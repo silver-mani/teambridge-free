@@ -39,6 +39,33 @@ function AgentAvatar({ agent, size = 32 }) {
   )
 }
 
+/* ─── Demo-only toast: signals dead links without navigating away ────────── */
+const DEMO_TOAST_EVENT = 'teambridge:demo-toast'
+function showDemoToast(message = 'This action is available in the full Teambridge product.') {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new CustomEvent(DEMO_TOAST_EVENT, { detail: message }))
+}
+
+function ToastHost() {
+  const [toast, setToast] = useState(null)
+  useEffect(() => {
+    const onMsg = (e) => setToast({ id: Date.now(), text: e.detail })
+    window.addEventListener(DEMO_TOAST_EVENT, onMsg)
+    return () => window.removeEventListener(DEMO_TOAST_EVENT, onMsg)
+  }, [])
+  useEffect(() => {
+    if (!toast) return
+    const t = setTimeout(() => setToast(null), 3000)
+    return () => clearTimeout(t)
+  }, [toast])
+  if (!toast) return null
+  return (
+    <div key={toast.id} className="demo-toast" role="status" aria-live="polite">
+      {toast.text}
+    </div>
+  )
+}
+
 function AgentHeader({ agent, task, size = 28 }) {
   return (
     <div className="agent-header">
@@ -545,14 +572,14 @@ function VoiceCallPlayer({ call }) {
 /* ─── Workflow link button ───────────────────────────────────────────────── */
 function WorkflowLink({ workflow }) {
   return (
-    <a
+    <button
+      type="button"
       className="workflow-link"
-      href={workflow.url ?? '#'}
-      onClick={e => e.stopPropagation()}
+      onClick={e => { e.stopPropagation(); showDemoToast() }}
     >
       <span className="workflow-link-label">Open in Agent Workflows</span>
       <ArrowNarrowRightIcon size={14} />
-    </a>
+    </button>
   )
 }
 
@@ -966,7 +993,7 @@ function RecordPopover({ anchor, payload, onClose }) {
           </div>
         )}
         <div className="record-popover-actions">
-          <Button variant="tertiary" size="sm" disabled trailingArtwork={<ArrowNarrowRightIcon size={14} />}>
+          <Button variant="tertiary" size="sm" onClick={() => showDemoToast()} trailingArtwork={<ArrowNarrowRightIcon size={14} />}>
             View {payload.recordType ?? 'record'}
           </Button>
         </div>
@@ -1907,9 +1934,14 @@ function AttachmentBlock({ attachment }) {
       </div>
       <div className="attachment-actions">
         {(actions ?? []).map((a, i) => (
-          <a key={i} className="attachment-btn" href={a.url ?? '#'} onClick={e => e.stopPropagation()}>
+          <button
+            key={i}
+            type="button"
+            className="attachment-btn"
+            onClick={e => { e.stopPropagation(); showDemoToast() }}
+          >
             {a.label}
-          </a>
+          </button>
         ))}
       </div>
     </div>
@@ -2068,11 +2100,11 @@ function ProgressMessage({ message }) {
             )
           })}
         </ul>
-        <a className="progress-workflow-link" href="#agent-workflows" onClick={(e) => e.preventDefault()}>
+        <button type="button" className="progress-workflow-link" onClick={() => showDemoToast()}>
           <GitBranch01Icon size={12} />
           <span>Upgrade workflow to add this notification</span>
           <ArrowNarrowRightIcon size={12} />
-        </a>
+        </button>
       </div>
     </div>
   )
@@ -2082,7 +2114,11 @@ function ActionButtons({ specialist, actionHint, approveLabel, onApprove }) {
   if (actionHint) {
     return (
       <div className="prompt-actions-row">
-        <button type="button" className="prompt-action prompt-action-primary" onClick={e => e.stopPropagation()}>
+        <button
+          type="button"
+          className="prompt-action prompt-action-primary"
+          onClick={e => { e.stopPropagation(); showDemoToast() }}
+        >
           {actionHint}
         </button>
       </div>
@@ -2368,6 +2404,8 @@ export default function Act1Dashboard({ industryId, onBack, onExplore }) {
       <PromptPanel industryId={industryId} />
 
       <ActivityFeed data={data} />
+
+      <ToastHost />
     </div>
   )
 }
