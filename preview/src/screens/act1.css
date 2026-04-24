@@ -5353,7 +5353,7 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   align-items: stretch;
   width: 100%;
   gap: 0;
-  color: color-mix(in srgb, var(--color-content-tertiary) 55%, transparent);
+  color: color-mix(in srgb, var(--color-content-tertiary) 40%, transparent);
 }
 .wf-split-fork {
   position: relative;
@@ -5590,10 +5590,9 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
 .wf-edge-line {
   position: absolute;
   inset: 0;
-  width: 1.5px;
+  width: 1px;
   margin: 0 auto;
-  background: color-mix(in srgb, var(--color-content-tertiary) 45%, transparent);
-  border-radius: 1px;
+  background: color-mix(in srgb, var(--color-content-tertiary) 40%, transparent);
 }
 .wf-edge-add {
   position: absolute;

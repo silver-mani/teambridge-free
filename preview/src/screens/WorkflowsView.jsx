@@ -475,7 +475,7 @@ function BranchSplit({ branches, selectedId, onSelect, onDemo }) {
         >
           <g
             stroke="currentColor"
-            strokeWidth="1.5"
+            strokeWidth="1"
             fill="none"
             strokeLinecap="round"
             vectorEffect="non-scaling-stroke"
