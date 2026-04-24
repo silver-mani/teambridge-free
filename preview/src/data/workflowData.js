@@ -81,7 +81,7 @@ const AGENT_RANK = {
   id: 'agent-rank-candidates',
   kind: 'agent',
   agentId: 'nova',
-  title: 'Nova ranks qualified candidates',
+  title: 'Rank qualified candidates',
   subtitle: 'Top 12 · proximity, rating, accept rate, fairness',
   panel: {
     heading: 'AI Action · Rank candidates with Nova',
@@ -119,8 +119,8 @@ const AGENT_BLAST = {
   id: 'agent-blast-top3',
   kind: 'agent',
   agentId: 'nova',
-  title: 'Nova offers to top 3 in parallel',
-  subtitle: 'SMS + in-app · 90-second expiry',
+  title: 'Blast offers to the top 3 in parallel',
+  subtitle: 'SMS + in-app · 90-second expiry · first accept wins',
   panel: {
     heading: 'AI Action · Parallel dispatch',
     description: 'Nova pings the top three ranked workers at once. First confirmed accept wins; the other two offers are rescinded automatically.',
@@ -139,8 +139,8 @@ const AGENT_SEQUENTIAL = {
   id: 'agent-atlas-sequential',
   kind: 'agent',
   agentId: 'atlas',
-  title: 'Atlas runs a staggered queue',
-  subtitle: '5 candidates · 8 minutes apart · in-app first',
+  title: 'Run a staggered offer queue',
+  subtitle: '5 candidates · 8 min between pings · in-app first, SMS fallback',
   panel: {
     heading: 'AI Action · Staggered queue with Atlas',
     description: 'For non-urgent coverage Atlas queues five offers one-at-a-time with an 8-minute wait between pings so workers aren’t carpet-bombed.',
@@ -178,8 +178,8 @@ const AGENT_CONFIRM = {
   id: 'agent-iris-confirm',
   kind: 'agent',
   agentId: 'iris',
-  title: 'Iris confirms & publishes',
-  subtitle: 'Credentials check · schedule update · notify lead',
+  title: 'Credential-check, confirm & publish',
+  subtitle: 'Verify badge · lock shift · rescind other offers · notify lead',
   panel: {
     heading: 'AI Action · Close the loop with Iris',
     description: 'Iris verifies the winner’s credentials for the site, locks them onto the shift, rescinds the other offers, and pings the event lead.',
@@ -200,8 +200,8 @@ const AGENT_ESCALATE = {
   id: 'agent-leo-escalate',
   kind: 'agent',
   agentId: 'leo',
-  title: 'Leo escalates to ops lead',
-  subtitle: 'Page Miguel · draft coverage options',
+  title: 'Escalate to ops lead',
+  subtitle: 'Page Miguel · attach override picks · chase GM after 2 min',
   panel: {
     heading: 'AI Action · Escalate with Leo',
     description: 'No accept in 90 seconds. Leo pages the ops lead with a ranked shortlist of overrides and the next three workers who didn’t receive the offer yet.',
@@ -220,8 +220,8 @@ const AGENT_FAIRNESS_LOG = {
   id: 'agent-sofia-fairness',
   kind: 'agent',
   agentId: 'sofia',
-  title: 'Sofia logs fairness signals',
-  subtitle: 'Attribute the pickup · update accept-rate stats',
+  title: 'Log fairness signals',
+  subtitle: 'Record outreach, accepts & declines · refresh 90-day stats',
   panel: {
     heading: 'AI Action · Fairness bookkeeping with Sofia',
     description: 'Sofia records who got the offer, who accepted, and updates the last-min accept-rate stats so future rankings stay fair.',

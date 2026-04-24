@@ -5264,17 +5264,34 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
 /* ── Canvas ── */
 .wf-canvas {
   position: relative;
-  overflow: auto;
-  padding: var(--space-8) var(--space-6) 72px;
+  overflow: hidden;
   background:
     radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--color-content-tertiary) 18%, transparent) 1px, transparent 1.5px);
   background-size: 18px 18px;
   background-color: var(--color-bg-secondary);
   min-height: 0;
 }
+/* Inner scroll wrapper: owns the actual scrollbars, so the zoom pill and
+   the centered node toolbar can sit outside it and stay pinned. */
+.wf-canvas-scroll {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  padding: var(--space-8) var(--space-6) 72px;
+}
+/* Stage wraps the scaled tree so the scroll wrapper's scrollbar sees the
+   post-zoom size. transform-origin is set inline on the element so zoom
+   centers on the top of the canvas. */
+.wf-canvas-stage {
+  display: flex;
+  justify-content: center;
+  width: fit-content;
+  min-width: 100%;
+  transition: transform 160ms ease;
+}
 /* Pushes the tree out to a comfortable tree-width so branches don't crush
    each other even when the details panel is open. Canvas scrolls if needed. */
-.wf-canvas > .wf-canvas-inner { min-width: 820px; }
+.wf-canvas-stage > .wf-canvas-inner { min-width: 820px; }
 .wf-canvas-inner {
   min-width: 100%;
   padding: 0 var(--space-6);
@@ -5370,7 +5387,7 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
 .wf-node {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   padding: 8px 14px;
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border-opaque);
@@ -5381,6 +5398,18 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease, background-color 140ms ease;
   max-width: 420px;
 }
+/* Action + agent nodes carry two lines of label (title + sub) and the
+   agent eyebrow on top — give them a wider cap + a touch more padding so
+   the copy reads comfortably instead of truncating. */
+.wf-node-action,
+.wf-node-agent {
+  max-width: 460px;
+  min-width: 300px;
+  padding: 10px 16px;
+  border-radius: 18px;
+  align-items: flex-start;
+}
+.wf-node-agent { padding-left: 10px; }
 .wf-node:hover { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06); }
 .wf-node.is-selected {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--ai-grad-mid, #446CFF) 35%, transparent), 0 6px 18px rgba(0, 0, 0, 0.08);
@@ -5399,37 +5428,47 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   flex-direction: column;
   min-width: 0;
 }
-.wf-node-title-row {
+.wf-node-eyebrow {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-width: 0;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: color-mix(in srgb, var(--color-content-primary) 70%, transparent);
+  margin-bottom: 1px;
+}
+.wf-node-eyebrow-name {
+  color: var(--color-content-primary);
+}
+.wf-node-eyebrow-role {
+  color: var(--color-content-tertiary);
+  font-weight: var(--font-weight-regular);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.wf-node-eyebrow-sep {
+  color: var(--color-content-tertiary);
 }
 .wf-node-title {
   font-size: 13px;
   font-weight: var(--font-weight-medium);
   color: var(--color-content-primary);
-}
-.wf-node-agent-tag {
-  font-size: 10px;
-  font-weight: var(--font-weight-medium);
-  letter-spacing: 0.02em;
-  padding: 1px 6px;
-  border-radius: var(--radius-full);
-  background: color-mix(in srgb, var(--agent-ring, var(--color-border-opaque)) 55%, transparent);
-  color: var(--color-content-primary);
-  text-transform: uppercase;
+  line-height: 1.3;
 }
 .wf-node-sub {
   font-size: 11px;
   color: var(--color-content-tertiary);
-  line-height: 1.35;
+  line-height: 1.4;
+  margin-top: 2px;
 }
 .wf-node-avatar {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   flex-shrink: 0;
   border-radius: 50%;
+  margin-top: 2px;
 }
 .wf-node-more {
   width: 24px;
@@ -5796,6 +5835,60 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   transition: background-color 120ms ease, color 120ms ease;
 }
 .wf-toolbar-btn:hover { background: var(--color-bg-tertiary); color: var(--color-content-primary); }
+
+/* Floating zoom pill — pinned to the bottom-right of the canvas viewport,
+   so the centered node toolbar stays the focal point and the zoom control
+   sits quietly out of the way. */
+.wf-zoom {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-full);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  z-index: 2;
+}
+.wf-zoom-btn {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: var(--color-content-secondary);
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.wf-zoom-btn:hover:not(:disabled) {
+  background: var(--color-bg-tertiary);
+  color: var(--color-content-primary);
+}
+.wf-zoom-btn:disabled {
+  color: var(--color-content-tertiary);
+  cursor: default;
+  opacity: 0.5;
+}
+.wf-zoom-level {
+  min-width: 46px;
+  height: 28px;
+  padding: 0 8px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-full);
+  font-family: inherit;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-content-primary);
+  cursor: pointer;
+}
+.wf-zoom-level:hover { background: var(--color-bg-tertiary); }
 
 /* Place the toolbar relative to the detail body so it pins to the canvas
    bottom without fighting the grid. */

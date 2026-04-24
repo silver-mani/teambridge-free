@@ -122,10 +122,33 @@ function WorkflowListScreen({ onOpen, onDemo }) {
 
 /* ─── Detail — canvas + right panel + left assistant ──────────────────── */
 
+/* Zoom steps and clamp helpers for the canvas. 1 = 100% (the intended
+   design size); ±25% per click reads comfortably without snapping too hard. */
+const ZOOM_STEPS = [0.5, 0.6, 0.75, 0.9, 1, 1.15, 1.3, 1.5, 1.75, 2]
+const DEFAULT_ZOOM = 1
+
+function clampZoom(next) {
+  const min = ZOOM_STEPS[0]
+  const max = ZOOM_STEPS[ZOOM_STEPS.length - 1]
+  return Math.min(max, Math.max(min, next))
+}
+
+function stepZoom(current, direction) {
+  if (direction === 0) return DEFAULT_ZOOM
+  // Snap to the nearest step above or below the current value.
+  const sorted = [...ZOOM_STEPS]
+  if (direction > 0) {
+    return clampZoom(sorted.find(s => s > current + 0.001) ?? sorted[sorted.length - 1])
+  }
+  const reversed = [...sorted].reverse()
+  return clampZoom(reversed.find(s => s < current - 0.001) ?? sorted[0])
+}
+
 function WorkflowDetailScreen({ id, onBack, onDemo }) {
   const workflow = useMemo(() => getWorkflow(id), [id])
   const nodeIndex = useMemo(() => flattenNodes(workflow.stream), [workflow])
   const [selectedId, setSelectedId] = useState(firstNodeId(workflow))
+  const [zoom, setZoom] = useState(DEFAULT_ZOOM)
   const buzz = () => onDemo?.()
 
   const selected = selectedId ? nodeIndex[selectedId] ?? null : null
@@ -157,6 +180,10 @@ function WorkflowDetailScreen({ id, onBack, onDemo }) {
           selectedId={selectedId}
           onSelect={setSelectedId}
           onDemo={buzz}
+          zoom={zoom}
+          onZoomIn={() => setZoom(z => stepZoom(z, +1))}
+          onZoomOut={() => setZoom(z => stepZoom(z, -1))}
+          onZoomReset={() => setZoom(DEFAULT_ZOOM)}
         />
         {selected && (
           <NodeDetailsPanel
@@ -214,7 +241,9 @@ function AssistantColumn({ onDemo }) {
    fans out below it into N parallel sub-streams, each with its own label
    on the connecting line. Streams render recursively so splits can nest. */
 
-function CanvasColumn({ workflow, selectedId, onSelect, onDemo }) {
+function CanvasColumn({ workflow, selectedId, onSelect, onDemo, zoom, onZoomIn, onZoomOut, onZoomReset }) {
+  // Wrap the scaled tree in a "stage" layer so the outer canvas sees the
+  // post-scale size and scrolls correctly when the user zooms in past 100%.
   return (
     <div
       className="wf-canvas"
@@ -223,18 +252,85 @@ function CanvasColumn({ workflow, selectedId, onSelect, onDemo }) {
       }}
     >
       <div
-        className="wf-canvas-inner"
+        className="wf-canvas-scroll"
         onClick={(e) => {
           if (e.target === e.currentTarget) onSelect(null)
         }}
       >
-        <Stream
-          nodes={workflow.stream}
-          selectedId={selectedId}
-          onSelect={onSelect}
-          onDemo={onDemo}
-        />
+        <div
+          className="wf-canvas-stage"
+          style={{
+            transform: `scale(${zoom})`,
+            transformOrigin: 'top center',
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) onSelect(null)
+          }}
+        >
+          <div
+            className="wf-canvas-inner"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) onSelect(null)
+            }}
+          >
+            <Stream
+              nodes={workflow.stream}
+              selectedId={selectedId}
+              onSelect={onSelect}
+              onDemo={onDemo}
+            />
+          </div>
+        </div>
       </div>
+      <ZoomControls
+        zoom={zoom}
+        onZoomIn={onZoomIn}
+        onZoomOut={onZoomOut}
+        onZoomReset={onZoomReset}
+      />
+    </div>
+  )
+}
+
+/* Floating zoom pill in the bottom-right of the canvas. Inline SVGs avoid
+   pulling in new icon files for glyphs we only need in this one spot. */
+function ZoomControls({ zoom, onZoomIn, onZoomOut, onZoomReset }) {
+  const pct = Math.round(zoom * 100)
+  const atMin = zoom <= ZOOM_STEPS[0] + 0.001
+  const atMax = zoom >= ZOOM_STEPS[ZOOM_STEPS.length - 1] - 0.001
+  return (
+    <div className="wf-zoom" role="group" aria-label="Zoom controls">
+      <button
+        type="button"
+        className="wf-zoom-btn"
+        onClick={onZoomOut}
+        aria-label="Zoom out"
+        disabled={atMin}
+      >
+        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+          <path d="M2.5 6h7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        className="wf-zoom-level"
+        onClick={onZoomReset}
+        aria-label={`Reset zoom (currently ${pct}%)`}
+        title="Reset to 100%"
+      >
+        {pct}%
+      </button>
+      <button
+        type="button"
+        className="wf-zoom-btn"
+        onClick={onZoomIn}
+        aria-label="Zoom in"
+        disabled={atMax}
+      >
+        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+          <path d="M2.5 6h7M6 2.5v7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+      </button>
     </div>
   )
 }
@@ -386,10 +482,14 @@ function WorkflowNode({ node, selected, onSelect, onMore }) {
           </span>
         )}
         <span className="wf-node-text">
-          <span className="wf-node-title-row">
-            <span className="wf-node-title">{node.title}</span>
-            {agent && <span className="wf-node-agent-tag">{agent.name}</span>}
-          </span>
+          {agent && (
+            <span className="wf-node-eyebrow">
+              <span className="wf-node-eyebrow-name">{agent.name}</span>
+              <span className="wf-node-eyebrow-sep" aria-hidden="true">·</span>
+              <span className="wf-node-eyebrow-role">{agent.role}</span>
+            </span>
+          )}
+          <span className="wf-node-title">{node.title}</span>
           {node.subtitle && <span className="wf-node-sub">{node.subtitle}</span>}
         </span>
       </button>
