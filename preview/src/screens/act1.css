@@ -418,8 +418,24 @@
 .prompt-seg-text  { font-size: var(--text-sm); line-height: var(--line-height-loose); color: var(--color-content-primary); }
 .prompt-seg-cta   { font-size: var(--text-sm); color: var(--color-content-secondary); font-style: italic; }
 .prompt-seg-list  { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--space-1); font-size: var(--text-sm); color: var(--color-content-primary); }
-.prompt-seg-list li { display: flex; gap: 8px; line-height: var(--line-height-loose); }
-.prompt-seg-list li::before { content: '•'; color: var(--color-content-tertiary); }
+/* Each <li> is a block (not flex) so the bold + plain-text fragments flow
+   as one continuous inline stream. Using flex here turns every text node
+   into its own flex item, which at narrow widths shrinks each to min-
+   content and creates the broken-column layout. The bullet hangs via an
+   absolute-positioned ::before to preserve the indent without affecting
+   text wrapping. */
+.prompt-seg-list li {
+  position: relative;
+  padding-left: 18px;
+  line-height: var(--line-height-loose);
+}
+.prompt-seg-list li::before {
+  content: '•';
+  position: absolute;
+  left: 4px;
+  top: 0;
+  color: var(--color-content-tertiary);
+}
 
 /* Activity-detected card — transparent fill + light grey stroke, shown
    just before a reasoning block so the operator sees what real-world
