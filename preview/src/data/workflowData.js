@@ -77,23 +77,25 @@ const END_ALREADY_COVERED = {
   },
 }
 
-const AGENT_RANK = {
-  id: 'agent-rank-candidates',
+const AGENT_RANK_AND_OFFER = {
+  id: 'agent-nova-rank-offer',
   kind: 'agent',
   agentId: 'nova',
-  title: 'Rank qualified candidates',
-  subtitle: 'Top 12 · proximity, rating, accept rate, fairness',
+  title: 'Rank candidates & offer to top 3',
+  subtitle: 'Score 12, SMS + in-app to top 3 in parallel, 90s expiry',
   panel: {
-    heading: 'AI Action · Rank candidates with Nova',
-    description: 'Nova scores eligible workers using four signals. Highest-ranked twelve advance; downstream actions decide how to reach them.',
-    promptPlaceholder: 'Tell me what you want Nova to do here — e.g. “weight proximity higher for Civic”.',
+    heading: 'AI Action · Rank + offer with Nova',
+    description: 'Nova scores eligible workers on four signals, then blasts offers to the top three in parallel. First confirmed accept wins; the other two offers are rescinded automatically.',
+    promptPlaceholder: 'Shape this — e.g. “weight proximity higher at Civic”.',
     fields: [
-      { label: 'Agent',     value: 'Nova · Schedule Coordinator',  type: 'select' },
-      { label: 'Pool size', value: '12 candidates',                type: 'text'   },
-      { label: 'Signals',   value: ['Proximity (traffic-adjusted)', '90-day performance', 'Last-min accept rate', 'Hours fairness'], type: 'pill-list' },
-      { label: 'OT guard',  value: 'skip workers over 32 hrs this week', type: 'text' },
+      { label: 'Agent',          value: 'Nova · Schedule Coordinator',                               type: 'select'    },
+      { label: 'Pool size',      value: '12 candidates',                                             type: 'text'      },
+      { label: 'Signals',        value: ['Proximity (traffic-adjusted)', '90-day performance', 'Last-min accept rate', 'Hours fairness'], type: 'pill-list' },
+      { label: 'Channels',       value: ['SMS', 'In-app push'],                                      type: 'pill-list' },
+      { label: 'Offer expires',  value: '90 seconds',                                                type: 'text'      },
+      { label: 'Offer template', value: 'Shift tonight: {{venue}} {{start_time}}. Tap to accept.',   type: 'template'  },
     ],
-    chips: ['Proximity', 'Performance', 'Accept rate', 'Fairness', 'OT cap'],
+    chips: ['Proximity', 'Performance', 'Accept rate', 'SMS', 'In-app push'],
   },
 }
 
@@ -115,23 +117,37 @@ const COND_URGENT = {
   },
 }
 
-const AGENT_BLAST = {
-  id: 'agent-blast-top3',
-  kind: 'agent',
-  agentId: 'nova',
-  title: 'Blast offers to the top 3 in parallel',
-  subtitle: 'SMS + in-app · 90-second expiry · first accept wins',
+const WAIT_FOR_RESPONSES = {
+  id: 'wait-for-responses',
+  kind: 'timer',
+  title: 'Wait 90 seconds',
+  subtitle: 'Give workers time to tap accept',
   panel: {
-    heading: 'AI Action · Parallel dispatch',
-    description: 'Nova pings the top three ranked workers at once. First confirmed accept wins; the other two offers are rescinded automatically.',
-    promptPlaceholder: 'Shape this — e.g. “only SMS between 9p–7a”.',
+    heading: 'Wait · 90 seconds',
+    description: 'Pauses the workflow long enough for the top-three offers to be seen and acted on before we branch on the response.',
+    promptPlaceholder: 'Ask to tweak — e.g. “give them 2 minutes at Harbor Theater”.',
     fields: [
-      { label: 'Channels',       value: ['SMS', 'In-app push'],                                       type: 'pill-list' },
-      { label: 'Offer expires',  value: '90 seconds',                                                 type: 'text'      },
-      { label: 'Offer template', value: 'Shift tonight: {{venue}} {{start_time}}. Tap to accept.',    type: 'template'  },
-      { label: 'Fallback',       value: 'notify ops lead if no accept within expiry',                 type: 'text'      },
+      { label: 'Duration', value: '90 seconds',              type: 'text'   },
+      { label: 'Expires',  value: 'end of offer.expiry',     type: 'select' },
     ],
-    chips: ['SMS', 'In-app push', 'Email', 'Voice'],
+    chips: ['30 sec', '90 sec', '2 min', '5 min'],
+  },
+}
+
+const WAIT_QUEUE = {
+  id: 'wait-queue-settle',
+  kind: 'timer',
+  title: 'Wait up to 40 minutes',
+  subtitle: 'Let Atlas work through the queue before confirming',
+  panel: {
+    heading: 'Wait · Up to 40 minutes',
+    description: 'Holds the flow while Atlas staggers offers every 8 minutes. Exits early as soon as someone accepts.',
+    promptPlaceholder: 'Ask to tweak — e.g. “cap the wait at 30 minutes for Civic”.',
+    fields: [
+      { label: 'Max duration',  value: '40 minutes',            type: 'text'   },
+      { label: 'Early exit on', value: 'offer.response = accepted', type: 'select' },
+    ],
+    chips: ['20 min', '40 min', '60 min', 'Until accept'],
   },
 }
 
@@ -216,25 +232,6 @@ const AGENT_ESCALATE = {
   },
 }
 
-const AGENT_FAIRNESS_LOG = {
-  id: 'agent-sofia-fairness',
-  kind: 'agent',
-  agentId: 'sofia',
-  title: 'Log fairness signals',
-  subtitle: 'Record outreach, accepts & declines · refresh 90-day stats',
-  panel: {
-    heading: 'AI Action · Fairness bookkeeping with Sofia',
-    description: 'Sofia records who got the offer, who accepted, and updates the last-min accept-rate stats so future rankings stay fair.',
-    promptPlaceholder: 'Ask Sofia — e.g. “exclude declines that came in under 30 seconds”.',
-    fields: [
-      { label: 'Agent',   value: 'Sofia · People Ops Agent',             type: 'select' },
-      { label: 'Records', value: ['offers sent', 'accepts', 'declines'], type: 'pill-list' },
-      { label: 'Window',  value: 'last 90 days',                         type: 'text' },
-    ],
-    chips: ['Accept rate', 'Offer log', 'Hours fairness'],
-  },
-}
-
 /* ── Tree layout.
    The top-level `stream` is a vertical flow. Any node with `branches` fans out
    below it into parallel labeled streams. Streams end when their array does —
@@ -261,7 +258,6 @@ const LAST_MIN_REPLACEMENT = {
           label: 'No backup',
           tone: 'primary',
           stream: [
-            AGENT_RANK,
             {
               ...COND_URGENT,
               branches: [
@@ -269,14 +265,15 @@ const LAST_MIN_REPLACEMENT = {
                   label: 'Urgent (<4h)',
                   tone: 'primary',
                   stream: [
-                    AGENT_BLAST,
+                    AGENT_RANK_AND_OFFER,
+                    WAIT_FOR_RESPONSES,
                     {
                       ...COND_ACCEPT,
                       branches: [
                         {
                           label: 'Yes',
                           tone: 'primary',
-                          stream: [AGENT_CONFIRM, AGENT_FAIRNESS_LOG],
+                          stream: [AGENT_CONFIRM],
                         },
                         {
                           label: 'No',
@@ -290,7 +287,7 @@ const LAST_MIN_REPLACEMENT = {
                 {
                   label: 'Standard',
                   tone: 'mute',
-                  stream: [AGENT_SEQUENTIAL, AGENT_CONFIRM],
+                  stream: [AGENT_SEQUENTIAL, WAIT_QUEUE, AGENT_CONFIRM],
                 },
               ],
             },

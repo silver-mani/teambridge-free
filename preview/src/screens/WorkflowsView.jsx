@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { TeambridgeAIIcon }     from '../../../src/components/icons/TeambridgeAIIcon.tsx'
 import { ArrowNarrowRightIcon } from '../../../src/components/icons/ArrowNarrowRightIcon.tsx'
 import { ChevronLeftIcon }      from '../../../src/components/icons/ChevronLeftIcon.tsx'
@@ -181,6 +181,7 @@ function WorkflowDetailScreen({ id, onBack, onDemo }) {
           onSelect={setSelectedId}
           onDemo={buzz}
           zoom={zoom}
+          setZoom={setZoom}
           onZoomIn={() => setZoom(z => stepZoom(z, +1))}
           onZoomOut={() => setZoom(z => stepZoom(z, -1))}
           onZoomReset={() => setZoom(DEFAULT_ZOOM)}
@@ -241,21 +242,99 @@ function AssistantColumn({ onDemo }) {
    fans out below it into N parallel sub-streams, each with its own label
    on the connecting line. Streams render recursively so splits can nest. */
 
-function CanvasColumn({ workflow, selectedId, onSelect, onDemo, zoom, onZoomIn, onZoomOut, onZoomReset }) {
-  // Wrap the scaled tree in a "stage" layer so the outer canvas sees the
-  // post-scale size and scrolls correctly when the user zooms in past 100%.
+function CanvasColumn({
+  workflow,
+  selectedId,
+  onSelect,
+  onDemo,
+  zoom,
+  setZoom,
+  onZoomIn,
+  onZoomOut,
+  onZoomReset,
+}) {
+  const scrollRef = useRef(null)
+  const panStateRef = useRef(null)
+  const [isPanning, setIsPanning] = useState(false)
+
+  // Wheel → zoom. React's onWheel listener runs passive in modern React, so
+  // preventDefault() wouldn't take; we attach a native listener manually.
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const onWheel = (e) => {
+      e.preventDefault()
+      const factor = 1 - e.deltaY * 0.0018
+      setZoom(z => clampZoom(z * factor))
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [setZoom])
+
+  // Click-drag → pan. Ignore when the mousedown lands on an actual control
+  // so node selection / zoom buttons keep working.
+  const handleMouseDown = (e) => {
+    if (e.button !== 0) return
+    if (e.target.closest('button, a, input, textarea, select, label')) return
+    const el = scrollRef.current
+    if (!el) return
+    panStateRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      scrollLeft: el.scrollLeft,
+      scrollTop: el.scrollTop,
+      moved: false,
+    }
+    setIsPanning(true)
+    e.preventDefault()
+  }
+
+  useEffect(() => {
+    if (!isPanning) return
+    const onMove = (e) => {
+      const s = panStateRef.current
+      const el = scrollRef.current
+      if (!s || !el) return
+      const dx = e.clientX - s.startX
+      const dy = e.clientY - s.startY
+      if (Math.abs(dx) + Math.abs(dy) > 3) s.moved = true
+      el.scrollLeft = s.scrollLeft - dx
+      el.scrollTop = s.scrollTop - dy
+    }
+    const onUp = () => {
+      setIsPanning(false)
+      panStateRef.current = null
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+    return () => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+  }, [isPanning])
+
+  // Swallow the click that fires at the end of a pan drag so we don't
+  // deselect the current node just because the operator let go of the mouse.
+  const handleClickCapture = (e) => {
+    const s = panStateRef.current
+    if (s?.moved) {
+      e.stopPropagation()
+      s.moved = false
+    }
+  }
+
+  const handleBackgroundClick = (e) => {
+    if (e.target === e.currentTarget) onSelect(null)
+  }
+
   return (
-    <div
-      className="wf-canvas"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onSelect(null)
-      }}
-    >
+    <div className="wf-canvas" onClick={handleBackgroundClick}>
       <div
-        className="wf-canvas-scroll"
-        onClick={(e) => {
-          if (e.target === e.currentTarget) onSelect(null)
-        }}
+        ref={scrollRef}
+        className={`wf-canvas-scroll${isPanning ? ' is-panning' : ''}`}
+        onMouseDown={handleMouseDown}
+        onClickCapture={handleClickCapture}
+        onClick={handleBackgroundClick}
       >
         <div
           className="wf-canvas-stage"
@@ -263,15 +342,11 @@ function CanvasColumn({ workflow, selectedId, onSelect, onDemo, zoom, onZoomIn, 
             transform: `scale(${zoom})`,
             transformOrigin: 'top center',
           }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) onSelect(null)
-          }}
+          onClick={handleBackgroundClick}
         >
           <div
             className="wf-canvas-inner"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) onSelect(null)
-            }}
+            onClick={handleBackgroundClick}
           >
             <Stream
               nodes={workflow.stream}
@@ -365,24 +440,80 @@ function Stream({ nodes, selectedId, onSelect, onDemo }) {
   )
 }
 
-/* Horizontal split directly underneath a branching node. We draw a small
-   SVG "fork" on top that connects the node above to each sub-stream head. */
+/* Horizontal split directly underneath a branching node.
+
+   The split paints a single, continuous connector:
+   - one vertical stem dropping out of the parent node
+   - one horizontal bar at the mid-point that fans the stem across the columns
+   - one vertical drop per column straight into the top of that column's first node
+
+   The SVG is percentage-width with `preserveAspectRatio="none"` and
+   `vector-effect="non-scaling-stroke"` so the x coords stretch to match the
+   flex columns underneath while the stroke weight stays 1.5px.
+
+   Labels are absolute-positioned chips sitting ON the branch verticals, which
+   keeps the connector line unbroken — previously the chip was laid out with
+   flow margin, which created the floating-line gap. */
 function BranchSplit({ branches, selectedId, onSelect, onDemo }) {
   const count = branches.length
+  const stemHeight = 20    // parent → horizontal bar
+  const branchHeight = 44  // horizontal bar → top of child stream
+  const totalHeight = stemHeight + branchHeight
+  const colCenter = (i) => ((i + 0.5) * 100) / count
+  const leftX = colCenter(0)
+  const rightX = colCenter(count - 1)
   return (
     <div className={`wf-split wf-split-${count}`}>
-      <ForkSvg count={count} />
+      <div className="wf-split-fork" style={{ height: totalHeight }}>
+        <svg
+          className="wf-fork-svg"
+          width="100%"
+          height={totalHeight}
+          viewBox={`0 0 100 ${totalHeight}`}
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          <g
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+            strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
+          >
+            <line x1="50" y1="0" x2="50" y2={stemHeight} />
+            {count > 1 && (
+              <line x1={leftX} y1={stemHeight} x2={rightX} y2={stemHeight} />
+            )}
+            {Array.from({ length: count }).map((_, i) => {
+              const x = colCenter(i)
+              return (
+                <line
+                  key={i}
+                  x1={x}
+                  y1={count > 1 ? stemHeight : 0}
+                  x2={x}
+                  y2={totalHeight}
+                />
+              )
+            })}
+          </g>
+        </svg>
+        {branches.map((b, i) => (
+          <span
+            key={i}
+            className={`wf-split-label wf-split-label-${b.tone ?? 'mute'}`}
+            style={{
+              left: `${colCenter(i)}%`,
+              top: stemHeight + branchHeight / 2,
+            }}
+          >
+            {b.label}
+          </span>
+        ))}
+      </div>
       <div className="wf-split-streams">
         {branches.map((b, i) => (
-          <div
-            key={i}
-            className={`wf-split-col wf-split-col-${b.tone ?? 'mute'}${
-              count === 2 ? (i === 0 ? ' wf-split-col-left' : ' wf-split-col-right') : ''
-            }`}
-          >
-            <span className={`wf-split-label wf-split-label-${b.tone ?? 'mute'}`}>
-              {b.label}
-            </span>
+          <div key={i} className={`wf-split-col wf-split-col-${b.tone ?? 'mute'}`}>
             <Stream
               nodes={b.stream}
               selectedId={selectedId}
@@ -393,66 +524,6 @@ function BranchSplit({ branches, selectedId, onSelect, onDemo }) {
         ))}
       </div>
     </div>
-  )
-}
-
-/* SVG that draws the fork from a single top point down into N columns. */
-function ForkSvg({ count }) {
-  const width = 320
-  const height = 44
-  const centerX = width / 2
-  const topY = 0
-  const midY = 22
-  const bottomY = height
-  const spread = count === 2 ? 140 : count === 3 ? 200 : 140
-  const step = count > 1 ? spread / (count - 1) : 0
-  const startX = centerX - spread / 2
-  return (
-    <svg className="wf-fork" width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
-      <path
-        d={`M ${centerX} ${topY} L ${centerX} ${midY}`}
-        stroke="currentColor"
-        strokeWidth="1.5"
-        fill="none"
-        strokeLinecap="round"
-      />
-      {count > 1 && (
-        <path
-          d={`M ${startX} ${midY} L ${startX + spread} ${midY}`}
-          stroke="currentColor"
-          strokeWidth="1.5"
-          fill="none"
-          strokeLinecap="round"
-        />
-      )}
-      {Array.from({ length: count }).map((_, i) => {
-        const x = count > 1 ? startX + step * i : centerX
-        return (
-          <path
-            key={i}
-            d={`M ${x} ${midY} L ${x} ${bottomY - 6}`}
-            stroke="currentColor"
-            strokeWidth="1.5"
-            fill="none"
-            strokeLinecap="round"
-          />
-        )
-      })}
-      {Array.from({ length: count }).map((_, i) => {
-        const x = count > 1 ? startX + step * i : centerX
-        return (
-          <path
-            key={`a-${i}`}
-            d={`M ${x - 4} ${bottomY - 10} L ${x} ${bottomY - 4} L ${x + 4} ${bottomY - 10}`}
-            stroke="currentColor"
-            strokeWidth="1.5"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        )
-      })}
-    </svg>
   )
 }
 
@@ -505,8 +576,9 @@ function WorkflowNode({ node, selected, onSelect, onMore }) {
   )
 }
 
-/* Vertical single-column edge: line + down-chevron, with a + handle hovered
-   between nodes so the operator can drop a new node into the chain. */
+/* Vertical edge between two nodes on the same stream. One continuous line
+   with a `+` handle centered on it (hover-revealed) so the connector stays
+   unbroken and the nodes read as actually connected. */
 function WorkflowEdge({ onAdd }) {
   return (
     <div className="wf-edge" aria-hidden="true">
@@ -519,12 +591,6 @@ function WorkflowEdge({ onAdd }) {
       >
         <PlusIcon size={10} />
       </button>
-      <span className="wf-edge-line" />
-      <span className="wf-edge-arrow">
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      </span>
     </div>
   )
 }

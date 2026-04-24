@@ -5272,12 +5272,20 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   min-height: 0;
 }
 /* Inner scroll wrapper: owns the actual scrollbars, so the zoom pill and
-   the centered node toolbar can sit outside it and stay pinned. */
+   the centered node toolbar can sit outside it and stay pinned. Doubles as
+   the drag-to-pan surface — grab/grabbing cursors come from the DOM state. */
 .wf-canvas-scroll {
   position: absolute;
   inset: 0;
   overflow: auto;
   padding: var(--space-8) var(--space-6) 72px;
+  cursor: grab;
+  overscroll-behavior: contain;
+}
+.wf-canvas-scroll.is-panning,
+.wf-canvas-scroll.is-panning * {
+  cursor: grabbing !important;
+  user-select: none;
 }
 /* Stage wraps the scaled tree so the scroll wrapper's scrollbar sees the
    post-zoom size. transform-origin is set inline on the element so zoom
@@ -5317,20 +5325,28 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   gap: 0;
 }
 
-/* ── Branch split: sits directly under a condition/branching node. A small
-   SVG "fork" draws the connectors, and each branch gets a labeled column
-   underneath. Columns are flex-1 so they share the horizontal space evenly. */
+/* ── Branch split: sits directly under a condition/branching node.
+
+   `.wf-split-fork` is the connector region — a full-width SVG draws the stem
+   + fan + per-branch stems, and each branch's label pill is absolute-placed
+   on its stem so the line reads unbroken. `.wf-split-streams` sits directly
+   below with no gap, so the stems flow straight into each child node. */
 .wf-split {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   width: 100%;
   gap: 0;
   color: color-mix(in srgb, var(--color-content-tertiary) 55%, transparent);
 }
-.wf-fork {
-  flex-shrink: 0;
-  margin-top: 2px;
+.wf-split-fork {
+  position: relative;
+  width: 100%;
+}
+.wf-fork-svg {
+  position: absolute;
+  inset: 0;
+  display: block;
 }
 .wf-split-streams {
   display: flex;
@@ -5338,7 +5354,6 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   justify-content: center;
   width: 100%;
   gap: var(--space-6);
-  padding-top: 2px;
 }
 .wf-split-col {
   flex: 1 1 0;
@@ -5349,6 +5364,8 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   gap: 0;
 }
 .wf-split-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
   display: inline-flex;
   align-items: center;
   padding: 2px 10px;
@@ -5356,11 +5373,12 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   font-size: 11px;
   font-weight: var(--font-weight-medium);
   letter-spacing: 0.02em;
-  margin-bottom: 8px;
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border-opaque);
   color: var(--color-content-secondary);
   white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  z-index: 1;
 }
 .wf-split-label-primary {
   background: #DCFCE7;
@@ -5543,25 +5561,29 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
 }
 .wf-node-end .wf-node-title { color: var(--color-content-secondary); }
 
-/* Edge between two adjacent rows. */
+/* Edge between two adjacent rows. A single continuous vertical line sits in
+   the middle of a 28px-tall box, with the hover-revealed `+` button absolute-
+   centered on top of it. Looks like one unbroken connector; breaks only when
+   the operator reaches for the add handle. */
 .wf-edge {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 0 4px;
+  position: relative;
+  width: 2px;
+  height: 28px;
   color: color-mix(in srgb, var(--color-content-tertiary) 55%, transparent);
 }
 .wf-edge-line {
-  width: 1px;
-  height: 10px;
-  background: color-mix(in srgb, var(--color-content-tertiary) 40%, transparent);
-}
-.wf-edge-arrow {
-  display: inline-flex;
-  margin-top: -2px;
+  position: absolute;
+  inset: 0;
+  width: 1.5px;
+  margin: 0 auto;
+  background: color-mix(in srgb, var(--color-content-tertiary) 45%, transparent);
+  border-radius: 1px;
 }
 .wf-edge-add {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   width: 20px;
   height: 20px;
   border-radius: 50%;
@@ -5573,11 +5595,10 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 120ms ease, transform 120ms ease, color 120ms ease, border-color 120ms ease;
+  transition: opacity 120ms ease, color 120ms ease, border-color 120ms ease;
 }
 .wf-edge:hover .wf-edge-add {
   opacity: 1;
-  transform: scale(1);
   color: var(--color-content-primary);
   border-color: color-mix(in srgb, var(--color-content-primary) 30%, transparent);
 }
