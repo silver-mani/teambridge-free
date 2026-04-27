@@ -1129,16 +1129,16 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: var(--color-matcha-bg-primary);
+  background: #4FBD5A;
   flex-shrink: 0;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-matcha-bg-primary) 20%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, #4FBD5A 20%, transparent);
 }
 .briefing-agent-status::after {
   content: '';
   position: absolute;
   inset: -5px;
   border-radius: 50%;
-  border: 2px solid color-mix(in srgb, var(--color-matcha-bg-primary) 40%, transparent);
+  border: 2px solid color-mix(in srgb, #4FBD5A 40%, transparent);
   animation: briefing-pulse 1.8s ease-out infinite;
   opacity: 0;
 }
@@ -4385,7 +4385,7 @@ button.activity-card:hover:not(.activity-card-selected),
 }
 .people-tag-purple { background: var(--color-purple-bg-tertiary); color: var(--color-purple-content-primary); }
 .people-tag-blue   { background: var(--color-blue-bg-tertiary);   color: var(--color-blue-content-primary);   }
-.people-tag-matcha { background: var(--color-matcha-bg-tertiary); color: var(--color-matcha-content-primary); }
+.people-tag-green  { background: #E5F6E7;                          color: #4FBD5A;                              }
 .people-tag-orange { background: var(--color-orange-bg-tertiary); color: var(--color-orange-content-primary); }
 .people-tag-pink   { background: var(--color-pink-bg-tertiary);   color: var(--color-pink-content-primary);   }
 
