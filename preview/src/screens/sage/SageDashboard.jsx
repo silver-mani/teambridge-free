@@ -339,6 +339,18 @@ export default function SageDashboard({ onNavigate }) {
       <div className="sage-row sage-row--budget">
         <SageWidgetCard title="Workforce Cost vs Budget" subtitle="Month to date · all departments">
           <WorkforceCostBudget />
+          <div className="sage-widget-alert-slot">
+            <SageAlertCard
+              title="3 Critical Workforce Risks Detected"
+              items={[
+                'Overtime threshold exceeded — 5 departments over OT budget',
+                '12 unfilled shifts this weekend (Niners home game)',
+                '5 credential compliance issues expiring within 7 days',
+              ]}
+              ctaLabel="Open in Sage Workforce"
+              onCta={() => onNavigate && onNavigate('workforce')}
+            />
+          </div>
         </SageWidgetCard>
         <SageWidgetCard title="Overtime Cost" subtitle="Month-to-date spend">
           <OvertimeCostPanel />
@@ -366,18 +378,6 @@ export default function SageDashboard({ onNavigate }) {
         </SageWidgetCard>
       </div>
 
-      <div className="sage-row">
-        <SageAlertCard
-          title="3 Critical Workforce Risks Detected"
-          items={[
-            'Overtime threshold exceeded — 5 departments over OT budget',
-            '12 unfilled shifts this weekend (Niners home game)',
-            '5 credential compliance issues expiring within 7 days',
-          ]}
-          ctaLabel="Open in Sage Workforce"
-          onCta={() => onNavigate && onNavigate('workforce')}
-        />
-      </div>
     </SageShell>
   )
 }
