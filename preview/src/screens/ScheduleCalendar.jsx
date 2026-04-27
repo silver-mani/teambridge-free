@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { AlertTriangleIcon }   from '../../../src/components/icons/AlertTriangleIcon.tsx'
 import { ArrowNarrowRightIcon } from '../../../src/components/icons/ArrowNarrowRightIcon.tsx'
 import { ChevronLeftIcon }      from '../../../src/components/icons/ChevronLeftIcon.tsx'
@@ -6,6 +7,7 @@ import { ChevronDownIcon }      from '../../../src/components/icons/ChevronDownI
 import { PlusIcon }             from '../../../src/components/icons/PlusIcon.tsx'
 import { ListBulletIcon }       from '../../../src/components/icons/ListBulletIcon.tsx'
 import { TeambridgeAIIcon }     from '../../../src/components/icons/TeambridgeAIIcon.tsx'
+import { BarChart02Icon }       from '../../../src/components/icons/BarChart02Icon.tsx'
 
 const DAYS = [
   { id: 'sun', label: 'Sunday' },
@@ -17,10 +19,100 @@ const DAYS = [
   { id: 'sat', label: 'Saturday' },
 ]
 
+/* ──────────────────────────────────────────────────────────────────────
+ * OT-focused stats for the drawer. Numbers reconcile with the Sage
+ * dashboard narrative: $15.2k OT this week, ~230 OT hrs distributed
+ * across the week with the Niners-game spike on Fri/Sat.
+ * ────────────────────────────────────────────────────────────────────── */
+const STATS_ROWS = [
+  {
+    label: 'Overtime % of Total Hours',
+    cells: [
+      { value: '5%' },
+      { value: '12%' },
+      { value: '18%' },
+      { value: '24%', tone: 'warn' },
+      { value: '32%', tone: 'warn' },
+      { value: '48%', tone: 'bad'  },
+      { value: '62%', tone: 'bad'  },
+    ],
+  },
+  {
+    label: 'Overtime vs Budgeted Hours',
+    cells: [
+      { value: '2 / 10',  chip: '−80%',  tone: 'ok'   },
+      { value: '4 / 10',  chip: '−60%',  tone: 'ok'   },
+      { value: '8 / 10',  chip: '−20%',  tone: 'ok'   },
+      { value: '14 / 10', chip: '+40%',       tone: 'warn' },
+      { value: '22 / 10', chip: '+120%',      tone: 'bad'  },
+      { value: '38 / 10', chip: '+280%',      tone: 'bad'  },
+      { value: '56 / 10', chip: '+460%',      tone: 'bad'  },
+    ],
+  },
+  {
+    label: 'Overtime vs Budgeted Cost',
+    cells: [
+      { value: '$300 / $600',     chip: '−50%', tone: 'ok'   },
+      { value: '$500 / $600',     chip: '−17%', tone: 'ok'   },
+      { value: '$900 / $600',     chip: '+50%',      tone: 'warn' },
+      { value: '$1.4k / $600',    chip: '+133%',     tone: 'bad'  },
+      { value: '$2.2k / $600',    chip: '+267%',     tone: 'bad'  },
+      { value: '$4.2k / $600',    chip: '+600%',     tone: 'bad'  },
+      { value: '$5.7k / $600',    chip: '+850%',     tone: 'bad'  },
+    ],
+  },
+  {
+    label: 'Overtime vs Scheduled',
+    cells: [
+      { value: '2 / 32',  chip: '6%'  },
+      { value: '4 / 28',  chip: '14%' },
+      { value: '8 / 38',  chip: '21%', tone: 'warn' },
+      { value: '14 / 42', chip: '33%', tone: 'warn' },
+      { value: '22 / 56', chip: '39%', tone: 'bad'  },
+      { value: '38 / 86', chip: '44%', tone: 'bad'  },
+      { value: '56 / 98', chip: '57%', tone: 'bad'  },
+    ],
+  },
+  {
+    label: 'Overtime Hours',
+    suffix: 'hr',
+    cells: [
+      { value: '2'  },
+      { value: '4'  },
+      { value: '8'  },
+      { value: '14', tone: 'warn' },
+      { value: '22', tone: 'bad'  },
+      { value: '38', tone: 'bad'  },
+      { value: '56', tone: 'bad'  },
+    ],
+  },
+  {
+    label: 'Overtime Costs',
+    suffix: '$',
+    cells: [
+      { value: '$300'   },
+      { value: '$500'   },
+      { value: '$900'   },
+      { value: '$1.4k', tone: 'warn' },
+      { value: '$2.2k', tone: 'bad'  },
+      { value: '$4.2k', tone: 'bad'  },
+      { value: '$5.7k', tone: 'bad'  },
+    ],
+  },
+]
+
+const STATS_TABS = [
+  { id: 'stats',    label: 'Stats',          icon: true  },
+  { id: 'needs',    label: 'Needs & Coverage' },
+  { id: 'demand',   label: 'Demand Ratio'  },
+]
+
 /* `demoToast` is a callback prop so the Calendar component doesn't need to
    know about the parent toast helper — parent wires it up. */
 export default function ScheduleCalendar({ data, onDemo }) {
   const schedule = data.schedule
+  const [statsOpen, setStatsOpen] = useState(true)
+  const [statsTab,  setStatsTab]  = useState('stats')
   if (!schedule) return null
   const { weekLabel, todayId, rows } = schedule
   const buzz = () => onDemo?.()
@@ -109,7 +201,85 @@ export default function ScheduleCalendar({ data, onDemo }) {
           </div>
         ))}
       </div>
+
+      <ScheduleStatsDrawer
+        open={statsOpen}
+        tab={statsTab}
+        onSetTab={setStatsTab}
+        onToggle={() => setStatsOpen(o => !o)}
+        onConfigure={buzz}
+      />
     </section>
+  )
+}
+
+function ScheduleStatsDrawer({ open, tab, onSetTab, onToggle, onConfigure }) {
+  return (
+    <div className={`schedule-stats ${open ? '' : 'schedule-stats--collapsed'}`}>
+      <div className="schedule-stats-head">
+        <div className="schedule-stats-tabs">
+          {STATS_TABS.map(t => (
+            <button
+              key={t.id}
+              type="button"
+              className={`schedule-stats-tab ${tab === t.id ? 'is-active' : ''}`}
+              onClick={() => onSetTab(t.id)}
+            >
+              {t.icon && <BarChart02Icon size={14} />}
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <div className="schedule-stats-actions">
+          <button type="button" className="schedule-stats-config" onClick={onConfigure}>
+            <ConfigGlyph /> Configure Stats
+          </button>
+          <button type="button" className="schedule-stats-icon" onClick={onConfigure} aria-label="More options">
+            <DotsGlyph />
+          </button>
+          <button
+            type="button"
+            className="schedule-stats-icon"
+            onClick={onToggle}
+            aria-label={open ? 'Collapse stats' : 'Expand stats'}
+          >
+            <span className="schedule-stats-chevron" data-open={open}>
+              <ChevronDownIcon size={14} />
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {open && tab === 'stats' && (
+        <div className="schedule-stats-body" role="table" aria-label="Schedule stats">
+          {STATS_ROWS.map(row => (
+            <div key={row.label} className="schedule-stats-row" role="row">
+              <div className="schedule-stats-row-label" role="rowheader">{row.label}</div>
+              {row.cells.map((cell, i) => (
+                <div key={i} className="schedule-stats-cell" role="cell">
+                  <span className="schedule-stats-value">{cell.value}</span>
+                  {cell.chip && (
+                    <span className={`schedule-stats-chip schedule-stats-chip--${cell.tone ?? 'ok'}`}>
+                      {cell.chip}
+                    </span>
+                  )}
+                  {!cell.chip && cell.tone && (
+                    <span className={`schedule-stats-dot schedule-stats-dot--${cell.tone}`} aria-hidden="true" />
+                  )}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {open && tab !== 'stats' && (
+        <div className="schedule-stats-empty">
+          <BarChart02Icon size={20} />
+          <span>{tab === 'needs' ? 'Needs & Coverage breakdown' : 'Demand Ratio analysis'} — coming soon</span>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -130,6 +300,27 @@ function SearchGlyph() {
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.6" />
       <path d="M20 20l-3.5-3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function ConfigGlyph() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21 6H7M21 18H7" />
+      <circle cx="4" cy="6"  r="1.5" />
+      <circle cx="4" cy="18" r="1.5" />
+    </svg>
+  )
+}
+
+function DotsGlyph() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <circle cx="5"  cy="12" r="1.6" />
+      <circle cx="12" cy="12" r="1.6" />
+      <circle cx="19" cy="12" r="1.6" />
     </svg>
   )
 }

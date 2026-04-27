@@ -13,6 +13,7 @@ import { ClipboardCheckIcon }  from '../../../src/components/icons/ClipboardChec
 import { CurrencyDollarCircleIcon } from '../../../src/components/icons/CurrencyDollarCircleIcon.tsx'
 import { Users03Icon }         from '../../../src/components/icons/Users03Icon.tsx'
 import { GitBranch01Icon }     from '../../../src/components/icons/GitBranch01Icon.tsx'
+import { BookOpen01Icon }     from '../../../src/components/icons/BookOpen01Icon.tsx'
 import { MessageDotsSquareIcon } from '../../../src/components/icons/MessageDotsSquareIcon.tsx'
 import { SearchSmIcon }        from '../../../src/components/icons/SearchSmIcon.tsx'
 import { Microphone02Icon }    from '../../../src/components/icons/Microphone02Icon.tsx'
@@ -26,6 +27,8 @@ import ScheduleCalendar        from './ScheduleCalendar.jsx'
 import PeopleList              from './PeopleList.jsx'
 import PayView                 from './PayView.jsx'
 import WorkflowsView           from './WorkflowsView.jsx'
+import PoliciesView            from './PoliciesView.jsx'
+import EngageView              from './EngageView.jsx'
 import './act1.css'
 
 /* ─── Agent avatar (animated GIF in a color-tinted ring) ─────────────────── */
@@ -105,27 +108,31 @@ const NAV_ITEMS = [
   { id: 'overview',  label: 'Home',             Icon: Home02Icon              },
   { id: 'people',    label: 'People',           Icon: Users03Icon             },
   { id: 'schedule',  label: 'Schedule',         Icon: Grid01Icon              },
+  { id: 'engage',    label: 'Engage',           Icon: MessageDotsSquareIcon   },
   { id: 'pay',       label: 'Pay',              Icon: CurrencyDollarCircleIcon },
   { id: 'workflows', label: 'Agent Workflows',  Icon: GitBranch01Icon         },
+  { id: 'policies',  label: 'Policies',         Icon: BookOpen01Icon          },
 ]
 
-function LeftNav({ industryLabel, view, onBrand, onAsk, onSelectView }) {
+function LeftNav({ industryLabel, view, onBrand, onAsk, onSelectView, sageMode = false }) {
   return (
     <aside className="act1-nav" aria-label="Primary">
-      <button
-        type="button"
-        className="act1-nav-brand"
-        onClick={onBrand}
-        aria-label="Change industry"
-      >
-        <span className="act1-nav-brandmark">
-          <TeambridgeAIIcon size={16} />
-        </span>
-        <span className="act1-nav-brandtext">
-          <span className="act1-nav-brandname">Teambridge</span>
-          <span className="act1-nav-brandindustry">{industryLabel}</span>
-        </span>
-      </button>
+      {!sageMode && (
+        <button
+          type="button"
+          className="act1-nav-brand"
+          onClick={onBrand}
+          aria-label="Change industry"
+        >
+          <span className="act1-nav-brandmark">
+            <TeambridgeAIIcon size={16} />
+          </span>
+          <span className="act1-nav-brandtext">
+            <span className="act1-nav-brandname">Teambridge</span>
+            <span className="act1-nav-brandindustry">{industryLabel}</span>
+          </span>
+        </button>
+      )}
 
       <nav className="act1-nav-list">
         {NAV_ITEMS.map(item => {
@@ -136,6 +143,8 @@ function LeftNav({ industryLabel, view, onBrand, onAsk, onSelectView }) {
             : item.id === 'people'    ? () => onSelectView?.('people')
             : item.id === 'pay'       ? () => onSelectView?.('pay')
             : item.id === 'workflows' ? () => onSelectView?.('workflows')
+            : item.id === 'engage'    ? () => onSelectView?.('engage')
+            : item.id === 'policies'  ? () => onSelectView?.('policies')
             : () => showDemoToast()
           return (
             <button
@@ -2731,9 +2740,95 @@ const SANDRA_SCENE = {
   },
 }
 
+/* ─── OT crisis scene (Sage Intacct → Workforce handoff) ────────────────
+   Plays automatically when the operator lands on the Schedule view via
+   the Sage embed (sageMode + events + view=schedule + empty chat). The
+   CFO dashboard flagged OT +232% over budget; Nova picks it up here,
+   names the at-risk staff, and offers to redistribute shifts. */
+const OT_SCENE = {
+  alert: {
+    content: { segments: [
+      { type: 'signal',
+        eyebrow: 'Handoff from Sage Intacct · OT crisis',
+        title: '5 employees projected to exceed their OT cap this week',
+        detail: 'Levi\'s Stadium · combined exposure $27.5k · 7 departments affected' },
+      { type: 'thinking', steps: [
+        { title: 'Pulled the OT-risk roster',
+          detail: 'Cross-referenced this week\'s schedule against the 40-hr OT cap. Anyone projected ≥38 hrs is on the list.' },
+        { title: 'Named the exposure',
+          detail: 'Miguel R. (32 → 46 proj.), Marcus J. (38 → 44), Priya S. (36 → 42), Diane K. (37 → 41), Carlos M. (35 → 41).' },
+        { title: 'Costed it',
+          detail: 'At the venue\'s 1.5× OT rate, that\'s $27,500 of preventable overtime — about 57% of the MTD overage Sage Intacct flagged.' },
+        { title: 'Identified swap candidates',
+          detail: 'Same venue, same credentials, under-cap, opted into shift offers: 14 viable workers across the affected shifts.' },
+      ] },
+      { type: 'text', text: "I can run a **replacement-shift workflow** — redistribute the at-risk shifts to qualified, under-cap workers and bring this week back inside the OT line. **Want me to run it?**" },
+    ] },
+    specialist: 'nova',
+    approveLabel: 'Yes, run replacement flow',
+    approvePlan: [
+      'Drafting swap proposals for the 5 OT-risk employees',
+      'Pinging candidates in priority order (cut-off: 90 seconds)',
+      'Locking confirmed swaps and updating the schedule',
+    ],
+    stepDurationMs: 3500,
+    sceneAfter: ({ postAssistant }) => postAssistant(OT_SCENE.proposals),
+  },
+
+  proposals: {
+    content: { segments: [
+      { type: 'text', text: "Drafted **5 swaps**. Every candidate is under-cap, same-venue, and credentialed. Total OT prevented: **23.5 hrs · $27,500** — and zero coverage gaps." },
+      { type: 'metrics', items: [
+        { value: '5',      label: 'Swaps proposed' },
+        { value: '23.5h',  label: 'OT redistributed' },
+        { value: '$27.5k', label: 'OT prevented' },
+        { value: '0',      label: 'Coverage gaps' },
+      ] },
+      { type: 'cta', text: "Approve all 5 swaps and notify the affected staff?" },
+    ] },
+    specialist: 'nova',
+    approveLabel: 'Approve all swaps',
+    approvePlan: [
+      'Sending swap offers to the 5 replacement workers',
+      'Notifying the 5 OT-risk employees of their changed shifts',
+      'Updating Saturday + Sunday schedules at Levi\'s Stadium',
+    ],
+    stepDurationMs: 1500,
+    sceneAfter: ({ postAssistant }) => postAssistant(OT_SCENE.success),
+  },
+
+  success: {
+    content: { segments: [
+      { type: 'text', text: "Done. Schedule is locked, OT cap is restored, and Sage Intacct will pick up the labor-cost correction in tonight's sync." },
+      { type: 'metrics', items: [
+        { value: '✓',      label: 'OT under cap' },
+        { value: '$27.5k', label: 'Saved this week' },
+        { value: '5/5',    label: 'Swaps confirmed' },
+        { value: 'None',   label: 'Coverage gaps' },
+      ] },
+      { type: 'cta', text: "Want to save this as an **OT Cap Enforcement** workflow? Nova will run it automatically whenever projected hours cross the line." },
+    ] },
+    specialist: 'nova',
+    approveLabel: 'Save as workflow',
+    approvePlan: [
+      'Capturing the OT-cap rule and replacement policy',
+      'Saving as "OT Cap Enforcement" workflow · owner: you',
+    ],
+    stepDurationMs: 1200,
+    sceneAfter: ({ postAssistant }) => postAssistant(OT_SCENE.savedConfirmation),
+  },
+
+  savedConfirmation: {
+    content: { segments: [
+      { type: 'text', text: "Saved. Nova will auto-run **OT Cap Enforcement** going forward — I'll only escalate if a swap can't be filled or no credentialed match is available." },
+    ] },
+    specialist: 'nova',
+  },
+}
+
 /* ─── Prompt panel ──────────────────────────────────────────────────────── */
 
-function PromptPanel({ industryId, view = 'overview', paySubRoute, onInjectActivityCard, onOverrideActivityCard, onResetScene, onOpenWorkflow }) {
+function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = false, onInjectActivityCard, onOverrideActivityCard, onResetScene, onOpenWorkflow }) {
   const suggestions = PROMPT_SUGGESTIONS[industryId] ?? PROMPT_SUGGESTIONS.events
   const [input, setInput]       = useState('')
   const [messages, setMessages] = useState([])
@@ -2778,9 +2873,13 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, onInjectActiv
     lastViewRef.current = view
     if (view === prev) return
     if (view === 'overview') return
+    // In Sage embed mode the OT-crisis scene plays on the Schedule view;
+    // wiping it as the user pokes around the LeftNav would erase the very
+    // story they came here for.
+    if (sageMode) return
     setMessages([])
     setInput('')
-  }, [view])
+  }, [view, sageMode])
 
   const updateMsg = (id, patch) =>
     setMessages(prev => prev.map(m => m.id === id ? { ...m, ...patch } : m))
@@ -3011,6 +3110,32 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, onInjectActiv
     }
   }, [industryId, view, messages.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  /* ── Scripted OT crisis scene (Sage Intacct → Workforce handoff) ────
+     Plays only inside the Sage embed when the operator lands on the
+     Schedule view with an empty chat, mirroring the Sandra-scene
+     pattern so the stream/approve/follow-up state machine just works. */
+  const otSceneStartedRef = useRef(false)
+  useEffect(() => {
+    if (!sageMode || industryId !== 'events' || view !== 'schedule') {
+      otSceneStartedRef.current = false
+      return
+    }
+    if (messages.length > 0) {
+      otSceneStartedRef.current = false
+      return
+    }
+    if (otSceneStartedRef.current) return
+    otSceneStartedRef.current = true
+
+    // Slightly snappier than Sandra (2.5s) — the operator just clicked
+    // "Resolve OT Crisis" on the CFO dashboard, so they're already
+    // primed for an answer.
+    const t = setTimeout(() => {
+      postAssistant(OT_SCENE.alert)
+    }, 2500)
+    return () => clearTimeout(t)
+  }, [sageMode, industryId, view, messages.length]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const clear = () => { setMessages([]); setInput(''); onResetScene?.() }
 
   const hasChat = messages.length > 0
@@ -3104,7 +3229,7 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, onInjectActiv
   )
 }
 
-export default function Act1Dashboard({ industryId, view = 'overview', onBack, onExplore, onSelectView }) {
+export default function Act1Dashboard({ industryId, view = 'overview', sageMode = false, onBack, onExplore, onSelectView }) {
   const data = useMemo(() => getIndustryData(industryId), [industryId])
   // Pay sub-route lives here so the chat panel can observe drill-downs
   // (home → period → user) alongside top-level view changes.
@@ -3146,6 +3271,7 @@ export default function Act1Dashboard({ industryId, view = 'overview', onBack, o
       <LeftNav
         industryLabel={data.label}
         view={view}
+        sageMode={sageMode}
         onBrand={onBack}
         onAsk={onExplore}
         onSelectView={onSelectView}
@@ -3154,6 +3280,7 @@ export default function Act1Dashboard({ industryId, view = 'overview', onBack, o
       <PromptPanel
         industryId={industryId}
         view={view}
+        sageMode={sageMode}
         paySubRoute={paySubRoute}
         onInjectActivityCard={setSceneInjectedCard}
         onOverrideActivityCard={(id, patch) => setSceneCardOverrides(prev => ({ ...prev, [id]: { ...(prev[id] ?? {}), ...patch } }))}
@@ -3165,6 +3292,8 @@ export default function Act1Dashboard({ industryId, view = 'overview', onBack, o
        : view === 'people'  ? <PeopleList       data={data} onDemo={() => showDemoToast()} />
        : view === 'pay'     ? <PayView          industryId={industryId} route={paySubRoute} onChangeRoute={setPaySubRoute} onDemo={() => showDemoToast()} />
        : view === 'workflows' ? <WorkflowsView  industryId={industryId} pendingWorkflowId={pendingWorkflowId} onConsumePending={() => setPendingWorkflowId(null)} onDemo={() => showDemoToast()} />
+       : view === 'policies' ? <PoliciesView   onDemo={() => showDemoToast()} />
+       : view === 'engage'   ? <EngageView      onDemo={() => showDemoToast()} />
        :                      <ActivityFeed     data={data} injectedCard={sceneInjectedCard} cardOverrides={sceneCardOverrides} />}
 
       <ToastHost />

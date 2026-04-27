@@ -7,33 +7,36 @@ import {
  * Mock data — Levi's Stadium operating account, single-venue context.
  * All workforce figures roll up to the same totals so the math is
  * internally consistent:
- *   Labor budget total   = $2.4M  (sum of department budgets)
- *   Labor actual total   = $2.904M (sum of department actuals; +21% var)
- *   Net Income            = Revenue − Expenses = 8,503,118 − 7,225,643
+ *   Labor budget total   = $240k  (sum of department budgets)
+ *   Labor actual total   = $320k  (sum of department actuals; +33% var)
+ *   OT MTD               = $48.2k vs $14.5k budget (+232% — the crisis)
+ *   Net Income           = Revenue − Expenses = 850,312 − 722,564
  * ────────────────────────────────────────────────────────────────────── */
 
 const DEPARTMENTS = [
-  { name: 'Event Staff & Ushers',   budget: 720_000, actual: 912_000 },
-  { name: 'Security',               budget: 480_000, actual: 568_000 },
-  { name: 'F&B / Concessions',      budget: 540_000, actual: 645_000 },
-  { name: 'Premium / Hospitality',  budget: 260_000, actual: 312_000 },
-  { name: 'Cleaning & Janitorial',  budget: 180_000, actual: 222_000 },
-  { name: 'Engineering',            budget: 150_000, actual: 158_000 },
-  { name: 'Box Office & Retail',    budget:  70_000, actual:  87_000 },
+  { name: 'Event Staff & Ushers',   budget: 72_000, actual: 105_000 },
+  { name: 'Security',               budget: 48_000, actual:  66_000 },
+  { name: 'F&B / Concessions',      budget: 54_000, actual:  70_000 },
+  { name: 'Premium / Hospitality',  budget: 26_000, actual:  32_500 },
+  { name: 'Cleaning & Janitorial',  budget: 18_000, actual:  22_500 },
+  { name: 'Engineering',            budget: 15_000, actual:  15_500 },
+  { name: 'Box Office & Retail',    budget:  7_000, actual:   8_500 },
 ]
 
 const OVERTIME_SERIES = [
-  { week: 'Wk 1', hrs: 142 },
-  { week: 'Wk 2', hrs: 158 },
-  { week: 'Wk 3', hrs: 171 },
-  { week: 'Wk 4', hrs: 165 },
-  { week: 'Wk 5', hrs: 198 },
-  { week: 'Wk 6', hrs: 224 },
-  { week: 'Wk 7', hrs: 247 },
-  { week: 'Wk 8', hrs: 286 },
+  { week: 'Wk 1', hrs: 14 },
+  { week: 'Wk 2', hrs: 16 },
+  { week: 'Wk 3', hrs: 17 },
+  { week: 'Wk 4', hrs: 17 },
+  { week: 'Wk 5', hrs: 28 },
+  { week: 'Wk 6', hrs: 41 },
+  { week: 'Wk 7', hrs: 56 },
+  { week: 'Wk 8', hrs: 68 },
 ]
 
-const OT_COST_SPARK = [22, 28, 31, 27, 38, 44, 51, 58] // $k per week, MTD trending up
+// Weekly OT cost in $ (raw). Steady through Wk 4, then spikes hard
+// from Wk 5 onward — that's the story the panel and sparkline are telling.
+const OT_COST_SPARK = [2_200, 2_800, 3_100, 2_700, 5_800, 9_400, 13_200, 15_200]
 
 const EVENT_TYPES = [
   { label: '49ers / NFL',     pct: 38, color: '#1ea54a' },
@@ -43,11 +46,11 @@ const EVENT_TYPES = [
 ]
 
 const TOP_EARNERS = [
-  { name: 'Janelle Rivera',  dept: 'Event Staff',   hrs: 18.5, cost: 2_840 },
-  { name: 'Marcus Thomas',   dept: 'Security',      hrs: 16.0, cost: 2_460 },
-  { name: 'Diane Kim',       dept: 'F&B',           hrs: 14.5, cost: 2_120 },
-  { name: 'Carlos Mendez',   dept: 'Premium',       hrs: 13.0, cost: 2_040 },
-  { name: 'Priya Shah',      dept: 'Event Staff',   hrs: 12.5, cost: 1_910 },
+  { name: 'Janelle Rivera',  dept: 'Event Staff',   hrs: 18.5, cost: 284 },
+  { name: 'Marcus Thomas',   dept: 'Security',      hrs: 16.0, cost: 246 },
+  { name: 'Diane Kim',       dept: 'F&B',           hrs: 14.5, cost: 212 },
+  { name: 'Carlos Mendez',   dept: 'Premium',       hrs: 13.0, cost: 204 },
+  { name: 'Priya Shah',      dept: 'Event Staff',   hrs: 12.5, cost: 191 },
 ]
 
 const COMPLIANCE = [
@@ -59,7 +62,11 @@ const COMPLIANCE = [
 
 const fmtCompactK = (n) => {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`
-  if (n >= 1_000)     return `$${Math.round(n / 1_000)}k`
+  if (n >= 100_000)   return `$${Math.round(n / 1_000)}k`
+  if (n >= 1_000) {
+    const k = n / 1_000
+    return `$${Number.isInteger(k) ? k.toFixed(0) : k.toFixed(1)}k`
+  }
   return `$${n}`
 }
 const initials = (name) =>
@@ -125,8 +132,8 @@ function Sparkline({ values, stroke = '#d91f1f' }) {
 
 /* ───── Workforce Cost vs Budget ───── */
 function WorkforceCostBudget() {
-  const budget = 2_400_000
-  const actual = 2_904_000
+  const budget = 240_000
+  const actual = 320_000
   const max = Math.max(budget, actual)
   return (
     <div className="sage-budget">
@@ -137,7 +144,7 @@ function WorkforceCostBudget() {
             <div className="sage-budget-fill sage-budget-fill--budget"
                  style={{ width: `${(budget / max) * 100}%` }} />
           </div>
-          <div className="sage-budget-amount">$2.40M</div>
+          <div className="sage-budget-amount">$240k</div>
         </div>
         <div className="sage-budget-row">
           <div className="sage-budget-label">Actual</div>
@@ -145,12 +152,12 @@ function WorkforceCostBudget() {
             <div className="sage-budget-fill sage-budget-fill--actual"
                  style={{ width: `${(actual / max) * 100}%` }} />
           </div>
-          <div className="sage-budget-amount">$2.90M</div>
+          <div className="sage-budget-amount">$320k</div>
         </div>
       </div>
-      <div className="sage-variance-chip" aria-label="Variance plus 21 percent over budget">
+      <div className="sage-variance-chip" aria-label="Variance plus 33 percent over budget">
         <div className="sage-variance-chip-label">Variance</div>
-        <div className="sage-variance-chip-value">+21%</div>
+        <div className="sage-variance-chip-value">+33%</div>
       </div>
     </div>
   )
@@ -161,19 +168,19 @@ function OvertimeCostPanel() {
   return (
     <div className="sage-otcost">
       <div className="sage-otcost-head">
-        <div className="sage-otcost-value">$186,400</div>
-        <div className="sage-otcost-pill">+29% vs. budget</div>
+        <div className="sage-otcost-value">$48,200</div>
+        <div className="sage-otcost-pill">+232% vs. budget</div>
       </div>
-      <div className="sage-otcost-meta">Month-to-date · OT budget $145,000</div>
+      <div className="sage-otcost-meta">Month-to-date · OT budget $14,500</div>
       <Sparkline values={OT_COST_SPARK} />
       <div className="sage-otcost-grid">
         <div>
           <div className="sage-otcost-stat-label">This week</div>
-          <div className="sage-otcost-stat-value">$58,200</div>
+          <div className="sage-otcost-stat-value">$15,200</div>
         </div>
         <div>
           <div className="sage-otcost-stat-label">vs. last month</div>
-          <div className="sage-otcost-stat-value" style={{ color: '#d91f1f' }}>+18%</div>
+          <div className="sage-otcost-stat-value" style={{ color: '#d91f1f' }}>+187%</div>
         </div>
       </div>
     </div>
@@ -249,7 +256,7 @@ function EventTypeDonut() {
           })}
         </svg>
         <div className="sage-donut-center">
-          <div className="sage-donut-center-value">42,180</div>
+          <div className="sage-donut-center-value">4,218</div>
           <div className="sage-donut-center-label">Hrs MTD</div>
         </div>
       </div>
@@ -310,35 +317,47 @@ export default function SageDashboard({ onNavigate }) {
       <div className="sage-row sage-row--kpis">
         <SageKpiCard
           label="Revenue"
-          value="$8,503,118"
+          value="$850,312"
           trend="up"
-          footer="+$890,747 vs. prior month"
+          footer="+$89,075 vs. prior month"
         />
         <SageKpiCard
           label="Net Income"
-          value="$1,277,475"
+          value="$127,748"
           trend="up"
-          footer="+$385,704 vs. prior month"
+          footer="+$38,571 vs. prior month"
         />
         <SageKpiCard
           label="Expenses"
-          value="$7,225,643"
+          value="$722,564"
           trend="up"
           trendIsBad
-          footer="+$505,043 vs. prior month"
+          footer="+$50,504 vs. prior month"
         />
         <SageKpiCard
           label="Labor Cost"
-          value="$2,904,000"
+          value="$320,000"
           trend="up"
           trendIsBad
-          footer="+$485,200 vs. prior month"
+          footer="+$78,120 vs. prior month"
         />
       </div>
 
       <div className="sage-row sage-row--budget">
         <SageWidgetCard title="Workforce Cost vs Budget" subtitle="Month to date · all departments">
           <WorkforceCostBudget />
+          <div className="sage-widget-alert-slot">
+            <SageAlertCard
+              title="3 Critical Workforce Risks Detected"
+              items={[
+                'Overtime spend +232% over budget — 7 departments affected',
+                '12 unfilled shifts this weekend (Niners home game)',
+                '5 credential compliance issues expiring within 7 days',
+              ]}
+              ctaLabel="Resolve OT Crisis"
+              onCta={() => onNavigate && onNavigate('workforce')}
+            />
+          </div>
         </SageWidgetCard>
         <SageWidgetCard title="Overtime Cost" subtitle="Month-to-date spend">
           <OvertimeCostPanel />
@@ -366,18 +385,6 @@ export default function SageDashboard({ onNavigate }) {
         </SageWidgetCard>
       </div>
 
-      <div className="sage-row">
-        <SageAlertCard
-          title="3 Critical Workforce Risks Detected"
-          items={[
-            'Overtime threshold exceeded — 5 departments over OT budget',
-            '12 unfilled shifts this weekend (Niners home game)',
-            '5 credential compliance issues expiring within 7 days',
-          ]}
-          ctaLabel="Open in Sage Workforce"
-          onCta={() => onNavigate && onNavigate('workforce')}
-        />
-      </div>
     </SageShell>
   )
 }

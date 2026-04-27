@@ -264,6 +264,7 @@
   color: var(--sage-text-mute);
 }
 .sage-widget-body { padding: 20px; }
+.sage-widget-alert-slot { margin-top: 18px; }
 
 /* Workforce Cost vs Budget */
 .sage-budget {
