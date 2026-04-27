@@ -4111,7 +4111,7 @@ button.activity-card:hover:not(.activity-card-selected),
   border-color: #DDE2FA;
 }
 .schedule-shift-completed {
-  background: #F3F8EB;
+  background: #E5F6E7;
   border-color: #D9E8C2;
 }
 .schedule-shift-completed .schedule-shift-role {
@@ -4204,7 +4204,7 @@ button.activity-card:hover:not(.activity-card-selected),
 }
 .people-stat-blue    .people-stat-icon { background: #EEF2FF; color: #4F5ED4; }
 .people-stat-warning .people-stat-icon { background: #FEF3C7; color: #B45309; }
-.people-stat-success .people-stat-icon { background: #E9F6DC; color: #4D7A22; }
+.people-stat-success .people-stat-icon { background: #E5F6E7; color: #4FBD5A; }
 .people-stat-text { display: flex; flex-direction: column; gap: 2px; }
 .people-stat-label {
   font-size: 12px;
@@ -4364,7 +4364,7 @@ button.activity-card:hover:not(.activity-card-selected),
   border-radius: 50%;
   background: currentColor;
 }
-.people-status-success { background: #E9F6DC; color: #4D7A22; }
+.people-status-success { background: #E5F6E7; color: #4FBD5A; }
 .people-status-warning { background: #FEF3C7; color: #92400E; }
 .people-status-info    { background: #EEF2FF; color: #4F5ED4; }
 
@@ -4517,9 +4517,9 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   border-radius: 10px;
   flex-shrink: 0;
 }
-.pay-stat-matcha  .pay-stat-icon { background: #ECF6E0; color: #4D7A22; }
+.pay-stat-matcha  .pay-stat-icon { background: #ECF6E0; color: #4FBD5A; }
 .pay-stat-warning .pay-stat-icon { background: #FEF3C7; color: #B45309; }
-.pay-stat-success .pay-stat-icon { background: #E9F6DC; color: #4D7A22; }
+.pay-stat-success .pay-stat-icon { background: #E5F6E7; color: #4FBD5A; }
 .pay-stat-info    .pay-stat-icon { background: #EEF2FF; color: #4F5ED4; }
 .pay-stat-text { display: flex; flex-direction: column; gap: 4px; }
 .pay-stat-label {
@@ -4818,7 +4818,7 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   border-radius: 50%;
   background: currentColor;
 }
-.pay-status-success { background: #E9F6DC; color: #4D7A22; }
+.pay-status-success { background: #E5F6E7; color: #4FBD5A; }
 .pay-status-warning { background: #FEF3C7; color: #92400E; }
 .pay-status-info    { background: #EEF2FF; color: #4F5ED4; }
 
@@ -4830,7 +4830,7 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   font-size: 12px;
   font-weight: var(--font-weight-medium);
 }
-.pay-yesno-yes { background: #E9F6DC; color: #4D7A22; }
+.pay-yesno-yes { background: #E5F6E7; color: #4FBD5A; }
 .pay-yesno-no  { background: #FEF3C7; color: #92400E; }
 
 /* User detail card */
@@ -5164,7 +5164,7 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   background: currentColor;
 }
 .wf-status-draft    { background: #FEF3C7; color: #92400E; }
-.wf-status-active   { background: #E9F6DC; color: #4D7A22; }
+.wf-status-active   { background: #E5F6E7; color: #4FBD5A; }
 .wf-status-archived { background: var(--color-bg-tertiary); color: var(--color-content-tertiary); }
 
 /* ── Detail screen ── */
@@ -5418,8 +5418,8 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   z-index: 1;
 }
 .wf-split-label-primary {
-  background: #DCFCE7;
-  border-color: color-mix(in srgb, #16A34A 30%, transparent);
+  background: #E5F6E7;
+  border-color: color-mix(in srgb, #4FBD5A 30%, transparent);
   color: #0F3D1E;
 }
 .wf-split-label-warn {
@@ -5543,10 +5543,10 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
 
 /* Kind variants — green trigger, amber timer, slate condition, blue action. */
 .wf-node-trigger {
-  background: #DCFCE7;
-  border-color: color-mix(in srgb, #16A34A 25%, var(--color-border-opaque));
+  background: #E5F6E7;
+  border-color: color-mix(in srgb, #4FBD5A 25%, var(--color-border-opaque));
 }
-.wf-node-trigger .wf-node-icon { background: #16A34A; color: #FFFFFF; }
+.wf-node-trigger .wf-node-icon { background: #4FBD5A; color: #FFFFFF; }
 .wf-node-trigger .wf-node-title { color: #0F3D1E; }
 .wf-node-trigger .wf-node-sub   { color: color-mix(in srgb, #0F3D1E 65%, transparent); }
 
@@ -5679,7 +5679,7 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   border-radius: 50%;
   color: #FFFFFF;
 }
-.wf-panel-kind-trigger   { background: #16A34A; }
+.wf-panel-kind-trigger   { background: #4FBD5A; }
 .wf-panel-kind-timer     { background: #B45309; }
 .wf-panel-kind-condition { background: var(--color-content-tertiary); }
 .wf-panel-kind-action    { background: #1D4ED8; }
