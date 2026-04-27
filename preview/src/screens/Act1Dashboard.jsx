@@ -25,6 +25,7 @@ import { getPeriodSummary, getUserPeriod, fmt } from '../data/payData.js'
 import ScheduleCalendar        from './ScheduleCalendar.jsx'
 import PeopleList              from './PeopleList.jsx'
 import PayView                 from './PayView.jsx'
+import WorkflowsView           from './WorkflowsView.jsx'
 import './act1.css'
 
 /* ─── Agent avatar (animated GIF in a color-tinted ring) ─────────────────── */
@@ -130,10 +131,11 @@ function LeftNav({ industryLabel, view, onBrand, onAsk, onSelectView }) {
         {NAV_ITEMS.map(item => {
           const active = item.id === view || (item.id === 'overview' && view === 'overview')
           const onClick =
-              item.id === 'overview' ? () => onSelectView?.('overview')
-            : item.id === 'schedule' ? () => onSelectView?.('schedule')
-            : item.id === 'people'   ? () => onSelectView?.('people')
-            : item.id === 'pay'      ? () => onSelectView?.('pay')
+              item.id === 'overview'  ? () => onSelectView?.('overview')
+            : item.id === 'schedule'  ? () => onSelectView?.('schedule')
+            : item.id === 'people'    ? () => onSelectView?.('people')
+            : item.id === 'pay'       ? () => onSelectView?.('pay')
+            : item.id === 'workflows' ? () => onSelectView?.('workflows')
             : () => showDemoToast()
           return (
             <button
@@ -2715,18 +2717,23 @@ const SANDRA_SCENE = {
     sceneAfter: ({ postAssistant }) => postAssistant(SANDRA_SCENE.savedConfirmation),
   },
 
-  // 4) Final bubble — saved. Offers a link to the workflow editor.
+  // 4) Final bubble — saved. The CTA button routes the operator straight
+  //    into the Workflow editor on the Last-min Replacement detail.
   savedConfirmation: {
     content: { segments: [
       { type: 'text', text: "Saved. Nova will auto-run **Last-min Replacement** next time someone cancels — I'll only ping you if hours are tight or a pay bump is needed." },
       { type: 'cta', text: "Open in **Agent Workflows** to tweak the rules." },
     ] },
+    specialist: 'nova',
+    approveLabel: 'Open workflow editor',
+    target: 'workflows',
+    workflowId: 'last-min-replacement',
   },
 }
 
 /* ─── Prompt panel ──────────────────────────────────────────────────────── */
 
-function PromptPanel({ industryId, view = 'overview', paySubRoute, onInjectActivityCard, onOverrideActivityCard, onResetScene }) {
+function PromptPanel({ industryId, view = 'overview', paySubRoute, onInjectActivityCard, onOverrideActivityCard, onResetScene, onOpenWorkflow }) {
   const suggestions = PROMPT_SUGGESTIONS[industryId] ?? PROMPT_SUGGESTIONS.events
   const [input, setInput]       = useState('')
   const [messages, setMessages] = useState([])
@@ -2882,6 +2889,19 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, onInjectActiv
   }
 
   const handleApprove = (msg) => {
+    // Navigation-target approvals (e.g. Sandra's "Open in Agent Workflows")
+    // route the operator to another view instead of running a progress
+    // plan. We still drop the clicked chat bubble so it reads as their
+    // action, but the follow-up work happens in the new surface.
+    if (msg.target === 'workflows') {
+      setMessages(prev => [
+        ...prev.map(m => m.specialist ? { ...m, specialist: null, approveLabel: null } : m),
+        { id: ++idRef.current, role: 'user', content: msg.approveLabel ?? 'Open workflow editor', status: 'done' },
+      ])
+      onOpenWorkflow?.(msg.workflowId ?? null)
+      return
+    }
+
     const agentId = msg.specialist ?? 'nova'
     const steps   = msg.approvePlan ?? SPECIALIST_PLAN[agentId] ?? SPECIALIST_PLAN.nova
     const userLabel = msg.approveLabel ?? `Have ${getAgent(agentId)?.name ?? 'Nova'} take it`
@@ -3080,6 +3100,15 @@ export default function Act1Dashboard({ industryId, view = 'overview', onBack, o
   const [sceneInjectedCard, setSceneInjectedCard] = useState(null)
   const [sceneCardOverrides, setSceneCardOverrides] = useState({})
 
+  // Navigation handoff from chat → Agent Workflows. When the Sandra CTA
+  // clicks "Open workflow editor", we flip to the workflows view and
+  // tell the workflows view which workflow to auto-open.
+  const [pendingWorkflowId, setPendingWorkflowId] = useState(null)
+  const openWorkflow = (id) => {
+    setPendingWorkflowId(id)
+    onSelectView?.('workflows')
+  }
+
   // Reset the pay drill-down whenever the user leaves the Pay tab or
   // switches industries; otherwise chat briefings would reference stale
   // period/person state on re-entry.
@@ -3113,12 +3142,14 @@ export default function Act1Dashboard({ industryId, view = 'overview', onBack, o
         onInjectActivityCard={setSceneInjectedCard}
         onOverrideActivityCard={(id, patch) => setSceneCardOverrides(prev => ({ ...prev, [id]: { ...(prev[id] ?? {}), ...patch } }))}
         onResetScene={() => { setSceneInjectedCard(null); setSceneCardOverrides({}) }}
+        onOpenWorkflow={openWorkflow}
       />
 
-      {view === 'schedule' ? <ScheduleCalendar data={data} onDemo={() => showDemoToast()} />
-       : view === 'people' ? <PeopleList       data={data} onDemo={() => showDemoToast()} />
-       : view === 'pay'    ? <PayView          industryId={industryId} route={paySubRoute} onChangeRoute={setPaySubRoute} onDemo={() => showDemoToast()} />
-       :                     <ActivityFeed     data={data} injectedCard={sceneInjectedCard} cardOverrides={sceneCardOverrides} />}
+      {view === 'schedule'  ? <ScheduleCalendar data={data} onDemo={() => showDemoToast()} />
+       : view === 'people'  ? <PeopleList       data={data} onDemo={() => showDemoToast()} />
+       : view === 'pay'     ? <PayView          industryId={industryId} route={paySubRoute} onChangeRoute={setPaySubRoute} onDemo={() => showDemoToast()} />
+       : view === 'workflows' ? <WorkflowsView  industryId={industryId} pendingWorkflowId={pendingWorkflowId} onConsumePending={() => setPendingWorkflowId(null)} onDemo={() => showDemoToast()} />
+       :                      <ActivityFeed     data={data} injectedCard={sceneInjectedCard} cardOverrides={sceneCardOverrides} />}
 
       <ToastHost />
     </div>

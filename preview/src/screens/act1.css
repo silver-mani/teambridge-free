@@ -418,8 +418,24 @@
 .prompt-seg-text  { font-size: var(--text-sm); line-height: var(--line-height-loose); color: var(--color-content-primary); }
 .prompt-seg-cta   { font-size: var(--text-sm); color: var(--color-content-secondary); font-style: italic; }
 .prompt-seg-list  { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--space-1); font-size: var(--text-sm); color: var(--color-content-primary); }
-.prompt-seg-list li { display: flex; gap: 8px; line-height: var(--line-height-loose); }
-.prompt-seg-list li::before { content: '•'; color: var(--color-content-tertiary); }
+/* Each <li> is a block (not flex) so the bold + plain-text fragments flow
+   as one continuous inline stream. Using flex here turns every text node
+   into its own flex item, which at narrow widths shrinks each to min-
+   content and creates the broken-column layout. The bullet hangs via an
+   absolute-positioned ::before to preserve the indent without affecting
+   text wrapping. */
+.prompt-seg-list li {
+  position: relative;
+  padding-left: 18px;
+  line-height: var(--line-height-loose);
+}
+.prompt-seg-list li::before {
+  content: '•';
+  position: absolute;
+  left: 4px;
+  top: 0;
+  color: var(--color-content-tertiary);
+}
 
 /* Activity-detected card — transparent fill + light grey stroke, shown
    just before a reasoning block so the operator sees what real-world
@@ -4919,4 +4935,1007 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   .pay-summary-cell:nth-last-child(-n+2) { border-bottom: none; padding-bottom: 0; }
   .pay-user-breakdown { grid-template-columns: repeat(2, 1fr); row-gap: var(--space-3); }
   .pay-user-breakdown-cell { border-right: none; }
+}
+
+/* ─── Workflows view ─────────────────────────────────────────────────────
+   The agent-workflows surface is a full-bleed editor: left nav stays,
+   chat column + activity feed are hidden, and the view owns the rest of
+   the viewport (assistant | canvas | node details). */
+
+.act1-root--workflows {
+  grid-template-columns: 240px 1fr;
+}
+.act1-root--workflows .prompt-panel,
+.act1-root--workflows .activity-feed { display: none; }
+
+/* ── Shared list/detail surface ── */
+.wf, .wf-detail {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--color-bg-secondary);
+  height: 100vh;
+  animation: view-enter 460ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* ── List screen ── */
+.wf {
+  padding: 28px var(--space-6) var(--space-8);
+  gap: var(--space-4);
+  overflow-y: auto;
+}
+.wf-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.wf-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+}
+.wf-head-actions {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.wf-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px var(--space-3);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-full);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+.wf-btn:hover { background: var(--color-bg-tertiary); }
+.wf-btn-dark {
+  background: var(--color-content-primary);
+  color: var(--color-bg-primary);
+  border-color: var(--color-content-primary);
+}
+.wf-btn-dark:hover { background: color-mix(in srgb, var(--color-content-primary) 88%, white); }
+
+.wf-icon-btn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: 8px;
+  color: var(--color-content-secondary);
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.wf-icon-btn:hover { background: var(--color-bg-tertiary); color: var(--color-content-primary); }
+
+.wf-list-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.wf-list-search {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: 8px;
+  color: var(--color-content-tertiary);
+}
+.wf-list-search input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--color-content-primary);
+}
+.wf-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--color-content-primary);
+  cursor: pointer;
+}
+.wf-filter:hover { background: var(--color-bg-tertiary); }
+
+.wf-list {
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.wf-list-head,
+.wf-list-row {
+  display: grid;
+  grid-template-columns: minmax(280px, 2fr) 1.3fr 1.6fr 1.1fr 1fr;
+  align-items: center;
+  column-gap: var(--space-3);
+}
+.wf-list-head {
+  padding: 10px var(--space-3);
+  background: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border-opaque);
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-secondary);
+}
+.wf-list-row {
+  padding: 14px var(--space-3);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-border-opaque);
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+.wf-list-row:last-child { border-bottom: none; }
+.wf-list-row:hover { background: var(--color-bg-secondary); }
+
+.wf-list-cell {
+  min-width: 0;
+  font-size: 13px;
+  color: var(--color-content-secondary);
+}
+.wf-list-cell-name {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.wf-list-cell-icon {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ai-grad-mid, #446CFF) 12%, transparent);
+  color: var(--ai-grad-mid, #446CFF);
+  flex-shrink: 0;
+}
+.wf-list-cell-title {
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+}
+.wf-list-cell-sub {
+  font-size: 12px;
+  color: var(--color-content-tertiary);
+  margin-top: 2px;
+}
+
+/* ── Status pill (list + detail header) ── */
+.wf-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  background: var(--color-bg-secondary);
+  color: var(--color-content-secondary);
+}
+.wf-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.wf-status-draft    { background: #FEF3C7; color: #92400E; }
+.wf-status-active   { background: #E9F6DC; color: #4D7A22; }
+.wf-status-archived { background: var(--color-bg-tertiary); color: var(--color-content-tertiary); }
+
+/* ── Detail screen ── */
+.wf-detail {
+  gap: 0;
+  overflow: hidden;
+}
+.wf-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px var(--space-5);
+  background: var(--color-bg-primary);
+  border-bottom: 1px solid var(--color-border-opaque);
+}
+.wf-detail-head-left {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.wf-detail-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+}
+.wf-detail-head-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.wf-detail-saved {
+  font-size: 12px;
+  color: var(--color-content-tertiary);
+  margin-right: 6px;
+}
+
+.wf-detail-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 320px 1fr auto;
+  background: var(--color-bg-secondary);
+  transition: grid-template-columns 320ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* ── Assistant column ── */
+.wf-assistant {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--color-bg-primary);
+  border-right: 1px solid var(--color-border-opaque);
+  padding: var(--space-4);
+  gap: var(--space-3);
+}
+.wf-assistant-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  overflow-y: auto;
+}
+.wf-assistant-intro {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-content-secondary);
+}
+.wf-assistant-seed {
+  align-self: flex-start;
+  padding: 8px 12px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--color-content-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 120ms ease;
+}
+.wf-assistant-seed:hover { background: var(--color-bg-tertiary); }
+
+.wf-assistant-composer {
+  border: 1px solid var(--color-border-opaque);
+  border-radius: 12px;
+  background: var(--color-bg-primary);
+  padding: 8px 10px 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.wf-assistant-input {
+  width: 100%;
+  min-height: 44px;
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--color-content-primary);
+  background: transparent;
+}
+.wf-assistant-input::placeholder { color: var(--color-content-tertiary); }
+.wf-assistant-composer-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.wf-assistant-add,
+.wf-assistant-send {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border-opaque);
+  background: var(--color-bg-primary);
+  border-radius: 8px;
+  color: var(--color-content-secondary);
+  cursor: pointer;
+}
+.wf-assistant-send {
+  background: var(--color-content-primary);
+  border-color: var(--color-content-primary);
+  color: var(--color-bg-primary);
+}
+.wf-assistant-send:hover { background: color-mix(in srgb, var(--color-content-primary) 88%, white); }
+
+/* ── Canvas ── */
+.wf-canvas {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--color-content-tertiary) 18%, transparent) 1px, transparent 1.5px);
+  background-size: 18px 18px;
+  background-color: var(--color-bg-secondary);
+  min-height: 0;
+}
+/* Inner scroll wrapper: owns the actual scrollbars, so the zoom pill and
+   the centered node toolbar can sit outside it and stay pinned. Doubles as
+   the drag-to-pan surface — grab/grabbing cursors come from the DOM state. */
+.wf-canvas-scroll {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  padding: var(--space-8) var(--space-6) 72px;
+  cursor: grab;
+  overscroll-behavior: contain;
+}
+.wf-canvas-scroll.is-panning,
+.wf-canvas-scroll.is-panning * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+/* Stage wraps the scaled tree so the scroll wrapper's scrollbar sees the
+   post-zoom size. transform-origin is set inline on the element so zoom
+   centers on the top of the canvas. */
+.wf-canvas-stage {
+  display: flex;
+  justify-content: center;
+  width: fit-content;
+  min-width: 100%;
+  transition: transform 160ms ease;
+}
+/* Pushes the tree out to a comfortable tree-width so branches don't crush
+   each other even when the details panel is open. Canvas scrolls if needed. */
+.wf-canvas-stage > .wf-canvas-inner { min-width: 820px; }
+.wf-canvas-inner {
+  min-width: 100%;
+  padding: 0 var(--space-6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+/* Legacy row container (kept so any stale references stay harmless). */
+.wf-canvas-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+/* A stream is one vertical track of nodes — the top-level flow, or a single
+   branch beneath a split. Nested streams are what make the tree render. */
+.wf-stream {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+/* ── Branch split: sits directly under a condition/branching node.
+
+   `.wf-split-fork` is the connector region — a full-width SVG draws the stem
+   + fan + per-branch stems, and each branch's label pill is absolute-placed
+   on its stem so the line reads unbroken. `.wf-split-streams` sits directly
+   below with no gap, so the stems flow straight into each child node. */
+.wf-split {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  gap: 0;
+  color: color-mix(in srgb, var(--color-content-tertiary) 40%, transparent);
+}
+.wf-split-fork {
+  position: relative;
+  width: 100%;
+}
+.wf-fork-svg {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+.wf-split-streams {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  width: 100%;
+  gap: var(--space-6);
+}
+.wf-split-col {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+.wf-split-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.02em;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  color: var(--color-content-secondary);
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  z-index: 1;
+}
+.wf-split-label-primary {
+  background: #DCFCE7;
+  border-color: color-mix(in srgb, #16A34A 30%, transparent);
+  color: #0F3D1E;
+}
+.wf-split-label-warn {
+  background: #FEF3C7;
+  border-color: color-mix(in srgb, #B45309 30%, transparent);
+  color: #5E2A0B;
+}
+.wf-split-label-mute {
+  background: var(--color-bg-primary);
+  border-color: var(--color-border-opaque);
+  color: var(--color-content-secondary);
+}
+
+.wf-node-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.wf-node {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-full);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease, background-color 140ms ease;
+  max-width: 420px;
+}
+/* Action + agent nodes carry two lines of label (title + sub) and the
+   agent eyebrow on top — give them a wider cap + a touch more padding so
+   the copy reads comfortably instead of truncating. */
+.wf-node-action,
+.wf-node-agent {
+  max-width: 460px;
+  min-width: 300px;
+  padding: 10px 16px;
+  border-radius: 18px;
+  align-items: flex-start;
+}
+.wf-node-agent { padding-left: 10px; }
+.wf-node:hover { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06); }
+.wf-node.is-selected {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ai-grad-mid, #446CFF) 35%, transparent), 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+.wf-node-icon {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.wf-node-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.wf-node-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: color-mix(in srgb, var(--color-content-primary) 70%, transparent);
+  margin-bottom: 1px;
+}
+.wf-node-eyebrow-name {
+  color: var(--color-content-primary);
+}
+.wf-node-eyebrow-role {
+  color: var(--color-content-tertiary);
+  font-weight: var(--font-weight-regular);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.wf-node-eyebrow-sep {
+  color: var(--color-content-tertiary);
+}
+.wf-node-title {
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+  line-height: 1.3;
+}
+.wf-node-sub {
+  font-size: 11px;
+  color: var(--color-content-tertiary);
+  line-height: 1.4;
+  margin-top: 2px;
+}
+.wf-node-avatar {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  margin-top: 2px;
+}
+.wf-node-more {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--color-content-tertiary);
+  cursor: pointer;
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+.wf-node-more:hover { background: var(--color-bg-tertiary); color: var(--color-content-primary); }
+
+/* Kind variants — green trigger, amber timer, slate condition, blue action. */
+.wf-node-trigger {
+  background: #DCFCE7;
+  border-color: color-mix(in srgb, #16A34A 25%, var(--color-border-opaque));
+}
+.wf-node-trigger .wf-node-icon { background: #16A34A; color: #FFFFFF; }
+.wf-node-trigger .wf-node-title { color: #0F3D1E; }
+.wf-node-trigger .wf-node-sub   { color: color-mix(in srgb, #0F3D1E 65%, transparent); }
+
+.wf-node-timer {
+  background: #FEF3C7;
+  border-color: color-mix(in srgb, #B45309 20%, var(--color-border-opaque));
+}
+.wf-node-timer .wf-node-icon { background: #B45309; color: #FFFFFF; }
+.wf-node-timer .wf-node-title { color: #5E2A0B; }
+
+.wf-node-condition {
+  background: #F1F5F9;
+  border-color: color-mix(in srgb, var(--color-content-tertiary) 25%, var(--color-border-opaque));
+}
+.wf-node-condition .wf-node-icon { background: var(--color-content-tertiary); color: #FFFFFF; }
+
+.wf-node-action {
+  background: #DBEAFE;
+  border-color: color-mix(in srgb, #1D4ED8 25%, var(--color-border-opaque));
+}
+.wf-node-action .wf-node-icon { background: #1D4ED8; color: #FFFFFF; }
+.wf-node-action .wf-node-title { color: #0F274F; }
+
+/* Agent (AI action) — tinted to the agent's color family so each named
+   specialist reads as its own step. Avatar GIF sits where the icon would. */
+.wf-node-agent {
+  background: var(--color-bg-primary);
+  border-color: color-mix(in srgb, var(--agent-ring, var(--color-border-opaque)) 80%, var(--color-border-opaque));
+  padding-left: 6px;
+}
+.wf-node-agent-purple { background: var(--color-purple-bg-tertiary); --agent-ring: color-mix(in srgb, var(--color-purple-bg-primary) 70%, transparent); }
+.wf-node-agent-blue   { background: var(--color-blue-bg-tertiary);   --agent-ring: color-mix(in srgb, var(--color-blue-bg-primary)   70%, transparent); }
+.wf-node-agent-matcha { background: var(--color-matcha-bg-tertiary); --agent-ring: color-mix(in srgb, var(--color-matcha-bg-primary) 70%, transparent); }
+.wf-node-agent-orange { background: var(--color-orange-bg-tertiary); --agent-ring: color-mix(in srgb, var(--color-orange-bg-primary) 70%, transparent); }
+.wf-node-agent-pink   { background: var(--color-pink-bg-tertiary);   --agent-ring: color-mix(in srgb, var(--color-pink-bg-primary)   70%, transparent); }
+
+.wf-node-agent .wf-node-title { color: var(--color-content-primary); }
+.wf-node-agent .wf-node-sub   { color: color-mix(in srgb, var(--color-content-primary) 55%, transparent); }
+
+/* End — dashed, muted. Signals a dead-end branch without looking broken. */
+.wf-node-end {
+  background: var(--color-bg-primary);
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--color-content-tertiary) 45%, transparent);
+}
+.wf-node-end .wf-node-icon {
+  background: var(--color-bg-tertiary);
+  color: var(--color-content-tertiary);
+}
+.wf-node-end .wf-node-title { color: var(--color-content-secondary); }
+
+/* Edge between two adjacent rows. A single continuous vertical line sits in
+   the middle of a 28px-tall box, with the hover-revealed `+` button absolute-
+   centered on top of it. Looks like one unbroken connector; breaks only when
+   the operator reaches for the add handle. */
+.wf-edge {
+  position: relative;
+  width: 2px;
+  height: 28px;
+  color: color-mix(in srgb, var(--color-content-tertiary) 55%, transparent);
+}
+.wf-edge-line {
+  position: absolute;
+  inset: 0;
+  width: 1px;
+  margin: 0 auto;
+  background: color-mix(in srgb, var(--color-content-tertiary) 40%, transparent);
+}
+.wf-edge-add {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  color: var(--color-content-tertiary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.wf-edge:hover .wf-edge-add {
+  opacity: 1;
+  color: var(--color-content-primary);
+  border-color: color-mix(in srgb, var(--color-content-primary) 30%, transparent);
+}
+
+/* ── Right details panel ── */
+.wf-panel {
+  position: relative;
+  width: 360px;
+  background: var(--color-bg-primary);
+  border-left: 1px solid var(--color-border-opaque);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  animation: wf-panel-in 280ms cubic-bezier(0.2, 0, 0, 1);
+}
+@keyframes wf-panel-in {
+  from { opacity: 0; transform: translateX(10px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.wf-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px var(--space-4);
+  border-bottom: 1px solid var(--color-border-opaque);
+}
+.wf-panel-head-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+}
+.wf-panel-kind {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #FFFFFF;
+}
+.wf-panel-kind-trigger   { background: #16A34A; }
+.wf-panel-kind-timer     { background: #B45309; }
+.wf-panel-kind-condition { background: var(--color-content-tertiary); }
+.wf-panel-kind-action    { background: #1D4ED8; }
+.wf-panel-kind-end       { background: var(--color-bg-tertiary); color: var(--color-content-tertiary); }
+
+/* Agent panel avatar — swaps in for .wf-panel-kind when the node is an
+   AI action, so the right panel header shows the specialist's GIF. */
+.wf-panel-agent {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.wf-panel-desc {
+  margin: 0;
+  padding: 12px var(--space-4) 0;
+  font-size: 12px;
+  color: var(--color-content-secondary);
+  line-height: 1.5;
+}
+
+.wf-panel-composer {
+  margin: 12px var(--space-4) 4px;
+  border: 1px solid var(--color-border-opaque);
+  border-radius: 12px;
+  background: var(--color-bg-secondary);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.wf-panel-composer-input {
+  width: 100%;
+  min-height: 44px;
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--color-content-primary);
+  background: transparent;
+}
+.wf-panel-composer-input::placeholder { color: var(--color-content-tertiary); }
+.wf-panel-composer-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.wf-panel-composer-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--color-content-tertiary);
+}
+.wf-panel-composer-send {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-content-primary);
+  border: 1px solid var(--color-content-primary);
+  border-radius: 8px;
+  color: var(--color-bg-primary);
+  cursor: pointer;
+}
+.wf-panel-composer-send:hover { background: color-mix(in srgb, var(--color-content-primary) 88%, white); }
+
+.wf-panel-fields {
+  padding: 12px var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+}
+.wf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.wf-field-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-content-tertiary);
+  font-weight: var(--font-weight-medium);
+}
+.wf-field-input {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--color-content-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+.wf-field-input:hover {
+  background: var(--color-bg-primary);
+  border-color: color-mix(in srgb, var(--color-content-primary) 16%, transparent);
+}
+.wf-field-select { color: var(--color-content-primary); }
+
+.wf-field-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.wf-field-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-full);
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--color-content-primary);
+  cursor: pointer;
+}
+.wf-field-pill:hover { background: var(--color-bg-tertiary); }
+.wf-field-pill-add {
+  background: transparent;
+  color: var(--color-content-tertiary);
+  border-style: dashed;
+}
+.wf-field-pill-add:hover { color: var(--color-content-primary); background: var(--color-bg-secondary); }
+
+.wf-field-template {
+  padding: 10px 12px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: var(--color-content-primary);
+  line-height: 1.5;
+  cursor: pointer;
+}
+.wf-field-template-var {
+  background: color-mix(in srgb, var(--ai-grad-mid, #446CFF) 14%, transparent);
+  color: var(--ai-grad-mid, #446CFF);
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+.wf-panel-chips {
+  padding: 4px var(--space-4) var(--space-3);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.wf-panel-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-full);
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--color-content-secondary);
+  cursor: pointer;
+}
+.wf-panel-chip:hover { background: var(--color-bg-tertiary); color: var(--color-content-primary); }
+
+.wf-panel-foot {
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border-opaque);
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ── Bottom toolbar ── */
+.wf-toolbar {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-full);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  z-index: 1;
+}
+.wf-toolbar-btn {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: var(--color-content-secondary);
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.wf-toolbar-btn:hover { background: var(--color-bg-tertiary); color: var(--color-content-primary); }
+
+/* Floating zoom pill — pinned to the bottom-right of the canvas viewport,
+   so the centered node toolbar stays the focal point and the zoom control
+   sits quietly out of the way. */
+.wf-zoom {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-full);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  z-index: 2;
+}
+.wf-zoom-btn {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: var(--color-content-secondary);
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.wf-zoom-btn:hover:not(:disabled) {
+  background: var(--color-bg-tertiary);
+  color: var(--color-content-primary);
+}
+.wf-zoom-btn:disabled {
+  color: var(--color-content-tertiary);
+  cursor: default;
+  opacity: 0.5;
+}
+.wf-zoom-level {
+  min-width: 46px;
+  height: 28px;
+  padding: 0 8px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-full);
+  font-family: inherit;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-content-primary);
+  cursor: pointer;
+}
+.wf-zoom-level:hover { background: var(--color-bg-tertiary); }
+
+/* Place the toolbar relative to the detail body so it pins to the canvas
+   bottom without fighting the grid. */
+.wf-detail-body { position: relative; }
+
+@media (max-width: 1100px) {
+  .wf-detail-body { grid-template-columns: 1fr auto; }
+  .wf-assistant   { display: none; }
+  .wf-panel       { width: 320px; }
+}
+@media (max-width: 820px) {
+  .wf-detail-body { grid-template-columns: 1fr; }
+  .wf-panel       { display: none; }
 }
