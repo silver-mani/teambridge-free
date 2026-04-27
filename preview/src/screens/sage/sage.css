@@ -170,8 +170,10 @@
   display: grid;
   gap: 16px;
 }
-.sage-row--kpis    { grid-template-columns: repeat(3, 1fr); }
+.sage-row--kpis    { grid-template-columns: repeat(4, 1fr); }
 .sage-row--two     { grid-template-columns: 1fr 1fr; }
+.sage-row--three   { grid-template-columns: repeat(3, 1fr); }
+.sage-row--budget  { grid-template-columns: 2fr 1fr; }
 .sage-row + .sage-row { margin-top: 16px; }
 
 /* ──────────────────────────────────────────────────────────────────────
@@ -514,3 +516,245 @@
   font-size: 13px;
 }
 .sage-stub-placeholder strong { color: var(--sage-text); font-weight: 700; }
+
+/* ──────────────────────────────────────────────────────────────────────
+ * Overtime cost panel (compact KPI w/ inline sparkline + variance)
+ * ────────────────────────────────────────────────────────────────────── */
+.sage-otcost {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.sage-otcost-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.sage-otcost-value {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--sage-text);
+}
+.sage-otcost-pill {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--sage-red-soft);
+  color: var(--sage-red);
+}
+.sage-otcost-meta {
+  font-size: 12px;
+  color: var(--sage-text-mute);
+}
+.sage-otcost-spark { width: 100%; height: 56px; display: block; }
+.sage-otcost-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--sage-border-soft);
+}
+.sage-otcost-stat-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sage-text-mute);
+}
+.sage-otcost-stat-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--sage-text);
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ──────────────────────────────────────────────────────────────────────
+ * Department table (with inline mini bars)
+ * ────────────────────────────────────────────────────────────────────── */
+.sage-dept-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.sage-dept-table thead th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sage-text-mute);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--sage-border);
+}
+.sage-dept-table tbody td {
+  padding: 10px;
+  border-bottom: 1px solid var(--sage-border-soft);
+  vertical-align: middle;
+  color: var(--sage-text);
+}
+.sage-dept-table tbody tr:last-child td { border-bottom: none; }
+.sage-dept-table .dept-name { font-weight: 600; }
+.sage-dept-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.sage-dept-bar {
+  position: relative;
+  height: 6px;
+  background: #f3f5f7;
+  border-radius: 999px;
+  overflow: hidden;
+  min-width: 80px;
+}
+.sage-dept-bar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--sage-red);
+  border-radius: 999px;
+}
+.sage-dept-bar-fill--ok { background: #1ea54a; }
+.sage-dept-var-pos { color: var(--sage-red); font-weight: 700; }
+.sage-dept-var-low { color: var(--sage-amber); font-weight: 700; }
+
+/* ──────────────────────────────────────────────────────────────────────
+ * Donut chart (Hours by Event Type)
+ * ────────────────────────────────────────────────────────────────────── */
+.sage-donut-wrap {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 18px;
+  align-items: center;
+}
+.sage-donut {
+  width: 130px;
+  height: 130px;
+  position: relative;
+}
+.sage-donut svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.sage-donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.sage-donut-center-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--sage-text);
+  letter-spacing: -0.01em;
+}
+.sage-donut-center-label {
+  font-size: 10px;
+  color: var(--sage-text-mute);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+  margin-top: 2px;
+}
+.sage-donut-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+}
+.sage-donut-legend-row {
+  display: grid;
+  grid-template-columns: 10px 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+.sage-donut-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+.sage-donut-legend-label { color: var(--sage-text); font-weight: 500; }
+.sage-donut-legend-value {
+  color: var(--sage-text-soft);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ──────────────────────────────────────────────────────────────────────
+ * Top OT earners (compact list)
+ * ────────────────────────────────────────────────────────────────────── */
+.sage-earners {
+  display: flex;
+  flex-direction: column;
+}
+.sage-earner-row {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--sage-border-soft);
+  font-size: 13px;
+}
+.sage-earner-row:last-child { border-bottom: none; }
+.sage-earner-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #e8eaed;
+  color: var(--sage-text-soft);
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.sage-earner-name { font-weight: 600; color: var(--sage-text); }
+.sage-earner-meta { font-size: 11px; color: var(--sage-text-mute); margin-top: 1px; }
+.sage-earner-figs { text-align: right; }
+.sage-earner-hrs {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--sage-red);
+  font-variant-numeric: tabular-nums;
+}
+.sage-earner-cost {
+  font-size: 11px;
+  color: var(--sage-text-mute);
+  font-variant-numeric: tabular-nums;
+  margin-top: 1px;
+}
+
+/* ──────────────────────────────────────────────────────────────────────
+ * Compliance snapshot
+ * ────────────────────────────────────────────────────────────────────── */
+.sage-compliance { display: flex; flex-direction: column; gap: 10px; }
+.sage-compliance-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--sage-border-soft);
+}
+.sage-compliance-row:last-child { border-bottom: none; }
+.sage-compliance-label {
+  font-size: 13px;
+  color: var(--sage-text);
+  font-weight: 500;
+}
+.sage-compliance-sub {
+  font-size: 11px;
+  color: var(--sage-text-mute);
+  margin-top: 2px;
+}
+.sage-compliance-value {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.sage-compliance-value.is-bad  { color: var(--sage-red); }
+.sage-compliance-value.is-warn { color: var(--sage-amber); }
+.sage-compliance-value.is-ok   { color: #1ea54a; }
+
