@@ -354,7 +354,7 @@ export default function SageDashboard({ onNavigate }) {
                 '12 unfilled shifts this weekend (Niners home game)',
                 '5 credential compliance issues expiring within 7 days',
               ]}
-              ctaLabel="Open in Sage Workforce"
+              ctaLabel="Resolve OT Crisis"
               onCta={() => onNavigate && onNavigate('workforce')}
             />
           </div>

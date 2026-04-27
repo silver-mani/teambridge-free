@@ -1,10 +1,10 @@
 import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import IndustrySelector  from './screens/IndustrySelector.jsx'
-import Act1Dashboard     from './screens/Act1Dashboard.jsx'
-import SageDashboard     from './screens/sage/SageDashboard.jsx'
-import SageWorkforceStub from './screens/sage/SageWorkforceStub.jsx'
+import IndustrySelector   from './screens/IndustrySelector.jsx'
+import Act1Dashboard      from './screens/Act1Dashboard.jsx'
+import SageDashboard      from './screens/sage/SageDashboard.jsx'
+import SageWorkforceEmbed from './screens/sage/SageWorkforceEmbed.jsx'
 
 const VALID_INDUSTRIES = new Set([
   'healthcare', 'staffing', 'events', 'security', 'light-industrial', 'construction',
@@ -55,10 +55,11 @@ function App() {
   }
 
   if (route.kind === 'sage') {
+    const sageNav = (v) => setHash(v === 'dashboard' ? '/sage' : `/sage/${v}`)
     if (route.view === 'workforce') {
-      return <SageWorkforceStub onNavigate={(v) => setHash(v === 'dashboard' ? '/sage' : `/sage/${v}`)} />
+      return <SageWorkforceEmbed onNavigate={sageNav} />
     }
-    return <SageDashboard onNavigate={(v) => setHash(v === 'dashboard' ? '/sage' : `/sage/${v}`)} />
+    return <SageDashboard onNavigate={sageNav} />
   }
 
   return (
