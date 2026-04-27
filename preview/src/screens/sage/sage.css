@@ -1,0 +1,516 @@
+/*
+ * Sage Intacct skin — scoped under .sage-shell so nothing leaks into the
+ * Teambridge experience that lives in the same Vite app.
+ */
+.sage-shell {
+  --sage-bg:           #f1f3f4;
+  --sage-card:         #ffffff;
+  --sage-border:       #e3e5e8;
+  --sage-border-soft:  #eceef0;
+  --sage-text:         #1a1a1a;
+  --sage-text-soft:    #6b7280;
+  --sage-text-mute:    #9aa0a6;
+  --sage-bar:          #0a0a0a;
+  --sage-bar-text:     #ffffff;
+  --sage-bar-divider:  #2a2a2a;
+  --sage-green:        #00d639;
+  --sage-blue:         #1170ff;
+  --sage-blue-soft:    #e8f0ff;
+  --sage-red:          #d91f1f;
+  --sage-red-soft:     #fdecec;
+  --sage-amber:        #c47800;
+
+  min-height: 100vh;
+  background: var(--sage-bg);
+  color: var(--sage-text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ──────────────────────────────────────────────────────────────────────
+ * Top bar (dark)
+ * ────────────────────────────────────────────────────────────────────── */
+.sage-topbar {
+  background: var(--sage-bar);
+  color: var(--sage-bar-text);
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 20px;
+}
+.sage-logo {
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  color: var(--sage-green);
+}
+.sage-topbar-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--sage-bar-divider);
+}
+.sage-topbar-product {
+  font-weight: 700;
+  font-size: 16px;
+}
+.sage-module-pill {
+  appearance: none;
+  background: transparent;
+  color: var(--sage-bar-text);
+  border: 1px solid var(--sage-bar-divider);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 120ms, border-color 120ms;
+}
+.sage-module-pill:hover {
+  background: #1a1a1a;
+  border-color: #3a3a3a;
+}
+.sage-module-pill[data-active="true"] {
+  background: #1f1f1f;
+  border-color: #3a3a3a;
+}
+.sage-module-pill .sage-pill-arrow {
+  opacity: 0.6;
+  font-size: 11px;
+}
+
+/* ──────────────────────────────────────────────────────────────────────
+ * Sub-bar (light)
+ * ────────────────────────────────────────────────────────────────────── */
+.sage-subbar {
+  background: var(--sage-bg);
+  border-bottom: 1px solid var(--sage-border-soft);
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 12px;
+}
+.sage-icon-btn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: var(--sage-text-soft);
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid transparent;
+  transition: background 120ms;
+}
+.sage-icon-btn:hover {
+  background: #e6e8ea;
+}
+.sage-view-dropdown {
+  background: var(--sage-card);
+  border: 1px solid var(--sage-border);
+  border-radius: 6px;
+  padding: 7px 36px 7px 14px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sage-text);
+  cursor: pointer;
+  position: relative;
+  min-width: 220px;
+  text-align: left;
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--sage-text-soft) 50%),
+                    linear-gradient(135deg, var(--sage-text-soft) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+.sage-subbar-spacer { flex: 1; }
+.sage-btn {
+  appearance: none;
+  border: none;
+  background: var(--sage-blue);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 120ms;
+}
+.sage-btn:hover { background: #0a5ad9; }
+.sage-btn--ghost {
+  background: transparent;
+  color: var(--sage-blue);
+  border: 1px solid var(--sage-blue);
+}
+.sage-btn--ghost:hover { background: var(--sage-blue-soft); }
+
+/* ──────────────────────────────────────────────────────────────────────
+ * Page content
+ * ────────────────────────────────────────────────────────────────────── */
+.sage-page {
+  padding: 24px;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+.sage-row {
+  display: grid;
+  gap: 16px;
+}
+.sage-row--kpis    { grid-template-columns: repeat(3, 1fr); }
+.sage-row--two     { grid-template-columns: 1fr 1fr; }
+.sage-row + .sage-row { margin-top: 16px; }
+
+/* ──────────────────────────────────────────────────────────────────────
+ * KPI card
+ * ────────────────────────────────────────────────────────────────────── */
+.sage-kpi {
+  background: var(--sage-card);
+  border: 1px solid var(--sage-border);
+  border-radius: 12px;
+  padding: 18px 20px 16px;
+  box-shadow: 0 1px 2px rgba(15, 17, 20, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 132px;
+}
+.sage-kpi-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sage-text-soft);
+}
+.sage-kpi-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+}
+.sage-kpi-value {
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--sage-text);
+}
+.sage-kpi-arrow {
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 700;
+}
+.sage-kpi-arrow--up   { color: var(--sage-green); }
+.sage-kpi-arrow--down { color: var(--sage-red); }
+.sage-kpi-arrow--bad  { color: var(--sage-red); } /* up arrow that's bad (e.g. expenses) */
+.sage-kpi-meta {
+  font-size: 12px;
+  color: var(--sage-text-mute);
+  margin-top: 2px;
+}
+.sage-kpi-foot {
+  margin-top: auto;
+  font-size: 12px;
+  color: var(--sage-blue);
+  font-weight: 600;
+  padding-top: 10px;
+}
+
+/* ──────────────────────────────────────────────────────────────────────
+ * Widget card
+ * ────────────────────────────────────────────────────────────────────── */
+.sage-widget {
+  background: var(--sage-card);
+  border: 1px solid var(--sage-border);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(15, 17, 20, 0.04);
+  display: flex;
+  flex-direction: column;
+}
+.sage-widget-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--sage-border-soft);
+}
+.sage-widget-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--sage-text);
+}
+.sage-widget-sub {
+  font-size: 12px;
+  color: var(--sage-text-mute);
+  margin-top: 2px;
+}
+.sage-widget-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--sage-text-mute);
+}
+.sage-widget-body { padding: 20px; }
+
+/* Workforce Cost vs Budget */
+.sage-budget {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 24px;
+  align-items: center;
+}
+.sage-budget-bars { display: flex; flex-direction: column; gap: 14px; }
+.sage-budget-row {
+  display: grid;
+  grid-template-columns: 92px 1fr 110px;
+  align-items: center;
+  gap: 12px;
+}
+.sage-budget-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sage-text-soft);
+}
+.sage-budget-track {
+  position: relative;
+  height: 24px;
+  background: #f3f5f7;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.sage-budget-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 6px;
+}
+.sage-budget-fill--budget { background: #1ea54a; }
+.sage-budget-fill--actual { background: #d91f1f; }
+.sage-budget-amount {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--sage-text);
+  text-align: right;
+}
+.sage-variance-chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--sage-red-soft);
+  color: var(--sage-red);
+  border: 1px solid #f4c1c1;
+  border-radius: 12px;
+  padding: 14px 22px;
+  min-width: 130px;
+}
+.sage-variance-chip-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+.sage-variance-chip-value {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-top: 2px;
+}
+
+/* Overtime line chart */
+.sage-line-chart { width: 100%; display: block; }
+.sage-line-chart-legend {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--sage-text-mute);
+  margin-top: 8px;
+  padding: 0 4px;
+}
+
+/* Location table */
+.sage-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.sage-table thead th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sage-text-mute);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--sage-border);
+}
+.sage-table tbody td {
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--sage-border-soft);
+  color: var(--sage-text);
+}
+.sage-table tbody tr:last-child td { border-bottom: none; }
+.sage-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.sage-table .var-pos { color: var(--sage-red); font-weight: 700; }
+.sage-table .var-neg { color: #1ea54a; font-weight: 700; }
+
+/* Alert card */
+.sage-alert {
+  background: var(--sage-red-soft);
+  border: 1px solid #f4c1c1;
+  border-left: 4px solid var(--sage-red);
+  border-radius: 12px;
+  padding: 18px 22px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 24px;
+  align-items: center;
+}
+.sage-alert-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--sage-red);
+}
+.sage-alert-list {
+  margin: 10px 0 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: #5a1414;
+}
+.sage-alert-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sage-alert-list li::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--sage-red);
+  flex: 0 0 5px;
+}
+.sage-alert-cta {
+  appearance: none;
+  border: none;
+  background: var(--sage-red);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.sage-alert-cta:hover { background: #b51616; }
+
+/* ──────────────────────────────────────────────────────────────────────
+ * Workforce stub
+ * ────────────────────────────────────────────────────────────────────── */
+.sage-stub-hero {
+  background: var(--sage-card);
+  border: 1px solid var(--sage-border);
+  border-radius: 12px;
+  padding: 28px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.sage-stub-hero h1 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 4px;
+  letter-spacing: -0.01em;
+}
+.sage-stub-hero-sub {
+  font-size: 13px;
+  color: var(--sage-text-soft);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.sage-stub-hero-sub strong {
+  color: var(--sage-text);
+  font-weight: 700;
+}
+.sage-risk-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.sage-risk-card {
+  background: var(--sage-card);
+  border: 1px solid var(--sage-border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 160px;
+}
+.sage-risk-tag {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sage-red);
+}
+.sage-risk-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--sage-text);
+  letter-spacing: -0.01em;
+}
+.sage-risk-meta {
+  font-size: 13px;
+  color: var(--sage-text-soft);
+}
+.sage-risk-cta {
+  margin-top: auto;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sage-blue);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+}
+.sage-risk-cta:hover { text-decoration: underline; }
+.sage-stub-placeholder {
+  background: var(--sage-card);
+  border: 1px dashed var(--sage-border);
+  border-radius: 12px;
+  padding: 28px 32px;
+  text-align: center;
+  color: var(--sage-text-soft);
+  font-size: 13px;
+}
+.sage-stub-placeholder strong { color: var(--sage-text); font-weight: 700; }
