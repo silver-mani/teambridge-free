@@ -2766,6 +2766,22 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, onInjectActiv
     ])
   }, [briefKey, industryId]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Auto-clear the chat when the operator navigates to a non-home page so
+  // each surface (Schedule, Pay, People, Workflows) starts fresh with its
+  // own briefing instead of inheriting Sandra-scene history. Home is
+  // excluded so the scripted Sandra scene can build up naturally there.
+  // Runs after the briefing-reignite effect above so its trailing
+  // setMessages([]) wipes any briefing that effect may have just appended.
+  const lastViewRef = useRef(view)
+  useEffect(() => {
+    const prev = lastViewRef.current
+    lastViewRef.current = view
+    if (view === prev) return
+    if (view === 'overview') return
+    setMessages([])
+    setInput('')
+  }, [view])
+
   const updateMsg = (id, patch) =>
     setMessages(prev => prev.map(m => m.id === id ? { ...m, ...patch } : m))
 
