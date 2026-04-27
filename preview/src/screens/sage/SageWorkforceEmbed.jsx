@@ -18,9 +18,9 @@ export default function SageWorkforceEmbed({ onNavigate }) {
   return (
     <SageShell
       module="workforce"
-      viewLabel="Workforce"
       onNavigate={onNavigate}
       bare
+      subBar={false}
     >
       <Act1Dashboard
         industryId="events"
