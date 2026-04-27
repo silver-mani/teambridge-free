@@ -13,6 +13,7 @@ import { ClipboardCheckIcon }  from '../../../src/components/icons/ClipboardChec
 import { CurrencyDollarCircleIcon } from '../../../src/components/icons/CurrencyDollarCircleIcon.tsx'
 import { Users03Icon }         from '../../../src/components/icons/Users03Icon.tsx'
 import { GitBranch01Icon }     from '../../../src/components/icons/GitBranch01Icon.tsx'
+import { BookOpen01Icon }     from '../../../src/components/icons/BookOpen01Icon.tsx'
 import { MessageDotsSquareIcon } from '../../../src/components/icons/MessageDotsSquareIcon.tsx'
 import { SearchSmIcon }        from '../../../src/components/icons/SearchSmIcon.tsx'
 import { Microphone02Icon }    from '../../../src/components/icons/Microphone02Icon.tsx'
@@ -26,6 +27,8 @@ import ScheduleCalendar        from './ScheduleCalendar.jsx'
 import PeopleList              from './PeopleList.jsx'
 import PayView                 from './PayView.jsx'
 import WorkflowsView           from './WorkflowsView.jsx'
+import PoliciesView            from './PoliciesView.jsx'
+import EngageView              from './EngageView.jsx'
 import './act1.css'
 
 /* ─── Agent avatar (animated GIF in a color-tinted ring) ─────────────────── */
@@ -105,8 +108,10 @@ const NAV_ITEMS = [
   { id: 'overview',  label: 'Home',             Icon: Home02Icon              },
   { id: 'people',    label: 'People',           Icon: Users03Icon             },
   { id: 'schedule',  label: 'Schedule',         Icon: Grid01Icon              },
+  { id: 'engage',    label: 'Engage',           Icon: MessageDotsSquareIcon   },
   { id: 'pay',       label: 'Pay',              Icon: CurrencyDollarCircleIcon },
   { id: 'workflows', label: 'Agent Workflows',  Icon: GitBranch01Icon         },
+  { id: 'policies',  label: 'Policies',         Icon: BookOpen01Icon          },
 ]
 
 function LeftNav({ industryLabel, view, onBrand, onAsk, onSelectView, sageMode = false }) {
@@ -138,6 +143,8 @@ function LeftNav({ industryLabel, view, onBrand, onAsk, onSelectView, sageMode =
             : item.id === 'people'    ? () => onSelectView?.('people')
             : item.id === 'pay'       ? () => onSelectView?.('pay')
             : item.id === 'workflows' ? () => onSelectView?.('workflows')
+            : item.id === 'engage'    ? () => onSelectView?.('engage')
+            : item.id === 'policies'  ? () => onSelectView?.('policies')
             : () => showDemoToast()
           return (
             <button
@@ -3285,6 +3292,8 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
        : view === 'people'  ? <PeopleList       data={data} onDemo={() => showDemoToast()} />
        : view === 'pay'     ? <PayView          industryId={industryId} route={paySubRoute} onChangeRoute={setPaySubRoute} onDemo={() => showDemoToast()} />
        : view === 'workflows' ? <WorkflowsView  industryId={industryId} pendingWorkflowId={pendingWorkflowId} onConsumePending={() => setPendingWorkflowId(null)} onDemo={() => showDemoToast()} />
+       : view === 'policies' ? <PoliciesView   onDemo={() => showDemoToast()} />
+       : view === 'engage'   ? <EngageView      onDemo={() => showDemoToast()} />
        :                      <ActivityFeed     data={data} injectedCard={sceneInjectedCard} cardOverrides={sceneCardOverrides} />}
 
       <ToastHost />
