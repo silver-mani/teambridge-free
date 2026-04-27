@@ -109,23 +109,25 @@ const NAV_ITEMS = [
   { id: 'workflows', label: 'Agent Workflows',  Icon: GitBranch01Icon         },
 ]
 
-function LeftNav({ industryLabel, view, onBrand, onAsk, onSelectView }) {
+function LeftNav({ industryLabel, view, onBrand, onAsk, onSelectView, sageMode = false }) {
   return (
     <aside className="act1-nav" aria-label="Primary">
-      <button
-        type="button"
-        className="act1-nav-brand"
-        onClick={onBrand}
-        aria-label="Change industry"
-      >
-        <span className="act1-nav-brandmark">
-          <TeambridgeAIIcon size={16} />
-        </span>
-        <span className="act1-nav-brandtext">
-          <span className="act1-nav-brandname">Teambridge</span>
-          <span className="act1-nav-brandindustry">{industryLabel}</span>
-        </span>
-      </button>
+      {!sageMode && (
+        <button
+          type="button"
+          className="act1-nav-brand"
+          onClick={onBrand}
+          aria-label="Change industry"
+        >
+          <span className="act1-nav-brandmark">
+            <TeambridgeAIIcon size={16} />
+          </span>
+          <span className="act1-nav-brandtext">
+            <span className="act1-nav-brandname">Teambridge</span>
+            <span className="act1-nav-brandindustry">{industryLabel}</span>
+          </span>
+        </button>
+      )}
 
       <nav className="act1-nav-list">
         {NAV_ITEMS.map(item => {
@@ -3262,6 +3264,7 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
       <LeftNav
         industryLabel={data.label}
         view={view}
+        sageMode={sageMode}
         onBrand={onBack}
         onAsk={onExplore}
         onSelectView={onSelectView}

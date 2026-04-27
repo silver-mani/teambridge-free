@@ -17,6 +17,7 @@ export default function SageShell({
   viewLabel = 'CFO - Daily View',
   onNavigate = () => {},
   bare = false,
+  subBar = true,
   children,
 }) {
   const productLabel = module === 'workforce' ? 'Workforce' : 'Intacct'
@@ -45,22 +46,24 @@ export default function SageShell({
         </button>
       </header>
 
-      <div className="sage-subbar">
-        <span className="sage-icon-btn" aria-hidden="true"><StarIcon /></span>
-        <span className="sage-icon-btn" aria-hidden="true"><HomeIcon /></span>
-        <button type="button" className="sage-view-dropdown" aria-haspopup="true">
-          {viewLabel}
-        </button>
-        <div className="sage-subbar-spacer" />
-        <button type="button" className="sage-btn sage-btn--ghost">
-          <ReportIcon />
-          Create Report
-        </button>
-        <button type="button" className="sage-btn">
-          <PlusIcon />
-          Add Widget
-        </button>
-      </div>
+      {subBar && (
+        <div className="sage-subbar">
+          <span className="sage-icon-btn" aria-hidden="true"><StarIcon /></span>
+          <span className="sage-icon-btn" aria-hidden="true"><HomeIcon /></span>
+          <button type="button" className="sage-view-dropdown" aria-haspopup="true">
+            {viewLabel}
+          </button>
+          <div className="sage-subbar-spacer" />
+          <button type="button" className="sage-btn sage-btn--ghost">
+            <ReportIcon />
+            Create Report
+          </button>
+          <button type="button" className="sage-btn">
+            <PlusIcon />
+            Add Widget
+          </button>
+        </div>
+      )}
 
       {bare ? children : <main className="sage-page">{children}</main>}
     </div>
