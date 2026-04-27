@@ -4368,6 +4368,27 @@ button.activity-card:hover:not(.activity-card-selected),
 .people-status-warning { background: #FEF3C7; color: #92400E; }
 .people-status-info    { background: #EEF2FF; color: #4F5ED4; }
 
+/* Inline tag pills used in the Role + Home venue columns. Each value is
+   hashed to one of the five color families so distinct roles/venues read
+   as distinct categories at a glance without any per-string config. */
+.people-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.people-tag-purple { background: var(--color-purple-bg-tertiary); color: var(--color-purple-content-primary); }
+.people-tag-blue   { background: var(--color-blue-bg-tertiary);   color: var(--color-blue-content-primary);   }
+.people-tag-matcha { background: var(--color-matcha-bg-tertiary); color: var(--color-matcha-content-primary); }
+.people-tag-orange { background: var(--color-orange-bg-tertiary); color: var(--color-orange-content-primary); }
+.people-tag-pink   { background: var(--color-pink-bg-tertiary);   color: var(--color-pink-content-primary);   }
+
 /* ─── Pay view ──────────────────────────────────────────────────────────── */
 
 .pay {

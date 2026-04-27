@@ -11,6 +11,19 @@ const STATUS_META = {
   'pending':        { label: 'Pending review',  tone: 'info'    },
 }
 
+// Stable hash → one of five tone families so every distinct role / venue
+// string lands on a consistent tinted pill across rows. Roles and venues
+// each carry their own salt so the same string never collides between the
+// two columns in a single row (e.g. "Civic Auditorium" the venue and any
+// role happening to share its hash bucket end up on different colors).
+const TAG_TONES = ['purple', 'blue', 'matcha', 'orange', 'pink']
+const hashTone = (str, salt = '') => {
+  const s = `${salt}:${str ?? ''}`
+  let h = 0
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0
+  return TAG_TONES[h % TAG_TONES.length]
+}
+
 const COLUMNS = [
   { id: 'name',   label: 'Person' },
   { id: 'role',   label: 'Role' },
@@ -88,8 +101,12 @@ export default function PeopleList({ data, onDemo }) {
                 <span className="people-avatar" style={{ backgroundImage: `url(${row.avatar})` }} aria-hidden="true" />
                 <span className="people-name">{row.name}</span>
               </div>
-              <div className="people-cell">{row.role}</div>
-              <div className="people-cell">{row.venue}</div>
+              <div className="people-cell">
+                <span className={`people-tag people-tag-${hashTone(row.role, 'role')}`}>{row.role}</span>
+              </div>
+              <div className="people-cell">
+                <span className={`people-tag people-tag-${hashTone(row.venue, 'venue')}`}>{row.venue}</span>
+              </div>
               <div className="people-cell people-cell-hours">{row.hours}</div>
               <div className="people-cell">{row.certs}</div>
               <div className="people-cell">
