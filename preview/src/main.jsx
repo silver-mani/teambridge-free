@@ -21,7 +21,7 @@ function parseHash() {
   }
   const [industry, view = 'overview'] = segs
   if (!VALID_INDUSTRIES.has(industry)) return null
-  const viewOk = new Set(['overview', 'schedule', 'people', 'pay', 'workflows'])
+  const viewOk = new Set(['overview', 'schedule', 'people', 'pay', 'workflows', 'engage', 'policies'])
   return { kind: 'industry', industry, view: viewOk.has(view) ? view : 'overview' }
 }
 
