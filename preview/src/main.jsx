@@ -1,8 +1,10 @@
 import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import IndustrySelector from './screens/IndustrySelector.jsx'
-import Act1Dashboard    from './screens/Act1Dashboard.jsx'
+import IndustrySelector  from './screens/IndustrySelector.jsx'
+import Act1Dashboard     from './screens/Act1Dashboard.jsx'
+import SageDashboard     from './screens/sage/SageDashboard.jsx'
+import SageWorkforceStub from './screens/sage/SageWorkforceStub.jsx'
 
 const VALID_INDUSTRIES = new Set([
   'healthcare', 'staffing', 'events', 'security', 'light-industrial', 'construction',
@@ -11,10 +13,16 @@ const VALID_INDUSTRIES = new Set([
 function parseHash() {
   const raw = (window.location.hash || '').replace(/^#/, '').replace(/^\//, '').trim()
   if (!raw) return null
-  const [industry, view = 'overview'] = raw.split('/')
+  const segs = raw.split('/')
+  if (segs[0] === 'sage') {
+    const sub = segs[1] || 'dashboard'
+    const sageOk = new Set(['dashboard', 'workforce'])
+    return { kind: 'sage', view: sageOk.has(sub) ? sub : 'dashboard' }
+  }
+  const [industry, view = 'overview'] = segs
   if (!VALID_INDUSTRIES.has(industry)) return null
   const viewOk = new Set(['overview', 'schedule', 'people', 'pay', 'workflows'])
-  return { industry, view: viewOk.has(view) ? view : 'overview' }
+  return { kind: 'industry', industry, view: viewOk.has(view) ? view : 'overview' }
 }
 
 function setHash(path) {
@@ -44,6 +52,13 @@ function App() {
         onSelect={id => setHash(`/${id}`)}
       />
     )
+  }
+
+  if (route.kind === 'sage') {
+    if (route.view === 'workforce') {
+      return <SageWorkforceStub onNavigate={(v) => setHash(v === 'dashboard' ? '/sage' : `/sage/${v}`)} />
+    }
+    return <SageDashboard onNavigate={(v) => setHash(v === 'dashboard' ? '/sage' : `/sage/${v}`)} />
   }
 
   return (
