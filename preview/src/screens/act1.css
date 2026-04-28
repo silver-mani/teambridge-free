@@ -3806,6 +3806,15 @@ button.activity-card:hover:not(.activity-card-selected),
 .act1-root--pay {
   grid-template-columns: 240px 360px 1fr;
 }
+
+/* Engage owns its own 3-pane chat; Policies is a folder/doc browser.
+   Neither needs Nova's chat in a side column — collapse to a clean
+   nav + canvas split. PromptPanel is also removed from the JSX in
+   these views. */
+.act1-root--engage,
+.act1-root--policies {
+  grid-template-columns: 240px 1fr;
+}
 .act1-root--schedule .activity-feed,
 .act1-root--people   .activity-feed,
 .act1-root--pay      .activity-feed { opacity: 0; pointer-events: none; }
