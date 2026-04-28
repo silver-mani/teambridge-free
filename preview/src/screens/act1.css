@@ -3806,6 +3806,15 @@ button.activity-card:hover:not(.activity-card-selected),
 .act1-root--pay {
   grid-template-columns: 240px 360px 1fr;
 }
+
+/* Engage owns its own 3-pane chat; Policies is a folder/doc browser.
+   Neither needs Nova's chat in a side column — collapse to a clean
+   nav + canvas split. PromptPanel is also removed from the JSX in
+   these views. */
+.act1-root--engage,
+.act1-root--policies {
+  grid-template-columns: 240px 1fr;
+}
 .act1-root--schedule .activity-feed,
 .act1-root--people   .activity-feed,
 .act1-root--pay      .activity-feed { opacity: 0; pointer-events: none; }
@@ -5965,12 +5974,22 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
  * Schedule stats drawer (bottom of Schedule view)
  * ────────────────────────────────────────────────────────────────────── */
 .schedule-stats {
+  position: sticky;
+  bottom: 0;
+  z-index: 12;
   margin-top: var(--space-3);
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border-opaque);
-  border-radius: 10px;
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
   overflow: hidden;
   min-width: 960px;
+  box-shadow: 0 -10px 24px rgba(15, 17, 20, 0.08);
+}
+.schedule-stats--collapsed {
+  /* Minimized footer — just the tab bar + actions row sits at the
+     viewport bottom; schedule grid is fully visible behind it. */
+  box-shadow: 0 -6px 16px rgba(15, 17, 20, 0.06);
 }
 .schedule-stats-head {
   display: flex;
@@ -6044,7 +6063,14 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
 .schedule-stats-chevron { display: inline-flex; transition: transform 200ms ease; }
 .schedule-stats-chevron[data-open="false"] { transform: rotate(180deg); }
 
-.schedule-stats-body { display: flex; flex-direction: column; }
+.schedule-stats-body {
+  display: flex;
+  flex-direction: column;
+  /* Cap so an expanded drawer never eats more than ~50% of the schedule
+     viewport. Internal scroll handles the overflow on smaller windows. */
+  max-height: min(380px, 50vh);
+  overflow-y: auto;
+}
 .schedule-stats-row {
   display: grid;
   grid-template-columns: 200px repeat(7, minmax(120px, 1fr));

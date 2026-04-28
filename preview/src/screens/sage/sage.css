@@ -20,7 +20,15 @@
   --sage-red-soft:     #fdecec;
   --sage-amber:        #c47800;
 
-  min-height: 100vh;
+  /* Lock the shell to the viewport so the dark top bar (and the
+     light sub-bar on the dashboard) stays pinned at the top. All
+     scrolling happens inside the content region — this also lets
+     the schedule's bottom stats drawer pin to the actual bottom of
+     the viewport rather than scrolling away with the page. */
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   background: var(--sage-bg);
   color: var(--sage-text);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -28,6 +36,29 @@
   line-height: 1.4;
   -webkit-font-smoothing: antialiased;
 }
+
+/* The Sage shell is a column flex; topbar and subbar stay at their
+   intrinsic height, the content region (.sage-page or, in the
+   workforce embed, .act1-root) fills the remaining space and owns
+   its own scroll. */
+.sage-shell > .sage-topbar,
+.sage-shell > .sage-subbar { flex: 0 0 auto; }
+.sage-shell > .sage-page  { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.sage-shell > .act1-root {
+  flex: 1 1 auto;
+  /* Override the default `min-height: 100vh` from act1-root so it
+     actually fits in the remaining shell height (100vh − topbar). */
+  min-height: 0;
+  height: auto;
+  overflow: hidden;
+  /* Single grid row that fills the available height — children
+     (.schedule etc.) read 100% off this. */
+  grid-template-rows: minmax(0, 1fr);
+}
+/* Inside the embed, the schedule's standalone `height: 100vh` would
+   blow past the shell. Force it (and any sibling surface that has
+   its own scroll) to fill the grid cell instead. */
+.sage-shell .schedule { height: 100%; }
 
 /* ──────────────────────────────────────────────────────────────────────
  * Top bar (dark)

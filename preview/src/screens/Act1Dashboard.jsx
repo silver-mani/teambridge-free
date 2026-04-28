@@ -3277,16 +3277,20 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
         onSelectView={onSelectView}
       />
 
-      <PromptPanel
-        industryId={industryId}
-        view={view}
-        sageMode={sageMode}
-        paySubRoute={paySubRoute}
-        onInjectActivityCard={setSceneInjectedCard}
-        onOverrideActivityCard={(id, patch) => setSceneCardOverrides(prev => ({ ...prev, [id]: { ...(prev[id] ?? {}), ...patch } }))}
-        onResetScene={() => { setSceneInjectedCard(null); setSceneCardOverrides({}) }}
-        onOpenWorkflow={openWorkflow}
-      />
+      {/* Engage is a chat module of its own and Policies is a doc browser
+          — surfacing Nova's chat panel alongside either is just noise. */}
+      {view !== 'engage' && view !== 'policies' && (
+        <PromptPanel
+          industryId={industryId}
+          view={view}
+          sageMode={sageMode}
+          paySubRoute={paySubRoute}
+          onInjectActivityCard={setSceneInjectedCard}
+          onOverrideActivityCard={(id, patch) => setSceneCardOverrides(prev => ({ ...prev, [id]: { ...(prev[id] ?? {}), ...patch } }))}
+          onResetScene={() => { setSceneInjectedCard(null); setSceneCardOverrides({}) }}
+          onOpenWorkflow={openWorkflow}
+        />
+      )}
 
       {view === 'schedule'  ? <ScheduleCalendar data={data} onDemo={() => showDemoToast()} />
        : view === 'people'  ? <PeopleList       data={data} onDemo={() => showDemoToast()} />
