@@ -2624,6 +2624,23 @@ function stripFollowupLine(text) {
    When the last task lands, the pill flips to "Complete". */
 const PROGRESS_STEP_DURATION_MS = 18000
 
+/* Per-action CTA copy for the link below a progress message. The action
+   is set on the message itself (see `workflowAction` on scripted scenes
+   and inline replies). Returning null hides the link entirely — useful
+   for runs whose outcome is the workflow itself (e.g. "Save as workflow"
+   has its own confirmation bubble afterwards). */
+const WORKFLOW_CTA_LABELS = {
+  review:   'Review workflow',
+  create:   'Save as new workflow',
+  update:   'Update workflow with this change',
+  'add-step': 'Add notification step to workflow',
+  none:     null,
+}
+function workflowCta(action) {
+  if (!action) return WORKFLOW_CTA_LABELS.review
+  return WORKFLOW_CTA_LABELS[action] ?? WORKFLOW_CTA_LABELS.review
+}
+
 function ProgressMessage({ message }) {
   const agent = message.agentId ? getAgent(message.agentId) : null
   const steps = message.steps ?? []
@@ -2635,6 +2652,12 @@ function ProgressMessage({ message }) {
 
   const [activeIdx, setActiveIdx] = useState(0)
   const allDone = !isThinking && activeIdx >= steps.length
+
+  // CTA below the step list — what clicking it actually does depends on
+  // whether this run is creating a workflow, modifying one, or just
+  // executing an existing one. Default reads "Review workflow"; scripted
+  // scenes that create or update a workflow can pass an action explicitly.
+  const cta = workflowCta(message.workflowAction)
 
   useEffect(() => {
     if (isThinking || allDone) return
@@ -2684,11 +2707,13 @@ function ProgressMessage({ message }) {
             )
           })}
         </ul>
-        <button type="button" className="progress-workflow-link" onClick={() => showDemoToast()}>
-          <GitBranch01Icon size={12} />
-          <span>Upgrade workflow to add this notification</span>
-          <ArrowNarrowRightIcon size={12} />
-        </button>
+        {cta && (
+          <button type="button" className="progress-workflow-link" onClick={() => showDemoToast()}>
+            <GitBranch01Icon size={12} />
+            <span>{cta}</span>
+            <ArrowNarrowRightIcon size={12} />
+          </button>
+        )}
       </div>
     </div>
   )
@@ -2897,6 +2922,7 @@ const SANDRA_SCENE = {
     ] },
     specialist: 'nova',
     approveLabel: 'Save as workflow',
+    workflowAction: 'create',
     approvePlan: [
       'Capture the ranking rules and notification policy',
       'Save as "Last-min Replacement" workflow · owner: you',
@@ -3206,7 +3232,7 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
     setMessages(prev => [
       ...prev.map(m => m.specialist ? { ...m, specialist: null, approveLabel: null } : m),
       { id: ++idRef.current, role: 'user', content: userLabel, status: 'done' },
-      { id: progressId, role: 'progress', agentId, steps, status: 'thinking', stepDurationMs },
+      { id: progressId, role: 'progress', agentId, steps, status: 'thinking', stepDurationMs, workflowAction: msg.workflowAction },
     ])
     // 2) After a beat, flip the progress bubble into its running state so
     //    the plan reveals sequentially from zero.
