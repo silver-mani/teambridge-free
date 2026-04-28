@@ -9,20 +9,48 @@ import { ListBulletIcon }       from '../../../src/components/icons/ListBulletIc
 import { TeambridgeAIIcon }     from '../../../src/components/icons/TeambridgeAIIcon.tsx'
 import { BarChart02Icon }       from '../../../src/components/icons/BarChart02Icon.tsx'
 
+/* Mon → Sun ordering. The schedule data keys shifts by these ids; we
+   compute the actual calendar dates at render time so the calendar
+   always shows the week the user is currently in. */
 const DAYS = [
-  { id: 'sun', label: 'Sunday' },
   { id: 'mon', label: 'Monday' },
   { id: 'tue', label: 'Tuesday' },
   { id: 'wed', label: 'Wednesday' },
   { id: 'thu', label: 'Thursday' },
   { id: 'fri', label: 'Friday' },
   { id: 'sat', label: 'Saturday' },
+  { id: 'sun', label: 'Sunday' },
 ]
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+/* Returns the current Monday → Sunday week as an array of 7 Date objects
+   plus a `todayId` matching one of the DAYS ids and a formatted weekLabel. */
+function getCurrentWeek(today = new Date()) {
+  const dow = today.getDay() // 0 = Sun … 6 = Sat
+  const offsetToMonday = dow === 0 ? -6 : 1 - dow
+  const monday = new Date(today)
+  monday.setHours(0, 0, 0, 0)
+  monday.setDate(today.getDate() + offsetToMonday)
+
+  const dates = DAYS.map((_, i) => {
+    const d = new Date(monday)
+    d.setDate(monday.getDate() + i)
+    return d
+  })
+
+  const todayId = DAYS[(dow === 0 ? 6 : dow - 1)].id
+  const fmt = (d) => `${MONTHS[d.getMonth()]} ${d.getDate()}`
+  const weekLabel = `${fmt(dates[0])} – ${fmt(dates[6])}, ${dates[6].getFullYear()}, PDT`
+
+  return { dates, todayId, weekLabel }
+}
+
 /* ──────────────────────────────────────────────────────────────────────
- * OT-focused stats for the drawer. Numbers reconcile with the Sage
- * dashboard narrative: $15.2k OT this week, ~230 OT hrs distributed
- * across the week with the Niners-game spike on Fri/Sat.
+ * OT-focused stats for the drawer. Cells run Mon → Sun and reconcile
+ * with the Sage dashboard narrative: $15.2k OT this week, ~230 OT hrs
+ * distributed across the week with the Niners-game spike on Sat/Sun.
  * ────────────────────────────────────────────────────────────────────── */
 const STATS_ROWS = [
   {
@@ -43,34 +71,10 @@ const STATS_ROWS = [
       { value: '2 / 10',  chip: '−80%',  tone: 'ok'   },
       { value: '4 / 10',  chip: '−60%',  tone: 'ok'   },
       { value: '8 / 10',  chip: '−20%',  tone: 'ok'   },
-      { value: '14 / 10', chip: '+40%',       tone: 'warn' },
-      { value: '22 / 10', chip: '+120%',      tone: 'bad'  },
-      { value: '38 / 10', chip: '+280%',      tone: 'bad'  },
-      { value: '56 / 10', chip: '+460%',      tone: 'bad'  },
-    ],
-  },
-  {
-    label: 'Overtime vs Budgeted Cost',
-    cells: [
-      { value: '$300 / $600',     chip: '−50%', tone: 'ok'   },
-      { value: '$500 / $600',     chip: '−17%', tone: 'ok'   },
-      { value: '$900 / $600',     chip: '+50%',      tone: 'warn' },
-      { value: '$1.4k / $600',    chip: '+133%',     tone: 'bad'  },
-      { value: '$2.2k / $600',    chip: '+267%',     tone: 'bad'  },
-      { value: '$4.2k / $600',    chip: '+600%',     tone: 'bad'  },
-      { value: '$5.7k / $600',    chip: '+850%',     tone: 'bad'  },
-    ],
-  },
-  {
-    label: 'Overtime vs Scheduled',
-    cells: [
-      { value: '2 / 32',  chip: '6%'  },
-      { value: '4 / 28',  chip: '14%' },
-      { value: '8 / 38',  chip: '21%', tone: 'warn' },
-      { value: '14 / 42', chip: '33%', tone: 'warn' },
-      { value: '22 / 56', chip: '39%', tone: 'bad'  },
-      { value: '38 / 86', chip: '44%', tone: 'bad'  },
-      { value: '56 / 98', chip: '57%', tone: 'bad'  },
+      { value: '14 / 10', chip: '+40%',  tone: 'warn' },
+      { value: '22 / 10', chip: '+120%', tone: 'bad'  },
+      { value: '38 / 10', chip: '+280%', tone: 'bad'  },
+      { value: '56 / 10', chip: '+460%', tone: 'bad'  },
     ],
   },
   {
@@ -90,9 +94,9 @@ const STATS_ROWS = [
     label: 'Overtime Costs',
     suffix: '$',
     cells: [
-      { value: '$300'   },
-      { value: '$500'   },
-      { value: '$900'   },
+      { value: '$300'  },
+      { value: '$500'  },
+      { value: '$900'  },
       { value: '$1.4k', tone: 'warn' },
       { value: '$2.2k', tone: 'bad'  },
       { value: '$4.2k', tone: 'bad'  },
@@ -114,7 +118,11 @@ export default function ScheduleCalendar({ data, onDemo }) {
   const [statsOpen, setStatsOpen] = useState(true)
   const [statsTab,  setStatsTab]  = useState('stats')
   if (!schedule) return null
-  const { weekLabel, todayId, rows } = schedule
+  // Dummy shifts in the data are keyed by weekday id (sun, mon, …), so the
+  // shift assignments stay valid week-to-week — we just relabel the headers
+  // and the highlighted "today" column to match the actual current week.
+  const { rows } = schedule
+  const { dates: weekDates, todayId, weekLabel } = getCurrentWeek()
   const buzz = () => onDemo?.()
 
   return (
@@ -177,9 +185,10 @@ export default function ScheduleCalendar({ data, onDemo }) {
         <div className="schedule-grid" role="grid">
           <div className="schedule-grid-head">
             <div className="schedule-grid-head-cell schedule-grid-head-user" />
-            {DAYS.map(d => (
+            {DAYS.map((d, i) => (
               <div key={d.id} className={`schedule-grid-head-cell ${d.id === todayId ? 'is-today' : ''}`}>
-                {d.label}
+                <span className="schedule-grid-head-day">{d.label}</span>
+                <span className="schedule-grid-head-date">{MONTHS[weekDates[i].getMonth()]} {weekDates[i].getDate()}</span>
               </div>
             ))}
           </div>
