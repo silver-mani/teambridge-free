@@ -72,6 +72,27 @@
   padding: 0 24px;
   gap: 20px;
 }
+.sage-brand {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 20px;
+  color: var(--sage-bar-text);
+  font: inherit;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: opacity 120ms ease;
+}
+.sage-brand:hover { opacity: 0.85; }
+.sage-brand:focus-visible {
+  outline: 2px solid var(--sage-green);
+  outline-offset: 2px;
+}
+
 .sage-logo {
   font-weight: 800;
   font-size: 22px;
@@ -79,6 +100,7 @@
   color: var(--sage-green);
 }
 .sage-topbar-divider {
+  display: inline-block;
   width: 1px;
   height: 24px;
   background: var(--sage-bar-divider);

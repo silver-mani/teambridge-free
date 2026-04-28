@@ -5,6 +5,13 @@ import { SearchSmIcon }        from '../../../src/components/icons/SearchSmIcon.
 import { CheckIcon }           from '../../../src/components/icons/CheckIcon.tsx'
 import { TeambridgeAIIcon }    from '../../../src/components/icons/TeambridgeAIIcon.tsx'
 import { ListBulletIcon }      from '../../../src/components/icons/ListBulletIcon.tsx'
+import { ClockIcon }           from '../../../src/components/icons/ClockIcon.tsx'
+import { CoinsHandIcon }       from '../../../src/components/icons/CoinsHandIcon.tsx'
+import { Users03Icon }         from '../../../src/components/icons/Users03Icon.tsx'
+import { SettingsGearIcon }    from '../../../src/components/icons/SettingsGearIcon.tsx'
+import { ClipboardCheckIcon }  from '../../../src/components/icons/ClipboardCheckIcon.tsx'
+import { CheckCircleIcon }     from '../../../src/components/icons/CheckCircleIcon.tsx'
+import { Mail01Icon }          from '../../../src/components/icons/Mail01Icon.tsx'
 
 /* ──────────────────────────────────────────────────────────────────────
  * Engage / Communications module — 3-pane chat for ops ↔ staff comms.
@@ -13,14 +20,25 @@ import { ListBulletIcon }      from '../../../src/components/icons/ListBulletIco
  * about the very OT crisis the rest of the demo is solving.
  * ────────────────────────────────────────────────────────────────────── */
 
+/* Each department gets a tinted avatar — color + symbol pair so the rail
+   reads as a series of small icons instead of the same generic glyph
+   over and over. Tints picked from the existing semantic-color palette
+   so they sit comfortably alongside the rest of the UI. */
 const DEPARTMENTS = [
-  { id: 'sched',  label: 'Scheduling',     unread: 3, active: true },
-  { id: 'pay',    label: 'Payroll',        unread: 0 },
-  { id: 'hr',     label: 'Human Resources', unread: 0 },
-  { id: 'admin',  label: 'Admin Team',     unread: 0 },
-  { id: 'cred',   label: 'Credentialing',  unread: 1 },
-  { id: 'comp',   label: 'Compliance',     unread: 0 },
-  { id: 'pers',   label: 'Personal',       unread: 0 },
+  { id: 'sched',  label: 'Scheduling',      unread: 3, active: true,
+    Icon: ClockIcon,           tint: { bg: '#E0EAFF', fg: '#2746B5' } },
+  { id: 'pay',    label: 'Payroll',         unread: 0,
+    Icon: CoinsHandIcon,       tint: { bg: '#DCFCE7', fg: '#166534' } },
+  { id: 'hr',     label: 'Human Resources', unread: 0,
+    Icon: Users03Icon,         tint: { bg: '#EDE9FE', fg: '#5B21B6' } },
+  { id: 'admin',  label: 'Admin Team',      unread: 0,
+    Icon: SettingsGearIcon,    tint: { bg: '#F1F5F9', fg: '#475569' } },
+  { id: 'cred',   label: 'Credentialing',   unread: 1,
+    Icon: ClipboardCheckIcon,  tint: { bg: '#FEF3C7', fg: '#92400E' } },
+  { id: 'comp',   label: 'Compliance',      unread: 0,
+    Icon: CheckCircleIcon,     tint: { bg: '#CCFBF1', fg: '#0D9488' } },
+  { id: 'pers',   label: 'Personal',        unread: 0,
+    Icon: Mail01Icon,          tint: { bg: '#FCE7F3', fg: '#9D174D' } },
 ]
 
 const CONVERSATIONS = [
@@ -142,22 +160,29 @@ export default function EngageView({ onDemo, onToggleActivityDrawer, activityDra
             <ChevronDownIcon size={12} />
           </button>
           <div className="engage-rail-list">
-            {DEPARTMENTS.map(d => (
-              <button
-                key={d.id}
-                type="button"
-                className={`engage-rail-item ${activeDept === d.id ? 'is-active' : ''}`}
-                onClick={() => setActiveDept(d.id)}
-              >
-                <span className="engage-rail-icon" aria-hidden="true">
-                  <DeptGlyph />
-                </span>
-                <span className="engage-rail-label">{d.label}</span>
-                {d.unread > 0 && (
-                  <span className="engage-rail-badge">{d.unread}</span>
-                )}
-              </button>
-            ))}
+            {DEPARTMENTS.map(d => {
+              const Icon = d.Icon
+              return (
+                <button
+                  key={d.id}
+                  type="button"
+                  className={`engage-rail-item ${activeDept === d.id ? 'is-active' : ''}`}
+                  onClick={() => setActiveDept(d.id)}
+                >
+                  <span
+                    className="engage-rail-avatar"
+                    aria-hidden="true"
+                    style={{ background: d.tint.bg, color: d.tint.fg }}
+                  >
+                    <Icon size={14} />
+                  </span>
+                  <span className="engage-rail-label">{d.label}</span>
+                  {d.unread > 0 && (
+                    <span className="engage-rail-badge">{d.unread}</span>
+                  )}
+                </button>
+              )
+            })}
           </div>
         </div>
 
