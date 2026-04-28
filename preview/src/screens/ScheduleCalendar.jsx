@@ -48,59 +48,63 @@ function getCurrentWeek(today = new Date()) {
 }
 
 /* ──────────────────────────────────────────────────────────────────────
- * OT-focused stats for the drawer. Cells run Mon → Sun and reconcile
- * with the Sage dashboard narrative: $15.2k OT this week, ~230 OT hrs
- * distributed across the week with the Niners-game spike on Sat/Sun.
+ * OT-focused stats for the drawer. Cells run Mon → Sun and are sized to
+ * the actual schedule shape: Mon–Wed are quiet build-up days, Thu/Fri
+ * ramp on event prep, Sat is the Niners-game peak (~178 hrs scheduled,
+ * 27 shifts), and Sun is a light recovery day.
+ *   Daily OT hrs:     3 / 4 / 6 / 14 / 22 / 50 / 5
+ *   Weekly OT total:  ~104 hrs, ≈$14.4k — matches the Sage dashboard's
+ *   "$15.2k this week" headline.
  * ────────────────────────────────────────────────────────────────────── */
 const STATS_ROWS = [
   {
     label: 'Overtime % of Total Hours',
     cells: [
       { value: '5%' },
-      { value: '12%' },
-      { value: '18%' },
+      { value: '7%' },
+      { value: '8%' },
+      { value: '15%', tone: 'warn' },
       { value: '24%', tone: 'warn' },
-      { value: '32%', tone: 'warn' },
-      { value: '48%', tone: 'bad'  },
-      { value: '62%', tone: 'bad'  },
+      { value: '28%', tone: 'bad'  },
+      { value: '10%' },
     ],
   },
   {
     label: 'Overtime vs Budgeted Hours',
     cells: [
-      { value: '2 / 10',  chip: '−80%',  tone: 'ok'   },
+      { value: '3 / 10',  chip: '−70%',  tone: 'ok'   },
       { value: '4 / 10',  chip: '−60%',  tone: 'ok'   },
-      { value: '8 / 10',  chip: '−20%',  tone: 'ok'   },
+      { value: '6 / 10',  chip: '−40%',  tone: 'ok'   },
       { value: '14 / 10', chip: '+40%',  tone: 'warn' },
       { value: '22 / 10', chip: '+120%', tone: 'bad'  },
-      { value: '38 / 10', chip: '+280%', tone: 'bad'  },
-      { value: '56 / 10', chip: '+460%', tone: 'bad'  },
+      { value: '50 / 10', chip: '+400%', tone: 'bad'  },
+      { value: '5 / 10',  chip: '−50%',  tone: 'ok'   },
     ],
   },
   {
     label: 'Overtime Hours',
     suffix: 'hr',
     cells: [
-      { value: '2'  },
+      { value: '3'  },
       { value: '4'  },
-      { value: '8'  },
+      { value: '6'  },
       { value: '14', tone: 'warn' },
-      { value: '22', tone: 'bad'  },
-      { value: '38', tone: 'bad'  },
-      { value: '56', tone: 'bad'  },
+      { value: '22', tone: 'warn' },
+      { value: '50', tone: 'bad'  },
+      { value: '5'  },
     ],
   },
   {
     label: 'Overtime Costs',
     suffix: '$',
     cells: [
-      { value: '$300'  },
+      { value: '$400'  },
       { value: '$500'  },
-      { value: '$900'  },
-      { value: '$1.4k', tone: 'warn' },
-      { value: '$2.2k', tone: 'bad'  },
-      { value: '$4.2k', tone: 'bad'  },
-      { value: '$5.7k', tone: 'bad'  },
+      { value: '$800'  },
+      { value: '$1.8k', tone: 'warn' },
+      { value: '$2.8k', tone: 'warn' },
+      { value: '$7.4k', tone: 'bad'  },
+      { value: '$700'  },
     ],
   },
 ]
@@ -124,6 +128,23 @@ export default function ScheduleCalendar({ data, onDemo }) {
   const { rows } = schedule
   const { dates: weekDates, todayId, weekLabel } = getCurrentWeek()
   const buzz = () => onDemo?.()
+
+  // Past-day shifts read as completed (or no-show, if the data flagged them
+  // that way); future-day shifts are always upcoming. Today keeps whatever
+  // status the data carries so a mid-day mix still looks plausible.
+  const todayMidnight = new Date()
+  todayMidnight.setHours(0, 0, 0, 0)
+  const dayCmp = (i) => {
+    const t = weekDates[i].getTime()
+    const tt = todayMidnight.getTime()
+    return t < tt ? 'past' : t > tt ? 'future' : 'today'
+  }
+  const effectiveStatus = (rawStatus, i) => {
+    const when = dayCmp(i)
+    if (when === 'future') return 'upcoming'
+    if (when === 'past') return rawStatus === 'no-show' ? 'no-show' : 'completed'
+    return rawStatus // today
+  }
 
   return (
     <section className="schedule" aria-label="Schedule">
@@ -203,11 +224,19 @@ export default function ScheduleCalendar({ data, onDemo }) {
                   <div className="schedule-user-meta">est {row.estPay}, {row.estHours}</div>
                 </div>
               </div>
-              {DAYS.map(d => (
-                <div key={d.id} className={`schedule-cell ${d.id === todayId ? 'is-today' : ''}`}>
-                  {row.shifts[d.id] && <ShiftCell shift={row.shifts[d.id]} onClick={buzz} />}
-                </div>
-              ))}
+              {DAYS.map((d, i) => {
+                const shift = row.shifts[d.id]
+                return (
+                  <div key={d.id} className={`schedule-cell ${d.id === todayId ? 'is-today' : ''}`}>
+                    {shift && (
+                      <ShiftCell
+                        shift={{ ...shift, status: effectiveStatus(shift.status, i) }}
+                        onClick={buzz}
+                      />
+                    )}
+                  </div>
+                )
+              })}
             </div>
           ))}
         </div>

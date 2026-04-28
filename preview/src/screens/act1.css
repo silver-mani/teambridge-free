@@ -4139,27 +4139,32 @@ button.activity-card:hover:not(.activity-card-selected),
   color: var(--color-content-secondary);
 }
 
-/* Cell tints — keep them faint so the shift reads as a subtle wash, with
-   the role chip carrying the color weight. */
+/* Cell tints — completed = green (past or today), upcoming = blue (future),
+   no-show = red. Faint washes so the shift still reads quietly; the role
+   chip carries the color weight. */
 .schedule-shift-upcoming {
-  background: #F1F3FE;
-  border-color: #DDE2FA;
+  background: #E0EAFF;
+  border-color: #B7CCFF;
+}
+.schedule-shift-upcoming .schedule-shift-role {
+  background: #CFDDFF;
+  color: #2746B5;
 }
 .schedule-shift-completed {
   background: #E5F6E7;
-  border-color: #D9E8C2;
+  border-color: #C4E3C9;
 }
 .schedule-shift-completed .schedule-shift-role {
-  background: #E2EFD1;
-  color: #516D2A;
+  background: #D2EDD7;
+  color: #2F7338;
 }
 .schedule-shift-no-show {
-  background: #FCEFEF;
-  border-color: #F3CECE;
+  background: #FBE3E3;
+  border-color: #F2B8B8;
 }
 .schedule-shift-no-show .schedule-shift-role {
-  background: #F6DEDE;
-  color: #9B3A3A;
+  background: #F6CCCC;
+  color: #9B2727;
 }
 
 @media (max-width: 1200px) {
