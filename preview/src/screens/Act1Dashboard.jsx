@@ -3112,11 +3112,20 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
     const prev = lastViewRef.current
     lastViewRef.current = view
     if (view === prev) return
+    // In the Sage embed the OT-crisis scene is anchored to the Schedule
+    // view. Anywhere else (Home, People, Engage, …) we wipe the chat so
+    // the next surface starts fresh with its own briefing — the Intacct
+    // handoff shouldn't bleed onto the home page.
+    if (sageMode) {
+      if (view === 'schedule') return
+      setMessages([])
+      setInput('')
+      return
+    }
+    // Outside Sage mode, keep Home's chat history (the Sandra scene
+    // builds up there) and clear the chat for every other surface so
+    // each starts fresh with its own briefing.
     if (view === 'overview') return
-    // In Sage embed mode the OT-crisis scene plays on the Schedule view;
-    // wiping it as the user pokes around the LeftNav would erase the very
-    // story they came here for.
-    if (sageMode) return
     setMessages([])
     setInput('')
   }, [view, sageMode])
