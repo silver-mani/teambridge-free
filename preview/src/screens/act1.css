@@ -11,6 +11,7 @@
   background: var(--color-bg-secondary);
   font-family: var(--font-sans);
   color: var(--color-content-primary);
+  position: relative; /* anchor for the activity-drawer overlay */
   transition: grid-template-columns 360ms cubic-bezier(0.2, 0, 0, 1);
 
   --ai-grad-start: #8C4FE2;
@@ -4107,8 +4108,46 @@ button.activity-card:hover:not(.activity-card-selected),
   text-align: left;
   cursor: pointer;
   transition: filter 120ms ease;
+  position: relative; /* anchor the violation badge */
 }
 .schedule-shift:hover { filter: brightness(0.96); }
+.schedule-shift.has-violation { padding-right: 22px; }
+
+.schedule-shift-violation-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  transition: transform 120ms ease, background-color 120ms ease;
+}
+.schedule-shift-violation-badge--severe {
+  background: #d91f1f;
+  box-shadow: 0 0 0 2px var(--color-bg-primary), 0 1px 2px rgba(217, 31, 31, 0.4);
+}
+.schedule-shift-violation-badge--severe:hover { background: #b71c1c; }
+.schedule-shift-violation-badge--warn {
+  background: #d97706;
+  color: #fff;
+  box-shadow: 0 0 0 2px var(--color-bg-primary), 0 1px 2px rgba(217, 119, 6, 0.4);
+}
+.schedule-shift-violation-badge--warn:hover { background: #b45309; }
+.schedule-shift-violation-badge:hover { transform: scale(1.08); }
+.schedule-shift-violation-badge:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
 .schedule-shift-time {
   font-size: 12px;
   font-weight: var(--font-weight-medium);
@@ -4139,27 +4178,32 @@ button.activity-card:hover:not(.activity-card-selected),
   color: var(--color-content-secondary);
 }
 
-/* Cell tints — keep them faint so the shift reads as a subtle wash, with
-   the role chip carrying the color weight. */
+/* Cell tints — completed = green (past or today), upcoming = blue (future),
+   no-show = red. Faint washes so the shift still reads quietly; the role
+   chip carries the color weight. */
 .schedule-shift-upcoming {
-  background: #F1F3FE;
-  border-color: #DDE2FA;
+  background: #E0EAFF;
+  border-color: #B7CCFF;
+}
+.schedule-shift-upcoming .schedule-shift-role {
+  background: #CFDDFF;
+  color: #2746B5;
 }
 .schedule-shift-completed {
   background: #E5F6E7;
-  border-color: #D9E8C2;
+  border-color: #C4E3C9;
 }
 .schedule-shift-completed .schedule-shift-role {
-  background: #E2EFD1;
-  color: #516D2A;
+  background: #D2EDD7;
+  color: #2F7338;
 }
 .schedule-shift-no-show {
-  background: #FCEFEF;
-  border-color: #F3CECE;
+  background: #FBE3E3;
+  border-color: #F2B8B8;
 }
 .schedule-shift-no-show .schedule-shift-role {
-  background: #F6DEDE;
-  color: #9B3A3A;
+  background: #F6CCCC;
+  color: #9B2727;
 }
 
 @media (max-width: 1200px) {
@@ -7068,3 +7112,353 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   white-space: nowrap;
 }
 
+/* ──────────────────────────────────────────────────────────────────────
+ * Shift-violation dialog — opens when the operator clicks the red
+ * count badge on a flagged shift. Lists each broken policy with
+ * folder, severity pill, and a per-shift detail line.
+ * ────────────────────────────────────────────────────────────────────── */
+.violations-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(15, 17, 20, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  animation: violations-backdrop-in 160ms ease-out;
+}
+@keyframes violations-backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.violations-dialog {
+  width: min(560px, 100%);
+  max-height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(15, 17, 20, 0.2);
+  overflow: hidden;
+  animation: violations-dialog-in 200ms cubic-bezier(0.2, 0, 0, 1);
+}
+@keyframes violations-dialog-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+.violations-head {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: 18px 20px 16px;
+  border-bottom: 1px solid var(--color-border-opaque);
+  background: linear-gradient(180deg, var(--color-bg-secondary) 0%, var(--color-bg-primary) 100%);
+}
+.violations-dialog--severe .violations-head {
+  background: linear-gradient(180deg, #FFF5F5 0%, var(--color-bg-primary) 100%);
+}
+.violations-dialog--warn .violations-head {
+  background: linear-gradient(180deg, #FFFAEB 0%, var(--color-bg-primary) 100%);
+}
+.violations-head-text { flex: 1; min-width: 0; }
+.violations-head-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  margin-bottom: 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  border: 1px solid transparent;
+}
+.violations-head-eyebrow--severe {
+  background: #FEF2F2;
+  border-color: #FCA5A5;
+  color: #B91C1C;
+}
+.violations-head-eyebrow--warn {
+  background: #FEF3C7;
+  border-color: #FCD34D;
+  color: #92400E;
+}
+.violations-head-title {
+  font-size: 17px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+  line-height: 1.3;
+}
+.violations-head-meta {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--color-content-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.violations-close {
+  appearance: none;
+  border: 1px solid var(--color-border-opaque);
+  background: var(--color-bg-primary);
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-content-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.violations-close:hover {
+  background: var(--color-bg-tertiary);
+  color: var(--color-content-primary);
+}
+
+.violations-body {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.violation-card {
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border-opaque);
+  background: var(--color-bg-primary);
+}
+.violation-card--severe {
+  background: #FFF5F5;
+  border-color: #FCA5A5;
+}
+.violation-card--warn {
+  background: #FFFAEB;
+  border-color: #FCD34D;
+}
+
+.violation-card-icon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  color: var(--color-content-secondary);
+}
+.violation-card--severe .violation-card-icon {
+  background: #FEE2E2;
+  border-color: #FCA5A5;
+  color: #B91C1C;
+}
+.violation-card--warn .violation-card-icon {
+  background: #FEF3C7;
+  border-color: #FCD34D;
+  color: #92400E;
+}
+
+.violation-card-text { flex: 1; min-width: 0; }
+.violation-card-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+.violation-card-name {
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+}
+.violation-card-severity {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.violation-card-severity--severe {
+  background: #FEE2E2;
+  color: #B91C1C;
+}
+.violation-card-severity--warn {
+  background: #FEF3C7;
+  color: #92400E;
+}
+.violation-card-folder {
+  font-size: 12px;
+  color: var(--color-content-tertiary);
+  margin-bottom: 6px;
+}
+.violation-card-detail {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-content-primary);
+  line-height: 1.45;
+}
+.violation-card-summary {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--color-content-secondary);
+  line-height: 1.45;
+}
+
+.violations-foot {
+  display: flex;
+  gap: 8px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--color-border-opaque);
+  background: var(--color-bg-secondary);
+  justify-content: flex-end;
+}
+.violations-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border-opaque);
+  background: var(--color-bg-primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+  cursor: pointer;
+}
+.violations-btn:hover { background: var(--color-bg-tertiary); }
+.violations-btn--ai {
+  background: var(--color-content-primary);
+  color: var(--color-bg-primary);
+  border-color: var(--color-content-primary);
+}
+.violations-btn--ai:hover {
+  background: color-mix(in srgb, var(--color-content-primary) 88%, white);
+}
+
+/* ──────────────────────────────────────────────────────────────────────
+ * Activity drawer overlay — used on Schedule / People / Pay / Engage.
+ * Slides in from the right, anchored to .act1-root, default closed.
+ * The drawer is the same ActivityFeed component that lives in the third
+ * column on the overview page; here it pops over the page content.
+ * ────────────────────────────────────────────────────────────────────── */
+.activity-drawer-overlay {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(460px, 100%);
+  z-index: 60;
+  background: var(--color-bg-primary);
+  border-left: 1px solid var(--color-border-opaque);
+  box-shadow: -16px 0 40px rgba(15, 17, 20, 0.10);
+  transform: translateX(100%);
+  transition: transform 280ms cubic-bezier(0.2, 0, 0, 1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.activity-drawer-overlay.is-open { transform: translateX(0); }
+
+/* The drawer reuses the .activity-feed component. Inside the drawer it
+   needs its own scroll context (the overlay is fixed-height, not the
+   third grid column anymore) and shouldn't carry any leftover opacity
+   styling from the overview-replacement rules. The !important here
+   is targeted at the narrow-viewport rule that hides the third column
+   feed below 1200px — we still want the drawer to work there. */
+.activity-drawer-overlay .activity-feed {
+  position: static;
+  height: 100%;
+  width: 100%;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  display: block !important;
+  overflow-y: auto;
+  border-left: none;
+}
+
+.activity-drawer-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 55;
+  background: rgba(15, 17, 20, 0);
+  pointer-events: none;
+  transition: background-color 220ms ease;
+}
+.activity-drawer-scrim.is-open {
+  background: rgba(15, 17, 20, 0.16);
+  pointer-events: auto;
+}
+
+/* Header row inside the drawer — adds the close button next to the
+   "Activity" title. On the overview page (where the feed is the column
+   itself) the close button is hidden. */
+.activity-feed-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.activity-feed-close {
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border-opaque);
+  background: var(--color-bg-primary);
+  color: var(--color-content-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.activity-feed-close:hover {
+  background: var(--color-bg-tertiary);
+  color: var(--color-content-primary);
+}
+
+/* Active state for the toggle button across the four pages — same look
+   as the AI variant but neutral so it doesn't compete visually. */
+.schedule-icon-btn.is-active,
+.people-head-icon-btn.is-active,
+.pay-icon-btn.is-active {
+  background: var(--color-content-primary);
+  color: var(--color-bg-primary);
+  border-color: var(--color-content-primary);
+}
+
+/* Engage thread head action — match the existing icon-button rhythm
+   (engage-thread-confirm sits next to it). */
+.engage-thread-icon-btn {
+  appearance: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border-opaque);
+  background: var(--color-bg-primary);
+  color: var(--color-content-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.engage-thread-icon-btn:hover {
+  background: var(--color-bg-tertiary);
+  color: var(--color-content-primary);
+}
+.engage-thread-icon-btn.is-active {
+  background: var(--color-content-primary);
+  color: var(--color-bg-primary);
+  border-color: var(--color-content-primary);
+}

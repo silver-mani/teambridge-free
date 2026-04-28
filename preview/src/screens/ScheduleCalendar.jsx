@@ -8,6 +8,10 @@ import { PlusIcon }             from '../../../src/components/icons/PlusIcon.tsx
 import { ListBulletIcon }       from '../../../src/components/icons/ListBulletIcon.tsx'
 import { TeambridgeAIIcon }     from '../../../src/components/icons/TeambridgeAIIcon.tsx'
 import { BarChart02Icon }       from '../../../src/components/icons/BarChart02Icon.tsx'
+import { XIcon }                from '../../../src/components/icons/XIcon.tsx'
+import { ClockIcon }            from '../../../src/components/icons/ClockIcon.tsx'
+import { Map01Icon }            from '../../../src/components/icons/Map01Icon.tsx'
+import { Bell01Icon }           from '../../../src/components/icons/Bell01Icon.tsx'
 
 /* Mon → Sun ordering. The schedule data keys shifts by these ids; we
    compute the actual calendar dates at render time so the calendar
@@ -48,59 +52,230 @@ function getCurrentWeek(today = new Date()) {
 }
 
 /* ──────────────────────────────────────────────────────────────────────
- * OT-focused stats for the drawer. Cells run Mon → Sun and reconcile
- * with the Sage dashboard narrative: $15.2k OT this week, ~230 OT hrs
- * distributed across the week with the Niners-game spike on Sat/Sun.
+ * Policy catalog — mirrors a subset of the Policy Builder folders most
+ * relevant to schedule-time enforcement (Overtime & Cap Enforcement,
+ * Union Laws, Scheduling). Each entry is what gets surfaced in the
+ * violation dialog when a shift trips it. Severity drives badge color:
+ *   severe → red    warn → yellow.
+ * ────────────────────────────────────────────────────────────────────── */
+const POLICIES = {
+  'ot-cap': {
+    name: '40-Hour OT Cap',
+    folder: 'Overtime & Cap Enforcement',
+    severity: 'severe',
+    Icon: ClockIcon,
+    summary: "Replace shifts that would push a worker over 40 hours/week. The schedule still shows the worker, but Nova flags the offending shift for replacement.",
+  },
+  'daily-cap': {
+    name: 'Daily 12-Hour Cap',
+    folder: 'Overtime & Cap Enforcement',
+    severity: 'severe',
+    Icon: ClockIcon,
+    summary: 'Hard stop on single shifts longer than 12 hours. Applies across all departments and venues.',
+  },
+  'rest-window': {
+    name: 'Mandatory Rest Window',
+    folder: 'Union Laws',
+    severity: 'severe',
+    Icon: ClockIcon,
+    summary: '11-hour minimum rest between consecutive shifts. Violations are auto-blocked at publish time.',
+  },
+  'approaching-ot': {
+    name: 'Approaching OT Cap',
+    folder: 'Overtime & Cap Enforcement',
+    severity: 'warn',
+    Icon: AlertTriangleIcon,
+    summary: 'Soft warning when a worker is projected to land between 36 and 40 hours this week. Lets ops re-balance the next shift before the OT cap actually trips.',
+  },
+  'travel-buffer': {
+    name: 'Travel Buffer (Multi-Venue)',
+    folder: 'Scheduling',
+    severity: 'warn',
+    Icon: Map01Icon,
+    summary: 'Workers scheduled across two venues in one day must have a 90-minute travel buffer between them.',
+  },
+}
+
+function parseTime(t) {
+  const m = /^(\d+):(\d+)([ap])$/.exec(t)
+  if (!m) return 0
+  let h = parseInt(m[1], 10)
+  const min = parseInt(m[2], 10)
+  if (m[3] === 'p' && h !== 12) h += 12
+  if (m[3] === 'a' && h === 12) h = 0
+  return h + min / 60
+}
+
+function shiftDuration(shift) {
+  const s = parseTime(shift.start)
+  let e = parseTime(shift.end)
+  if (e <= s) e += 24 // wraps past midnight
+  return e - s
+}
+
+/* Build a Map keyed by `${userId}:${dayId}` → array of { policyId, detail }.
+   Run once per render off the rows + the current week's dates. */
+function computeViolations(rows, weekDates) {
+  const result = new Map()
+  const push = (key, v) => {
+    const arr = result.get(key) ?? []
+    arr.push(v)
+    result.set(key, arr)
+  }
+
+  rows.forEach(row => {
+    const items = []
+    DAYS.forEach((d, i) => {
+      const s = row.shifts[d.id]
+      if (!s) return
+      items.push({
+        dayId: d.id,
+        dayIndex: i,
+        date: weekDates[i],
+        shift: s,
+        duration: shiftDuration(s),
+        startH: parseTime(s.start),
+      })
+    })
+    if (!items.length) return
+
+    // OT cap — flag any shift that pushes the worker's running total over 40.
+    let cumul = 0
+    let firstOverIdx = -1
+    items.forEach((it, idx) => {
+      cumul += it.duration
+      if (cumul > 40) {
+        if (firstOverIdx < 0) firstOverIdx = idx
+        const over = (cumul - 40).toFixed(1).replace(/\.0$/, '')
+        push(`${row.userId}:${it.dayId}`, {
+          policyId: 'ot-cap',
+          detail: `This shift puts ${row.name.split(' ')[0]} at ${cumul.toFixed(1)} hrs this week — ${over} hr over the 40-hr cap.`,
+        })
+      }
+    })
+
+    // Approaching-OT warn — projected weekly total lands in [36, 40].
+    // Surface on the LAST scheduled shift (the one putting the worker
+    // closest to the cap) so ops sees one warn, not noise.
+    const weeklyTotal = cumul
+    if (weeklyTotal >= 36 && weeklyTotal <= 40 && items.length) {
+      const last = items[items.length - 1]
+      push(`${row.userId}:${last.dayId}`, {
+        policyId: 'approaching-ot',
+        detail: `Projected to finish the week at ${weeklyTotal.toFixed(1)} hrs — within ${(40 - weeklyTotal).toFixed(1)} hr of the OT cap.`,
+      })
+    }
+
+    // Daily 12-hour cap.
+    items.forEach(it => {
+      if (it.duration > 12) {
+        push(`${row.userId}:${it.dayId}`, {
+          policyId: 'daily-cap',
+          detail: `Shift is ${it.duration.toFixed(1)} hrs long — exceeds the 12-hr single-shift cap.`,
+        })
+      }
+    })
+
+    // Rest window — gap < 11 hrs between the END of one shift and the
+    // START of the next (consecutive in the items list, which is already
+    // sorted Mon → Sun).
+    for (let i = 1; i < items.length; i++) {
+      const prev = items[i - 1]
+      const cur  = items[i]
+      const daysBetween = (cur.date.getTime() - prev.date.getTime()) / (1000 * 60 * 60 * 24)
+      const prevEndAbs = prev.startH + prev.duration
+      const curStartAbs = daysBetween * 24 + cur.startH
+      const gap = curStartAbs - prevEndAbs
+      if (gap > 0 && gap < 11) {
+        push(`${row.userId}:${cur.dayId}`, {
+          policyId: 'rest-window',
+          detail: `Only ${gap.toFixed(1)} hrs since the previous shift — needs 11 hrs of rest.`,
+        })
+      }
+    }
+
+    // Travel buffer — same day, two shifts at different venues.
+    const byDay = new Map()
+    items.forEach(it => {
+      const arr = byDay.get(it.dayId) ?? []
+      arr.push(it)
+      byDay.set(it.dayId, arr)
+    })
+    byDay.forEach(arr => {
+      if (arr.length < 2) return
+      const venues = new Set(arr.map(x => x.shift.venue))
+      if (venues.size > 1) {
+        arr.forEach(it => {
+          push(`${row.userId}:${it.dayId}`, {
+            policyId: 'travel-buffer',
+            detail: `Two venues scheduled in one day (${[...venues].join(' → ')}). Needs a 90-min travel buffer.`,
+          })
+        })
+      }
+    })
+  })
+
+  return result
+}
+
+/* ──────────────────────────────────────────────────────────────────────
+ * OT-focused stats for the drawer. Cells run Mon → Sun and are sized to
+ * the actual schedule shape: Mon–Wed are quiet build-up days, Thu/Fri
+ * ramp on event prep, Sat is the Niners-game peak (~178 hrs scheduled,
+ * 27 shifts), and Sun is a light recovery day.
+ *   Daily OT hrs:     3 / 4 / 6 / 14 / 22 / 50 / 5
+ *   Weekly OT total:  ~104 hrs, ≈$14.4k — matches the Sage dashboard's
+ *   "$15.2k this week" headline.
  * ────────────────────────────────────────────────────────────────────── */
 const STATS_ROWS = [
   {
     label: 'Overtime % of Total Hours',
     cells: [
       { value: '5%' },
-      { value: '12%' },
-      { value: '18%' },
+      { value: '7%' },
+      { value: '8%' },
+      { value: '15%', tone: 'warn' },
       { value: '24%', tone: 'warn' },
-      { value: '32%', tone: 'warn' },
-      { value: '48%', tone: 'bad'  },
-      { value: '62%', tone: 'bad'  },
+      { value: '28%', tone: 'bad'  },
+      { value: '10%' },
     ],
   },
   {
     label: 'Overtime vs Budgeted Hours',
     cells: [
-      { value: '2 / 10',  chip: '−80%',  tone: 'ok'   },
+      { value: '3 / 10',  chip: '−70%',  tone: 'ok'   },
       { value: '4 / 10',  chip: '−60%',  tone: 'ok'   },
-      { value: '8 / 10',  chip: '−20%',  tone: 'ok'   },
+      { value: '6 / 10',  chip: '−40%',  tone: 'ok'   },
       { value: '14 / 10', chip: '+40%',  tone: 'warn' },
       { value: '22 / 10', chip: '+120%', tone: 'bad'  },
-      { value: '38 / 10', chip: '+280%', tone: 'bad'  },
-      { value: '56 / 10', chip: '+460%', tone: 'bad'  },
+      { value: '50 / 10', chip: '+400%', tone: 'bad'  },
+      { value: '5 / 10',  chip: '−50%',  tone: 'ok'   },
     ],
   },
   {
     label: 'Overtime Hours',
     suffix: 'hr',
     cells: [
-      { value: '2'  },
+      { value: '3'  },
       { value: '4'  },
-      { value: '8'  },
+      { value: '6'  },
       { value: '14', tone: 'warn' },
-      { value: '22', tone: 'bad'  },
-      { value: '38', tone: 'bad'  },
-      { value: '56', tone: 'bad'  },
+      { value: '22', tone: 'warn' },
+      { value: '50', tone: 'bad'  },
+      { value: '5'  },
     ],
   },
   {
     label: 'Overtime Costs',
     suffix: '$',
     cells: [
-      { value: '$300'  },
+      { value: '$400'  },
       { value: '$500'  },
-      { value: '$900'  },
-      { value: '$1.4k', tone: 'warn' },
-      { value: '$2.2k', tone: 'bad'  },
-      { value: '$4.2k', tone: 'bad'  },
-      { value: '$5.7k', tone: 'bad'  },
+      { value: '$800'  },
+      { value: '$1.8k', tone: 'warn' },
+      { value: '$2.8k', tone: 'warn' },
+      { value: '$7.4k', tone: 'bad'  },
+      { value: '$700'  },
     ],
   },
 ]
@@ -113,7 +288,7 @@ const STATS_TABS = [
 
 /* `demoToast` is a callback prop so the Calendar component doesn't need to
    know about the parent toast helper — parent wires it up. */
-export default function ScheduleCalendar({ data, onDemo }) {
+export default function ScheduleCalendar({ data, onDemo, onToggleActivityDrawer, activityDrawerOpen }) {
   const schedule = data.schedule
   const [statsOpen, setStatsOpen] = useState(true)
   const [statsTab,  setStatsTab]  = useState('stats')
@@ -124,6 +299,27 @@ export default function ScheduleCalendar({ data, onDemo }) {
   const { rows } = schedule
   const { dates: weekDates, todayId, weekLabel } = getCurrentWeek()
   const buzz = () => onDemo?.()
+
+  // Past-day shifts read as completed (or no-show, if the data flagged them
+  // that way); future-day shifts are always upcoming. Today keeps whatever
+  // status the data carries so a mid-day mix still looks plausible.
+  const todayMidnight = new Date()
+  todayMidnight.setHours(0, 0, 0, 0)
+  const dayCmp = (i) => {
+    const t = weekDates[i].getTime()
+    const tt = todayMidnight.getTime()
+    return t < tt ? 'past' : t > tt ? 'future' : 'today'
+  }
+  const effectiveStatus = (rawStatus, i) => {
+    const when = dayCmp(i)
+    if (when === 'future') return 'upcoming'
+    if (when === 'past') return rawStatus === 'no-show' ? 'no-show' : 'completed'
+    return rawStatus // today
+  }
+
+  // Per-shift policy violations, keyed `userId:dayId`.
+  const violations = computeViolations(rows, weekDates)
+  const [violationCtx, setViolationCtx] = useState(null) // { row, dayIndex, shift, list }
 
   return (
     <section className="schedule" aria-label="Schedule">
@@ -139,6 +335,17 @@ export default function ScheduleCalendar({ data, onDemo }) {
           <button type="button" className="schedule-icon-btn" onClick={buzz} aria-label="Open menu">
             <ListBulletIcon size={16} />
           </button>
+          {onToggleActivityDrawer && (
+            <button
+              type="button"
+              className={`schedule-icon-btn ${activityDrawerOpen ? 'is-active' : ''}`}
+              onClick={onToggleActivityDrawer}
+              aria-label={activityDrawerOpen ? 'Close activity drawer' : 'Open activity drawer'}
+              aria-pressed={activityDrawerOpen}
+            >
+              <Bell01Icon size={16} />
+            </button>
+          )}
           <button type="button" className="schedule-icon-btn schedule-icon-btn-ai" onClick={buzz} aria-label="Ask Teambridge">
             <TeambridgeAIIcon size={16} />
           </button>
@@ -203,11 +410,24 @@ export default function ScheduleCalendar({ data, onDemo }) {
                   <div className="schedule-user-meta">est {row.estPay}, {row.estHours}</div>
                 </div>
               </div>
-              {DAYS.map(d => (
-                <div key={d.id} className={`schedule-cell ${d.id === todayId ? 'is-today' : ''}`}>
-                  {row.shifts[d.id] && <ShiftCell shift={row.shifts[d.id]} onClick={buzz} />}
-                </div>
-              ))}
+              {DAYS.map((d, i) => {
+                const shift = row.shifts[d.id]
+                const list = shift ? (violations.get(`${row.userId}:${d.id}`) ?? []) : []
+                return (
+                  <div key={d.id} className={`schedule-cell ${d.id === todayId ? 'is-today' : ''}`}>
+                    {shift && (
+                      <ShiftCell
+                        shift={{ ...shift, status: effectiveStatus(shift.status, i) }}
+                        violations={list}
+                        onClick={buzz}
+                        onShowViolations={() => setViolationCtx({
+                          row, dayIndex: i, shift, list,
+                        })}
+                      />
+                    )}
+                  </div>
+                )
+              })}
             </div>
           ))}
         </div>
@@ -220,6 +440,15 @@ export default function ScheduleCalendar({ data, onDemo }) {
         onToggle={() => setStatsOpen(o => !o)}
         onConfigure={buzz}
       />
+
+      {violationCtx && (
+        <ViolationsDialog
+          ctx={violationCtx}
+          weekDates={weekDates}
+          onClose={() => setViolationCtx(null)}
+          onResolve={() => { buzz(); setViolationCtx(null) }}
+        />
+      )}
     </section>
   )
 }
@@ -294,15 +523,114 @@ function ScheduleStatsDrawer({ open, tab, onSetTab, onToggle, onConfigure }) {
   )
 }
 
-function ShiftCell({ shift, onClick }) {
+function shiftSeverity(violations) {
+  // Highest severity wins for badge color: any severe → severe, else warn.
+  return violations.some(v => POLICIES[v.policyId]?.severity === 'severe') ? 'severe' : 'warn'
+}
+
+function ShiftCell({ shift, violations = [], onClick, onShowViolations }) {
+  const hasViolation = violations.length > 0
+  const sev = hasViolation ? shiftSeverity(violations) : null
   return (
-    <button type="button" className={`schedule-shift schedule-shift-${shift.status}`} onClick={onClick}>
+    <button
+      type="button"
+      className={`schedule-shift schedule-shift-${shift.status} ${hasViolation ? 'has-violation' : ''}`}
+      onClick={onClick}
+    >
       <div className="schedule-shift-time">{shift.start}-{shift.end}</div>
       <div className="schedule-shift-body">
         <span className="schedule-shift-role">{shift.role}</span>
         {shift.venue && <span className="schedule-shift-venue">{shift.venue}</span>}
       </div>
+      {hasViolation && (
+        <span
+          className={`schedule-shift-violation-badge schedule-shift-violation-badge--${sev}`}
+          role="button"
+          tabIndex={0}
+          aria-label={`${violations.length} polic${violations.length === 1 ? 'y' : 'ies'} violated`}
+          onClick={(e) => { e.stopPropagation(); onShowViolations?.() }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onShowViolations?.() }
+          }}
+        >
+          {violations.length}
+        </span>
+      )}
     </button>
+  )
+}
+
+const SEVERITY_LABEL = { severe: 'Severe', warn: 'Warning' }
+
+function ViolationsDialog({ ctx, weekDates, onClose, onResolve }) {
+  const { row, dayIndex, shift, list } = ctx
+  const date = weekDates[dayIndex]
+  const dayName = DAYS[dayIndex].label
+  const dateLabel = `${MONTHS[date.getMonth()]} ${date.getDate()}`
+  // Sort violations severe-first so OT cap reads above warn-level entries.
+  const ordered = [...list].sort((a, b) => {
+    const sa = POLICIES[a.policyId]?.severity === 'severe' ? 0 : 1
+    const sb = POLICIES[b.policyId]?.severity === 'severe' ? 0 : 1
+    return sa - sb
+  })
+  const dialogSev = ordered.some(v => POLICIES[v.policyId]?.severity === 'severe') ? 'severe' : 'warn'
+
+  return (
+    <div className="violations-backdrop" role="dialog" aria-modal="true" onClick={onClose}>
+      <div className={`violations-dialog violations-dialog--${dialogSev}`} onClick={(e) => e.stopPropagation()}>
+        <header className="violations-head">
+          <div className="violations-head-text">
+            <div className={`violations-head-eyebrow violations-head-eyebrow--${dialogSev}`}>
+              <AlertTriangleIcon size={14} />
+              {ordered.length} polic{ordered.length === 1 ? 'y' : 'ies'} {dialogSev === 'severe' ? 'broken' : 'flagged'} on this shift
+            </div>
+            <div className="violations-head-title">{row.name} · {dayName}, {dateLabel}</div>
+            <div className="violations-head-meta">
+              {shift.start}–{shift.end} · {shift.role}{shift.venue ? ` · ${shift.venue}` : ''}
+            </div>
+          </div>
+          <button type="button" className="violations-close" aria-label="Close" onClick={onClose}>
+            <XIcon size={16} />
+          </button>
+        </header>
+
+        <div className="violations-body">
+          {ordered.map((v, i) => {
+            const def = POLICIES[v.policyId]
+            if (!def) return null
+            const Icon = def.Icon
+            return (
+              <div key={`${v.policyId}-${i}`} className={`violation-card violation-card--${def.severity}`}>
+                <div className="violation-card-icon" aria-hidden="true">
+                  <Icon size={16} />
+                </div>
+                <div className="violation-card-text">
+                  <div className="violation-card-row">
+                    <span className="violation-card-name">{def.name}</span>
+                    <span className={`violation-card-severity violation-card-severity--${def.severity}`}>
+                      {SEVERITY_LABEL[def.severity] ?? 'Info'}
+                    </span>
+                  </div>
+                  <div className="violation-card-folder">{def.folder}</div>
+                  <p className="violation-card-detail">{v.detail}</p>
+                  <p className="violation-card-summary">{def.summary}</p>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        <footer className="violations-foot">
+          <button type="button" className="violations-btn" onClick={onClose}>
+            Acknowledge
+          </button>
+          <button type="button" className="violations-btn violations-btn--ai" onClick={onResolve}>
+            <TeambridgeAIIcon size={14} />
+            Resolve with Nova
+          </button>
+        </footer>
+      </div>
+    </div>
   )
 }
 

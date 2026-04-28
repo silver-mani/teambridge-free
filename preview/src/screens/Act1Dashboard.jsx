@@ -16,6 +16,7 @@ import { GitBranch01Icon }     from '../../../src/components/icons/GitBranch01Ic
 import { BookOpen01Icon }     from '../../../src/components/icons/BookOpen01Icon.tsx'
 import { MessageDotsSquareIcon } from '../../../src/components/icons/MessageDotsSquareIcon.tsx'
 import { SearchSmIcon }        from '../../../src/components/icons/SearchSmIcon.tsx'
+import { XIcon }                from '../../../src/components/icons/XIcon.tsx'
 import { Microphone02Icon }    from '../../../src/components/icons/Microphone02Icon.tsx'
 import { Mail01Icon }          from '../../../src/components/icons/Mail01Icon.tsx'
 import { XIcon }               from '../../../src/components/icons/XIcon.tsx'
@@ -1220,7 +1221,7 @@ function RecordDrawer({ card, detail, onClose, onExplore }) {
 
 /* ─── Activity feed (right column) ───────────────────────────────────────── */
 
-function ActivityFeed({ data, injectedCard, cardOverrides }) {
+function ActivityFeed({ data, injectedCard, cardOverrides, onClose }) {
   const [expandedId, setExpandedId] = useState(null)
   const toggle = id => setExpandedId(curr => curr === id ? null : id)
   // When the scripted scene has posted a live card, render it above the
@@ -1229,7 +1230,19 @@ function ActivityFeed({ data, injectedCard, cardOverrides }) {
   return (
     <aside className="activity-feed" aria-label="Activity">
       <div className="activity-feed-inner">
-        <h2 className="activity-feed-title">Activity</h2>
+        <div className="activity-feed-header">
+          <h2 className="activity-feed-title">Activity</h2>
+          {onClose && (
+            <button
+              type="button"
+              className="activity-feed-close"
+              onClick={onClose}
+              aria-label="Close activity drawer"
+            >
+              <XIcon size={16} />
+            </button>
+          )}
+        </div>
         <div className="feed">
           {injectedCard && (() => {
             const shown = applyOverride(injectedCard)
@@ -3266,6 +3279,15 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
     }
   }, [industryId, view])
 
+  // Activity-drawer toggle. On overview the feed is the page itself, so
+  // the drawer doesn't apply. Workflows + Policies opt out per spec.
+  // Reset to closed whenever the user navigates between views so the
+  // drawer doesn't surprise-pop on the next page.
+  const supportsActivityDrawer = view !== 'overview' && view !== 'workflows' && view !== 'policies'
+  const [activityDrawerOpen, setActivityDrawerOpen] = useState(false)
+  useEffect(() => { setActivityDrawerOpen(false) }, [view, industryId])
+  const toggleActivityDrawer = () => setActivityDrawerOpen(o => !o)
+
   return (
     <div className={`act1-root${view === 'overview' ? '' : ` act1-root--${view}`}`}>
       <LeftNav
@@ -3292,13 +3314,34 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
         />
       )}
 
-      {view === 'schedule'  ? <ScheduleCalendar data={data} onDemo={() => showDemoToast()} />
-       : view === 'people'  ? <PeopleList       data={data} onDemo={() => showDemoToast()} />
-       : view === 'pay'     ? <PayView          industryId={industryId} route={paySubRoute} onChangeRoute={setPaySubRoute} onDemo={() => showDemoToast()} />
+      {view === 'schedule'  ? <ScheduleCalendar data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
+       : view === 'people'  ? <PeopleList       data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
+       : view === 'pay'     ? <PayView          industryId={industryId} route={paySubRoute} onChangeRoute={setPaySubRoute} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
        : view === 'workflows' ? <WorkflowsView  industryId={industryId} pendingWorkflowId={pendingWorkflowId} onConsumePending={() => setPendingWorkflowId(null)} onDemo={() => showDemoToast()} />
        : view === 'policies' ? <PoliciesView   onDemo={() => showDemoToast()} />
-       : view === 'engage'   ? <EngageView      onDemo={() => showDemoToast()} />
+       : view === 'engage'   ? <EngageView      onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
        :                      <ActivityFeed     data={data} injectedCard={sceneInjectedCard} cardOverrides={sceneCardOverrides} />}
+
+      {supportsActivityDrawer && (
+        <>
+          <div
+            className={`activity-drawer-scrim ${activityDrawerOpen ? 'is-open' : ''}`}
+            aria-hidden="true"
+            onClick={() => setActivityDrawerOpen(false)}
+          />
+          <aside
+            className={`activity-drawer-overlay ${activityDrawerOpen ? 'is-open' : ''}`}
+            aria-hidden={!activityDrawerOpen}
+          >
+            <ActivityFeed
+              data={data}
+              injectedCard={sceneInjectedCard}
+              cardOverrides={sceneCardOverrides}
+              onClose={() => setActivityDrawerOpen(false)}
+            />
+          </aside>
+        </>
+      )}
 
       <ToastHost />
     </div>
