@@ -4,7 +4,7 @@ import { PlusIcon }            from '../../../src/components/icons/PlusIcon.tsx'
 import { SearchSmIcon }        from '../../../src/components/icons/SearchSmIcon.tsx'
 import { CheckIcon }           from '../../../src/components/icons/CheckIcon.tsx'
 import { TeambridgeAIIcon }    from '../../../src/components/icons/TeambridgeAIIcon.tsx'
-import { Bell01Icon }          from '../../../src/components/icons/Bell01Icon.tsx'
+import { ListBulletIcon }      from '../../../src/components/icons/ListBulletIcon.tsx'
 
 /* ──────────────────────────────────────────────────────────────────────
  * Engage / Communications module — 3-pane chat for ops ↔ staff comms.
@@ -257,7 +257,7 @@ export default function EngageView({ onDemo, onToggleActivityDrawer, activityDra
                 aria-label={activityDrawerOpen ? 'Close activity drawer' : 'Open activity drawer'}
                 aria-pressed={activityDrawerOpen}
               >
-                <Bell01Icon size={16} />
+                <ListBulletIcon size={16} />
               </button>
             )}
             <button type="button" className="engage-thread-profile" onClick={buzz}>

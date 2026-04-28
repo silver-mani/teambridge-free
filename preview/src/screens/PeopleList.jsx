@@ -1,7 +1,6 @@
 import { ChevronDownIcon } from '../../../src/components/icons/ChevronDownIcon.tsx'
 import { ListBulletIcon }  from '../../../src/components/icons/ListBulletIcon.tsx'
 import { Grid01Icon }      from '../../../src/components/icons/Grid01Icon.tsx'
-import { Bell01Icon }      from '../../../src/components/icons/Bell01Icon.tsx'
 
 const STATUS_META = {
   'active':         { label: 'Active',          tone: 'success' },
@@ -44,20 +43,15 @@ export default function PeopleList({ data, onDemo, onToggleActivityDrawer, activ
       <header className="people-head">
         <h1 className="people-title">People</h1>
         <div className="people-head-actions">
-          <button type="button" className="people-head-icon-btn" onClick={buzz} aria-label="Open menu">
+          <button
+            type="button"
+            className={`people-head-icon-btn ${activityDrawerOpen ? 'is-active' : ''}`}
+            onClick={onToggleActivityDrawer ?? buzz}
+            aria-label={activityDrawerOpen ? 'Close activity drawer' : 'Open activity drawer'}
+            aria-pressed={activityDrawerOpen ?? false}
+          >
             <ListBulletIcon size={16} />
           </button>
-          {onToggleActivityDrawer && (
-            <button
-              type="button"
-              className={`people-head-icon-btn ${activityDrawerOpen ? 'is-active' : ''}`}
-              onClick={onToggleActivityDrawer}
-              aria-label={activityDrawerOpen ? 'Close activity drawer' : 'Open activity drawer'}
-              aria-pressed={activityDrawerOpen}
-            >
-              <Bell01Icon size={16} />
-            </button>
-          )}
         </div>
       </header>
 

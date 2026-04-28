@@ -11,7 +11,6 @@ import { BarChart02Icon }       from '../../../src/components/icons/BarChart02Ic
 import { XIcon }                from '../../../src/components/icons/XIcon.tsx'
 import { ClockIcon }            from '../../../src/components/icons/ClockIcon.tsx'
 import { Map01Icon }            from '../../../src/components/icons/Map01Icon.tsx'
-import { Bell01Icon }           from '../../../src/components/icons/Bell01Icon.tsx'
 
 /* Mon → Sun ordering. The schedule data keys shifts by these ids; we
    compute the actual calendar dates at render time so the calendar
@@ -332,20 +331,15 @@ export default function ScheduleCalendar({ data, onDemo, onToggleActivityDrawer,
           <button type="button" className="schedule-btn schedule-btn-dark" onClick={buzz}>
             Publish all <ArrowNarrowRightIcon size={14} />
           </button>
-          <button type="button" className="schedule-icon-btn" onClick={buzz} aria-label="Open menu">
+          <button
+            type="button"
+            className={`schedule-icon-btn ${activityDrawerOpen ? 'is-active' : ''}`}
+            onClick={onToggleActivityDrawer ?? buzz}
+            aria-label={activityDrawerOpen ? 'Close activity drawer' : 'Open activity drawer'}
+            aria-pressed={activityDrawerOpen ?? false}
+          >
             <ListBulletIcon size={16} />
           </button>
-          {onToggleActivityDrawer && (
-            <button
-              type="button"
-              className={`schedule-icon-btn ${activityDrawerOpen ? 'is-active' : ''}`}
-              onClick={onToggleActivityDrawer}
-              aria-label={activityDrawerOpen ? 'Close activity drawer' : 'Open activity drawer'}
-              aria-pressed={activityDrawerOpen}
-            >
-              <Bell01Icon size={16} />
-            </button>
-          )}
           <button type="button" className="schedule-icon-btn schedule-icon-btn-ai" onClick={buzz} aria-label="Ask Teambridge">
             <TeambridgeAIIcon size={16} />
           </button>

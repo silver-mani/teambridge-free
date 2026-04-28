@@ -6,7 +6,6 @@ import { Grid01Icon }           from '../../../src/components/icons/Grid01Icon.t
 import { TeambridgeAIIcon }     from '../../../src/components/icons/TeambridgeAIIcon.tsx'
 import { ArrowNarrowRightIcon } from '../../../src/components/icons/ArrowNarrowRightIcon.tsx'
 import { ArrowUpRightIcon }     from '../../../src/components/icons/ArrowUpRightIcon.tsx'
-import { Bell01Icon }           from '../../../src/components/icons/Bell01Icon.tsx'
 import { PlusIcon }             from '../../../src/components/icons/PlusIcon.tsx'
 import { CurrencyDollarCircleIcon } from '../../../src/components/icons/CurrencyDollarCircleIcon.tsx'
 import { BookOpen01Icon }       from '../../../src/components/icons/BookOpen01Icon.tsx'
@@ -73,20 +72,15 @@ function PayHomeScreen({ industryId, onSelectPeriod, onDemo, onToggleActivityDra
       <header className="pay-head">
         <h1 className="pay-title">Dashboard</h1>
         <div className="pay-head-actions">
-          <button type="button" className="pay-icon-btn" onClick={buzz} aria-label="Open menu">
+          <button
+            type="button"
+            className={`pay-icon-btn ${activityDrawerOpen ? 'is-active' : ''}`}
+            onClick={onToggleActivityDrawer ?? buzz}
+            aria-label={activityDrawerOpen ? 'Close activity drawer' : 'Open activity drawer'}
+            aria-pressed={activityDrawerOpen ?? false}
+          >
             <ListBulletIcon size={16} />
           </button>
-          {onToggleActivityDrawer && (
-            <button
-              type="button"
-              className={`pay-icon-btn ${activityDrawerOpen ? 'is-active' : ''}`}
-              onClick={onToggleActivityDrawer}
-              aria-label={activityDrawerOpen ? 'Close activity drawer' : 'Open activity drawer'}
-              aria-pressed={activityDrawerOpen}
-            >
-              <Bell01Icon size={16} />
-            </button>
-          )}
           <button type="button" className="pay-icon-btn pay-icon-btn-ai" onClick={buzz} aria-label="Ask Teambridge">
             <TeambridgeAIIcon size={16} />
           </button>
@@ -197,7 +191,7 @@ function PayPeriodScreen({ industryId, periodId, onBack, onSelectUser, onDemo, o
               aria-label={activityDrawerOpen ? 'Close activity drawer' : 'Open activity drawer'}
               aria-pressed={activityDrawerOpen}
             >
-              <Bell01Icon size={16} />
+              <ListBulletIcon size={16} />
             </button>
           )}
           <button type="button" className="pay-btn pay-btn-dark" onClick={buzz}>
@@ -330,7 +324,7 @@ function PayUserScreen({ industryId, periodId, personId, onBack, onHome, onDemo,
                 aria-label={activityDrawerOpen ? 'Close activity drawer' : 'Open activity drawer'}
                 aria-pressed={activityDrawerOpen}
               >
-                <Bell01Icon size={16} />
+                <ListBulletIcon size={16} />
               </button>
             )}
             <button type="button" className="pay-btn pay-btn-dark" onClick={buzz}>
