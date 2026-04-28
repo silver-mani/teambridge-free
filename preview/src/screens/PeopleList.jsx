@@ -16,7 +16,7 @@ const STATUS_META = {
 // each carry their own salt so the same string never collides between the
 // two columns in a single row (e.g. "Civic Auditorium" the venue and any
 // role happening to share its hash bucket end up on different colors).
-const TAG_TONES = ['purple', 'blue', 'matcha', 'orange', 'pink']
+const TAG_TONES = ['purple', 'blue', 'green', 'orange', 'pink']
 const hashTone = (str, salt = '') => {
   const s = `${salt}:${str ?? ''}`
   let h = 0

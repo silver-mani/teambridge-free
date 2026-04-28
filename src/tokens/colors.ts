@@ -127,7 +127,7 @@ export const palette = {
   'Alloy-matcha-950': '#101500',
 
   // ─── Green ──────────────────────────────────────────────────────────────
-  'Alloy-green-50':  '#E6F6E7',
+  'Alloy-green-50':  '#E5F6E7',
   'Alloy-green-100': '#D0EED3',
   'Alloy-green-150': '#BBE6BF',
   'Alloy-green-200': '#A5DEAB',
