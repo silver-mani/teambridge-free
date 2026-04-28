@@ -23,6 +23,7 @@ import { Map01Icon }           from '../../../src/components/icons/Map01Icon.tsx
 import { ArrowCircleBrokenRightIcon } from '../../../src/components/icons/ArrowCircleBrokenRightIcon.tsx'
 import { SettingsGearIcon }    from '../../../src/components/icons/SettingsGearIcon.tsx'
 import { ClockIcon }           from '../../../src/components/icons/ClockIcon.tsx'
+import { PuzzlePiece01Icon }   from '../../../src/components/icons/PuzzlePiece01Icon.tsx'
 import { getIndustryData }     from '../data/industryData.js'
 import { getAgent, AGENTS }   from '../data/agents.js'
 import { getCardDetail }       from '../data/cardDetails.js'
@@ -129,7 +130,7 @@ const NAV_GROUPS = [
     label: 'Team',
     items: [
       { id: 'people',     label: 'People',     Icon: Users03Icon           },
-      { id: 'onboarding', label: 'Onboarding', Icon: ClipboardCheckIcon    },
+      { id: 'onboarding', label: 'Onboarding', Icon: PuzzlePiece01Icon     },
       { id: 'engage',     label: 'Engage',     Icon: MessageDotsSquareIcon },
     ],
   },
@@ -1488,6 +1489,34 @@ const BRIEFING = {
   },
 }
 
+/* Briefing set when the user is on Onboarding — insights are pipeline:
+   what's stuck, what's running clean, and which workflow owns the
+   automation behind it. */
+const ONBOARDING_BRIEFING = {
+  events: {
+    time: '9:04 AM',
+    greeting: "30 candidates in the funnel — here's where to push next.",
+    situations: [
+      { id: 'background-stuck', tone: 'warning',
+        title: '6 candidates stuck in Background Check',
+        desc:  'Median time-in-stage is 9 days — vendor SLA is 48 hrs. James Ulrich has been there 6 weeks.',
+        action: { label: 'Chase vendor', prompt: "Chase the background-check vendor on the 6 stuck candidates" } },
+      { id: 'docusign-pending', tone: 'warning',
+        title: '5 in DocuSign · oldest is 1 year old',
+        desc:  'Jane Matthews and Milly Gold have packets out since 2025. Send a reminder or close them out.',
+        action: { label: 'Send reminders', prompt: 'Send DocuSign reminders to candidates older than 30 days' } },
+      { id: 'auto-advance', tone: 'info',
+        title: 'Onboarding Auto-Advance handled 4 candidates this week',
+        desc:  'Iris pushed Olivia, Diego, Devon, and Priya through Form → Hired with no human touch.',
+        action: { label: 'Open workflow', prompt: 'Open the Onboarding Auto-Advance workflow' } },
+      { id: 'cred-tier', tone: 'info',
+        title: 'Amy Jain ready for Platinum tier review',
+        desc:  '7 role qualifications · 9 months tenure pending · waiting on Super Admin sign-off.',
+        action: { label: 'Promote', prompt: "Open Amy Jain's tier review" } },
+    ],
+  },
+}
+
 /* Briefing set when the user is on Time Tracking — insights are live-ops:
    who's currently in / on break / late, where the load is concentrated,
    and one anomaly worth surfacing. Events-only for now. */
@@ -1807,6 +1836,7 @@ function briefingFor(view, industryId, paySubRoute) {
   if (view === 'shift-requests')  return SHIFT_REQUESTS_BRIEFING
   if (view === 'timesheets')      return TIMESHEETS_BRIEFING
   if (view === 'review')          return REVIEW_BRIEFING
+  if (view === 'onboarding')      return ONBOARDING_BRIEFING
   if (view === 'pay') {
     if (paySubRoute?.screen === 'user' && paySubRoute.periodId && paySubRoute.personId) {
       return { events: buildUserBriefing(industryId, paySubRoute.periodId, paySubRoute.personId) }
@@ -3492,11 +3522,11 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
         onSelectView={onSelectView}
       />
 
-      {/* Engage is a chat module of its own; Policies is a doc browser;
-          Settings is a system-config page; Onboarding is a full-bleed
-          kanban board — surfacing Nova's chat panel alongside any of
-          them is just noise. */}
-      {view !== 'engage' && view !== 'policies' && view !== 'settings' && view !== 'onboarding' && (
+      {/* Engage is a chat module of its own, Policies is a doc browser,
+          Settings is a system-config page — surfacing Nova's chat panel
+          alongside any of them is just noise. Onboarding keeps the chat
+          so Iris can surface candidate-pipeline insights. */}
+      {view !== 'engage' && view !== 'policies' && view !== 'settings' && (
         <PromptPanel
           industryId={industryId}
           view={view}

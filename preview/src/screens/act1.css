@@ -3830,8 +3830,12 @@ button.activity-card:hover:not(.activity-card-selected),
 .act1-root--time-tracking,
 .act1-root--shift-requests,
 .act1-root--timesheets,
-.act1-root--review {
-  grid-template-columns: 240px 360px 1fr;
+.act1-root--review,
+.act1-root--onboarding {
+  /* minmax(0, 1fr) — without it, grid items default to min-content
+     sizing and a wide canvas (kanban with many columns) would push
+     the chat panel off the left instead of scrolling internally. */
+  grid-template-columns: 240px 360px minmax(0, 1fr);
 }
 
 /* Engage owns its own 3-pane chat; Policies is a folder/doc browser.
@@ -3840,8 +3844,7 @@ button.activity-card:hover:not(.activity-card-selected),
    these views. */
 .act1-root--engage,
 .act1-root--policies,
-.act1-root--settings,
-.act1-root--onboarding {
+.act1-root--settings {
   grid-template-columns: 240px 1fr;
 }
 .act1-root--schedule .activity-feed,
@@ -3850,14 +3853,16 @@ button.activity-card:hover:not(.activity-card-selected),
 .act1-root--time-tracking .activity-feed,
 .act1-root--shift-requests .activity-feed,
 .act1-root--timesheets     .activity-feed,
-.act1-root--review         .activity-feed { opacity: 0; pointer-events: none; }
+.act1-root--review         .activity-feed,
+.act1-root--onboarding     .activity-feed { opacity: 0; pointer-events: none; }
 .act1-root--schedule .prompt-panel-inner,
 .act1-root--people   .prompt-panel-inner,
 .act1-root--pay      .prompt-panel-inner,
 .act1-root--time-tracking .prompt-panel-inner,
 .act1-root--shift-requests .prompt-panel-inner,
 .act1-root--timesheets     .prompt-panel-inner,
-.act1-root--review         .prompt-panel-inner {
+.act1-root--review         .prompt-panel-inner,
+.act1-root--onboarding     .prompt-panel-inner {
   max-width: none;
   padding: 28px var(--space-4) var(--space-8);
 }
@@ -8450,6 +8455,9 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   gap: 8px;
   overflow-y: auto;
   padding: 2px 4px 4px;
+  /* flex: 1 + min-height: 0 give the list a constrained height so
+     overflow-y actually triggers when card stacks exceed the column. */
+  flex: 1;
   min-height: 0;
 }
 
