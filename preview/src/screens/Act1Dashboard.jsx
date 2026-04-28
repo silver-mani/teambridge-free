@@ -21,7 +21,6 @@ import { Microphone02Icon }    from '../../../src/components/icons/Microphone02I
 import { Mail01Icon }          from '../../../src/components/icons/Mail01Icon.tsx'
 import { Map01Icon }           from '../../../src/components/icons/Map01Icon.tsx'
 import { ArrowCircleBrokenRightIcon } from '../../../src/components/icons/ArrowCircleBrokenRightIcon.tsx'
-import { Bell01Icon }          from '../../../src/components/icons/Bell01Icon.tsx'
 import { SettingsGearIcon }    from '../../../src/components/icons/SettingsGearIcon.tsx'
 import { ClockIcon }           from '../../../src/components/icons/ClockIcon.tsx'
 import { getIndustryData }     from '../data/industryData.js'
@@ -36,7 +35,6 @@ import PoliciesView            from './PoliciesView.jsx'
 import EngageView              from './EngageView.jsx'
 import TimeTracking            from './TimeTracking.jsx'
 import ShiftRequests           from './ShiftRequests.jsx'
-import ShiftAlerts             from './ShiftAlerts.jsx'
 import SettingsView            from './SettingsView.jsx'
 import OnboardingView          from './OnboardingView.jsx'
 import TimesheetsView          from './TimesheetsView.jsx'
@@ -140,7 +138,6 @@ const NAV_GROUPS = [
     items: [
       { id: 'schedule',       label: 'Full Schedule',  Icon: Grid01Icon                 },
       { id: 'shift-requests', label: 'Shift Requests', Icon: ArrowCircleBrokenRightIcon },
-      { id: 'shift-alerts',   label: 'Shift Alerts',   Icon: Bell01Icon                 },
     ],
   },
   {
@@ -3376,7 +3373,6 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
        : view === 'pay'           ? <PayView          industryId={industryId} route={paySubRoute} onChangeRoute={setPaySubRoute} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
        : view === 'time-tracking' ? <TimeTracking     data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
        : view === 'shift-requests' ? <ShiftRequests   data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
-       : view === 'shift-alerts'  ? <ShiftAlerts      data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
        : view === 'onboarding'    ? <OnboardingView   data={data} onDemo={() => showDemoToast()} />
        : view === 'timesheets'    ? <TimesheetsView   data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
        : view === 'review'        ? <ReviewView       data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
