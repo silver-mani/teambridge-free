@@ -19,7 +19,6 @@ import { SearchSmIcon }        from '../../../src/components/icons/SearchSmIcon.
 import { XIcon }                from '../../../src/components/icons/XIcon.tsx'
 import { Microphone02Icon }    from '../../../src/components/icons/Microphone02Icon.tsx'
 import { Mail01Icon }          from '../../../src/components/icons/Mail01Icon.tsx'
-import { XIcon }               from '../../../src/components/icons/XIcon.tsx'
 import { getIndustryData }     from '../data/industryData.js'
 import { getAgent, AGENTS }   from '../data/agents.js'
 import { getCardDetail }       from '../data/cardDetails.js'
