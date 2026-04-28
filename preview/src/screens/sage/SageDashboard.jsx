@@ -33,6 +33,16 @@ const OVERTIME_SERIES = [
   { week: 'Wk 7', hrs: 56 },
   { week: 'Wk 8', hrs: 68 },
 ]
+const OVERTIME_SERIES_FIXED = [
+  { week: 'Wk 1', hrs: 14 },
+  { week: 'Wk 2', hrs: 16 },
+  { week: 'Wk 3', hrs: 17 },
+  { week: 'Wk 4', hrs: 17 },
+  { week: 'Wk 5', hrs: 28 },
+  { week: 'Wk 6', hrs: 41 },
+  { week: 'Wk 7', hrs: 56 },
+  { week: 'Wk 8', hrs: 22 },
+]
 
 // Weekly OT cost in $ (raw). Steady through Wk 4, then spikes hard
 // from Wk 5 onward — that's the story the panel and sparkline are telling.
@@ -73,7 +83,7 @@ const initials = (name) =>
   name.split(/\s+/).map(p => p[0]).slice(0, 2).join('').toUpperCase()
 
 /* ───── Inline SVG line chart ───── */
-function OvertimeLineChart({ data }) {
+function OvertimeLineChart({ data, otFixed = false }) {
   const W = 520, H = 180, P = { t: 16, r: 16, b: 28, l: 32 }
   const innerW = W - P.l - P.r
   const innerH = H - P.t - P.b
@@ -98,12 +108,12 @@ function OvertimeLineChart({ data }) {
           <text key={i} x={P.l - 8} y={y(t) + 4} fill="#9aa0a6"
                 fontSize="10" textAnchor="end">{Math.round(t)}</text>
         ))}
-        <path d={areaPath} fill="rgba(217,31,31,0.08)" />
-        <path d={linePath} fill="none" stroke="#d91f1f" strokeWidth="2.25"
+        <path d={areaPath} fill={otFixed ? 'rgba(22,163,74,0.10)' : 'rgba(217,31,31,0.08)'} />
+        <path d={linePath} fill="none" stroke={otFixed ? '#16a34a' : '#d91f1f'} strokeWidth="2.25"
               strokeLinecap="round" strokeLinejoin="round" />
         {data.map((d, i) => (
           <circle key={i} cx={x(i)} cy={y(d.hrs)} r="3"
-                  fill="#fff" stroke="#d91f1f" strokeWidth="2" />
+                  fill="#fff" stroke={otFixed ? '#16a34a' : '#d91f1f'} strokeWidth="2" />
         ))}
       </svg>
       <div className="sage-line-chart-legend">
@@ -121,9 +131,14 @@ function Sparkline({ values, stroke = '#d91f1f' }) {
   const y = (v) => H - P - ((v - min) / (max - min || 1)) * (H - 2 * P)
   const linePath = values.map((v, i) => `${i === 0 ? 'M' : 'L'} ${x(i)} ${y(v)}`).join(' ')
   const areaPath = `${linePath} L ${x(values.length - 1)} ${H - P} L ${x(0)} ${H - P} Z`
+  // Derive area fill from the line color so the sparkline tones match
+  // when we flip to the green "fixed" palette.
+  const areaFill = stroke === '#16a34a'
+    ? 'rgba(22, 163, 74, 0.12)'
+    : 'rgba(217, 31, 31, 0.10)'
   return (
     <svg className="sage-otcost-spark" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
-      <path d={areaPath} fill="rgba(217,31,31,0.10)" />
+      <path d={areaPath} fill={areaFill} />
       <path d={linePath} fill="none" stroke={stroke} strokeWidth="2"
             strokeLinecap="round" strokeLinejoin="round" />
     </svg>
@@ -131,10 +146,11 @@ function Sparkline({ values, stroke = '#d91f1f' }) {
 }
 
 /* ───── Workforce Cost vs Budget ───── */
-function WorkforceCostBudget() {
+function WorkforceCostBudget({ otFixed = false }) {
   const budget = 240_000
-  const actual = 320_000
+  const actual = otFixed ? 268_000 : 320_000
   const max = Math.max(budget, actual)
+  const variance = Math.round(((actual - budget) / budget) * 100)
   return (
     <div className="sage-budget">
       <div className="sage-budget-bars">
@@ -149,47 +165,64 @@ function WorkforceCostBudget() {
         <div className="sage-budget-row">
           <div className="sage-budget-label">Actual</div>
           <div className="sage-budget-track">
-            <div className="sage-budget-fill sage-budget-fill--actual"
+            <div className={`sage-budget-fill ${otFixed ? 'sage-budget-fill--ok' : 'sage-budget-fill--actual'}`}
                  style={{ width: `${(actual / max) * 100}%` }} />
           </div>
-          <div className="sage-budget-amount">$320k</div>
+          <div className="sage-budget-amount">{otFixed ? '$268k' : '$320k'}</div>
         </div>
       </div>
-      <div className="sage-variance-chip" aria-label="Variance plus 33 percent over budget">
+      <div className={`sage-variance-chip ${otFixed ? 'sage-variance-chip--ok' : ''}`}
+           aria-label={`Variance ${variance >= 0 ? 'plus' : 'minus'} ${Math.abs(variance)} percent`}>
         <div className="sage-variance-chip-label">Variance</div>
-        <div className="sage-variance-chip-value">+33%</div>
+        <div className="sage-variance-chip-value">{variance >= 0 ? '+' : ''}{variance}%</div>
       </div>
     </div>
   )
 }
 
 /* ───── Overtime Cost panel ───── */
-function OvertimeCostPanel() {
+const OT_COST_SPARK_FIXED = [2_200, 2_800, 3_100, 2_700, 5_800, 9_400, 13_200, 6_400]
+function OvertimeCostPanel({ otFixed = false }) {
   return (
     <div className="sage-otcost">
       <div className="sage-otcost-head">
-        <div className="sage-otcost-value">$48,200</div>
-        <div className="sage-otcost-pill">+232% vs. budget</div>
+        <div className="sage-otcost-value">{otFixed ? '$24,500' : '$48,200'}</div>
+        <div className={`sage-otcost-pill ${otFixed ? 'sage-otcost-pill--ok' : ''}`}>
+          {otFixed ? '+69% vs. budget' : '+232% vs. budget'}
+        </div>
       </div>
       <div className="sage-otcost-meta">Month-to-date · OT budget $14,500</div>
-      <Sparkline values={OT_COST_SPARK} />
+      <Sparkline values={otFixed ? OT_COST_SPARK_FIXED : OT_COST_SPARK} stroke={otFixed ? '#16a34a' : '#d91f1f'} />
       <div className="sage-otcost-grid">
         <div>
           <div className="sage-otcost-stat-label">This week</div>
-          <div className="sage-otcost-stat-value">$15,200</div>
+          <div className="sage-otcost-stat-value">{otFixed ? '$6,400' : '$15,200'}</div>
         </div>
         <div>
           <div className="sage-otcost-stat-label">vs. last month</div>
-          <div className="sage-otcost-stat-value" style={{ color: '#d91f1f' }}>+187%</div>
+          <div className="sage-otcost-stat-value" style={{ color: otFixed ? '#16a34a' : '#d91f1f' }}>
+            {otFixed ? '+22%' : '+187%'}
+          </div>
         </div>
       </div>
     </div>
   )
 }
 
+const DEPARTMENTS_FIXED = [
+  { name: 'Event Staff & Ushers',   budget: 72_000, actual:  75_000 },
+  { name: 'Security',               budget: 48_000, actual:  52_000 },
+  { name: 'F&B / Concessions',      budget: 54_000, actual:  58_000 },
+  { name: 'Premium / Hospitality',  budget: 26_000, actual:  28_000 },
+  { name: 'Cleaning & Janitorial',  budget: 18_000, actual:  19_000 },
+  { name: 'Engineering',            budget: 15_000, actual:  15_500 },
+  { name: 'Box Office & Retail',    budget:  7_000, actual:   7_500 },
+]
+
 /* ───── Department breakdown table (Levi's Stadium internal) ───── */
-function DepartmentTable() {
-  const maxActual = Math.max(...DEPARTMENTS.map(d => d.actual))
+function DepartmentTable({ otFixed = false }) {
+  const rows = otFixed ? DEPARTMENTS_FIXED : DEPARTMENTS
+  const maxActual = Math.max(...rows.map(d => d.actual))
   return (
     <table className="sage-dept-table">
       <thead>
@@ -201,7 +234,7 @@ function DepartmentTable() {
         </tr>
       </thead>
       <tbody>
-        {DEPARTMENTS.map(d => {
+        {rows.map(d => {
           const variance = Math.round(((d.actual - d.budget) / d.budget) * 100)
           const overBudget = d.actual > d.budget * 1.10
           return (
@@ -311,9 +344,27 @@ function ComplianceSnapshot() {
   )
 }
 
-export default function SageDashboard({ onNavigate }) {
+export default function SageDashboard({ onNavigate, otFixed = false, onResetOTFix }) {
   return (
     <SageShell module="financials" viewLabel="CFO - Daily View · Levi's Stadium" onNavigate={onNavigate}>
+      {otFixed && (
+        <div className="sage-row sage-row--banner">
+          <div className="sage-fix-banner" role="status">
+            <span className="sage-fix-banner-pill">OT crisis resolved</span>
+            <div className="sage-fix-banner-text">
+              Workforce repushed the Saturday schedule —
+              <strong> labor cost down $52k</strong>, overtime back inside budget,
+              and the at-risk roster is clear.
+            </div>
+            {onResetOTFix && (
+              <button type="button" className="sage-fix-banner-undo" onClick={onResetOTFix}>
+                Replay scenario
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="sage-row sage-row--kpis">
         <SageKpiCard
           label="Revenue"
@@ -323,53 +374,67 @@ export default function SageDashboard({ onNavigate }) {
         />
         <SageKpiCard
           label="Net Income"
-          value="$127,748"
+          value={otFixed ? '$179,748' : '$127,748'}
           trend="up"
-          footer="+$38,571 vs. prior month"
+          footer={otFixed ? '+$90,571 vs. prior month' : '+$38,571 vs. prior month'}
         />
         <SageKpiCard
           label="Expenses"
-          value="$722,564"
-          trend="up"
-          trendIsBad
-          footer="+$50,504 vs. prior month"
+          value={otFixed ? '$670,564' : '$722,564'}
+          trend={otFixed ? 'down' : 'up'}
+          trendIsBad={!otFixed}
+          footer={otFixed ? '−$1,496 vs. prior month' : '+$50,504 vs. prior month'}
         />
         <SageKpiCard
           label="Labor Cost"
-          value="$320,000"
-          trend="up"
-          trendIsBad
-          footer="+$78,120 vs. prior month"
+          value={otFixed ? '$268,000' : '$320,000'}
+          trend={otFixed ? 'down' : 'up'}
+          trendIsBad={!otFixed}
+          footer={otFixed ? '+$26,120 vs. prior month' : '+$78,120 vs. prior month'}
         />
       </div>
 
       <div className="sage-row sage-row--budget">
         <SageWidgetCard title="Workforce Cost vs Budget" subtitle="Month to date · all departments">
-          <WorkforceCostBudget />
+          <WorkforceCostBudget otFixed={otFixed} />
           <div className="sage-widget-alert-slot">
-            <SageAlertCard
-              title="3 Critical Workforce Risks Detected"
-              items={[
-                'Overtime spend +232% over budget — 7 departments affected',
-                '12 unfilled shifts this weekend (Niners home game)',
-                '5 credential compliance issues expiring within 7 days',
-              ]}
-              ctaLabel="Resolve OT Crisis"
-              onCta={() => onNavigate && onNavigate('workforce')}
-            />
+            {otFixed ? (
+              <SageAlertCard
+                tone="ok"
+                title="All workforce risks resolved"
+                items={[
+                  'Overtime spend back inside budget — 7 departments cleared',
+                  'Saturday Niners-game schedule fully staffed',
+                  'No outstanding credential compliance flags',
+                ]}
+                ctaLabel="Open weekly recap"
+                onCta={() => onNavigate && onNavigate('workforce')}
+              />
+            ) : (
+              <SageAlertCard
+                title="3 Critical Workforce Risks Detected"
+                items={[
+                  'Overtime spend +232% over budget — 7 departments affected',
+                  '12 unfilled shifts this weekend (Niners home game)',
+                  '5 credential compliance issues expiring within 7 days',
+                ]}
+                ctaLabel="Resolve OT Crisis"
+                onCta={() => onNavigate && onNavigate('workforce')}
+              />
+            )}
           </div>
         </SageWidgetCard>
         <SageWidgetCard title="Overtime Cost" subtitle="Month-to-date spend">
-          <OvertimeCostPanel />
+          <OvertimeCostPanel otFixed={otFixed} />
         </SageWidgetCard>
       </div>
 
       <div className="sage-row sage-row--two">
         <SageWidgetCard title="Overtime Trend" subtitle="Hours, last 8 weeks">
-          <OvertimeLineChart data={OVERTIME_SERIES} />
+          <OvertimeLineChart data={otFixed ? OVERTIME_SERIES_FIXED : OVERTIME_SERIES} otFixed={otFixed} />
         </SageWidgetCard>
         <SageWidgetCard title="Labor Cost by Department" subtitle="Month to date">
-          <DepartmentTable />
+          <DepartmentTable otFixed={otFixed} />
         </SageWidgetCard>
       </div>
 

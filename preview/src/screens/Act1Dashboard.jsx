@@ -2989,13 +2989,13 @@ const OT_SCENE = {
         detail: 'Levi\'s Stadium · combined exposure $27.5k · 7 departments affected' },
       { type: 'thinking', steps: [
         { title: 'Pulled the OT-risk roster',
-          detail: 'Cross-referenced this week\'s schedule against the 40-hr OT cap. Anyone projected ≥38 hrs is on the list.' },
+          detail: 'Cross-referenced this week\'s schedule against the 40-hr OT cap. Anyone projected ≥41 hrs is on the list.' },
         { title: 'Named the exposure',
-          detail: 'Miguel R. (32 → 46 proj.), Marcus J. (38 → 44), Priya S. (36 → 42), Diane K. (37 → 41), Carlos M. (35 → 41).' },
+          detail: 'Diane K. (45 proj.), Carlos M. (45), Maria C. (43), Ravi B. (43), David K. (42) — all driven by Saturday Niners-game extensions.' },
         { title: 'Costed it',
-          detail: 'At the venue\'s 1.5× OT rate, that\'s $27,500 of preventable overtime — about 57% of the MTD overage Sage Intacct flagged.' },
+          detail: 'At the venue\'s 1.5× OT rate, that\'s ~$27,500 of preventable overtime — about 57% of the MTD overage Sage Intacct flagged.' },
         { title: 'Identified swap candidates',
-          detail: 'Same venue, same credentials, under-cap, opted into shift offers: 14 viable workers across the affected shifts.' },
+          detail: 'Same venue, same credentials, under-cap, opted into shift offers: 14 viable workers across the affected Saturday shifts.' },
       ] },
       { type: 'text', text: "I can run a **replacement-shift workflow** — redistribute the at-risk shifts to qualified, under-cap workers and bring this week back inside the OT line. **Want me to run it?**" },
     ] },
@@ -3029,7 +3029,12 @@ const OT_SCENE = {
       'Updating Saturday + Sunday schedules at Levi\'s Stadium',
     ],
     stepDurationMs: 1500,
-    sceneAfter: ({ postAssistant }) => postAssistant(OT_SCENE.success),
+    sceneAfter: ({ postAssistant, applyOTFix }) => {
+      // Mark the OT crisis as resolved so the schedule grid, stats
+      // drawer, and Sage dashboard all flip into their post-fix state.
+      applyOTFix?.()
+      postAssistant(OT_SCENE.success)
+    },
   },
 
   success: {
@@ -3063,7 +3068,7 @@ const OT_SCENE = {
 
 /* ─── Prompt panel ──────────────────────────────────────────────────────── */
 
-function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = false, onInjectActivityCard, onOverrideActivityCard, onResetScene, onOpenWorkflow }) {
+function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = false, otFixed = false, onApplyOTFix, onInjectActivityCard, onOverrideActivityCard, onResetScene, onOpenWorkflow }) {
   const suggestions = PROMPT_SUGGESTIONS[industryId] ?? PROMPT_SUGGESTIONS.events
   const [input, setInput]       = useState('')
   const [messages, setMessages] = useState([])
@@ -3275,7 +3280,7 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
     //    preamble and a small buffer for the final "Complete" pill.
     if (typeof msg.sceneAfter === 'function') {
       const total = 900 + steps.length * stepDurationMs + 500
-      setTimeout(() => msg.sceneAfter({ postAssistant, overrideActivityCard: onOverrideActivityCard }), total)
+      setTimeout(() => msg.sceneAfter({ postAssistant, overrideActivityCard: onOverrideActivityCard, applyOTFix: onApplyOTFix }), total)
     }
   }
 
@@ -3362,14 +3367,20 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
     if (otSceneStartedRef.current) return
     otSceneStartedRef.current = true
 
-    // Slightly snappier than Sandra (2.5s) — the operator just clicked
-    // "Resolve OT Crisis" on the CFO dashboard, so they're already
-    // primed for an answer.
+    // Snappy first-message — the operator just clicked Resolve OT
+    // Crisis on the CFO dashboard. Anything > ~600 ms shows the
+    // empty-state daily briefing first, then visibly replaces it,
+    // which we suppress with a render guard below but the message
+    // should still feel immediate.
     const t = setTimeout(() => {
+      // Skip the OT scene entirely if swaps were already applied this
+      // session — bouncing back to the workforce embed shouldn't replay
+      // the alert and re-flag the workers we just unflagged.
+      if (otFixed) { otSceneStartedRef.current = false; return }
       postAssistant(OT_SCENE.alert)
-    }, 2500)
+    }, 500)
     return () => clearTimeout(t)
-  }, [sageMode, industryId, view, messages.length]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sageMode, industryId, view, messages.length, otFixed]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const clear = () => { setMessages([]); setInput(''); onResetScene?.() }
 
@@ -3408,7 +3419,12 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
             single container so the operator never sees a second inner
             scrollbar. Follow-up chips + compose input stay pinned below. */}
         <div className="prompt-scroll" ref={scrollRef}>
-          {(!hasChat || (industryId === 'events' && view === 'overview')) && (
+          {/* Empty-state daily briefing. Suppressed inside the Sage
+              Workforce embed on the schedule view so the OT-crisis
+              scene fires straight in — we don't want the briefing to
+              flash for half a second before getting replaced. */}
+          {(!hasChat || (industryId === 'events' && view === 'overview'))
+            && !(sageMode && industryId === 'events' && view === 'schedule' && !otFixed) && (
             <DailyBriefing industryId={industryId} view={view} paySubRoute={paySubRoute} briefKey={briefKey} onAction={submit} />
           )}
           {hasChat && (
@@ -3464,7 +3480,7 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
   )
 }
 
-export default function Act1Dashboard({ industryId, view = 'overview', sageMode = false, onBack, onExplore, onSelectView }) {
+export default function Act1Dashboard({ industryId, view = 'overview', sageMode = false, otFixed = false, onApplyOTFix, onBackToIntacct, onBack, onExplore, onSelectView }) {
   const data = useMemo(() => getIndustryData(industryId), [industryId])
   // Pay sub-route lives here so the chat panel can observe drill-downs
   // (home → period → user) alongside top-level view changes.
@@ -3531,6 +3547,8 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
           industryId={industryId}
           view={view}
           sageMode={sageMode}
+          otFixed={otFixed}
+          onApplyOTFix={onApplyOTFix}
           paySubRoute={paySubRoute}
           onInjectActivityCard={setSceneInjectedCard}
           onOverrideActivityCard={(id, patch) => setSceneCardOverrides(prev => ({ ...prev, [id]: { ...(prev[id] ?? {}), ...patch } }))}
@@ -3539,7 +3557,7 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
         />
       )}
 
-      {view === 'schedule'        ? <ScheduleCalendar data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
+      {view === 'schedule'        ? <ScheduleCalendar data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} swapsApplied={otFixed} onBackToIntacct={sageMode ? onBackToIntacct : null} />
        : view === 'people'        ? <PeopleList       data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
        : view === 'pay'           ? <PayView          industryId={industryId} route={paySubRoute} onChangeRoute={setPaySubRoute} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
        : view === 'time-tracking' ? <TimeTracking     data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />

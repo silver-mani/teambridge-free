@@ -6153,6 +6153,21 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   gap: 6px;
 }
 .schedule-stats-config:hover { background: var(--color-bg-tertiary); }
+.schedule-stats-back {
+  border-color: color-mix(in srgb, #1170ff 35%, var(--color-border-opaque));
+  color: #1170ff;
+}
+.schedule-stats-back:hover {
+  background: color-mix(in srgb, #1170ff 8%, var(--color-bg-primary));
+}
+.schedule-stats-back.is-fixed {
+  background: #16a34a;
+  color: #fff;
+  border-color: #16a34a;
+}
+.schedule-stats-back.is-fixed:hover {
+  background: color-mix(in srgb, #16a34a 88%, white);
+}
 .schedule-stats-icon {
   appearance: none;
   background: transparent;

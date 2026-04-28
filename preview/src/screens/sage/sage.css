@@ -599,6 +599,82 @@
   background: var(--sage-red-soft);
   color: var(--sage-red);
 }
+.sage-otcost-pill--ok {
+  background: #DCFCE7;
+  color: #166534;
+}
+
+/* Post-OT-fix variants — flip red panels green so the dashboard reads
+   "all clear" after the workforce embed completes the swap. */
+.sage-budget-fill--ok {
+  background: #16a34a;
+}
+.sage-variance-chip--ok {
+  background: #DCFCE7;
+  border-color: #BBF7D0;
+}
+.sage-variance-chip--ok .sage-variance-chip-value {
+  color: #166534;
+}
+.sage-alert--ok {
+  border-color: #BBF7D0;
+  background: #F0FDF4;
+}
+.sage-alert--ok .sage-alert-head { color: #166534; }
+.sage-alert--ok .sage-alert-cta {
+  background: #16a34a;
+  color: #fff;
+  border-color: #16a34a;
+}
+.sage-alert--ok .sage-alert-cta:hover {
+  background: color-mix(in srgb, #16a34a 88%, white);
+}
+
+/* Top-of-dashboard "OT crisis resolved" banner. */
+.sage-row--banner { padding: 0 24px; margin-top: 16px; }
+.sage-fix-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #F0FDF4;
+  border: 1px solid #BBF7D0;
+  border-radius: 12px;
+  color: #166534;
+}
+.sage-fix-banner-pill {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #16a34a;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.sage-fix-banner-text {
+  flex: 1;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #14532d;
+}
+.sage-fix-banner-text strong { font-weight: 700; }
+.sage-fix-banner-undo {
+  flex-shrink: 0;
+  appearance: none;
+  background: transparent;
+  border: 1px solid #BBF7D0;
+  border-radius: 8px;
+  padding: 5px 12px;
+  font: inherit;
+  font-size: 12px;
+  color: #166534;
+  cursor: pointer;
+}
+.sage-fix-banner-undo:hover { background: #DCFCE7; }
 .sage-otcost-meta {
   font-size: 12px;
   color: var(--sage-text-mute);

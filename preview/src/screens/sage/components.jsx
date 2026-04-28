@@ -91,12 +91,12 @@ export function SageWidgetCard({ title, subtitle, action, children }) {
 }
 
 /* ───── Alert card ───── */
-export function SageAlertCard({ title, items, ctaLabel, onCta }) {
+export function SageAlertCard({ title, items, ctaLabel, onCta, tone = 'alert' }) {
   return (
-    <div className="sage-alert" role="alert">
+    <div className={`sage-alert ${tone === 'ok' ? 'sage-alert--ok' : ''}`} role={tone === 'ok' ? 'status' : 'alert'}>
       <div>
         <div className="sage-alert-head">
-          <span aria-hidden="true">🚨</span>
+          <span aria-hidden="true">{tone === 'ok' ? '✅' : '🚨'}</span>
           <span>{title}</span>
         </div>
         <ul className="sage-alert-list">

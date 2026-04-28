@@ -43,6 +43,22 @@ function setHash(path) {
  */
 function App() {
   const [route, setRoute] = useState(() => parseHash())
+  // Cross-route flag for the OT-fix story arc. The CFO clicks Resolve OT
+  // Crisis on the Sage dashboard → lands in workforce → runs Nova's
+  // replacement flow. When the flow completes we flip this to true so
+  // the Sage dashboard, schedule grid, and stats drawer all reflect the
+  // post-fix state. Stored in sessionStorage so the flag survives a
+  // hash change but resets on a fresh tab.
+  const [otFixed, setOtFixedRaw] = useState(() => {
+    try { return sessionStorage.getItem('tb:ot-fixed') === '1' } catch { return false }
+  })
+  const setOtFixed = (next) => {
+    setOtFixedRaw(next)
+    try {
+      if (next) sessionStorage.setItem('tb:ot-fixed', '1')
+      else sessionStorage.removeItem('tb:ot-fixed')
+    } catch { /* ignore */ }
+  }
 
   useEffect(() => {
     const sync = () => setRoute(parseHash())
@@ -61,9 +77,21 @@ function App() {
   if (route.kind === 'sage') {
     const sageNav = (v) => setHash(v === 'dashboard' ? '/sage' : `/sage/${v}`)
     if (route.view === 'workforce') {
-      return <SageWorkforceEmbed onNavigate={sageNav} />
+      return (
+        <SageWorkforceEmbed
+          onNavigate={sageNav}
+          otFixed={otFixed}
+          onApplyOTFix={() => setOtFixed(true)}
+        />
+      )
     }
-    return <SageDashboard onNavigate={sageNav} />
+    return (
+      <SageDashboard
+        onNavigate={sageNav}
+        otFixed={otFixed}
+        onResetOTFix={() => setOtFixed(false)}
+      />
+    )
   }
 
   return (
