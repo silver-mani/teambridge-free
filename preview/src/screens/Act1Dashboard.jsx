@@ -1488,6 +1488,117 @@ const BRIEFING = {
   },
 }
 
+/* Briefing set when the user is on Time Tracking — insights are live-ops:
+   who's currently in / on break / late, where the load is concentrated,
+   and one anomaly worth surfacing. Events-only for now. */
+const TIME_TRACKING_BRIEFING = {
+  events: {
+    time: '9:04 AM',
+    greeting: "Live ops snapshot — here's what's happening on the floor right now.",
+    situations: [
+      { id: 'levi-load', tone: 'info',
+        title: '14 clocked in at Levi\'s Stadium',
+        desc:  'Heaviest concentration of the day — pre-game prep is on track.',
+        action: { label: 'Open venue', prompt: "Show me everyone clocked in at Levi's right now" } },
+      { id: 'late', tone: 'warning',
+        title: 'Marcus J. is 9 min late',
+        desc:  'Civic Arena, Friday 4 PM usher shift. Sera attempted contact twice.',
+        action: { label: 'Notify backup', prompt: 'Find a backup for the Civic 4 PM usher shift' } },
+      { id: 'breaks', tone: 'info',
+        title: '2 on break right now',
+        desc:  'Diane Kim and Tasha K. — both due back within 10 minutes.',
+        action: { label: 'Track returns', prompt: 'Ping Diane and Tasha when their breaks end' } },
+      { id: 'mobile', tone: 'info',
+        title: 'Trevor on mobile crew, 1h 48m elapsed',
+        desc:  'Off-site security run. Geofence active, no flags.',
+        action: { label: 'Last location', prompt: "Show Trevor's last clock-in location" } },
+    ],
+  },
+}
+
+/* Briefing set when the user is viewing the Shift Requests queue —
+   insights call out the highest-impact pending requests and what
+   Nova would do with them. */
+const SHIFT_REQUESTS_BRIEFING = {
+  events: {
+    time: '9:04 AM',
+    greeting: "8 pending requests — here's what to clear first.",
+    situations: [
+      { id: 'miguel-swap', tone: 'warning',
+        title: 'Miguel\'s Sat swap restores the OT cap',
+        desc:  'Approving the swap to Jordan K. drops Miguel from 41 → 32 hrs. No pay change.',
+        action: { label: 'Approve', prompt: 'Approve Miguel\'s Saturday swap to Jordan' } },
+      { id: 'carlos-extend', tone: 'warning',
+        title: 'Carlos\'s Friday→Saturday extension would cost $420 OT',
+        desc:  'Approving pushes him to 47 hrs and trips the cap. Nova recommends decline.',
+        action: { label: 'Decline', prompt: 'Decline Carlos\'s Saturday extension request' } },
+      { id: 'auto-approve', tone: 'info',
+        title: '5 requests are clean approvals',
+        desc:  'No cap impact, qualified candidates on file. One-click bulk approve.',
+        action: { label: 'Bulk approve', prompt: 'Approve all clean shift requests' } },
+      { id: 'sandra-cover', tone: 'info',
+        title: 'Sandra needs Saturday cover',
+        desc:  'Rachel W. is the best fit (qualified, lands at 31 hrs after).',
+        action: { label: 'Suggest Rachel', prompt: 'Offer Sandra\'s Saturday shift to Rachel W.' } },
+    ],
+  },
+}
+
+/* Briefing set when the user is on Timesheets — flags the rows that
+   need eyes before the period closes. Numbers reconcile with the
+   table rendered alongside. */
+const TIMESHEETS_BRIEFING = {
+  events: {
+    time: '9:04 AM',
+    greeting: "Apr 27 – May 3 timesheets — here's what's blocking sign-off.",
+    situations: [
+      { id: 'flagged', tone: 'warning',
+        title: '5 timesheets flagged for OT/cap breach',
+        desc:  'Diane, Carlos, Maria, Ravi, David — all from Saturday Niners-game extensions.',
+        action: { label: 'Open flagged', prompt: 'Show only the flagged timesheets' } },
+      { id: 'approaching', tone: 'info',
+        title: '2 approaching the 40-hr cap',
+        desc:  'Jordan K. (37 hrs) and Hugo Reyes (39 hrs) need sign-off after a re-balance.',
+        action: { label: 'Review approaching', prompt: 'Show approaching-OT timesheets' } },
+      { id: 'late', tone: 'warning',
+        title: 'Tasha K. — 2 late clock-ins this period',
+        desc:  'Pattern flag triggered. Pay clocked time as-is and surface to Engage.',
+        action: { label: 'Send Engage note', prompt: 'Open an Engage thread with Tasha about lateness' } },
+      { id: 'bulk', tone: 'info',
+        title: '5 clean rows ready to approve in one click',
+        desc:  'Rachel, Priya, Sofia, Amir, plus Marcus once his Friday clock-out finalizes.',
+        action: { label: 'Approve clean', prompt: 'Approve all clean timesheets for this period' } },
+    ],
+  },
+}
+
+/* Briefing set when the user is on Pay Review — exception queue with
+   pay impact, ordered by Nova's "do this next" sequence. */
+const REVIEW_BRIEFING = {
+  events: {
+    time: '9:04 AM',
+    greeting: "Apr 27 – May 3 pay review — 6 exceptions before payroll runs Friday.",
+    situations: [
+      { id: 'diane-cap', tone: 'warning',
+        title: 'Diane Kim Sat shift exceeds 12-hr cap',
+        desc:  '14 hrs logged. Daily-cap policy auto-blocks pay until ops signs off the 2-hr overage.',
+        action: { label: 'Resolve', prompt: 'Apply Nova\'s recommendation for Diane\'s Saturday shift' } },
+      { id: 'carlos-ot', tone: 'warning',
+        title: 'Carlos +5 hrs OT — GM-approved',
+        desc:  'Needs 1.5× rate applied. ~$420 premium. Sign-off already on file.',
+        action: { label: 'Apply rate', prompt: 'Apply 1.5× OT rate to Carlos\'s 5 OT hours' } },
+      { id: 'auto-clear', tone: 'info',
+        title: '4 exceptions are auto-resolvable',
+        desc:  'Tasha late clock-ins, Marcus Friday auto-out, Priya PTO split, Sandra no-show drop.',
+        action: { label: 'Bulk clear', prompt: 'Clear the 4 auto-resolvable exceptions' } },
+      { id: 'budget', tone: 'warning',
+        title: 'OT premium $3,840 this period',
+        desc:  '+182% vs. budget. Most of it concentrates on Saturday Levi\'s shifts.',
+        action: { label: 'Budget breakdown', prompt: 'Show OT premium breakdown by venue' } },
+    ],
+  },
+}
+
 /* Briefing set when the user is viewing the Schedule — insights focus on
    coverage, no-shows, overtime risk, and upcoming shift reminders. Events-only
    for now; other industries fall back to the home briefing. */
@@ -1690,8 +1801,12 @@ function buildUserBriefing(industryId, periodId, personId) {
 }
 
 function briefingFor(view, industryId, paySubRoute) {
-  if (view === 'schedule') return SCHEDULE_BRIEFING
-  if (view === 'people')   return PEOPLE_BRIEFING
+  if (view === 'schedule')        return SCHEDULE_BRIEFING
+  if (view === 'people')          return PEOPLE_BRIEFING
+  if (view === 'time-tracking')   return TIME_TRACKING_BRIEFING
+  if (view === 'shift-requests')  return SHIFT_REQUESTS_BRIEFING
+  if (view === 'timesheets')      return TIMESHEETS_BRIEFING
+  if (view === 'review')          return REVIEW_BRIEFING
   if (view === 'pay') {
     if (paySubRoute?.screen === 'user' && paySubRoute.periodId && paySubRoute.personId) {
       return { events: buildUserBriefing(industryId, paySubRoute.periodId, paySubRoute.personId) }
