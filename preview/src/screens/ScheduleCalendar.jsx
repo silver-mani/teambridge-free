@@ -54,34 +54,42 @@ function getCurrentWeek(today = new Date()) {
  * Policy catalog — mirrors a subset of the Policy Builder folders most
  * relevant to schedule-time enforcement (Overtime & Cap Enforcement,
  * Union Laws, Scheduling). Each entry is what gets surfaced in the
- * violation dialog when a shift trips it.
+ * violation dialog when a shift trips it. Severity drives badge color:
+ *   severe → red    warn → yellow.
  * ────────────────────────────────────────────────────────────────────── */
 const POLICIES = {
   'ot-cap': {
     name: '40-Hour OT Cap',
     folder: 'Overtime & Cap Enforcement',
-    severity: 'high',
+    severity: 'severe',
     Icon: ClockIcon,
     summary: "Replace shifts that would push a worker over 40 hours/week. The schedule still shows the worker, but Nova flags the offending shift for replacement.",
   },
   'daily-cap': {
     name: 'Daily 12-Hour Cap',
     folder: 'Overtime & Cap Enforcement',
-    severity: 'high',
+    severity: 'severe',
     Icon: ClockIcon,
     summary: 'Hard stop on single shifts longer than 12 hours. Applies across all departments and venues.',
   },
   'rest-window': {
     name: 'Mandatory Rest Window',
     folder: 'Union Laws',
-    severity: 'med',
+    severity: 'severe',
     Icon: ClockIcon,
     summary: '11-hour minimum rest between consecutive shifts. Violations are auto-blocked at publish time.',
+  },
+  'approaching-ot': {
+    name: 'Approaching OT Cap',
+    folder: 'Overtime & Cap Enforcement',
+    severity: 'warn',
+    Icon: AlertTriangleIcon,
+    summary: 'Soft warning when a worker is projected to land between 36 and 40 hours this week. Lets ops re-balance the next shift before the OT cap actually trips.',
   },
   'travel-buffer': {
     name: 'Travel Buffer (Multi-Venue)',
     folder: 'Scheduling',
-    severity: 'med',
+    severity: 'warn',
     Icon: Map01Icon,
     summary: 'Workers scheduled across two venues in one day must have a 90-minute travel buffer between them.',
   },
@@ -132,9 +140,11 @@ function computeViolations(rows, weekDates) {
 
     // OT cap — flag any shift that pushes the worker's running total over 40.
     let cumul = 0
-    items.forEach(it => {
+    let firstOverIdx = -1
+    items.forEach((it, idx) => {
       cumul += it.duration
       if (cumul > 40) {
+        if (firstOverIdx < 0) firstOverIdx = idx
         const over = (cumul - 40).toFixed(1).replace(/\.0$/, '')
         push(`${row.userId}:${it.dayId}`, {
           policyId: 'ot-cap',
@@ -142,6 +152,18 @@ function computeViolations(rows, weekDates) {
         })
       }
     })
+
+    // Approaching-OT warn — projected weekly total lands in [36, 40].
+    // Surface on the LAST scheduled shift (the one putting the worker
+    // closest to the cap) so ops sees one warn, not noise.
+    const weeklyTotal = cumul
+    if (weeklyTotal >= 36 && weeklyTotal <= 40 && items.length) {
+      const last = items[items.length - 1]
+      push(`${row.userId}:${last.dayId}`, {
+        policyId: 'approaching-ot',
+        detail: `Projected to finish the week at ${weeklyTotal.toFixed(1)} hrs — within ${(40 - weeklyTotal).toFixed(1)} hr of the OT cap.`,
+      })
+    }
 
     // Daily 12-hour cap.
     items.forEach(it => {
@@ -489,8 +511,14 @@ function ScheduleStatsDrawer({ open, tab, onSetTab, onToggle, onConfigure }) {
   )
 }
 
+function shiftSeverity(violations) {
+  // Highest severity wins for badge color: any severe → severe, else warn.
+  return violations.some(v => POLICIES[v.policyId]?.severity === 'severe') ? 'severe' : 'warn'
+}
+
 function ShiftCell({ shift, violations = [], onClick, onShowViolations }) {
   const hasViolation = violations.length > 0
+  const sev = hasViolation ? shiftSeverity(violations) : null
   return (
     <button
       type="button"
@@ -504,7 +532,7 @@ function ShiftCell({ shift, violations = [], onClick, onShowViolations }) {
       </div>
       {hasViolation && (
         <span
-          className="schedule-shift-violation-badge"
+          className={`schedule-shift-violation-badge schedule-shift-violation-badge--${sev}`}
           role="button"
           tabIndex={0}
           aria-label={`${violations.length} polic${violations.length === 1 ? 'y' : 'ies'} violated`}
@@ -520,28 +548,29 @@ function ShiftCell({ shift, violations = [], onClick, onShowViolations }) {
   )
 }
 
-const SEVERITY_LABEL = { high: 'High', med: 'Medium' }
+const SEVERITY_LABEL = { severe: 'Severe', warn: 'Warning' }
 
 function ViolationsDialog({ ctx, weekDates, onClose, onResolve }) {
   const { row, dayIndex, shift, list } = ctx
   const date = weekDates[dayIndex]
   const dayName = DAYS[dayIndex].label
   const dateLabel = `${MONTHS[date.getMonth()]} ${date.getDate()}`
-  // Sort violations high-severity first so OT cap reads above rest-window etc.
+  // Sort violations severe-first so OT cap reads above warn-level entries.
   const ordered = [...list].sort((a, b) => {
-    const sa = POLICIES[a.policyId]?.severity === 'high' ? 0 : 1
-    const sb = POLICIES[b.policyId]?.severity === 'high' ? 0 : 1
+    const sa = POLICIES[a.policyId]?.severity === 'severe' ? 0 : 1
+    const sb = POLICIES[b.policyId]?.severity === 'severe' ? 0 : 1
     return sa - sb
   })
+  const dialogSev = ordered.some(v => POLICIES[v.policyId]?.severity === 'severe') ? 'severe' : 'warn'
 
   return (
     <div className="violations-backdrop" role="dialog" aria-modal="true" onClick={onClose}>
-      <div className="violations-dialog" onClick={(e) => e.stopPropagation()}>
+      <div className={`violations-dialog violations-dialog--${dialogSev}`} onClick={(e) => e.stopPropagation()}>
         <header className="violations-head">
           <div className="violations-head-text">
-            <div className="violations-head-eyebrow">
+            <div className={`violations-head-eyebrow violations-head-eyebrow--${dialogSev}`}>
               <AlertTriangleIcon size={14} />
-              {ordered.length} polic{ordered.length === 1 ? 'y' : 'ies'} broken by this shift
+              {ordered.length} polic{ordered.length === 1 ? 'y' : 'ies'} {dialogSev === 'severe' ? 'broken' : 'flagged'} on this shift
             </div>
             <div className="violations-head-title">{row.name} · {dayName}, {dateLabel}</div>
             <div className="violations-head-meta">
@@ -566,7 +595,7 @@ function ViolationsDialog({ ctx, weekDates, onClose, onResolve }) {
                 <div className="violation-card-text">
                   <div className="violation-card-row">
                     <span className="violation-card-name">{def.name}</span>
-                    <span className={`violation-card-severity is-${def.severity}`}>
+                    <span className={`violation-card-severity violation-card-severity--${def.severity}`}>
                       {SEVERITY_LABEL[def.severity] ?? 'Info'}
                     </span>
                   </div>
