@@ -19,6 +19,10 @@ import { SearchSmIcon }        from '../../../src/components/icons/SearchSmIcon.
 import { XIcon }                from '../../../src/components/icons/XIcon.tsx'
 import { Microphone02Icon }    from '../../../src/components/icons/Microphone02Icon.tsx'
 import { Mail01Icon }          from '../../../src/components/icons/Mail01Icon.tsx'
+import { Map01Icon }           from '../../../src/components/icons/Map01Icon.tsx'
+import { ArrowCircleBrokenRightIcon } from '../../../src/components/icons/ArrowCircleBrokenRightIcon.tsx'
+import { Bell01Icon }          from '../../../src/components/icons/Bell01Icon.tsx'
+import { SettingsGearIcon }    from '../../../src/components/icons/SettingsGearIcon.tsx'
 import { getIndustryData }     from '../data/industryData.js'
 import { getAgent, AGENTS }   from '../data/agents.js'
 import { getCardDetail }       from '../data/cardDetails.js'
@@ -29,6 +33,10 @@ import PayView                 from './PayView.jsx'
 import WorkflowsView           from './WorkflowsView.jsx'
 import PoliciesView            from './PoliciesView.jsx'
 import EngageView              from './EngageView.jsx'
+import TimeTracking            from './TimeTracking.jsx'
+import ShiftRequests           from './ShiftRequests.jsx'
+import ShiftAlerts             from './ShiftAlerts.jsx'
+import SettingsView            from './SettingsView.jsx'
 import './act1.css'
 
 /* ─── Agent avatar (animated GIF in a color-tinted ring) ─────────────────── */
@@ -104,17 +112,74 @@ function formatToday() {
 
 /* ─── Left nav ────────────────────────────────────────────────────────────── */
 
-const NAV_ITEMS = [
-  { id: 'overview',  label: 'Home',             Icon: Home02Icon              },
-  { id: 'people',    label: 'People',           Icon: Users03Icon             },
-  { id: 'schedule',  label: 'Schedule',         Icon: Grid01Icon              },
-  { id: 'engage',    label: 'Engage',           Icon: MessageDotsSquareIcon   },
-  { id: 'pay',       label: 'Pay',              Icon: CurrencyDollarCircleIcon },
-  { id: 'workflows', label: 'Agent Workflows',  Icon: GitBranch01Icon         },
-  { id: 'policies',  label: 'Policies',         Icon: BookOpen01Icon          },
+/* Three top groups + a bottom-pinned admin group. The bottom group lives in
+   its own list with margin-top: auto so Workflows / Policies / Settings always
+   sit flush with the foot, regardless of how many items are in the top groups. */
+const NAV_GROUPS = [
+  {
+    label: null, // Home gets its own ungrouped slot
+    items: [
+      { id: 'overview', label: 'Home', Icon: Home02Icon },
+    ],
+  },
+  {
+    label: 'Operations',
+    items: [
+      { id: 'schedule',       label: 'Schedule',       Icon: Grid01Icon              },
+      { id: 'time-tracking',  label: 'Time Tracking',  Icon: Map01Icon               },
+      { id: 'shift-requests', label: 'Shift Requests', Icon: ArrowCircleBrokenRightIcon },
+      { id: 'shift-alerts',   label: 'Shift Alerts',   Icon: Bell01Icon              },
+    ],
+  },
+  {
+    label: 'Team',
+    items: [
+      { id: 'people', label: 'People', Icon: Users03Icon              },
+      { id: 'engage', label: 'Engage', Icon: MessageDotsSquareIcon    },
+      { id: 'pay',    label: 'Pay',    Icon: CurrencyDollarCircleIcon },
+    ],
+  },
 ]
 
+const NAV_BOTTOM_GROUP = {
+  label: 'Admin',
+  items: [
+    { id: 'workflows', label: 'Agent Workflows', Icon: GitBranch01Icon },
+    { id: 'policies',  label: 'Policy Builder',  Icon: BookOpen01Icon  },
+    { id: 'settings',  label: 'Settings',        Icon: SettingsGearIcon },
+  ],
+}
+
 function LeftNav({ industryLabel, view, onBrand, onAsk, onSelectView, sageMode = false }) {
+  const renderItem = (item) => {
+    const active = item.id === view || (item.id === 'overview' && view === 'overview')
+    return (
+      <button
+        key={item.id}
+        type="button"
+        className={`act1-nav-item ${active ? 'act1-nav-item-active' : ''} ${item.ai ? 'act1-nav-item-ai' : ''}`}
+        onClick={() => onSelectView?.(item.id)}
+        aria-current={active ? 'page' : undefined}
+      >
+        <span className="act1-nav-icon" aria-hidden="true">
+          <item.Icon size={18} />
+        </span>
+        <span className="act1-nav-label">{item.label}</span>
+        {item.ai && (
+          <span className="act1-nav-ai-badge" aria-hidden="true">
+            <TeambridgeAIIcon size={12} />
+          </span>
+        )}
+      </button>
+    )
+  }
+  const renderGroup = (group, key) => (
+    <div className="act1-nav-group" key={key}>
+      {group.label && <div className="act1-nav-group-label">{group.label}</div>}
+      {group.items.map(renderItem)}
+    </div>
+  )
+
   return (
     <aside className="act1-nav" aria-label="Primary">
       {!sageMode && (
@@ -135,37 +200,9 @@ function LeftNav({ industryLabel, view, onBrand, onAsk, onSelectView, sageMode =
       )}
 
       <nav className="act1-nav-list">
-        {NAV_ITEMS.map(item => {
-          const active = item.id === view || (item.id === 'overview' && view === 'overview')
-          const onClick =
-              item.id === 'overview'  ? () => onSelectView?.('overview')
-            : item.id === 'schedule'  ? () => onSelectView?.('schedule')
-            : item.id === 'people'    ? () => onSelectView?.('people')
-            : item.id === 'pay'       ? () => onSelectView?.('pay')
-            : item.id === 'workflows' ? () => onSelectView?.('workflows')
-            : item.id === 'engage'    ? () => onSelectView?.('engage')
-            : item.id === 'policies'  ? () => onSelectView?.('policies')
-            : () => showDemoToast()
-          return (
-            <button
-              key={item.id}
-              type="button"
-              className={`act1-nav-item ${active ? 'act1-nav-item-active' : ''} ${item.ai ? 'act1-nav-item-ai' : ''}`}
-              onClick={onClick}
-              aria-current={active ? 'page' : undefined}
-            >
-              <span className="act1-nav-icon" aria-hidden="true">
-                <item.Icon size={18} />
-              </span>
-              <span className="act1-nav-label">{item.label}</span>
-              {item.ai && (
-                <span className="act1-nav-ai-badge" aria-hidden="true">
-                  <TeambridgeAIIcon size={12} />
-                </span>
-              )}
-            </button>
-          )
-        })}
+        {NAV_GROUPS.map((g, i) => renderGroup(g, `top-${i}`))}
+        <div className="act1-nav-spacer" />
+        {renderGroup(NAV_BOTTOM_GROUP, 'bottom')}
       </nav>
 
       <div className="act1-nav-foot">
@@ -3279,10 +3316,11 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
   }, [industryId, view])
 
   // Activity-drawer toggle. On overview the feed is the page itself, so
-  // the drawer doesn't apply. Workflows + Policies opt out per spec.
-  // Reset to closed whenever the user navigates between views so the
-  // drawer doesn't surprise-pop on the next page.
-  const supportsActivityDrawer = view !== 'overview' && view !== 'workflows' && view !== 'policies'
+  // the drawer doesn't apply. Workflows + Policies + Settings opt out
+  // (admin / system pages). Reset to closed whenever the user navigates
+  // between views so the drawer doesn't surprise-pop on the next page.
+  const noDrawer = new Set(['overview', 'workflows', 'policies', 'settings'])
+  const supportsActivityDrawer = !noDrawer.has(view)
   const [activityDrawerOpen, setActivityDrawerOpen] = useState(false)
   useEffect(() => { setActivityDrawerOpen(false) }, [view, industryId])
   const toggleActivityDrawer = () => setActivityDrawerOpen(o => !o)
@@ -3298,9 +3336,10 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
         onSelectView={onSelectView}
       />
 
-      {/* Engage is a chat module of its own and Policies is a doc browser
-          — surfacing Nova's chat panel alongside either is just noise. */}
-      {view !== 'engage' && view !== 'policies' && (
+      {/* Engage is a chat module of its own, Policies is a doc browser, and
+          Settings is a system-config page — surfacing Nova's chat panel
+          alongside any of them is just noise. */}
+      {view !== 'engage' && view !== 'policies' && view !== 'settings' && (
         <PromptPanel
           industryId={industryId}
           view={view}
@@ -3313,13 +3352,17 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
         />
       )}
 
-      {view === 'schedule'  ? <ScheduleCalendar data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
-       : view === 'people'  ? <PeopleList       data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
-       : view === 'pay'     ? <PayView          industryId={industryId} route={paySubRoute} onChangeRoute={setPaySubRoute} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
-       : view === 'workflows' ? <WorkflowsView  industryId={industryId} pendingWorkflowId={pendingWorkflowId} onConsumePending={() => setPendingWorkflowId(null)} onDemo={() => showDemoToast()} />
-       : view === 'policies' ? <PoliciesView   onDemo={() => showDemoToast()} />
-       : view === 'engage'   ? <EngageView      onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
-       :                      <ActivityFeed     data={data} injectedCard={sceneInjectedCard} cardOverrides={sceneCardOverrides} />}
+      {view === 'schedule'        ? <ScheduleCalendar data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
+       : view === 'people'        ? <PeopleList       data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
+       : view === 'pay'           ? <PayView          industryId={industryId} route={paySubRoute} onChangeRoute={setPaySubRoute} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
+       : view === 'time-tracking' ? <TimeTracking     data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
+       : view === 'shift-requests' ? <ShiftRequests   data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
+       : view === 'shift-alerts'  ? <ShiftAlerts      data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
+       : view === 'workflows'     ? <WorkflowsView    industryId={industryId} pendingWorkflowId={pendingWorkflowId} onConsumePending={() => setPendingWorkflowId(null)} onDemo={() => showDemoToast()} />
+       : view === 'policies'      ? <PoliciesView     onDemo={() => showDemoToast()} />
+       : view === 'engage'        ? <EngageView       onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
+       : view === 'settings'      ? <SettingsView     onDemo={() => showDemoToast()} />
+       :                            <ActivityFeed     data={data} injectedCard={sceneInjectedCard} cardOverrides={sceneCardOverrides} />}
 
       {supportsActivityDrawer && (
         <>

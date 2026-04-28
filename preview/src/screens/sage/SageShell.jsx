@@ -24,9 +24,19 @@ export default function SageShell({
   return (
     <div className="sage-shell">
       <header className="sage-topbar">
-        <div className="sage-logo">Sage</div>
-        <div className="sage-topbar-divider" />
-        <div className="sage-topbar-product">{productLabel}</div>
+        {/* Brand cluster reads as one button — clicking "Sage <Product>" jumps
+            you back to the Sage Intacct (Financials) dashboard, the way most
+            product headers route their logo to "home". */}
+        <button
+          type="button"
+          className="sage-brand"
+          onClick={() => onNavigate('dashboard')}
+          aria-label="Go to Sage Intacct dashboard"
+        >
+          <span className="sage-logo">Sage</span>
+          <span className="sage-topbar-divider" aria-hidden="true" />
+          <span className="sage-topbar-product">{productLabel}</span>
+        </button>
         <div style={{ flex: 1 }} />
         <button
           type="button"
