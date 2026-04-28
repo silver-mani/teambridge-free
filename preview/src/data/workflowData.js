@@ -232,78 +232,450 @@ const AGENT_ESCALATE = {
   },
 }
 
-/* ── Tree layout.
-   The top-level `stream` is a vertical flow. Any node with `branches` fans out
-   below it into parallel labeled streams. Streams end when their array does —
-   we don’t force a merge node, so branches can terminate independently, which
-   is exactly what this scenario wants. ── */
+/* ── Workflow trees.
+   Each workflow is a single vertical `stream`. Nodes with `branches` fork
+   into parallel labeled streams; we keep at most one fork per workflow so
+   the canvas stays readable.
+   ── */
 
 const LAST_MIN_REPLACEMENT = {
   id: 'last-min-replacement',
   title: 'Last-min Replacement',
-  status: 'draft',
-  eyebrow: 'Created from Sandra cancellation · Saturday 7pm',
+  status: 'active',
+  eyebrow: 'Auto-fills shift cancellations within 4 hours',
   description:
-    'Nova detects a shift cancellation, checks that no backup is already ' +
-    'confirmed, and branches on how urgent the window is before handing off ' +
-    'to specialist agents for outreach, confirmation, and escalation.',
+    'Nova ranks qualified workers, offers the shift to the top 3 in parallel, ' +
+    'and waits 90 seconds for an accept. On accept, Iris confirms and publishes; ' +
+    'otherwise Leo pages the ops lead.',
   owner: 'Nova (Schedule Coordinator)',
-  lastEdited: 'Created just now',
+  lastEdited: 'Created from the Sandra Lee scene',
   stream: [
     TRIGGER,
+    AGENT_RANK_AND_OFFER,
+    WAIT_FOR_RESPONSES,
     {
-      ...COND_BACKUP,
+      ...COND_ACCEPT,
       branches: [
-        {
-          label: 'No backup',
-          tone: 'primary',
-          stream: [
-            {
-              ...COND_URGENT,
-              branches: [
-                {
-                  label: 'Urgent (<4h)',
-                  tone: 'primary',
-                  stream: [
-                    AGENT_RANK_AND_OFFER,
-                    WAIT_FOR_RESPONSES,
-                    {
-                      ...COND_ACCEPT,
-                      branches: [
-                        {
-                          label: 'Yes',
-                          tone: 'primary',
-                          stream: [AGENT_CONFIRM],
-                        },
-                        {
-                          label: 'No',
-                          tone: 'warn',
-                          stream: [AGENT_ESCALATE],
-                        },
-                      ],
-                    },
-                  ],
-                },
-                {
-                  label: 'Standard',
-                  tone: 'mute',
-                  stream: [AGENT_SEQUENTIAL, WAIT_QUEUE, AGENT_CONFIRM],
-                },
-              ],
-            },
-          ],
-        },
-        {
-          label: 'Has backup',
-          tone: 'mute',
-          stream: [END_ALREADY_COVERED],
-        },
+        { label: 'Accepted',  tone: 'primary', stream: [AGENT_CONFIRM]  },
+        { label: 'No accept', tone: 'warn',    stream: [AGENT_ESCALATE] },
       ],
     },
   ],
 }
 
-export const WORKFLOWS = [LAST_MIN_REPLACEMENT]
+/* ── 2. OT Cap Auto-Replace
+   Triggered when a schedule update would push a worker past 40 hrs/week.
+   Nova rebalances; if a clean swap exists we apply it, otherwise Leo
+   loops the ops lead in. ── */
+
+const OTCAP_TRIGGER = {
+  id: 'otcap-trigger',
+  kind: 'trigger',
+  title: 'Worker projected over 40 hrs',
+  subtitle: 'Schedule · weekly hours > 40',
+  panel: {
+    heading: 'Trigger · Projected over OT cap',
+    description: 'Fires when a publish or shift assignment would push a worker over the 40-hr weekly cap.',
+    promptPlaceholder: 'Tweak — e.g. "only fire on Levi\'s shifts" or "include daily 8-hr cap too".',
+    fields: [
+      { label: 'Object',    value: 'Schedule',                 type: 'select' },
+      { label: 'Threshold', value: '> 40 hrs / week (weekly)', type: 'select' },
+    ],
+    chips: ['40 hrs/week', '8 hrs/day', 'Daily double-time', 'Per venue'],
+  },
+}
+
+const OTCAP_FIND = {
+  id: 'otcap-find',
+  kind: 'agent',
+  agentId: 'nova',
+  title: 'Find a clean swap',
+  subtitle: 'Top 2 workers under cap, qualified for the shift',
+  panel: {
+    heading: 'AI Action · Nova picks a swap',
+    description: 'Nova scans the same role + venue pool, filters to workers under their weekly cap and properly credentialed, and ranks the top 2 by performance + fairness.',
+    promptPlaceholder: 'Shape the rank — e.g. "weight under-utilised workers higher".',
+    fields: [
+      { label: 'Agent',     value: 'Nova · Schedule Coordinator', type: 'select' },
+      { label: 'Pool',      value: 'Same role · same venue · under 38 hrs', type: 'text' },
+      { label: 'Rank by',   value: ['Performance (90d)', 'Hours fairness'], type: 'pill-list' },
+      { label: 'Offer to',  value: 'Top 2 · 60 sec expiry',       type: 'text' },
+    ],
+    chips: ['Performance', 'Fairness', 'Cap headroom', 'SMS + in-app'],
+  },
+}
+
+const OTCAP_WAIT = {
+  id: 'otcap-wait',
+  kind: 'timer',
+  title: 'Wait 60 seconds',
+  subtitle: 'Give the offered workers a chance to accept',
+  panel: {
+    heading: 'Wait · 60 seconds',
+    description: 'Holds the workflow long enough for either offer to come back accepted.',
+    promptPlaceholder: 'Tweak — e.g. "stretch to 2 minutes for non-game days".',
+    fields: [{ label: 'Duration', value: '60 seconds', type: 'text' }],
+    chips: ['30 sec', '60 sec', '2 min'],
+  },
+}
+
+const OTCAP_COND = {
+  id: 'otcap-cond',
+  kind: 'condition',
+  title: 'Did anyone accept?',
+  subtitle: 'offer.response · accepted',
+  panel: {
+    heading: 'Condition · Accept received',
+    description: 'Branches on whether either offered worker took the shift inside the 60-second window.',
+    promptPlaceholder: 'Tweak — e.g. "always page the GM if it goes to escalation".',
+    fields: [
+      { label: 'Field',    value: 'offer.response', type: 'select' },
+      { label: 'Operator', value: 'is',             type: 'select' },
+      { label: 'Value',    value: 'accepted',       type: 'select' },
+    ],
+    chips: ['Response', 'First-accept wins'],
+  },
+}
+
+const OTCAP_SWAP = {
+  id: 'otcap-swap',
+  kind: 'agent',
+  agentId: 'iris',
+  title: 'Swap and notify both workers',
+  subtitle: 'Move the shift, message both staff, log the OT recovery',
+  panel: {
+    heading: 'AI Action · Iris finalises the swap',
+    description: 'Iris re-assigns the shift to the accepter, notifies both workers, and logs the recovery to the OT ledger so payroll downstream stays clean.',
+    promptPlaceholder: 'Tweak — e.g. "also CC the GM on the swap message".',
+    fields: [
+      { label: 'Agent',  value: 'Iris · Credentialing Agent',         type: 'select' },
+      { label: 'Update', value: 'Shift.assignee → accepter',           type: 'text'   },
+      { label: 'Notify', value: ['Original worker', 'Accepter'],       type: 'pill-list' },
+      { label: 'Log',    value: 'OT recovery ledger',                  type: 'text'   },
+    ],
+    chips: ['Re-assign', 'Notify both', 'Log recovery'],
+  },
+}
+
+const OTCAP_ESCALATE = {
+  id: 'otcap-escalate',
+  kind: 'agent',
+  agentId: 'leo',
+  title: 'Escalate to ops lead',
+  subtitle: 'Page Miguel with the override picks',
+  panel: {
+    heading: 'AI Action · Leo loops in the ops lead',
+    description: 'No accept inside 60 seconds — Leo pages the ops lead with a 3-deep override shortlist plus the option to approve the OT.',
+    promptPlaceholder: 'Tweak — e.g. "also notify the GM if Miguel doesn\'t ack in 90 sec".',
+    fields: [
+      { label: 'Agent',    value: 'Leo · Compliance Agent',                type: 'select' },
+      { label: 'Page',     value: 'Miguel Rivera · SMS + phone',           type: 'text'   },
+      { label: 'Options',  value: ['3 override picks', 'Approve OT once'], type: 'pill-list' },
+    ],
+    chips: ['Page', 'Phone', 'Approve OT', 'Shortlist'],
+  },
+}
+
+const OT_CAP_AUTOREPLACE = {
+  id: 'ot-cap-autoreplace',
+  title: 'OT Cap Auto-Replace',
+  status: 'active',
+  eyebrow: 'Re-balances when a publish would trip the 40-hr cap',
+  description:
+    'When a schedule change would push a worker over 40 hrs, Nova finds a ' +
+    'qualified swap candidate. Iris commits the swap if it lands; otherwise ' +
+    'Leo pages the ops lead with override options.',
+  owner: 'Nova (Schedule Coordinator)',
+  lastEdited: '3 days ago',
+  stream: [
+    OTCAP_TRIGGER,
+    OTCAP_FIND,
+    OTCAP_WAIT,
+    {
+      ...OTCAP_COND,
+      branches: [
+        { label: 'Accepted',  tone: 'primary', stream: [OTCAP_SWAP]      },
+        { label: 'No accept', tone: 'warn',    stream: [OTCAP_ESCALATE] },
+      ],
+    },
+  ],
+}
+
+/* ── 3. Late Clock-In Recovery
+   Worker is past their scheduled start with no clock-in. Sofia nudges
+   them; if they're still missing 5 minutes later, Leo escalates with
+   backup options. ── */
+
+const LATE_TRIGGER = {
+  id: 'late-trigger',
+  kind: 'trigger',
+  title: 'Worker is 5 min late, no clock-in',
+  subtitle: 'Shift · start_time + 5 min · no punch',
+  panel: {
+    heading: 'Trigger · Late clock-in',
+    description: 'Fires when the scheduled start time is 5 minutes in the past and no clock-in has been recorded.',
+    promptPlaceholder: 'Tweak — e.g. "fire after 10 minutes for grace-period shifts".',
+    fields: [
+      { label: 'Field',     value: 'now − Shift.start_time', type: 'select' },
+      { label: 'Threshold', value: '> 5 minutes',            type: 'select' },
+    ],
+    chips: ['3 min', '5 min', '10 min', 'Per role'],
+  },
+}
+
+const LATE_NUDGE = {
+  id: 'late-nudge',
+  kind: 'agent',
+  agentId: 'sofia',
+  title: 'Nudge the worker',
+  subtitle: 'SMS + in-app · "Are you on your way?"',
+  panel: {
+    heading: 'AI Action · Sofia checks in',
+    description: 'Sofia sends a friendly SMS plus an in-app push asking if the worker is on the way. Tracks the read receipt for the next condition.',
+    promptPlaceholder: 'Tweak — e.g. "skip in-app for night shifts".',
+    fields: [
+      { label: 'Agent',    value: 'Sofia · People Ops Agent',          type: 'select' },
+      { label: 'Channels', value: ['SMS', 'In-app push'],              type: 'pill-list' },
+      { label: 'Message',  value: 'Hey {{first_name}} — running late? Tap to confirm or reschedule.', type: 'template' },
+    ],
+    chips: ['SMS', 'In-app push', 'Read receipt'],
+  },
+}
+
+const LATE_WAIT = {
+  id: 'late-wait',
+  kind: 'timer',
+  title: 'Wait 5 minutes',
+  subtitle: 'Give them a chance to clock in',
+  panel: {
+    heading: 'Wait · 5 minutes',
+    description: 'Holds the workflow so we don\'t escalate immediately on every late clock-in.',
+    promptPlaceholder: 'Tweak — e.g. "give them 10 minutes for cleanup shifts".',
+    fields: [{ label: 'Duration', value: '5 minutes', type: 'text' }],
+    chips: ['3 min', '5 min', '10 min'],
+  },
+}
+
+const LATE_COND = {
+  id: 'late-cond',
+  kind: 'condition',
+  title: 'Did they clock in?',
+  subtitle: 'Shift · clock_in_time · is set',
+  panel: {
+    heading: 'Condition · Clocked in?',
+    description: 'Branches on whether the worker clocked in during the 5-minute grace window.',
+    promptPlaceholder: 'Tweak — e.g. "also branch on partial-attendance".',
+    fields: [
+      { label: 'Field',    value: 'Shift.clock_in_time', type: 'select' },
+      { label: 'Operator', value: 'is set',              type: 'select' },
+    ],
+    chips: ['Clocked in', 'Still missing'],
+  },
+}
+
+const LATE_LOG = {
+  id: 'late-log',
+  kind: 'end',
+  title: 'Log lateness · close',
+  subtitle: 'Pattern flag if 2+ this period',
+  panel: {
+    heading: 'End · Logged',
+    description: 'Records the lateness on the worker\'s file. If this is the second late clock-in in the period, raises a pattern flag for the next pay review.',
+    promptPlaceholder: 'Tweak — e.g. "also notify their direct manager".',
+    fields: [{ label: 'Logging', value: 'Worker file + pattern flag', type: 'text' }],
+    chips: ['Pattern flag', 'Manager notify'],
+  },
+}
+
+const LATE_ESCALATE = {
+  id: 'late-escalate',
+  kind: 'agent',
+  agentId: 'leo',
+  title: 'Notify ops lead with backup options',
+  subtitle: 'Page Miguel · attach 3 ranked replacements',
+  panel: {
+    heading: 'AI Action · Leo escalates',
+    description: 'No clock-in after the 5-minute window. Leo pages the ops lead with a 3-deep replacement shortlist already filtered for qualifications and proximity.',
+    promptPlaceholder: 'Tweak — e.g. "also auto-offer to the top replacement".',
+    fields: [
+      { label: 'Agent',     value: 'Leo · Compliance Agent',           type: 'select' },
+      { label: 'Page',      value: 'Ops lead · SMS + phone',           type: 'text'   },
+      { label: 'Attach',    value: '3 ranked replacements',            type: 'text'   },
+    ],
+    chips: ['Page', 'Replacement shortlist'],
+  },
+}
+
+const LATE_CLOCKIN_RECOVERY = {
+  id: 'late-clockin-recovery',
+  title: 'Late Clock-In Recovery',
+  status: 'active',
+  eyebrow: 'Nudges, then escalates with replacement options',
+  description:
+    'Five minutes after a missed clock-in Sofia nudges the worker. If they\'re ' +
+    'still missing five minutes later, Leo pages the ops lead with a ranked ' +
+    'shortlist of replacements.',
+  owner: 'Sofia (People Ops Agent)',
+  lastEdited: '1 week ago',
+  stream: [
+    LATE_TRIGGER,
+    LATE_NUDGE,
+    LATE_WAIT,
+    {
+      ...LATE_COND,
+      branches: [
+        { label: 'Yes',         tone: 'primary', stream: [LATE_LOG]      },
+        { label: 'Still missing', tone: 'warn',  stream: [LATE_ESCALATE] },
+      ],
+    },
+  ],
+}
+
+/* ── 4. Onboarding Auto-Advance
+   New candidate finishes the form → Iris kicks off background check
+   and DocuSign in parallel. When both clear, the candidate flips to
+   Hired; otherwise Sofia surfaces the failure for review. ── */
+
+const ONB_TRIGGER = {
+  id: 'onb-trigger',
+  kind: 'trigger',
+  title: 'Candidate completed intake form',
+  subtitle: 'Onboarding · stage = Form · status = submitted',
+  panel: {
+    heading: 'Trigger · Form submitted',
+    description: 'Fires when a candidate finishes the intake form and is ready for verification.',
+    promptPlaceholder: 'Tweak — e.g. "skip if hiring manager is set to manual".',
+    fields: [
+      { label: 'Object', value: 'Onboarding record', type: 'select' },
+      { label: 'Stage',  value: 'Form · submitted',  type: 'select' },
+    ],
+    chips: ['Form', 'Manual override', 'Per role'],
+  },
+}
+
+const ONB_DISPATCH = {
+  id: 'onb-dispatch',
+  kind: 'agent',
+  agentId: 'iris',
+  title: 'Run background check + send DocuSign packet',
+  subtitle: 'Both kick off in parallel · standard 48-hr SLA',
+  panel: {
+    heading: 'AI Action · Iris kicks off verifications',
+    description: 'Iris files the background check with the contracted vendor and emails the DocuSign packet to the candidate at the same time so the two clocks run concurrently.',
+    promptPlaceholder: 'Tweak — e.g. "include I-9 in the DocuSign packet".',
+    fields: [
+      { label: 'Agent',          value: 'Iris · Credentialing Agent',         type: 'select' },
+      { label: 'Background SLA', value: '48 hours · contracted vendor',        type: 'text'   },
+      { label: 'DocuSign packet', value: ['Offer letter', 'W-4', 'Direct deposit'], type: 'pill-list' },
+    ],
+    chips: ['Background', 'DocuSign', '48-hr SLA'],
+  },
+}
+
+const ONB_WAIT = {
+  id: 'onb-wait',
+  kind: 'timer',
+  title: 'Wait until both complete',
+  subtitle: 'Up to 72 hours · early-exit when both clear',
+  panel: {
+    heading: 'Wait · Until both complete',
+    description: 'Holds the candidate at the verification stage. Exits early as soon as both the background check and the signed packet are received; gives up at 72 hrs.',
+    promptPlaceholder: 'Tweak — e.g. "max wait 5 days for executive roles".',
+    fields: [
+      { label: 'Max duration',  value: '72 hours',                                       type: 'text' },
+      { label: 'Early exit on', value: 'both = complete',                                type: 'select' },
+    ],
+    chips: ['48 hrs', '72 hrs', '5 days'],
+  },
+}
+
+const ONB_COND = {
+  id: 'onb-cond',
+  kind: 'condition',
+  title: 'Both clear?',
+  subtitle: 'background.status = pass AND docusign.status = signed',
+  panel: {
+    heading: 'Condition · Both clear',
+    description: 'Branches on whether both verifications came back green inside the wait window.',
+    promptPlaceholder: 'Tweak — e.g. "treat partial pass as a soft hold".',
+    fields: [
+      { label: 'Background', value: 'pass',   type: 'select' },
+      { label: 'DocuSign',   value: 'signed', type: 'select' },
+    ],
+    chips: ['Both pass', 'Either fails'],
+  },
+}
+
+const ONB_HIRE = {
+  id: 'onb-hire',
+  kind: 'agent',
+  agentId: 'iris',
+  title: 'Hire · add to roster · notify ops lead',
+  subtitle: 'Stage flips to Hired · ops lead gets the welcome packet to send',
+  panel: {
+    heading: 'AI Action · Iris finalises the hire',
+    description: 'Iris flips the candidate to Hired, adds them to the roster, and pings the ops lead with the welcome-packet template ready to send.',
+    promptPlaceholder: 'Tweak — e.g. "also enrol them in the next training cohort".',
+    fields: [
+      { label: 'Agent',     value: 'Iris · Credentialing Agent',          type: 'select' },
+      { label: 'Update',    value: 'Onboarding.stage → Hired',             type: 'text'   },
+      { label: 'Add to',    value: 'Active roster',                        type: 'text'   },
+      { label: 'Notify',    value: 'Ops lead · welcome packet ready',      type: 'text'   },
+    ],
+    chips: ['Stage flip', 'Roster add', 'Welcome packet'],
+  },
+}
+
+const ONB_FLAG = {
+  id: 'onb-flag',
+  kind: 'agent',
+  agentId: 'sofia',
+  title: 'Flag for HR review',
+  subtitle: 'Surface the failed step + suggested next move',
+  panel: {
+    heading: 'AI Action · Sofia surfaces the failure',
+    description: 'A check came back fail or the packet timed out. Sofia logs which step blocked, attaches the agency response, and surfaces it on the HR review queue.',
+    promptPlaceholder: 'Tweak — e.g. "auto-decline if background fail is criminal".',
+    fields: [
+      { label: 'Agent',  value: 'Sofia · People Ops Agent',                  type: 'select' },
+      { label: 'Log',    value: 'Failed step + vendor response',             type: 'text'   },
+      { label: 'Route',  value: 'HR review queue · default assignee',        type: 'text'   },
+    ],
+    chips: ['Manual review', 'Vendor response', 'Auto-decline rule'],
+  },
+}
+
+const ONBOARDING_AUTO_ADVANCE = {
+  id: 'onboarding-auto-advance',
+  title: 'Onboarding Auto-Advance',
+  status: 'active',
+  eyebrow: 'Form → Background + DocuSign → Hired',
+  description:
+    'When a candidate finishes the form, Iris kicks off the background check and ' +
+    'DocuSign packet in parallel. If both clear, the candidate flips to Hired; ' +
+    'if either fails, Sofia surfaces it on the HR review queue.',
+  owner: 'Iris (Credentialing Agent)',
+  lastEdited: '2 days ago',
+  stream: [
+    ONB_TRIGGER,
+    ONB_DISPATCH,
+    ONB_WAIT,
+    {
+      ...ONB_COND,
+      branches: [
+        { label: 'Both clear', tone: 'primary', stream: [ONB_HIRE] },
+        { label: 'Failed',     tone: 'warn',    stream: [ONB_FLAG] },
+      ],
+    },
+  ],
+}
+
+export const WORKFLOWS = [
+  LAST_MIN_REPLACEMENT,
+  OT_CAP_AUTOREPLACE,
+  LATE_CLOCKIN_RECOVERY,
+  ONBOARDING_AUTO_ADVANCE,
+]
 
 export function getWorkflow(id) {
   return WORKFLOWS.find(w => w.id === id) ?? WORKFLOWS[0]
