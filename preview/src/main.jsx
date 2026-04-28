@@ -24,6 +24,7 @@ function parseHash() {
   const viewOk = new Set([
     'overview', 'schedule', 'people', 'pay', 'workflows', 'engage', 'policies',
     'time-tracking', 'shift-requests', 'shift-alerts', 'settings',
+    'documents', 'timesheets', 'review',
   ])
   return { kind: 'industry', industry, view: viewOk.has(view) ? view : 'overview' }
 }
