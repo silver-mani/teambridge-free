@@ -6,6 +6,7 @@ import { Grid01Icon }           from '../../../src/components/icons/Grid01Icon.t
 import { TeambridgeAIIcon }     from '../../../src/components/icons/TeambridgeAIIcon.tsx'
 import { ArrowNarrowRightIcon } from '../../../src/components/icons/ArrowNarrowRightIcon.tsx'
 import { ArrowUpRightIcon }     from '../../../src/components/icons/ArrowUpRightIcon.tsx'
+import { Bell01Icon }           from '../../../src/components/icons/Bell01Icon.tsx'
 import { PlusIcon }             from '../../../src/components/icons/PlusIcon.tsx'
 import { CurrencyDollarCircleIcon } from '../../../src/components/icons/CurrencyDollarCircleIcon.tsx'
 import { BookOpen01Icon }       from '../../../src/components/icons/BookOpen01Icon.tsx'
@@ -21,9 +22,10 @@ import {
    individual user. Sub-screen state is owned by the parent (Act1Dashboard)
    so the surrounding chat panel can reignite briefings when the user drills
    down, without PayView needing to know the chat exists. */
-export default function PayView({ industryId, route = { screen: 'home' }, onChangeRoute, onDemo }) {
+export default function PayView({ industryId, route = { screen: 'home' }, onChangeRoute, onDemo, onToggleActivityDrawer, activityDrawerOpen }) {
   const buzz = () => onDemo?.()
   const setRoute = (next) => onChangeRoute?.(next)
+  const drawerProps = { onToggleActivityDrawer, activityDrawerOpen }
 
   if (route.screen === 'user') {
     return (
@@ -34,6 +36,7 @@ export default function PayView({ industryId, route = { screen: 'home' }, onChan
         onBack={(periodId) => setRoute({ screen: 'period', periodId })}
         onHome={() => setRoute({ screen: 'home' })}
         onDemo={buzz}
+        {...drawerProps}
       />
     )
   }
@@ -45,6 +48,7 @@ export default function PayView({ industryId, route = { screen: 'home' }, onChan
         onBack={() => setRoute({ screen: 'home' })}
         onSelectUser={(personId) => setRoute({ screen: 'user', periodId: route.periodId, personId })}
         onDemo={buzz}
+        {...drawerProps}
       />
     )
   }
@@ -53,13 +57,14 @@ export default function PayView({ industryId, route = { screen: 'home' }, onChan
       industryId={industryId}
       onSelectPeriod={(periodId) => setRoute({ screen: 'period', periodId })}
       onDemo={buzz}
+      {...drawerProps}
     />
   )
 }
 
 /* ─── Pay Home ──────────────────────────────────────────────────────────── */
 
-function PayHomeScreen({ industryId, onSelectPeriod, onDemo }) {
+function PayHomeScreen({ industryId, onSelectPeriod, onDemo, onToggleActivityDrawer, activityDrawerOpen }) {
   const dash = useMemo(() => getPayDashboard(industryId), [industryId])
   const buzz = () => onDemo?.()
 
@@ -71,6 +76,17 @@ function PayHomeScreen({ industryId, onSelectPeriod, onDemo }) {
           <button type="button" className="pay-icon-btn" onClick={buzz} aria-label="Open menu">
             <ListBulletIcon size={16} />
           </button>
+          {onToggleActivityDrawer && (
+            <button
+              type="button"
+              className={`pay-icon-btn ${activityDrawerOpen ? 'is-active' : ''}`}
+              onClick={onToggleActivityDrawer}
+              aria-label={activityDrawerOpen ? 'Close activity drawer' : 'Open activity drawer'}
+              aria-pressed={activityDrawerOpen}
+            >
+              <Bell01Icon size={16} />
+            </button>
+          )}
           <button type="button" className="pay-icon-btn pay-icon-btn-ai" onClick={buzz} aria-label="Ask Teambridge">
             <TeambridgeAIIcon size={16} />
           </button>
@@ -153,7 +169,7 @@ function PayHomeScreen({ industryId, onSelectPeriod, onDemo }) {
 
 /* ─── Pay Period detail ─────────────────────────────────────────────────── */
 
-function PayPeriodScreen({ industryId, periodId, onBack, onSelectUser, onDemo }) {
+function PayPeriodScreen({ industryId, periodId, onBack, onSelectUser, onDemo, onToggleActivityDrawer, activityDrawerOpen }) {
   const summary = useMemo(() => getPeriodSummary(industryId, periodId), [industryId, periodId])
   const meta = PERIOD_STATUS_META[summary.period.status]
   const buzz = () => onDemo?.()
@@ -172,9 +188,22 @@ function PayPeriodScreen({ industryId, periodId, onBack, onSelectUser, onDemo })
           <h1 className="pay-title">{summary.period.short}</h1>
           <StatusPill tone={meta.tone} label={meta.label} />
         </div>
-        <button type="button" className="pay-btn pay-btn-dark" onClick={buzz}>
-          <ArrowUpRightIcon size={14} /> Export Pay Period
-        </button>
+        <div className="pay-head-actions">
+          {onToggleActivityDrawer && (
+            <button
+              type="button"
+              className={`pay-icon-btn ${activityDrawerOpen ? 'is-active' : ''}`}
+              onClick={onToggleActivityDrawer}
+              aria-label={activityDrawerOpen ? 'Close activity drawer' : 'Open activity drawer'}
+              aria-pressed={activityDrawerOpen}
+            >
+              <Bell01Icon size={16} />
+            </button>
+          )}
+          <button type="button" className="pay-btn pay-btn-dark" onClick={buzz}>
+            <ArrowUpRightIcon size={14} /> Export Pay Period
+          </button>
+        </div>
       </header>
 
       <div className="pay-summary">
@@ -257,7 +286,7 @@ function PayPeriodScreen({ industryId, periodId, onBack, onSelectUser, onDemo })
 
 /* ─── User-within-period detail ─────────────────────────────────────────── */
 
-function PayUserScreen({ industryId, periodId, personId, onBack, onHome, onDemo }) {
+function PayUserScreen({ industryId, periodId, personId, onBack, onHome, onDemo, onToggleActivityDrawer, activityDrawerOpen }) {
   const detail = useMemo(
     () => getUserPeriod(industryId, periodId, personId),
     [industryId, periodId, personId],
@@ -293,6 +322,17 @@ function PayUserScreen({ industryId, periodId, personId, onBack, onHome, onDemo 
             <button type="button" className="pay-icon-btn" onClick={buzz} aria-label="Print">
               <PrintGlyph />
             </button>
+            {onToggleActivityDrawer && (
+              <button
+                type="button"
+                className={`pay-icon-btn ${activityDrawerOpen ? 'is-active' : ''}`}
+                onClick={onToggleActivityDrawer}
+                aria-label={activityDrawerOpen ? 'Close activity drawer' : 'Open activity drawer'}
+                aria-pressed={activityDrawerOpen}
+              >
+                <Bell01Icon size={16} />
+              </button>
+            )}
             <button type="button" className="pay-btn pay-btn-dark" onClick={buzz}>
               Export <DownloadGlyph />
             </button>

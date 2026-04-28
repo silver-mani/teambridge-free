@@ -4,6 +4,7 @@ import { PlusIcon }            from '../../../src/components/icons/PlusIcon.tsx'
 import { SearchSmIcon }        from '../../../src/components/icons/SearchSmIcon.tsx'
 import { CheckIcon }           from '../../../src/components/icons/CheckIcon.tsx'
 import { TeambridgeAIIcon }    from '../../../src/components/icons/TeambridgeAIIcon.tsx'
+import { Bell01Icon }          from '../../../src/components/icons/Bell01Icon.tsx'
 
 /* ──────────────────────────────────────────────────────────────────────
  * Engage / Communications module — 3-pane chat for ops ↔ staff comms.
@@ -121,7 +122,7 @@ const MIGUEL_THREAD = [
   { who: 'sera',   when: 'Today 8:55 AM',     text: "Done. Jordan accepted in **47 seconds**. You\'re back to 32 hrs and the OT cap is restored. Thanks Miguel.", confirmed: true },
 ]
 
-export default function EngageView({ onDemo }) {
+export default function EngageView({ onDemo, onToggleActivityDrawer, activityDrawerOpen }) {
   const [activeDept, setActiveDept] = useState('sched')
   const [activeConv, setActiveConv] = useState('miguel')
   const buzz = () => onDemo?.()
@@ -248,6 +249,17 @@ export default function EngageView({ onDemo }) {
               <CheckIcon size={14} />
               <ChevronDownIcon size={12} />
             </button>
+            {onToggleActivityDrawer && (
+              <button
+                type="button"
+                className={`engage-thread-icon-btn ${activityDrawerOpen ? 'is-active' : ''}`}
+                onClick={onToggleActivityDrawer}
+                aria-label={activityDrawerOpen ? 'Close activity drawer' : 'Open activity drawer'}
+                aria-pressed={activityDrawerOpen}
+              >
+                <Bell01Icon size={16} />
+              </button>
+            )}
             <button type="button" className="engage-thread-profile" onClick={buzz}>
               View Profile
             </button>
