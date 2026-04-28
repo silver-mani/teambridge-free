@@ -3826,16 +3826,28 @@ button.activity-card:hover:not(.activity-card-selected),
 }
 
 .schedule {
-  padding: 28px var(--space-6) var(--space-8);
+  /* Column layout: title / toolbar / daybar are pinned, the calendar
+     canvas owns the vertical scroll, and the stats drawer is anchored
+     at the bottom of the viewport. */
+  padding: 28px var(--space-6) 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
   min-width: 0;
-  overflow-x: auto;
+  min-height: 0;
+  overflow: hidden;
   background: var(--color-bg-secondary);
   height: 100vh;
-  overflow-y: auto;
   animation: schedule-enter 460ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.schedule-canvas {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  /* Soft inset so the bottom of the grid doesn't kiss the drawer's top
+     edge when the user scrolls all the way down. */
+  padding-bottom: var(--space-3);
 }
 @keyframes schedule-enter {
   from { opacity: 0; transform: translateX(12px); }
@@ -4010,6 +4022,10 @@ button.activity-card:hover:not(.activity-card-selected),
   color: var(--color-content-secondary);
   text-align: left;
   border-right: 1px solid var(--color-border-opaque);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.2;
 }
 .schedule-grid-head-cell:last-child { border-right: none; }
 .schedule-grid-head-user { background: var(--color-bg-secondary); }
@@ -4017,6 +4033,16 @@ button.activity-card:hover:not(.activity-card-selected),
   color: var(--color-content-primary);
   background: var(--color-bg-secondary);
   font-weight: var(--font-weight-medium);
+}
+.schedule-grid-head-day { font-size: 13px; }
+.schedule-grid-head-date {
+  font-size: 11px;
+  color: var(--color-content-tertiary);
+  font-weight: var(--font-weight-regular);
+  font-variant-numeric: tabular-nums;
+}
+.schedule-grid-head-cell.is-today .schedule-grid-head-date {
+  color: var(--color-content-secondary);
 }
 
 .schedule-user {
@@ -5974,21 +6000,20 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
  * Schedule stats drawer (bottom of Schedule view)
  * ────────────────────────────────────────────────────────────────────── */
 .schedule-stats {
-  position: sticky;
-  bottom: 0;
-  z-index: 12;
-  margin-top: var(--space-3);
+  /* Anchored to the bottom of the .schedule column. Expands upward
+     when opened (via .schedule-stats-content max-height) and collapses
+     back down — `position: sticky` is no longer needed because the
+     parent now owns the scroll boundary. */
+  flex: 0 0 auto;
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border-opaque);
   border-bottom: none;
   border-radius: 12px 12px 0 0;
   overflow: hidden;
-  min-width: 960px;
   box-shadow: 0 -10px 24px rgba(15, 17, 20, 0.08);
+  transition: box-shadow 220ms cubic-bezier(0.2, 0, 0, 1);
 }
 .schedule-stats--collapsed {
-  /* Minimized footer — just the tab bar + actions row sits at the
-     viewport bottom; schedule grid is fully visible behind it. */
   box-shadow: 0 -6px 16px rgba(15, 17, 20, 0.06);
 }
 .schedule-stats-head {
@@ -6063,19 +6088,30 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
 .schedule-stats-chevron { display: inline-flex; transition: transform 200ms ease; }
 .schedule-stats-chevron[data-open="false"] { transform: rotate(180deg); }
 
+.schedule-stats-content {
+  /* Wraps both the stats body and the empty state so a single
+     transition drives the upward-grow / downward-collapse motion. */
+  max-height: min(380px, 50vh);
+  overflow: hidden;
+  transition: max-height 280ms cubic-bezier(0.2, 0, 0, 1);
+}
+.schedule-stats--collapsed .schedule-stats-content {
+  max-height: 0;
+}
 .schedule-stats-body {
   display: flex;
   flex-direction: column;
-  /* Cap so an expanded drawer never eats more than ~50% of the schedule
-     viewport. Internal scroll handles the overflow on smaller windows. */
   max-height: min(380px, 50vh);
-  overflow-y: auto;
+  overflow: auto;
 }
 .schedule-stats-row {
   display: grid;
   grid-template-columns: 200px repeat(7, minmax(120px, 1fr));
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--color-border-opaque);
   font-size: 13px;
+  /* Match the calendar grid above so columns don't squash on narrow widths;
+     the body's horizontal scroll picks up the overflow. */
+  min-width: 960px;
 }
 .schedule-stats-row:last-child { border-bottom: none; }
 .schedule-stats-row-label {
@@ -6094,7 +6130,7 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  border-right: 1px solid var(--color-border-subtle);
+  border-right: 1px solid var(--color-border-opaque);
   color: var(--color-content-primary);
   font-variant-numeric: tabular-nums;
 }
