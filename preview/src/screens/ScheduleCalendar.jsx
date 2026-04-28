@@ -173,33 +173,35 @@ export default function ScheduleCalendar({ data, onDemo }) {
         </button>
       </div>
 
-      <div className="schedule-grid" role="grid">
-        <div className="schedule-grid-head">
-          <div className="schedule-grid-head-cell schedule-grid-head-user" />
-          {DAYS.map(d => (
-            <div key={d.id} className={`schedule-grid-head-cell ${d.id === todayId ? 'is-today' : ''}`}>
-              {d.label}
-            </div>
-          ))}
-        </div>
-        {rows.map(row => (
-          <div key={row.userId} className="schedule-grid-row">
-            <div className="schedule-user">
-              <span className="schedule-user-avatar" style={row.avatar ? { backgroundImage: `url(${row.avatar})` } : undefined} aria-hidden="true">
-                {!row.avatar && row.name.split(' ').map(p => p[0]).join('').slice(0, 2)}
-              </span>
-              <div className="schedule-user-text">
-                <div className="schedule-user-name">{row.name}</div>
-                <div className="schedule-user-meta">est {row.estPay}, {row.estHours}</div>
-              </div>
-            </div>
+      <div className="schedule-canvas">
+        <div className="schedule-grid" role="grid">
+          <div className="schedule-grid-head">
+            <div className="schedule-grid-head-cell schedule-grid-head-user" />
             {DAYS.map(d => (
-              <div key={d.id} className={`schedule-cell ${d.id === todayId ? 'is-today' : ''}`}>
-                {row.shifts[d.id] && <ShiftCell shift={row.shifts[d.id]} onClick={buzz} />}
+              <div key={d.id} className={`schedule-grid-head-cell ${d.id === todayId ? 'is-today' : ''}`}>
+                {d.label}
               </div>
             ))}
           </div>
-        ))}
+          {rows.map(row => (
+            <div key={row.userId} className="schedule-grid-row">
+              <div className="schedule-user">
+                <span className="schedule-user-avatar" style={row.avatar ? { backgroundImage: `url(${row.avatar})` } : undefined} aria-hidden="true">
+                  {!row.avatar && row.name.split(' ').map(p => p[0]).join('').slice(0, 2)}
+                </span>
+                <div className="schedule-user-text">
+                  <div className="schedule-user-name">{row.name}</div>
+                  <div className="schedule-user-meta">est {row.estPay}, {row.estHours}</div>
+                </div>
+              </div>
+              {DAYS.map(d => (
+                <div key={d.id} className={`schedule-cell ${d.id === todayId ? 'is-today' : ''}`}>
+                  {row.shifts[d.id] && <ShiftCell shift={row.shifts[d.id]} onClick={buzz} />}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
 
       <ScheduleStatsDrawer
@@ -250,35 +252,35 @@ function ScheduleStatsDrawer({ open, tab, onSetTab, onToggle, onConfigure }) {
         </div>
       </div>
 
-      {open && tab === 'stats' && (
-        <div className="schedule-stats-body" role="table" aria-label="Schedule stats">
-          {STATS_ROWS.map(row => (
-            <div key={row.label} className="schedule-stats-row" role="row">
-              <div className="schedule-stats-row-label" role="rowheader">{row.label}</div>
-              {row.cells.map((cell, i) => (
-                <div key={i} className="schedule-stats-cell" role="cell">
-                  <span className="schedule-stats-value">{cell.value}</span>
-                  {cell.chip && (
-                    <span className={`schedule-stats-chip schedule-stats-chip--${cell.tone ?? 'ok'}`}>
-                      {cell.chip}
-                    </span>
-                  )}
-                  {!cell.chip && cell.tone && (
-                    <span className={`schedule-stats-dot schedule-stats-dot--${cell.tone}`} aria-hidden="true" />
-                  )}
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {open && tab !== 'stats' && (
-        <div className="schedule-stats-empty">
-          <BarChart02Icon size={20} />
-          <span>{tab === 'needs' ? 'Needs & Coverage breakdown' : 'Demand Ratio analysis'} — coming soon</span>
-        </div>
-      )}
+      <div className="schedule-stats-content" aria-hidden={!open}>
+        {tab === 'stats' ? (
+          <div className="schedule-stats-body" role="table" aria-label="Schedule stats">
+            {STATS_ROWS.map(row => (
+              <div key={row.label} className="schedule-stats-row" role="row">
+                <div className="schedule-stats-row-label" role="rowheader">{row.label}</div>
+                {row.cells.map((cell, i) => (
+                  <div key={i} className="schedule-stats-cell" role="cell">
+                    <span className="schedule-stats-value">{cell.value}</span>
+                    {cell.chip && (
+                      <span className={`schedule-stats-chip schedule-stats-chip--${cell.tone ?? 'ok'}`}>
+                        {cell.chip}
+                      </span>
+                    )}
+                    {!cell.chip && cell.tone && (
+                      <span className={`schedule-stats-dot schedule-stats-dot--${cell.tone}`} aria-hidden="true" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="schedule-stats-empty">
+            <BarChart02Icon size={20} />
+            <span>{tab === 'needs' ? 'Needs & Coverage breakdown' : 'Demand Ratio analysis'} — coming soon</span>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
