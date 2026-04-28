@@ -279,6 +279,96 @@ const STATS_ROWS = [
   },
 ]
 
+/* ──────────────────────────────────────────────────────────────────────
+ * Post-swap state — what the schedule looks like after the OT-crisis
+ * scene's "Approve all swaps" completes.
+ *
+ * Five Saturday shifts at Levi's get released to under-cap workers,
+ * shortening the original assignee's day from ~14 hrs to a clean 7-8
+ * hrs. The receiving workers' shifts aren't shown explicitly (the
+ * narrative says zero coverage gaps), but the over-cap workers visibly
+ * drop back under 40 hrs and the stats drawer's Saturday column flips
+ * from red to green.
+ * ────────────────────────────────────────────────────────────────────── */
+const POST_SWAP_PATCHES = {
+  'diane:sat':   { start: '12:00p', end: '8:00p',  role: 'F&B',          venue: "Levi's", status: 'upcoming' },
+  'carlos:sat':  { start: '4:00p',  end: '11:00p', role: 'Premium Host', venue: "Levi's", status: 'upcoming' },
+  'maria-c:sat': { start: '4:00p',  end: '11:00p', role: 'Bev Service',  venue: "Levi's", status: 'upcoming' },
+  'ravi:sat':    { start: '4:00p',  end: '12:00a', role: 'Security',     venue: "Levi's", status: 'upcoming' },
+  'david:sat':   { start: '4:00p',  end: '11:00p', role: 'Security',     venue: "Levi's", status: 'upcoming' },
+}
+
+function applyShiftPatches(rows, patches) {
+  return rows.map(row => {
+    const shifts = { ...row.shifts }
+    let touched = false
+    Object.keys(shifts).forEach(dayId => {
+      const key = `${row.userId}:${dayId}`
+      if (patches[key]) {
+        shifts[dayId] = { ...shifts[dayId], ...patches[key] }
+        touched = true
+      }
+    })
+    return touched ? { ...row, shifts } : row
+  })
+}
+
+/* Saturday OT collapses from 50 → 8 hrs after the swap; weekday peaks
+   redistribute lightly because the absorbing workers were already on
+   the schedule below 40 hrs. */
+const STATS_ROWS_POST_SWAP = [
+  {
+    label: 'Overtime % of Total Hours',
+    cells: [
+      { value: '5%' },
+      { value: '7%' },
+      { value: '8%' },
+      { value: '9%' },
+      { value: '13%' },
+      { value: '8%' },
+      { value: '8%' },
+    ],
+  },
+  {
+    label: 'Overtime vs Budgeted Hours',
+    cells: [
+      { value: '3 / 10',  chip: '−70%', tone: 'ok' },
+      { value: '4 / 10',  chip: '−60%', tone: 'ok' },
+      { value: '6 / 10',  chip: '−40%', tone: 'ok' },
+      { value: '8 / 10',  chip: '−20%', tone: 'ok' },
+      { value: '12 / 10', chip: '+20%', tone: 'warn' },
+      { value: '8 / 10',  chip: '−20%', tone: 'ok' },
+      { value: '5 / 10',  chip: '−50%', tone: 'ok' },
+    ],
+  },
+  {
+    label: 'Overtime Hours',
+    suffix: 'hr',
+    cells: [
+      { value: '3' },
+      { value: '4' },
+      { value: '6' },
+      { value: '8' },
+      { value: '12' },
+      { value: '8' },
+      { value: '5' },
+    ],
+  },
+  {
+    label: 'Overtime Costs',
+    suffix: '$',
+    cells: [
+      { value: '$400' },
+      { value: '$500' },
+      { value: '$800' },
+      { value: '$1.0k' },
+      { value: '$1.5k' },
+      { value: '$1.0k' },
+      { value: '$700' },
+    ],
+  },
+]
+
 const STATS_TABS = [
   { id: 'stats',    label: 'Stats',          icon: true  },
   { id: 'needs',    label: 'Needs & Coverage' },
@@ -287,7 +377,7 @@ const STATS_TABS = [
 
 /* `demoToast` is a callback prop so the Calendar component doesn't need to
    know about the parent toast helper — parent wires it up. */
-export default function ScheduleCalendar({ data, onDemo, onToggleActivityDrawer, activityDrawerOpen }) {
+export default function ScheduleCalendar({ data, onDemo, onToggleActivityDrawer, activityDrawerOpen, swapsApplied = false, onBackToIntacct }) {
   const schedule = data.schedule
   const [statsOpen, setStatsOpen] = useState(true)
   const [statsTab,  setStatsTab]  = useState('stats')
@@ -295,7 +385,10 @@ export default function ScheduleCalendar({ data, onDemo, onToggleActivityDrawer,
   // Dummy shifts in the data are keyed by weekday id (sun, mon, …), so the
   // shift assignments stay valid week-to-week — we just relabel the headers
   // and the highlighted "today" column to match the actual current week.
-  const { rows } = schedule
+  // When the OT-crisis scene completes, swapsApplied flips on and we
+  // patch in the shortened Saturday shifts so the over-cap workers
+  // visibly land back under 40 hrs.
+  const rows = swapsApplied ? applyShiftPatches(schedule.rows, POST_SWAP_PATCHES) : schedule.rows
   const { dates: weekDates, todayId, weekLabel } = getCurrentWeek()
   const buzz = () => onDemo?.()
 
@@ -433,6 +526,8 @@ export default function ScheduleCalendar({ data, onDemo, onToggleActivityDrawer,
         onSetTab={setStatsTab}
         onToggle={() => setStatsOpen(o => !o)}
         onConfigure={buzz}
+        swapsApplied={swapsApplied}
+        onBackToIntacct={onBackToIntacct}
       />
 
       {violationCtx && (
@@ -447,7 +542,8 @@ export default function ScheduleCalendar({ data, onDemo, onToggleActivityDrawer,
   )
 }
 
-function ScheduleStatsDrawer({ open, tab, onSetTab, onToggle, onConfigure }) {
+function ScheduleStatsDrawer({ open, tab, onSetTab, onToggle, onConfigure, swapsApplied, onBackToIntacct }) {
+  const rows = swapsApplied ? STATS_ROWS_POST_SWAP : STATS_ROWS
   return (
     <div className={`schedule-stats ${open ? '' : 'schedule-stats--collapsed'}`}>
       <div className="schedule-stats-head">
@@ -468,6 +564,20 @@ function ScheduleStatsDrawer({ open, tab, onSetTab, onToggle, onConfigure }) {
           <button type="button" className="schedule-stats-config" onClick={onConfigure}>
             <ConfigGlyph /> Configure Stats
           </button>
+          {/* When the operator came from Sage Intacct (sageMode threads
+              onBackToIntacct down), give them a one-click route back —
+              especially useful after the swap so they can see the OT
+              numbers go green on the CFO dashboard. */}
+          {onBackToIntacct && (
+            <button
+              type="button"
+              className={`schedule-stats-config schedule-stats-back ${swapsApplied ? 'is-fixed' : ''}`}
+              onClick={onBackToIntacct}
+            >
+              <ArrowNarrowRightIcon size={14} />
+              {swapsApplied ? 'See fixed Intacct dashboard' : 'Back to Intacct dashboard'}
+            </button>
+          )}
           <button type="button" className="schedule-stats-icon" onClick={onConfigure} aria-label="More options">
             <DotsGlyph />
           </button>
@@ -487,7 +597,7 @@ function ScheduleStatsDrawer({ open, tab, onSetTab, onToggle, onConfigure }) {
       <div className="schedule-stats-content" aria-hidden={!open}>
         {tab === 'stats' ? (
           <div className="schedule-stats-body" role="table" aria-label="Schedule stats">
-            {STATS_ROWS.map(row => (
+            {rows.map(row => (
               <div key={row.label} className="schedule-stats-row" role="row">
                 <div className="schedule-stats-row-label" role="rowheader">{row.label}</div>
                 {row.cells.map((cell, i) => (

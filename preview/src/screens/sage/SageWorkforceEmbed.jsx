@@ -13,7 +13,7 @@ import Act1Dashboard  from '../Act1Dashboard.jsx'
  * View state is owned here so LeftNav clicks don't escape the embed
  * (URL stays /#/sage/workforce while the user pokes around inside).
  */
-export default function SageWorkforceEmbed({ onNavigate }) {
+export default function SageWorkforceEmbed({ onNavigate, otFixed, onApplyOTFix }) {
   const [view, setView] = useState('schedule')
   return (
     <SageShell
@@ -26,6 +26,9 @@ export default function SageWorkforceEmbed({ onNavigate }) {
         industryId="events"
         view={view}
         sageMode
+        otFixed={otFixed}
+        onApplyOTFix={onApplyOTFix}
+        onBackToIntacct={() => onNavigate('dashboard')}
         onBack={() => onNavigate('dashboard')}
         onSelectView={setView}
         onExplore={() => {}}
