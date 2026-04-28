@@ -15,11 +15,14 @@ import { ClockIcon }         from '../../../src/components/icons/ClockIcon.tsx'
  * staff, Civic Arena a smaller crew, with one outlier "off-site" pin.
  * ────────────────────────────────────────────────────────────────────── */
 
+/* Santa Clara, CA — venues cluster within a ~12-block radius of Levi's
+   Stadium so worker pins read as on-site staff, not stranded across
+   the Bay. Coordinates are SVG-space percentages (0–100). */
 const VENUES = [
-  { id: 'levis',  label: "Levi's Stadium", x: 32, y: 38, count: 14, accent: '#2746B5' },
-  { id: 'civic',  label: 'Civic Arena',     x: 64, y: 22, count: 8,  accent: '#0D9488' },
-  { id: 'harbor', label: 'Harbor Theater',  x: 80, y: 64, count: 4,  accent: '#92400E' },
-  { id: 'mobile', label: 'Mobile Crew',     x: 18, y: 76, count: 1,  accent: '#9D174D' },
+  { id: 'levis',  label: "Levi's Stadium",         x: 48, y: 46, count: 14, accent: '#2746B5' },
+  { id: 'civic',  label: 'Convention Center',      x: 58, y: 42, count: 8,  accent: '#0D9488' },
+  { id: 'harbor', label: 'Tasman Hospitality Hub', x: 42, y: 56, count: 4,  accent: '#92400E' },
+  { id: 'mobile', label: 'Mobile Crew',            x: 36, y: 62, count: 1,  accent: '#9D174D' },
 ]
 
 const STATUS_META = {
@@ -29,29 +32,32 @@ const STATUS_META = {
   'idle':       { label: 'Idle',        tone: 'mute' },
 }
 
+/* Worker x/y values match their venue's anchor — the per-id hashOffset()
+   spreads pins around the anchor so they don't overlap. All four venues
+   sit within a few blocks of Levi's Stadium, so the cluster stays tight. */
 const ROSTER = [
   // Levi's Stadium — the OT-crisis venue
-  { id: 'miguel',  name: 'Miguel R.',     role: 'Event Lead',  venue: 'Levi\'s Stadium', status: 'clocked-in', elapsed: '6h 12m', x: 30, y: 40, color: '#1d4ed8',  initials: 'MR' },
-  { id: 'diane',   name: 'Diane Kim',     role: 'F&B',         venue: 'Levi\'s Stadium', status: 'on-break',   elapsed: '4h 02m', x: 35, y: 36, color: '#166534',  initials: 'DK' },
-  { id: 'maria',   name: 'Maria Cruz',    role: 'Bev Service', venue: 'Levi\'s Stadium', status: 'clocked-in', elapsed: '5h 48m', x: 28, y: 44, color: '#9d174d',  initials: 'MC' },
-  { id: 'carlos',  name: 'Carlos Mendez', role: 'Premium',     venue: 'Levi\'s Stadium', status: 'clocked-in', elapsed: '7h 03m', x: 33, y: 42, color: '#5b21b6',  initials: 'CM' },
-  { id: 'ravi',    name: 'Ravi Banerjee', role: 'Security',    venue: 'Levi\'s Stadium', status: 'clocked-in', elapsed: '6h 28m', x: 36, y: 40, color: '#92400e',  initials: 'RB' },
-  { id: 'sofia',   name: 'Sofia Garcia',  role: 'Box Office',  venue: 'Levi\'s Stadium', status: 'clocked-in', elapsed: '4h 19m', x: 32, y: 35, color: '#0e7490',  initials: 'SG' },
-  { id: 'amir',    name: 'Amir Naidu',    role: 'Cleaning',    venue: 'Levi\'s Stadium', status: 'idle',       elapsed: '0h 04m', x: 30, y: 37, color: '#475569',  initials: 'AN' },
-  { id: 'david-k', name: 'David Kim',     role: 'Security',    venue: 'Levi\'s Stadium', status: 'clocked-in', elapsed: '5h 11m', x: 34, y: 38, color: '#9a3412',  initials: 'DK' },
+  { id: 'miguel',  name: 'Miguel R.',     role: 'Event Lead',  venue: "Levi's Stadium",         status: 'clocked-in', elapsed: '6h 12m', x: 48, y: 46, color: '#1d4ed8',  initials: 'MR' },
+  { id: 'diane',   name: 'Diane Kim',     role: 'F&B',         venue: "Levi's Stadium",         status: 'on-break',   elapsed: '4h 02m', x: 48, y: 46, color: '#166534',  initials: 'DK' },
+  { id: 'maria',   name: 'Maria Cruz',    role: 'Bev Service', venue: "Levi's Stadium",         status: 'clocked-in', elapsed: '5h 48m', x: 48, y: 46, color: '#9d174d',  initials: 'MC' },
+  { id: 'carlos',  name: 'Carlos Mendez', role: 'Premium',     venue: "Levi's Stadium",         status: 'clocked-in', elapsed: '7h 03m', x: 48, y: 46, color: '#5b21b6',  initials: 'CM' },
+  { id: 'ravi',    name: 'Ravi Banerjee', role: 'Security',    venue: "Levi's Stadium",         status: 'clocked-in', elapsed: '6h 28m', x: 48, y: 46, color: '#92400e',  initials: 'RB' },
+  { id: 'sofia',   name: 'Sofia Garcia',  role: 'Box Office',  venue: "Levi's Stadium",         status: 'clocked-in', elapsed: '4h 19m', x: 48, y: 46, color: '#0e7490',  initials: 'SG' },
+  { id: 'amir',    name: 'Amir Naidu',    role: 'Cleaning',    venue: "Levi's Stadium",         status: 'idle',       elapsed: '0h 04m', x: 48, y: 46, color: '#475569',  initials: 'AN' },
+  { id: 'david-k', name: 'David Kim',     role: 'Security',    venue: "Levi's Stadium",         status: 'clocked-in', elapsed: '5h 11m', x: 48, y: 46, color: '#9a3412',  initials: 'DK' },
 
-  // Civic Arena — smaller crew
-  { id: 'jordan',  name: 'Jordan K.',     role: 'Usher',       venue: 'Civic Arena',     status: 'clocked-in', elapsed: '3h 55m', x: 64, y: 22, color: '#2746b5',  initials: 'JK' },
-  { id: 'rachel',  name: 'Rachel W.',     role: 'Usher',       venue: 'Civic Arena',     status: 'clocked-in', elapsed: '3h 22m', x: 66, y: 24, color: '#1d4ed8',  initials: 'RW' },
-  { id: 'tasha',   name: 'Tasha K.',      role: 'Bev Service', venue: 'Civic Arena',     status: 'on-break',   elapsed: '2h 47m', x: 62, y: 21, color: '#166534',  initials: 'TK' },
-  { id: 'marcus',  name: 'Marcus J.',     role: 'Usher',       venue: 'Civic Arena',     status: 'late',       elapsed: '0h 09m', x: 65, y: 23, color: '#991b1b',  initials: 'MJ' },
+  // Convention Center — smaller crew, just across Tasman from Levi's
+  { id: 'jordan',  name: 'Jordan K.',     role: 'Usher',       venue: 'Convention Center',      status: 'clocked-in', elapsed: '3h 55m', x: 58, y: 42, color: '#2746b5',  initials: 'JK' },
+  { id: 'rachel',  name: 'Rachel W.',     role: 'Usher',       venue: 'Convention Center',      status: 'clocked-in', elapsed: '3h 22m', x: 58, y: 42, color: '#1d4ed8',  initials: 'RW' },
+  { id: 'tasha',   name: 'Tasha K.',      role: 'Bev Service', venue: 'Convention Center',      status: 'on-break',   elapsed: '2h 47m', x: 58, y: 42, color: '#166534',  initials: 'TK' },
+  { id: 'marcus',  name: 'Marcus J.',     role: 'Usher',       venue: 'Convention Center',      status: 'late',       elapsed: '0h 09m', x: 58, y: 42, color: '#991b1b',  initials: 'MJ' },
 
-  // Harbor — minimal
-  { id: 'priya',   name: 'Priya S.',      role: 'Load-in',     venue: 'Harbor Theater',  status: 'clocked-in', elapsed: '2h 14m', x: 80, y: 64, color: '#9d174d',  initials: 'PS' },
-  { id: 'jasmine', name: 'Jasmine Park',  role: 'Premium',     venue: 'Harbor Theater',  status: 'clocked-in', elapsed: '3h 02m', x: 82, y: 66, color: '#5b21b6',  initials: 'JP' },
+  // Tasman Hospitality Hub — premium suites + load-in
+  { id: 'priya',   name: 'Priya S.',      role: 'Load-in',     venue: 'Tasman Hospitality Hub', status: 'clocked-in', elapsed: '2h 14m', x: 42, y: 56, color: '#9d174d',  initials: 'PS' },
+  { id: 'jasmine', name: 'Jasmine Park',  role: 'Premium',     venue: 'Tasman Hospitality Hub', status: 'clocked-in', elapsed: '3h 02m', x: 42, y: 56, color: '#5b21b6',  initials: 'JP' },
 
-  // Mobile / off-site
-  { id: 'trevor',  name: 'Trevor Booth',  role: 'Security',    venue: 'Mobile Crew',     status: 'clocked-in', elapsed: '1h 48m', x: 18, y: 76, color: '#92400e',  initials: 'TB' },
+  // Mobile crew — supply run on Great America Pkwy
+  { id: 'trevor',  name: 'Trevor Booth',  role: 'Security',    venue: 'Mobile Crew',            status: 'clocked-in', elapsed: '1h 48m', x: 36, y: 62, color: '#92400e',  initials: 'TB' },
 ]
 
 const FILTERS = [
@@ -204,40 +210,63 @@ export default function TimeTracking({ data, onDemo, onToggleActivityDrawer, act
 }
 
 /* Tiny stable-hash → small offset so multiple workers at the same venue
-   pin spread out a bit instead of stacking exactly on top of each other. */
+   pin spread out a bit instead of stacking exactly on top of each other.
+   ±6% gives the 8 Levi's workers enough room without drifting off the
+   stadium's footprint on the map. */
 function hashOffset(id, salt) {
   const s = `${salt}:${id}`
   let h = 0
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0
-  return ((h % 70) - 35) / 10 // ~ ±3.5%
+  return ((h % 120) - 60) / 10 // ~ ±6%
 }
 
-/* Stylized "map" — abstract Bay-Area-y land/water shapes plus a faint
-   street grid. Pure SVG, no third-party tile provider. */
+/* Stylized Santa Clara, CA map — flat Silicon-Valley street grid plus
+   the few landmarks near Levi's Stadium (Central Park, Great America
+   Pkwy, Tasman Dr, Hwy 101). No large body of water — Santa Clara is
+   inland, so worker pins should never end up "in the bay". */
 function MapBackdrop() {
   return (
     <svg className="time-tracking-mapbg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
       <defs>
-        <pattern id="streets" x="0" y="0" width="6" height="6" patternUnits="userSpaceOnUse">
-          <path d="M 0 0 L 6 0 M 0 0 L 0 6" stroke="rgba(15,17,20,0.045)" strokeWidth="0.4" />
+        {/* Tighter street grid that reads as Silicon Valley blocks. */}
+        <pattern id="streets" x="0" y="0" width="5" height="5" patternUnits="userSpaceOnUse">
+          <path d="M 0 0 L 5 0 M 0 0 L 0 5" stroke="rgba(15,17,20,0.05)" strokeWidth="0.35" />
         </pattern>
-        <linearGradient id="bay" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#cfe6f5" />
-          <stop offset="100%" stopColor="#a5c8e0" />
-        </linearGradient>
       </defs>
+
+      {/* Base land tone — neutral inland tan/green. */}
       <rect width="100" height="100" fill="#eef3ee" />
       <rect width="100" height="100" fill="url(#streets)" />
-      {/* Bay water */}
-      <path d="M 50 0 C 56 18 48 28 56 40 C 64 52 50 60 56 72 C 60 84 50 96 60 100 L 100 100 L 100 0 Z"
-            fill="url(#bay)" opacity="0.85" />
-      {/* Greenspace */}
-      <ellipse cx="22" cy="20" rx="12" ry="8"  fill="#d2e6c9" opacity="0.7" />
-      <ellipse cx="14" cy="62" rx="14" ry="10" fill="#d2e6c9" opacity="0.7" />
-      <ellipse cx="78" cy="86" rx="10" ry="6"  fill="#d2e6c9" opacity="0.7" />
-      {/* Highways */}
-      <path d="M 0 56 Q 30 50 60 60 T 100 50" stroke="#f3d27b" strokeWidth="1.6" fill="none" opacity="0.7" />
-      <path d="M 20 0 Q 30 40 28 100" stroke="#f3d27b" strokeWidth="1.2" fill="none" opacity="0.7" />
+
+      {/* Greenspace — Central Park (south of Levi's) and Ulistac
+          Natural Area (east of the stadium). */}
+      <ellipse cx="42" cy="74" rx="20" ry="10" fill="#d2e6c9" opacity="0.75" />
+      <ellipse cx="74" cy="56" rx="10" ry="7"  fill="#d2e6c9" opacity="0.7" />
+      <ellipse cx="20" cy="22" rx="11" ry="7"  fill="#d2e6c9" opacity="0.5" />
+
+      {/* Guadalupe River — thin ribbon, well east of the venue cluster
+          so it adds context without putting any pins in water. */}
+      <path d="M 88 0 C 86 20 90 40 84 60 C 78 80 86 92 84 100"
+            stroke="#bcdaee" strokeWidth="1.6" fill="none" opacity="0.85" />
+
+      {/* Hwy 101 — diagonal across the north, with a gentle bend. */}
+      <path d="M 0 28 Q 30 22 52 26 T 100 18"
+            stroke="#f3d27b" strokeWidth="2.2" fill="none" opacity="0.85" />
+      <path d="M 0 28 Q 30 22 52 26 T 100 18"
+            stroke="#fff" strokeWidth="0.4" strokeDasharray="1.6 2" fill="none" opacity="0.9" />
+
+      {/* Tasman Dr — east-west, runs right past the stadium cluster. */}
+      <path d="M 0 50 Q 30 48 60 50 T 100 50"
+            stroke="#f6e2a8" strokeWidth="1.4" fill="none" opacity="0.9" />
+
+      {/* Great America Pkwy — north-south, threads between Levi's and
+          the convention center. */}
+      <path d="M 53 0 Q 51 30 53 60 T 53 100"
+            stroke="#f6e2a8" strokeWidth="1.4" fill="none" opacity="0.9" />
+
+      {/* San Tomas Expressway — west of the cluster. */}
+      <path d="M 28 0 Q 30 50 26 100"
+            stroke="#f6e2a8" strokeWidth="1.0" fill="none" opacity="0.85" />
     </svg>
   )
 }
