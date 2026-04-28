@@ -23,6 +23,8 @@ import { Map01Icon }           from '../../../src/components/icons/Map01Icon.tsx
 import { ArrowCircleBrokenRightIcon } from '../../../src/components/icons/ArrowCircleBrokenRightIcon.tsx'
 import { Bell01Icon }          from '../../../src/components/icons/Bell01Icon.tsx'
 import { SettingsGearIcon }    from '../../../src/components/icons/SettingsGearIcon.tsx'
+import { File05Icon }          from '../../../src/components/icons/File05Icon.tsx'
+import { ClockIcon }           from '../../../src/components/icons/ClockIcon.tsx'
 import { getIndustryData }     from '../data/industryData.js'
 import { getAgent, AGENTS }   from '../data/agents.js'
 import { getCardDetail }       from '../data/cardDetails.js'
@@ -37,6 +39,9 @@ import TimeTracking            from './TimeTracking.jsx'
 import ShiftRequests           from './ShiftRequests.jsx'
 import ShiftAlerts             from './ShiftAlerts.jsx'
 import SettingsView            from './SettingsView.jsx'
+import DocumentsView           from './DocumentsView.jsx'
+import TimesheetsView          from './TimesheetsView.jsx'
+import ReviewView              from './ReviewView.jsx'
 import './act1.css'
 
 /* ─── Agent avatar (animated GIF in a color-tinted ring) ─────────────────── */
@@ -112,9 +117,10 @@ function formatToday() {
 
 /* ─── Left nav ────────────────────────────────────────────────────────────── */
 
-/* Three top groups + a bottom-pinned admin group. The bottom group lives in
-   its own list with margin-top: auto so Workflows / Policies / Settings always
-   sit flush with the foot, regardless of how many items are in the top groups. */
+/* Top groups + a bottom-pinned admin group. The bottom group lives in
+   its own list with margin-top: auto so Workflows / Policy Builder /
+   Settings always sit flush with the foot, regardless of how many
+   items are in the top groups. */
 const NAV_GROUPS = [
   {
     label: null, // Home gets its own ungrouped slot
@@ -123,20 +129,33 @@ const NAV_GROUPS = [
     ],
   },
   {
-    label: 'Operations',
+    label: 'Team',
     items: [
-      { id: 'schedule',       label: 'Schedule',       Icon: Grid01Icon              },
-      { id: 'time-tracking',  label: 'Time Tracking',  Icon: Map01Icon               },
-      { id: 'shift-requests', label: 'Shift Requests', Icon: ArrowCircleBrokenRightIcon },
-      { id: 'shift-alerts',   label: 'Shift Alerts',   Icon: Bell01Icon              },
+      { id: 'people',    label: 'People',    Icon: Users03Icon           },
+      { id: 'documents', label: 'Documents', Icon: File05Icon            },
+      { id: 'engage',    label: 'Engage',    Icon: MessageDotsSquareIcon },
     ],
   },
   {
-    label: 'Team',
+    label: 'Schedule',
     items: [
-      { id: 'people', label: 'People', Icon: Users03Icon              },
-      { id: 'engage', label: 'Engage', Icon: MessageDotsSquareIcon    },
-      { id: 'pay',    label: 'Pay',    Icon: CurrencyDollarCircleIcon },
+      { id: 'schedule',       label: 'Full Schedule',  Icon: Grid01Icon                 },
+      { id: 'shift-requests', label: 'Shift Requests', Icon: ArrowCircleBrokenRightIcon },
+      { id: 'shift-alerts',   label: 'Shift Alerts',   Icon: Bell01Icon                 },
+    ],
+  },
+  {
+    label: 'Time Tracking',
+    items: [
+      { id: 'time-tracking', label: 'Live Tracking', Icon: Map01Icon  },
+      { id: 'timesheets',    label: 'Timesheets',    Icon: ClockIcon  },
+    ],
+  },
+  {
+    label: 'Pay',
+    items: [
+      { id: 'pay',    label: 'Payroll', Icon: CurrencyDollarCircleIcon },
+      { id: 'review', label: 'Review',  Icon: ClipboardCheckIcon       },
     ],
   },
 ]
@@ -3358,6 +3377,9 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
        : view === 'time-tracking' ? <TimeTracking     data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
        : view === 'shift-requests' ? <ShiftRequests   data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
        : view === 'shift-alerts'  ? <ShiftAlerts      data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
+       : view === 'documents'     ? <DocumentsView    data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
+       : view === 'timesheets'    ? <TimesheetsView   data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
+       : view === 'review'        ? <ReviewView       data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
        : view === 'workflows'     ? <WorkflowsView    industryId={industryId} pendingWorkflowId={pendingWorkflowId} onConsumePending={() => setPendingWorkflowId(null)} onDemo={() => showDemoToast()} />
        : view === 'policies'      ? <PoliciesView     onDemo={() => showDemoToast()} />
        : view === 'engage'        ? <EngageView       onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
