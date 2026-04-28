@@ -23,7 +23,6 @@ import { Map01Icon }           from '../../../src/components/icons/Map01Icon.tsx
 import { ArrowCircleBrokenRightIcon } from '../../../src/components/icons/ArrowCircleBrokenRightIcon.tsx'
 import { Bell01Icon }          from '../../../src/components/icons/Bell01Icon.tsx'
 import { SettingsGearIcon }    from '../../../src/components/icons/SettingsGearIcon.tsx'
-import { File05Icon }          from '../../../src/components/icons/File05Icon.tsx'
 import { ClockIcon }           from '../../../src/components/icons/ClockIcon.tsx'
 import { getIndustryData }     from '../data/industryData.js'
 import { getAgent, AGENTS }   from '../data/agents.js'
@@ -39,7 +38,7 @@ import TimeTracking            from './TimeTracking.jsx'
 import ShiftRequests           from './ShiftRequests.jsx'
 import ShiftAlerts             from './ShiftAlerts.jsx'
 import SettingsView            from './SettingsView.jsx'
-import DocumentsView           from './DocumentsView.jsx'
+import OnboardingView          from './OnboardingView.jsx'
 import TimesheetsView          from './TimesheetsView.jsx'
 import ReviewView              from './ReviewView.jsx'
 import './act1.css'
@@ -131,9 +130,9 @@ const NAV_GROUPS = [
   {
     label: 'Team',
     items: [
-      { id: 'people',    label: 'People',    Icon: Users03Icon           },
-      { id: 'documents', label: 'Documents', Icon: File05Icon            },
-      { id: 'engage',    label: 'Engage',    Icon: MessageDotsSquareIcon },
+      { id: 'people',     label: 'People',     Icon: Users03Icon           },
+      { id: 'onboarding', label: 'Onboarding', Icon: ClipboardCheckIcon    },
+      { id: 'engage',     label: 'Engage',     Icon: MessageDotsSquareIcon },
     ],
   },
   {
@@ -3338,7 +3337,7 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
   // the drawer doesn't apply. Workflows + Policies + Settings opt out
   // (admin / system pages). Reset to closed whenever the user navigates
   // between views so the drawer doesn't surprise-pop on the next page.
-  const noDrawer = new Set(['overview', 'workflows', 'policies', 'settings'])
+  const noDrawer = new Set(['overview', 'workflows', 'policies', 'settings', 'onboarding'])
   const supportsActivityDrawer = !noDrawer.has(view)
   const [activityDrawerOpen, setActivityDrawerOpen] = useState(false)
   useEffect(() => { setActivityDrawerOpen(false) }, [view, industryId])
@@ -3355,10 +3354,11 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
         onSelectView={onSelectView}
       />
 
-      {/* Engage is a chat module of its own, Policies is a doc browser, and
-          Settings is a system-config page — surfacing Nova's chat panel
-          alongside any of them is just noise. */}
-      {view !== 'engage' && view !== 'policies' && view !== 'settings' && (
+      {/* Engage is a chat module of its own; Policies is a doc browser;
+          Settings is a system-config page; Onboarding is a full-bleed
+          kanban board — surfacing Nova's chat panel alongside any of
+          them is just noise. */}
+      {view !== 'engage' && view !== 'policies' && view !== 'settings' && view !== 'onboarding' && (
         <PromptPanel
           industryId={industryId}
           view={view}
@@ -3377,7 +3377,7 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
        : view === 'time-tracking' ? <TimeTracking     data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
        : view === 'shift-requests' ? <ShiftRequests   data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
        : view === 'shift-alerts'  ? <ShiftAlerts      data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
-       : view === 'documents'     ? <DocumentsView    data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
+       : view === 'onboarding'    ? <OnboardingView   data={data} onDemo={() => showDemoToast()} />
        : view === 'timesheets'    ? <TimesheetsView   data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
        : view === 'review'        ? <ReviewView       data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
        : view === 'workflows'     ? <WorkflowsView    industryId={industryId} pendingWorkflowId={pendingWorkflowId} onConsumePending={() => setPendingWorkflowId(null)} onDemo={() => showDemoToast()} />
