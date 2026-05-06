@@ -2866,113 +2866,250 @@ function Message({ message, onApprove }) {
   )
 }
 
-/* ─── Scripted "Sandra cancelled" scene ───────────────────────────────────
-   Four message specs that play back sequentially when the user lands on
-   the Events home with an empty chat. Shape matches the normal assistant
-   message shape so the streaming state machine animates them naturally. */
-const RACHEL_ATTACHMENT = {
-  type: 'attachment',
-  avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=160&h=160&fit=crop&crop=faces&auto=format',
-  title: 'Rachel Williams · Usher',
-  subtitle: '1.7 mi · 18 hrs this week · 4 events this month · 100% last-min accept rate',
-  actions: [{ label: 'View shift' }],
+/* ─── Scripted cancellation scenes ────────────────────────────────────────
+   Four-message playback that runs when the user lands on the home view of
+   any industry with an empty chat. The shape matches the normal assistant
+   message spec so the streaming state machine animates each line naturally.
+
+   Industry-specific copy lives in CANCEL_CONFIG_BY_INDUSTRY below; the
+   buildCancelScene factory stamps a config into the four-step template,
+   so a healthcare run reads "Keisha Norris cancelled her ICU shift at
+   Memorial North" while events reads "Sandra Lee cancelled her Saturday
+   7pm usher shift at Civic Auditorium". */
+
+const FACE_RACHEL  = 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=160&h=160&fit=crop&crop=faces&auto=format'
+const FACE_SANDRA  = 'https://images.unsplash.com/photo-1489980557514-251d61e3eeb6?w=160&h=160&fit=crop&crop=faces&auto=format'
+const FACE_JANELLE = 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=160&h=160&fit=crop&crop=faces&auto=format'
+const FACE_KEISHA  = 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=160&h=160&fit=crop&crop=faces&auto=format'
+const FACE_MARCUS  = 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=160&h=160&fit=crop&crop=faces&auto=format'
+const FACE_PATEL   = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=160&h=160&fit=crop&crop=faces&auto=format'
+const FACE_CHEN    = 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=160&h=160&fit=crop&crop=faces&auto=format'
+const FACE_NAIDU   = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=160&h=160&fit=crop&crop=faces&auto=format'
+const FACE_GARCIA  = 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=160&h=160&fit=crop&crop=faces&auto=format'
+const FACE_DAVIS   = 'https://images.unsplash.com/photo-1524250502761-1ac6f2e30d43?w=160&h=160&fit=crop&crop=faces&auto=format'
+const FACE_REYES   = 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=160&h=160&fit=crop&crop=faces&auto=format'
+
+const CANCEL_CONFIG_BY_INDUSTRY = {
+  events: {
+    out: { name: 'Sandra Lee',     image: FACE_SANDRA },
+    inn: { name: 'Rachel Williams', image: FACE_RACHEL,
+           tagline: '1.7 mi · 18 hrs this week · 4 events this month · 100% last-min accept rate' },
+    roleLower: 'usher',
+    roleTitle: 'Usher',
+    venue:     'Civic Auditorium',
+    venueShort:'Civic Auditorium',
+    shiftWhen: 'Saturday 7pm',
+    shiftWhenShort: 'Sat 7:00p',
+    notice:    '3.5 hrs',
+    poolNoun:  'ushers',
+    poolDescription: 'Civic-credentialed ushers in a sensible commute radius who are under 32 hrs this week, so no one gets pushed into overtime.',
+    funnel: '64 ushers in range → 38 Civic-qualified → 21 free at 7pm → 18 under OT cap → 12 opted in to last-min offers.',
+    leadName:  'Miguel',
+    leadRole:  'event lead',
+    workflowName: 'Last-min Replacement',
+  },
+  healthcare: {
+    out: { name: 'Keisha Norris', image: FACE_KEISHA },
+    inn: { name: 'Janelle Rivera', image: FACE_JANELLE,
+           tagline: '2.1 mi · ICU & Med-Surg current · 24 hrs this week · 96% last-min accept rate' },
+    roleLower: 'ICU shift',
+    roleTitle: 'ICU RN',
+    venue:     'Memorial North',
+    venueShort:'Memorial North ICU',
+    shiftWhen: 'Saturday 7pm',
+    shiftWhenShort: 'Sat 7:00p',
+    notice:    '4 hrs',
+    poolNoun:  'RNs',
+    poolDescription: 'BLS/ACLS-current RNs cleared for Memorial North ICU who are under 32 hrs this week, so no one gets pushed into overtime.',
+    funnel: '38 RNs in range → 22 ICU-credentialed → 14 free at 7pm → 11 under OT cap → 8 opted in to last-min offers.',
+    leadName:  'Diana R.',
+    leadRole:  'charge nurse',
+    workflowName: 'Last-min RN Coverage',
+  },
+  staffing: {
+    out: { name: 'Marcus Tate', image: FACE_MARCUS },
+    inn: { name: 'Janelle Rivera', image: FACE_JANELLE,
+           tagline: '1.9 mi · 28 hrs this week · 3 prior placements at this client · 4.9 rating' },
+    roleLower: 'per-diem RN shift',
+    roleTitle: 'Per-diem RN',
+    venue:     'Meridian Healthcare',
+    venueShort:'Meridian Healthcare',
+    shiftWhen: 'Saturday 7pm',
+    shiftWhenShort: 'Sat 7:00p',
+    notice:    '3 hrs',
+    poolNoun:  'contractors',
+    poolDescription: 'Meridian-cleared per-diem RNs in a sensible commute radius who are under 32 hrs this week and have an active assignment slot open.',
+    funnel: '46 contractors in range → 28 Meridian-cleared → 17 free at 7pm → 13 under OT cap → 9 opted in to last-min offers.',
+    leadName:  'Lara M.',
+    leadRole:  'account lead',
+    workflowName: 'Last-min Placement',
+  },
+  security: {
+    out: { name: 'Patel',  image: FACE_PATEL },
+    inn: { name: 'Chen',   image: FACE_CHEN,
+           tagline: '2.4 mi · Armed-post certified · 30 hrs this week · 11 prior shifts at this post' },
+    roleLower: 'overnight patrol',
+    roleTitle: 'Armed Post Guard',
+    venue:     'Industrial Park 4',
+    venueShort:'IP-4 · north gate',
+    shiftWhen: 'tonight 11pm',
+    shiftWhenShort: 'Tonight 11:00p',
+    notice:    '4 hrs',
+    poolNoun:  'guards',
+    poolDescription: 'Armed-post certified guards within commute who are under 32 hrs this week and previously cleared for IP-4.',
+    funnel: '32 guards in range → 19 armed-post certified → 12 free at 11pm → 9 under OT cap → 6 opted in to last-min offers.',
+    leadName:  'Sgt. Reyes',
+    leadRole:  'post lead',
+    workflowName: 'Last-min Post Coverage',
+  },
+  'light-industrial': {
+    out: { name: 'Naidu',   image: FACE_NAIDU },
+    inn: { name: 'Garcia',  image: FACE_GARCIA,
+           tagline: '1.8 mi · Forklift certified · 30 hrs this week · 99.5% pick-rate accuracy' },
+    roleLower: 'AM pack-line shift',
+    roleTitle: 'Pack-line Picker',
+    venue:     'DC-1',
+    venueShort:'DC-1 · pack line',
+    shiftWhen: 'tomorrow 5am',
+    shiftWhenShort: 'Tomorrow 5:00a',
+    notice:    '5 hrs',
+    poolNoun:  'pickers',
+    poolDescription: 'Forklift-certified pickers within commute who are under 32 hrs this week and cleared on the DC-1 pack line.',
+    funnel: '40 pickers in range → 26 forklift-certified → 18 free at 5am → 14 under OT cap → 10 opted in to last-min offers.',
+    leadName:  'Hayes',
+    leadRole:  'floor lead',
+    workflowName: 'Last-min Picker Coverage',
+  },
+  construction: {
+    out: { name: 'Davis',  image: FACE_DAVIS },
+    inn: { name: 'Reyes',  image: FACE_REYES,
+           tagline: '2.3 mi · Framing lead · 32 hrs this week · OSHA 30 current · 5 prior projects' },
+    roleLower: 'framing shift',
+    roleTitle: 'Framer',
+    venue:     '5th & Main',
+    venueShort:'5th & Main · framing',
+    shiftWhen: 'tomorrow 6am',
+    shiftWhenShort: 'Tomorrow 6:00a',
+    notice:    '5 hrs',
+    poolNoun:  'crew',
+    poolDescription: 'OSHA-current framers within commute who are under 32 hrs this week and cleared on the 5th & Main scope.',
+    funnel: '24 crew in range → 16 OSHA 30 current → 12 free at 6am → 9 under OT cap → 7 opted in to last-min offers.',
+    leadName:  'Coleman',
+    leadRole:  'foreman',
+    workflowName: 'Last-min Crew Coverage',
+  },
 }
 
-const SANDRA_SCENE = {
-  // 1) The first message the prospect sees — AI reasoning through the
-  //    replacement search, ending with a canned "Yes, reach out" button.
-  reachOutPrompt: {
+function buildCancelScene(c) {
+  const inAttachment = {
+    type: 'attachment',
+    avatar: c.inn.image,
+    title: `${c.inn.name} · ${c.roleTitle}`,
+    subtitle: c.inn.tagline,
+    actions: [{ label: 'View shift' }],
+  }
+  const scene = {}
+
+  scene.reachOutPrompt = {
     content: { segments: [
       { type: 'signal',
         eyebrow: 'Activity flagged · might need resolution',
-        title: 'Sandra Lee cancelled her Saturday 7pm usher shift',
-        detail: 'Civic Auditorium · 3.5 hrs notice' },
+        title:  `${c.out.name} cancelled their ${c.shiftWhen} ${c.roleLower}`,
+        detail: `${c.venue} · ${c.notice} notice` },
       { type: 'thinking', steps: [
         { title: 'Parsed the cancellation',
-          detail: 'Sandra Lee cancelled her Saturday 7pm usher shift at Civic Auditorium. 3.5 hrs notice.' },
+          detail: `${c.out.name} cancelled their ${c.shiftWhen} ${c.roleLower} at ${c.venue}. ${c.notice} notice.` },
         { title: 'Pulled the candidate pool',
-          detail: 'Civic-credentialed ushers in a sensible commute radius who are under 32 hrs this week, so no one gets pushed into overtime.' },
-        { title: 'Filtered down to 12',
-          detail: '64 ushers in range → 38 Civic-qualified → 21 free at 7pm → 18 under OT cap → 12 opted in to last-min offers.' },
-        { title: 'Ranked the 12',
+          detail: c.poolDescription },
+        { title: `Filtered down to the top ${c.poolNoun}`,
+          detail: c.funnel },
+        { title: 'Ranked the shortlist',
           detail: 'Proximity (traffic-adjusted), 90-day performance, last-min accept rate, and hours fairness so the same people aren\'t always on call.' },
       ] },
-      { type: 'text', text: "Found **12 qualified replacements**. Top 3 are inside 4 miles with 90%+ accept rates. Want me to reach out to them in parallel?" },
+      { type: 'text', text: `Found qualified replacements. Top 3 are nearby with strong accept rates. Want me to reach out to them in parallel?` },
     ] },
     specialist: 'nova',
     approveLabel: 'Yes, reach out',
     approvePlan: [
-      'Dispatching offers to Rachel W., David K., Priya S.',
+      `Dispatching offers to ${c.inn.name} + 2 alternates`,
       'Monitoring responses (cut-off: 90 seconds)',
       'Confirming the winner and locking the schedule',
     ],
-    // Reach-out should feel like real work, not a blink. ~3.5s per step is
-    // the sweet spot — fast enough to keep momentum, long enough that the
-    // prospect reads each step and trusts Nova isn't faking it.
     stepDurationMs: 3500,
-    sceneAfter: ({ postAssistant }) => postAssistant(SANDRA_SCENE.rachelAccepted),
-  },
+    sceneAfter: ({ postAssistant }) => postAssistant(scene.accepted),
+  }
 
-  // 2) Outcome of reach-out — Rachel accepted. Prospect clicks Approve.
-  rachelAccepted: {
+  scene.accepted = {
     content: { segments: [
-      { type: 'text', text: "**Rachel Williams** accepted at the posted rate — no pay change needed. Offered in **47 seconds**." },
-      RACHEL_ATTACHMENT,
-      { type: 'cta', text: "Send her the pre-shift brief and lock the schedule?" },
+      { type: 'text', text: `**${c.inn.name}** accepted at the posted rate — no pay change needed. Offered in **47 seconds**.` },
+      inAttachment,
+      { type: 'cta', text: 'Send the pre-shift brief and lock the schedule?' },
     ] },
     specialist: 'nova',
     approveLabel: 'Approve & notify',
     approvePlan: [
-      'Send the pre-shift brief to Rachel',
-      'Update the Saturday schedule at Civic Auditorium',
-      'Log the swap with Miguel (event lead)',
+      `Send the pre-shift brief to ${c.inn.name.split(' ')[0]}`,
+      `Update the ${c.shiftWhen.split(' ')[0]} schedule at ${c.venue}`,
+      `Log the swap with ${c.leadName} (${c.leadRole})`,
     ],
     stepDurationMs: 1200,
     sceneAfter: ({ postAssistant, overrideActivityCard }) => {
-      overrideActivityCard?.('sandra-cancellation-live', {
+      overrideActivityCard?.('cancellation-live', {
         status: 'resolved',
         statusLabel: 'Resolved',
-        description: 'Rachel Williams picked up the shift · 47s to fill · no pay delta.',
+        description: `${c.inn.name} picked up the shift · 47s to fill · no pay delta.`,
       })
-      postAssistant(SANDRA_SCENE.success)
+      postAssistant(scene.success)
     },
-  },
+  }
 
-  // 3) Covered. Metrics block + offer to codify the pattern.
-  success: {
+  scene.success = {
     content: { segments: [
-      { type: 'text', text: "Shift covered. Schedule is locked and Miguel is notified." },
+      { type: 'text', text: `Shift covered. Schedule is locked and ${c.leadName} is notified.` },
       { type: 'metrics', items: [
         { value: '✓',    label: 'Coverage' },
         { value: '47 s', label: 'Time to fill' },
         { value: '$0',   label: 'Pay delta' },
         { value: 'None', label: 'OT risk' },
       ] },
-      { type: 'cta', text: "Want to save this as a **Last-min Replacement** workflow? Nova will handle cancellations the same way next time — no approval required unless something's off." },
+      { type: 'cta', text: `Want to save this as a **${c.workflowName}** workflow? Nova will handle cancellations the same way next time — no approval required unless something's off.` },
     ] },
     specialist: 'nova',
     approveLabel: 'Save as workflow',
     workflowAction: 'create',
     approvePlan: [
       'Capture the ranking rules and notification policy',
-      'Save as "Last-min Replacement" workflow · owner: you',
+      `Save as "${c.workflowName}" workflow · owner: you`,
     ],
     stepDurationMs: 1200,
-    sceneAfter: ({ postAssistant }) => postAssistant(SANDRA_SCENE.savedConfirmation),
-  },
+    sceneAfter: ({ postAssistant }) => postAssistant(scene.savedConfirmation),
+  }
 
-  // 4) Final bubble — saved. The CTA button routes the operator straight
-  //    into the Workflow editor on the Last-min Replacement detail.
-  savedConfirmation: {
+  scene.savedConfirmation = {
     content: { segments: [
-      { type: 'text', text: "Saved. Nova will auto-run **Last-min Replacement** next time someone cancels — I'll only ping you if hours are tight or a pay bump is needed." },
-      { type: 'cta', text: "Open in **Agent Workflows** to tweak the rules." },
+      { type: 'text', text: `Saved. Nova will auto-run **${c.workflowName}** next time someone cancels — I'll only ping you if hours are tight or a pay bump is needed.` },
+      { type: 'cta', text: 'Open in **Agent Workflows** to tweak the rules.' },
     ] },
     specialist: 'nova',
     approveLabel: 'Open workflow editor',
     target: 'workflows',
     workflowId: 'last-min-replacement',
-  },
+  }
+
+  return scene
+}
+
+const CANCEL_SCENES_BY_INDUSTRY = Object.fromEntries(
+  Object.entries(CANCEL_CONFIG_BY_INDUSTRY).map(([id, cfg]) => [id, buildCancelScene(cfg)])
+)
+const SANDRA_SCENE = CANCEL_SCENES_BY_INDUSTRY.events // back-compat alias
+
+const RACHEL_ATTACHMENT = {
+  type: 'attachment',
+  avatar: FACE_RACHEL,
+  title: 'Rachel Williams · Usher',
+  subtitle: '1.7 mi · 18 hrs this week · 4 events this month · 100% last-min accept rate',
+  actions: [{ label: 'View shift' }],
 }
 
 /* ─── OT crisis scene (Sage Intacct → Workforce handoff) ────────────────
@@ -3307,13 +3444,22 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
     }])
   }
 
-  /* ── Scripted "Sandra cancelled" live scene ─────────────────────────
-     Plays only when the operator lands on the Events home with an empty
-     chat. Deterministic timeline; the orchestrator re-runs on any empty
+  /* ── Scripted "worker cancelled" live scene ─────────────────────────
+     Plays on every industry's home view with an empty chat. The
+     CANCEL_CONFIG_BY_INDUSTRY config picks the worker name, role,
+     venue, and shift time so the scene reads native to the vertical
+     (Sandra Lee for events, Keisha Norris for healthcare, etc.).
+     Deterministic timeline; the orchestrator re-runs on any empty
      state so Clear-chat replays it cleanly. */
   const sceneStartedRef = useRef(false)
   useEffect(() => {
-    if (industryId !== 'events' || view !== 'overview') {
+    if (view !== 'overview') {
+      sceneStartedRef.current = false
+      return
+    }
+    const cfg = CANCEL_CONFIG_BY_INDUSTRY[industryId]
+    const scene = CANCEL_SCENES_BY_INDUSTRY[industryId]
+    if (!cfg || !scene) {
       sceneStartedRef.current = false
       return
     }
@@ -3324,23 +3470,23 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
     if (sceneStartedRef.current) return
     sceneStartedRef.current = true
 
-    // T=3s — Sandra's cancellation event arrives on its own. No agent is
-    // attached yet; the card is anchored to the person so the prospect sees
-    // it as a raw inbound event before the AI reacts.
+    // T=3s — the cancellation event arrives on its own. No agent is
+    // attached yet; the card is anchored to the person so the prospect
+    // sees it as a raw inbound event before the AI reacts.
     const activityTimer = setTimeout(() => {
       onInjectActivityCard?.({
-        id: 'sandra-cancellation-live',
+        id: 'cancellation-live',
         eyebrow: 'Shift update',
         status: 'watching',
         statusLabel: 'New',
         timestamp: 'Just now',
-        title: 'Sandra Lee cancelled her Saturday 7pm usher shift',
-        description: 'Sandra Lee cancelled her Saturday 7pm usher shift · Civic Auditorium · 3.5 hrs notice',
+        title: `${cfg.out.name} cancelled their ${cfg.shiftWhen} ${cfg.roleLower}`,
+        description: `${cfg.out.name} cancelled their ${cfg.shiftWhen} ${cfg.roleLower} · ${cfg.venue} · ${cfg.notice} notice`,
         subject: {
           kind: 'person',
-          primary: 'Sandra Lee',
-          secondary: 'Usher · Civic Auditorium · Sat 7:00p',
-          image: 'https://images.unsplash.com/photo-1489980557514-251d61e3eeb6?w=160&h=160&fit=crop&crop=faces&auto=format',
+          primary: cfg.out.name,
+          secondary: `${cfg.roleTitle} · ${cfg.venueShort} · ${cfg.shiftWhenShort}`,
+          image: cfg.out.image,
         },
       })
     }, 3000)
@@ -3350,7 +3496,7 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
     // briefing into the chat: the empty-state greeting has already typed
     // itself and re-rendering it would look like the AI was retyping.
     const chatTimer = setTimeout(() => {
-      postAssistant(SANDRA_SCENE.reachOutPrompt)
+      postAssistant(scene.reachOutPrompt)
     }, 6000)
 
     return () => {
@@ -3432,7 +3578,11 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
               Workforce embed on the schedule view so the OT-crisis
               scene fires straight in — we don't want the briefing to
               flash for half a second before getting replaced. */}
-          {(!hasChat || (industryId === 'events' && view === 'overview'))
+          {/* Show the daily briefing on every industry's home view —
+              even after the cancellation scene has filled the chat,
+              so the briefing stays as a stable header above the
+              streaming reasoning. */}
+          {(!hasChat || view === 'overview')
             && !(sageMode && industryId === 'events' && view === 'schedule' && !otFixed) && (
             <DailyBriefing industryId={industryId} view={view} paySubRoute={paySubRoute} briefKey={briefKey} onAction={submit} />
           )}
