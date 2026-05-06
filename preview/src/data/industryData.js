@@ -961,6 +961,594 @@ INDUSTRY_DATA.events.people = {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
+   Per-industry People + Schedule seed.
+   Mirrors the events block above but tailored to each industry — venues,
+   roles, certs, and shift blocks all swap to the operator's world. Reuses
+   the same person IDs across industries (jordan, rachel, etc.) so avatars
+   stay consistent with the pay roster in payData.js.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+const AV = {
+  rachel: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=96&h=96&fit=crop&crop=faces&auto=format',
+  sandra: 'https://images.unsplash.com/photo-1489980557514-251d61e3eeb6?w=96&h=96&fit=crop&crop=faces&auto=format',
+  sarah:  'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=96&h=96&fit=crop&crop=faces&auto=format',
+  jordan: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=96&h=96&fit=crop&crop=faces&auto=format',
+  ashley: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=96&h=96&fit=crop&crop=faces&auto=format',
+  miguel: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=96&h=96&fit=crop&crop=faces&auto=format',
+  priya:  'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=96&h=96&fit=crop&crop=faces&auto=format',
+  diego:  'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=96&h=96&fit=crop&crop=faces&auto=format',
+  marcus: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=96&h=96&fit=crop&crop=faces&auto=format',
+  tasha:  'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=96&h=96&fit=crop&crop=faces&auto=format',
+  nate:   'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=96&h=96&fit=crop&crop=faces&auto=format',
+  kelly:  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=96&h=96&fit=crop&crop=faces&auto=format',
+  elena:  'https://images.unsplash.com/photo-1554151228-14d9def656e4?w=96&h=96&fit=crop&crop=faces&auto=format',
+  omar:   'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=96&h=96&fit=crop&crop=faces&auto=format',
+  lydia:  'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=96&h=96&fit=crop&crop=faces&auto=format',
+}
+
+const WEEK_LABEL = 'Apr 19 – Apr 25, 2026, PDT'
+const TODAY_ID   = 'thu'
+
+/* ── Healthcare ─────────────────────────────────────────────────────── */
+
+INDUSTRY_DATA.healthcare.people = {
+  stats: [
+    { id: 'active',  label: 'Active staff',         value: '52', tone: 'blue'    },
+    { id: 'pending', label: 'Awaiting clearance',   value: '4',  tone: 'warning' },
+    { id: 'avg-hrs', label: 'Avg weekly hours',     value: '34', tone: 'success' },
+  ],
+  rows: [
+    { id: 'jordan', name: 'Jordan K.',       role: 'Charge Nurse', venue: 'Memorial North', hours: '32 / 40', certs: 'BLS · ACLS · PALS',     status: 'active',         avatar: AV.jordan },
+    { id: 'rachel', name: 'Rachel Williams', role: 'RN',           venue: 'Memorial North', hours: '24 / 40', certs: 'BLS · ACLS',            status: 'active',         avatar: AV.rachel },
+    { id: 'miguel', name: 'Miguel R.',       role: 'RN',           venue: 'Memorial South', hours: '30 / 40', certs: 'BLS · ACLS',            status: 'active',         avatar: AV.miguel },
+    { id: 'ashley', name: 'Ashley P.',       role: 'LPN',          venue: 'Memorial North', hours: '28 / 40', certs: 'BLS',                   status: 'active',         avatar: AV.ashley },
+    { id: 'tasha',  name: 'Tasha K.',        role: 'LPN',          venue: 'Memorial South', hours: '22 / 40', certs: 'BLS',                   status: 'active',         avatar: AV.tasha  },
+    { id: 'sandra', name: 'Sandra Lee',      role: 'CNA',          venue: 'Memorial North', hours: '0 / 40',  certs: 'BLS',                   status: 'on-leave',       avatar: AV.sandra },
+    { id: 'marcus', name: 'Marcus J.',       role: 'Med Tech',     venue: 'Memorial South', hours: '38 / 40', certs: 'Phlebotomy · Active',   status: 'ot-risk',        avatar: AV.marcus },
+    { id: 'priya',  name: 'Priya S.',        role: 'CNA',          venue: 'Memorial North', hours: '12 / 40', certs: 'BLS · Expires May 5',   status: 'cert-expiring',  avatar: AV.priya  },
+    { id: 'sarah',  name: 'Sarah M.',        role: 'RN',           venue: 'Memorial South', hours: '8 / 36',  certs: 'BLS · ACLS · Pending',  status: 'pending',        avatar: AV.sarah  },
+    { id: 'diego',  name: 'Diego P.',        role: 'Med Tech',     venue: 'Memorial South', hours: '8 / 32',  certs: 'Phlebotomy · Verified', status: 'new-hire',       avatar: AV.diego  },
+    { id: 'kelly',  name: 'Kelly T.',        role: 'RN',           venue: 'Memorial South', hours: '24 / 40', certs: 'BLS · ACLS',            status: 'active',         avatar: AV.kelly  },
+    { id: 'nate',   name: 'Nate H.',         role: 'RT',           venue: 'Memorial North', hours: '14 / 32', certs: 'Resp Therapy · Active', status: 'active',         avatar: AV.nate   },
+    { id: 'elena',  name: 'Elena V.',        role: 'CNA',          venue: 'Memorial South', hours: '16 / 32', certs: 'BLS · Verified',        status: 'active',         avatar: AV.elena  },
+    { id: 'omar',   name: 'Omar K.',         role: 'Phlebotomist', venue: 'Memorial North', hours: '20 / 40', certs: 'Phlebotomy · Active',   status: 'active',         avatar: AV.omar   },
+    { id: 'lydia',  name: 'Lydia C.',        role: 'LPN',          venue: 'Memorial South', hours: '14 / 30', certs: 'BLS · Expires May 12',  status: 'cert-expiring',  avatar: AV.lydia  },
+  ],
+}
+
+INDUSTRY_DATA.healthcare.schedule = {
+  weekLabel: WEEK_LABEL,
+  todayId: TODAY_ID,
+  rows: [
+    { userId: 'jordan', name: 'Jordan K.', avatar: AV.jordan,
+      estPay: '$1,536', estHours: '32 hrs',
+      shifts: {
+        sun: { start: '7:00a',  end: '7:00p',  role: 'Charge Nurse', venue: 'Mem N', status: 'completed' },
+        mon: { start: '7:00a',  end: '7:00p',  role: 'Charge Nurse', venue: 'Mem N', status: 'completed' },
+        wed: { start: '7:00a',  end: '7:00p',  role: 'Charge Nurse', venue: 'Mem N', status: 'completed' },
+        thu: { start: '7:00a',  end: '7:00p',  role: 'Charge Nurse', venue: 'Mem N', status: 'completed' },
+        sat: { start: '7:00a',  end: '7:00p',  role: 'Charge Nurse', venue: 'Mem N', status: 'upcoming'  },
+      } },
+    { userId: 'rachel', name: 'Rachel W.', avatar: AV.rachel,
+      estPay: '$1,008', estHours: '24 hrs',
+      shifts: {
+        mon: { start: '7:00p',  end: '7:00a',  role: 'RN',           venue: 'Mem N', status: 'completed' },
+        tue: { start: '7:00p',  end: '7:00a',  role: 'RN',           venue: 'Mem N', status: 'completed' },
+        thu: { start: '7:00a',  end: '7:00p',  role: 'RN',           venue: 'Mem N', status: 'upcoming'  },
+        sat: { start: '7:00a',  end: '7:00p',  role: 'RN',           venue: 'Mem N', status: 'upcoming'  },
+      } },
+    { userId: 'miguel', name: 'Miguel R.', avatar: AV.miguel,
+      estPay: '$1,215', estHours: '30 hrs',
+      shifts: {
+        sun: { start: '7:00a',  end: '7:00p',  role: 'RN',           venue: 'Mem S', status: 'completed' },
+        tue: { start: '7:00a',  end: '7:00p',  role: 'RN',           venue: 'Mem S', status: 'completed' },
+        wed: { start: '7:00a',  end: '7:00p',  role: 'RN',           venue: 'Mem S', status: 'completed' },
+        fri: { start: '7:00a',  end: '7:00p',  role: 'RN',           venue: 'Mem S', status: 'upcoming'  },
+        sat: { start: '7:00p',  end: '7:00a',  role: 'RN',           venue: 'Mem S', status: 'upcoming'  },
+      } },
+    { userId: 'ashley', name: 'Ashley P.', avatar: AV.ashley,
+      estPay: '$896',   estHours: '28 hrs',
+      shifts: {
+        mon: { start: '11:00p', end: '7:00a',  role: 'LPN',          venue: 'Mem N', status: 'completed' },
+        wed: { start: '11:00p', end: '7:00a',  role: 'LPN',          venue: 'Mem N', status: 'completed' },
+        thu: { start: '11:00p', end: '7:00a',  role: 'LPN',          venue: 'Mem N', status: 'upcoming'  },
+        sat: { start: '11:00p', end: '7:00a',  role: 'LPN',          venue: 'Mem N', status: 'upcoming'  },
+      } },
+    { userId: 'tasha',  name: 'Tasha K.', avatar: AV.tasha,
+      estPay: '$682',   estHours: '22 hrs',
+      shifts: {
+        sun: { start: '3:00p',  end: '11:00p', role: 'LPN',          venue: 'Mem S', status: 'completed' },
+        wed: { start: '3:00p',  end: '11:00p', role: 'LPN',          venue: 'Mem S', status: 'completed' },
+        thu: { start: '3:00p',  end: '11:00p', role: 'LPN',          venue: 'Mem S', status: 'upcoming'  },
+      } },
+    { userId: 'sandra', name: 'Sandra Lee', avatar: AV.sandra,
+      estPay: '$0',     estHours: 'On leave',
+      shifts: {} },
+    { userId: 'marcus', name: 'Marcus J.', avatar: AV.marcus,
+      estPay: '$988',   estHours: '38 hrs',
+      shifts: {
+        mon: { start: '6:00a',  end: '2:00p',  role: 'Med Tech',     venue: 'Mem S', status: 'completed' },
+        tue: { start: '6:00a',  end: '2:00p',  role: 'Med Tech',     venue: 'Mem S', status: 'completed' },
+        wed: { start: '6:00a',  end: '2:00p',  role: 'Med Tech',     venue: 'Mem S', status: 'completed' },
+        thu: { start: '6:00a',  end: '2:00p',  role: 'Med Tech',     venue: 'Mem S', status: 'upcoming'  },
+        fri: { start: '6:00a',  end: '12:00p', role: 'Med Tech',     venue: 'Mem S', status: 'upcoming'  },
+      } },
+    { userId: 'priya',  name: 'Priya S.', avatar: AV.priya,
+      estPay: '$264',   estHours: '12 hrs',
+      shifts: {
+        tue: { start: '7:00a',  end: '1:00p',  role: 'CNA',          venue: 'Mem N', status: 'no-show'   },
+        thu: { start: '7:00a',  end: '1:00p',  role: 'CNA',          venue: 'Mem N', status: 'upcoming'  },
+      } },
+    { userId: 'kelly',  name: 'Kelly T.', avatar: AV.kelly,
+      estPay: '$960',   estHours: '24 hrs',
+      shifts: {
+        sun: { start: '7:00p',  end: '7:00a',  role: 'RN',           venue: 'Mem S', status: 'completed' },
+        thu: { start: '7:00p',  end: '7:00a',  role: 'RN',           venue: 'Mem S', status: 'upcoming'  },
+      } },
+    { userId: 'omar',   name: 'Omar K.', avatar: AV.omar,
+      estPay: '$540',   estHours: '20 hrs',
+      shifts: {
+        mon: { start: '6:00a',  end: '11:00a', role: 'Phlebotomist', venue: 'Mem N', status: 'completed' },
+        wed: { start: '6:00a',  end: '11:00a', role: 'Phlebotomist', venue: 'Mem N', status: 'completed' },
+        thu: { start: '6:00a',  end: '11:00a', role: 'Phlebotomist', venue: 'Mem N', status: 'upcoming'  },
+        fri: { start: '6:00a',  end: '11:00a', role: 'Phlebotomist', venue: 'Mem N', status: 'upcoming'  },
+      } },
+    { userId: 'elena',  name: 'Elena V.', avatar: AV.elena,
+      estPay: '$416',   estHours: '16 hrs',
+      shifts: {
+        tue: { start: '3:00p',  end: '11:00p', role: 'CNA',          venue: 'Mem S', status: 'completed' },
+        sat: { start: '3:00p',  end: '11:00p', role: 'CNA',          venue: 'Mem S', status: 'upcoming'  },
+      } },
+  ],
+}
+
+/* ── Staffing ──────────────────────────────────────────────────────── */
+
+INDUSTRY_DATA.staffing.people = {
+  stats: [
+    { id: 'active',  label: 'Active contractors',   value: '64', tone: 'blue'    },
+    { id: 'pending', label: 'Pending background',   value: '5',  tone: 'warning' },
+    { id: 'avg-hrs', label: 'Avg weekly hours',     value: '32', tone: 'success' },
+  ],
+  rows: [
+    { id: 'jordan', name: 'Jordan K.',       role: 'Site Lead',     venue: 'Brightline Plant', hours: '34 / 40', certs: 'OSHA 30 · Background', status: 'active',         avatar: AV.jordan },
+    { id: 'rachel', name: 'Rachel Williams', role: 'Recruiter',     venue: 'HQ Office',        hours: '40 / 40', certs: '—',                    status: 'active',         avatar: AV.rachel },
+    { id: 'miguel', name: 'Miguel R.',       role: 'Forklift Op',   venue: 'Brightline Plant', hours: '36 / 40', certs: 'Forklift · Active',    status: 'active',         avatar: AV.miguel },
+    { id: 'ashley', name: 'Ashley P.',       role: 'Warehouse',     venue: 'Riverside DC',     hours: '28 / 40', certs: 'OSHA 10',              status: 'active',         avatar: AV.ashley },
+    { id: 'tasha',  name: 'Tasha K.',        role: 'Picker',        venue: 'Riverside DC',     hours: '22 / 40', certs: 'OSHA 10',              status: 'active',         avatar: AV.tasha  },
+    { id: 'sandra', name: 'Sandra Lee',      role: 'Warehouse',     venue: 'Brightline Plant', hours: '0 / 40',  certs: 'OSHA 10',              status: 'on-leave',       avatar: AV.sandra },
+    { id: 'marcus', name: 'Marcus J.',       role: 'Forklift Op',   venue: 'Riverside DC',     hours: '38 / 40', certs: 'Forklift · Active',    status: 'ot-risk',        avatar: AV.marcus },
+    { id: 'priya',  name: 'Priya S.',        role: 'Picker',        venue: 'Brightline Plant', hours: '14 / 40', certs: 'OSHA 10 · Expires May 8', status: 'cert-expiring', avatar: AV.priya  },
+    { id: 'sarah',  name: 'Sarah M.',        role: 'Account Mgr',   venue: 'HQ Office',        hours: '40 / 40', certs: '—',                    status: 'active',         avatar: AV.sarah  },
+    { id: 'diego',  name: 'Diego P.',        role: 'Warehouse',     venue: 'Riverside DC',     hours: '8 / 30',  certs: 'OSHA 10 · Pending',    status: 'pending',        avatar: AV.diego  },
+    { id: 'kelly',  name: 'Kelly T.',        role: 'Recruiter',     venue: 'HQ Office',        hours: '32 / 40', certs: '—',                    status: 'active',         avatar: AV.kelly  },
+    { id: 'nate',   name: 'Nate H.',         role: 'Picker',        venue: 'Riverside DC',     hours: '12 / 30', certs: 'OSHA 10',              status: 'new-hire',       avatar: AV.nate   },
+    { id: 'elena',  name: 'Elena V.',        role: 'Forklift Op',   venue: 'Brightline Plant', hours: '24 / 40', certs: 'Forklift · Verified',  status: 'active',         avatar: AV.elena  },
+    { id: 'omar',   name: 'Omar K.',         role: 'Site Lead',     venue: 'Riverside DC',     hours: '36 / 40', certs: 'OSHA 30 · Background', status: 'active',         avatar: AV.omar   },
+    { id: 'lydia',  name: 'Lydia C.',        role: 'Warehouse',     venue: 'Brightline Plant', hours: '12 / 30', certs: 'OSHA 10 · Expires May 22', status: 'cert-expiring', avatar: AV.lydia },
+  ],
+}
+
+INDUSTRY_DATA.staffing.schedule = {
+  weekLabel: WEEK_LABEL,
+  todayId: TODAY_ID,
+  rows: [
+    { userId: 'jordan', name: 'Jordan K.', avatar: AV.jordan,
+      estPay: '$1,156', estHours: '34 hrs',
+      shifts: {
+        mon: { start: '7:00a',  end: '3:00p',  role: 'Site Lead',   venue: 'Brightline', status: 'completed' },
+        tue: { start: '7:00a',  end: '3:00p',  role: 'Site Lead',   venue: 'Brightline', status: 'completed' },
+        wed: { start: '7:00a',  end: '3:00p',  role: 'Site Lead',   venue: 'Brightline', status: 'completed' },
+        thu: { start: '7:00a',  end: '3:00p',  role: 'Site Lead',   venue: 'Brightline', status: 'upcoming'  },
+        fri: { start: '7:00a',  end: '5:00p',  role: 'Site Lead',   venue: 'Brightline', status: 'upcoming'  },
+      } },
+    { userId: 'rachel', name: 'Rachel W.', avatar: AV.rachel,
+      estPay: '$1,120', estHours: '40 hrs',
+      shifts: {
+        mon: { start: '9:00a',  end: '5:00p',  role: 'Recruiter',   venue: 'HQ',        status: 'completed' },
+        tue: { start: '9:00a',  end: '5:00p',  role: 'Recruiter',   venue: 'HQ',        status: 'completed' },
+        wed: { start: '9:00a',  end: '5:00p',  role: 'Recruiter',   venue: 'HQ',        status: 'completed' },
+        thu: { start: '9:00a',  end: '5:00p',  role: 'Recruiter',   venue: 'HQ',        status: 'upcoming'  },
+        fri: { start: '9:00a',  end: '5:00p',  role: 'Recruiter',   venue: 'HQ',        status: 'upcoming'  },
+      } },
+    { userId: 'miguel', name: 'Miguel R.', avatar: AV.miguel,
+      estPay: '$936',   estHours: '36 hrs',
+      shifts: {
+        mon: { start: '6:00a',  end: '2:00p',  role: 'Forklift Op', venue: 'Brightline', status: 'completed' },
+        tue: { start: '6:00a',  end: '2:00p',  role: 'Forklift Op', venue: 'Brightline', status: 'completed' },
+        wed: { start: '6:00a',  end: '2:00p',  role: 'Forklift Op', venue: 'Brightline', status: 'completed' },
+        thu: { start: '6:00a',  end: '2:00p',  role: 'Forklift Op', venue: 'Brightline', status: 'upcoming'  },
+        sat: { start: '6:00a',  end: '10:00a', role: 'Forklift Op', venue: 'Brightline', status: 'upcoming'  },
+      } },
+    { userId: 'ashley', name: 'Ashley P.', avatar: AV.ashley,
+      estPay: '$630',   estHours: '28 hrs',
+      shifts: {
+        mon: { start: '2:00p',  end: '10:00p', role: 'Warehouse',   venue: 'Riverside',  status: 'completed' },
+        wed: { start: '2:00p',  end: '10:00p', role: 'Warehouse',   venue: 'Riverside',  status: 'completed' },
+        thu: { start: '2:00p',  end: '10:00p', role: 'Warehouse',   venue: 'Riverside',  status: 'upcoming'  },
+        fri: { start: '2:00p',  end: '6:00p',  role: 'Warehouse',   venue: 'Riverside',  status: 'upcoming'  },
+      } },
+    { userId: 'tasha',  name: 'Tasha K.', avatar: AV.tasha,
+      estPay: '$462',   estHours: '22 hrs',
+      shifts: {
+        sun: { start: '8:00a',  end: '2:00p',  role: 'Picker',      venue: 'Riverside',  status: 'completed' },
+        wed: { start: '8:00a',  end: '2:00p',  role: 'Picker',      venue: 'Riverside',  status: 'completed' },
+        thu: { start: '8:00a',  end: '4:00p',  role: 'Picker',      venue: 'Riverside',  status: 'upcoming'  },
+      } },
+    { userId: 'sandra', name: 'Sandra Lee', avatar: AV.sandra,
+      estPay: '$0',     estHours: 'On leave',
+      shifts: {} },
+    { userId: 'marcus', name: 'Marcus J.', avatar: AV.marcus,
+      estPay: '$969',   estHours: '38 hrs',
+      shifts: {
+        mon: { start: '6:00a',  end: '2:00p',  role: 'Forklift Op', venue: 'Riverside',  status: 'completed' },
+        tue: { start: '6:00a',  end: '2:00p',  role: 'Forklift Op', venue: 'Riverside',  status: 'completed' },
+        wed: { start: '6:00a',  end: '2:00p',  role: 'Forklift Op', venue: 'Riverside',  status: 'completed' },
+        thu: { start: '6:00a',  end: '2:00p',  role: 'Forklift Op', venue: 'Riverside',  status: 'upcoming'  },
+        fri: { start: '6:00a',  end: '12:00p', role: 'Forklift Op', venue: 'Riverside',  status: 'upcoming'  },
+      } },
+    { userId: 'priya',  name: 'Priya S.', avatar: AV.priya,
+      estPay: '$294',   estHours: '14 hrs',
+      shifts: {
+        tue: { start: '8:00a',  end: '2:00p',  role: 'Picker',      venue: 'Brightline', status: 'completed' },
+        thu: { start: '8:00a',  end: '4:00p',  role: 'Picker',      venue: 'Brightline', status: 'upcoming'  },
+      } },
+    { userId: 'omar',   name: 'Omar K.', avatar: AV.omar,
+      estPay: '$1,224', estHours: '36 hrs',
+      shifts: {
+        mon: { start: '7:00a',  end: '3:00p',  role: 'Site Lead',   venue: 'Riverside',  status: 'completed' },
+        tue: { start: '7:00a',  end: '3:00p',  role: 'Site Lead',   venue: 'Riverside',  status: 'completed' },
+        wed: { start: '7:00a',  end: '3:00p',  role: 'Site Lead',   venue: 'Riverside',  status: 'completed' },
+        thu: { start: '7:00a',  end: '3:00p',  role: 'Site Lead',   venue: 'Riverside',  status: 'upcoming'  },
+        fri: { start: '7:00a',  end: '5:00p',  role: 'Site Lead',   venue: 'Riverside',  status: 'upcoming'  },
+      } },
+    { userId: 'elena',  name: 'Elena V.', avatar: AV.elena,
+      estPay: '$624',   estHours: '24 hrs',
+      shifts: {
+        mon: { start: '6:00a',  end: '2:00p',  role: 'Forklift Op', venue: 'Brightline', status: 'completed' },
+        wed: { start: '6:00a',  end: '12:00p', role: 'Forklift Op', venue: 'Brightline', status: 'completed' },
+        thu: { start: '6:00a',  end: '2:00p',  role: 'Forklift Op', venue: 'Brightline', status: 'upcoming'  },
+        fri: { start: '6:00a',  end: '12:00p', role: 'Forklift Op', venue: 'Brightline', status: 'upcoming'  },
+      } },
+  ],
+}
+
+/* ── Security ──────────────────────────────────────────────────────── */
+
+INDUSTRY_DATA.security.people = {
+  stats: [
+    { id: 'active',  label: 'Active guards',        value: '36', tone: 'blue'    },
+    { id: 'pending', label: 'License renewals',     value: '3',  tone: 'warning' },
+    { id: 'avg-hrs', label: 'Avg weekly hours',     value: '36', tone: 'success' },
+  ],
+  rows: [
+    { id: 'jordan', name: 'Jordan K.',       role: 'Site Captain',  venue: 'Pier 38',     hours: '36 / 40', certs: 'Armed · Active',         status: 'active',         avatar: AV.jordan },
+    { id: 'rachel', name: 'Rachel Williams', role: 'Armed Guard',   venue: 'Crown Tower', hours: '32 / 40', certs: 'Armed · Active',         status: 'active',         avatar: AV.rachel },
+    { id: 'miguel', name: 'Miguel R.',       role: 'Armed Guard',   venue: 'Pier 38',     hours: '34 / 40', certs: 'Armed · Active',         status: 'active',         avatar: AV.miguel },
+    { id: 'ashley', name: 'Ashley P.',       role: 'Unarmed Guard', venue: 'Crown Tower', hours: '28 / 40', certs: 'Unarmed · Active',       status: 'active',         avatar: AV.ashley },
+    { id: 'tasha',  name: 'Tasha K.',        role: 'Unarmed Guard', venue: 'Pier 38',     hours: '24 / 40', certs: 'Unarmed · Active',       status: 'active',         avatar: AV.tasha  },
+    { id: 'sandra', name: 'Sandra Lee',      role: 'Unarmed Guard', venue: 'Crown Tower', hours: '0 / 40',  certs: 'Unarmed · Active',       status: 'on-leave',       avatar: AV.sandra },
+    { id: 'marcus', name: 'Marcus J.',       role: 'Patrol Officer',venue: 'Pier 38',     hours: '38 / 40', certs: 'Armed · Active',         status: 'ot-risk',        avatar: AV.marcus },
+    { id: 'priya',  name: 'Priya S.',        role: 'Console Op',    venue: 'Crown Tower', hours: '20 / 40', certs: 'Unarmed · Expires May 8',status: 'cert-expiring',  avatar: AV.priya  },
+    { id: 'sarah',  name: 'Sarah M.',        role: 'Unarmed Guard', venue: 'Crown Tower', hours: '8 / 30',  certs: 'Unarmed · Pending',      status: 'pending',        avatar: AV.sarah  },
+    { id: 'diego',  name: 'Diego P.',        role: 'Patrol Officer',venue: 'Pier 38',     hours: '12 / 40', certs: 'Armed · Verified',       status: 'new-hire',       avatar: AV.diego  },
+    { id: 'kelly',  name: 'Kelly T.',        role: 'Console Op',    venue: 'Crown Tower', hours: '24 / 40', certs: 'Unarmed · Active',       status: 'active',         avatar: AV.kelly  },
+    { id: 'nate',   name: 'Nate H.',         role: 'Unarmed Guard', venue: 'Pier 38',     hours: '16 / 32', certs: 'Unarmed · Active',       status: 'active',         avatar: AV.nate   },
+    { id: 'elena',  name: 'Elena V.',        role: 'Armed Guard',   venue: 'Crown Tower', hours: '30 / 40', certs: 'Armed · Active',         status: 'active',         avatar: AV.elena  },
+    { id: 'omar',   name: 'Omar K.',         role: 'Site Captain',  venue: 'Crown Tower', hours: '36 / 40', certs: 'Armed · Active',         status: 'active',         avatar: AV.omar   },
+    { id: 'lydia',  name: 'Lydia C.',        role: 'Unarmed Guard', venue: 'Pier 38',     hours: '14 / 30', certs: 'Unarmed · Expires May 18', status: 'cert-expiring', avatar: AV.lydia },
+  ],
+}
+
+INDUSTRY_DATA.security.schedule = {
+  weekLabel: WEEK_LABEL,
+  todayId: TODAY_ID,
+  rows: [
+    { userId: 'jordan', name: 'Jordan K.', avatar: AV.jordan,
+      estPay: '$1,116', estHours: '36 hrs',
+      shifts: {
+        mon: { start: '6:00a',  end: '2:00p',  role: 'Captain',      venue: 'Pier 38',  status: 'completed' },
+        tue: { start: '6:00a',  end: '2:00p',  role: 'Captain',      venue: 'Pier 38',  status: 'completed' },
+        wed: { start: '6:00a',  end: '2:00p',  role: 'Captain',      venue: 'Pier 38',  status: 'completed' },
+        thu: { start: '6:00a',  end: '2:00p',  role: 'Captain',      venue: 'Pier 38',  status: 'upcoming'  },
+        fri: { start: '6:00a',  end: '2:00p',  role: 'Captain',      venue: 'Pier 38',  status: 'upcoming'  },
+      } },
+    { userId: 'rachel', name: 'Rachel W.', avatar: AV.rachel,
+      estPay: '$912',   estHours: '32 hrs',
+      shifts: {
+        sun: { start: '10:00p', end: '6:00a',  role: 'Armed',        venue: 'Crown',    status: 'completed' },
+        tue: { start: '10:00p', end: '6:00a',  role: 'Armed',        venue: 'Crown',    status: 'completed' },
+        thu: { start: '10:00p', end: '6:00a',  role: 'Armed',        venue: 'Crown',    status: 'upcoming'  },
+        sat: { start: '10:00p', end: '6:00a',  role: 'Armed',        venue: 'Crown',    status: 'upcoming'  },
+      } },
+    { userId: 'miguel', name: 'Miguel R.', avatar: AV.miguel,
+      estPay: '$952',   estHours: '34 hrs',
+      shifts: {
+        mon: { start: '2:00p',  end: '10:00p', role: 'Armed',        venue: 'Pier 38',  status: 'completed' },
+        wed: { start: '2:00p',  end: '10:00p', role: 'Armed',        venue: 'Pier 38',  status: 'completed' },
+        thu: { start: '2:00p',  end: '10:00p', role: 'Armed',        venue: 'Pier 38',  status: 'upcoming'  },
+        fri: { start: '2:00p',  end: '12:00a', role: 'Armed',        venue: 'Pier 38',  status: 'upcoming'  },
+      } },
+    { userId: 'ashley', name: 'Ashley P.', avatar: AV.ashley,
+      estPay: '$616',   estHours: '28 hrs',
+      shifts: {
+        sun: { start: '6:00a',  end: '2:00p',  role: 'Unarmed',      venue: 'Crown',    status: 'completed' },
+        tue: { start: '6:00a',  end: '2:00p',  role: 'Unarmed',      venue: 'Crown',    status: 'completed' },
+        wed: { start: '6:00a',  end: '2:00p',  role: 'Unarmed',      venue: 'Crown',    status: 'no-show'   },
+        thu: { start: '6:00a',  end: '2:00p',  role: 'Unarmed',      venue: 'Crown',    status: 'upcoming'  },
+      } },
+    { userId: 'tasha',  name: 'Tasha K.', avatar: AV.tasha,
+      estPay: '$516',   estHours: '24 hrs',
+      shifts: {
+        mon: { start: '2:00p',  end: '10:00p', role: 'Unarmed',      venue: 'Pier 38',  status: 'completed' },
+        wed: { start: '2:00p',  end: '10:00p', role: 'Unarmed',      venue: 'Pier 38',  status: 'completed' },
+        sat: { start: '2:00p',  end: '10:00p', role: 'Unarmed',      venue: 'Pier 38',  status: 'upcoming'  },
+      } },
+    { userId: 'sandra', name: 'Sandra Lee', avatar: AV.sandra,
+      estPay: '$0',     estHours: 'On leave',
+      shifts: {} },
+    { userId: 'marcus', name: 'Marcus J.', avatar: AV.marcus,
+      estPay: '$912',   estHours: '38 hrs',
+      shifts: {
+        mon: { start: '10:00p', end: '6:00a',  role: 'Patrol',       venue: 'Pier 38',  status: 'completed' },
+        tue: { start: '10:00p', end: '6:00a',  role: 'Patrol',       venue: 'Pier 38',  status: 'completed' },
+        wed: { start: '10:00p', end: '6:00a',  role: 'Patrol',       venue: 'Pier 38',  status: 'completed' },
+        thu: { start: '10:00p', end: '6:00a',  role: 'Patrol',       venue: 'Pier 38',  status: 'upcoming'  },
+        sat: { start: '10:00p', end: '4:00a',  role: 'Patrol',       venue: 'Pier 38',  status: 'upcoming'  },
+      } },
+    { userId: 'priya',  name: 'Priya S.', avatar: AV.priya,
+      estPay: '$470',   estHours: '20 hrs',
+      shifts: {
+        mon: { start: '6:00a',  end: '2:00p',  role: 'Console',      venue: 'Crown',    status: 'completed' },
+        wed: { start: '6:00a',  end: '12:00p', role: 'Console',      venue: 'Crown',    status: 'completed' },
+        thu: { start: '6:00a',  end: '2:00p',  role: 'Console',      venue: 'Crown',    status: 'upcoming'  },
+      } },
+    { userId: 'omar',   name: 'Omar K.', avatar: AV.omar,
+      estPay: '$1,116', estHours: '36 hrs',
+      shifts: {
+        mon: { start: '6:00a',  end: '2:00p',  role: 'Captain',      venue: 'Crown',    status: 'completed' },
+        tue: { start: '6:00a',  end: '2:00p',  role: 'Captain',      venue: 'Crown',    status: 'completed' },
+        wed: { start: '6:00a',  end: '2:00p',  role: 'Captain',      venue: 'Crown',    status: 'completed' },
+        thu: { start: '6:00a',  end: '2:00p',  role: 'Captain',      venue: 'Crown',    status: 'upcoming'  },
+        fri: { start: '6:00a',  end: '2:00p',  role: 'Captain',      venue: 'Crown',    status: 'upcoming'  },
+      } },
+    { userId: 'elena',  name: 'Elena V.', avatar: AV.elena,
+      estPay: '$840',   estHours: '30 hrs',
+      shifts: {
+        sun: { start: '2:00p',  end: '10:00p', role: 'Armed',        venue: 'Crown',    status: 'completed' },
+        wed: { start: '2:00p',  end: '10:00p', role: 'Armed',        venue: 'Crown',    status: 'completed' },
+        thu: { start: '2:00p',  end: '10:00p', role: 'Armed',        venue: 'Crown',    status: 'upcoming'  },
+        sat: { start: '2:00p',  end: '8:00p',  role: 'Armed',        venue: 'Crown',    status: 'upcoming'  },
+      } },
+  ],
+}
+
+/* ── Light industrial ──────────────────────────────────────────────── */
+
+INDUSTRY_DATA['light-industrial'].people = {
+  stats: [
+    { id: 'active',  label: 'Active associates',     value: '78', tone: 'blue'    },
+    { id: 'pending', label: 'Forklift renewals',     value: '5',  tone: 'warning' },
+    { id: 'avg-hrs', label: 'Avg weekly hours',      value: '38', tone: 'success' },
+  ],
+  rows: [
+    { id: 'jordan', name: 'Jordan K.',       role: 'Line Lead',     venue: 'Brightline Plant', hours: '38 / 40', certs: 'OSHA 10 · Forklift',  status: 'active',         avatar: AV.jordan },
+    { id: 'rachel', name: 'Rachel Williams', role: 'Forklift Op',   venue: 'Brightline Plant', hours: '32 / 40', certs: 'Forklift · Active',   status: 'active',         avatar: AV.rachel },
+    { id: 'miguel', name: 'Miguel R.',       role: 'Forklift Op',   venue: 'Riverside DC',     hours: '34 / 40', certs: 'Forklift · Active',   status: 'active',         avatar: AV.miguel },
+    { id: 'ashley', name: 'Ashley P.',       role: 'Picker',        venue: 'Brightline Plant', hours: '28 / 40', certs: 'OSHA 10',             status: 'active',         avatar: AV.ashley },
+    { id: 'tasha',  name: 'Tasha K.',        role: 'Packer',        venue: 'Riverside DC',     hours: '24 / 40', certs: 'OSHA 10',             status: 'active',         avatar: AV.tasha  },
+    { id: 'sandra', name: 'Sandra Lee',      role: 'Packer',        venue: 'Brightline Plant', hours: '0 / 40',  certs: 'OSHA 10',             status: 'on-leave',       avatar: AV.sandra },
+    { id: 'marcus', name: 'Marcus J.',       role: 'QA Tech',       venue: 'Brightline Plant', hours: '38 / 40', certs: 'OSHA 10 · QA',        status: 'ot-risk',        avatar: AV.marcus },
+    { id: 'priya',  name: 'Priya S.',        role: 'Picker',        venue: 'Riverside DC',     hours: '14 / 40', certs: 'OSHA 10 · Expires May 6', status: 'cert-expiring', avatar: AV.priya  },
+    { id: 'sarah',  name: 'Sarah M.',        role: 'Forklift Op',   venue: 'Brightline Plant', hours: '8 / 30',  certs: 'Forklift · Pending',  status: 'pending',        avatar: AV.sarah  },
+    { id: 'diego',  name: 'Diego P.',        role: 'Picker',        venue: 'Riverside DC',     hours: '12 / 30', certs: 'OSHA 10 · Verified',  status: 'new-hire',       avatar: AV.diego  },
+    { id: 'kelly',  name: 'Kelly T.',        role: 'Packer',        venue: 'Brightline Plant', hours: '22 / 40', certs: 'OSHA 10',             status: 'active',         avatar: AV.kelly  },
+    { id: 'nate',   name: 'Nate H.',         role: 'Forklift Op',   venue: 'Riverside DC',     hours: '20 / 40', certs: 'Forklift · Active',   status: 'active',         avatar: AV.nate   },
+    { id: 'elena',  name: 'Elena V.',        role: 'QA Tech',       venue: 'Riverside DC',     hours: '32 / 40', certs: 'QA · Active',         status: 'active',         avatar: AV.elena  },
+    { id: 'omar',   name: 'Omar K.',         role: 'Line Lead',     venue: 'Riverside DC',     hours: '38 / 40', certs: 'OSHA 10 · Forklift',  status: 'active',         avatar: AV.omar   },
+    { id: 'lydia',  name: 'Lydia C.',        role: 'Packer',        venue: 'Brightline Plant', hours: '14 / 30', certs: 'OSHA 10 · Expires May 24', status: 'cert-expiring', avatar: AV.lydia },
+  ],
+}
+
+INDUSTRY_DATA['light-industrial'].schedule = {
+  weekLabel: WEEK_LABEL,
+  todayId: TODAY_ID,
+  rows: [
+    { userId: 'jordan', name: 'Jordan K.', avatar: AV.jordan,
+      estPay: '$1,254', estHours: '38 hrs',
+      shifts: {
+        mon: { start: '6:00a',  end: '2:00p',  role: 'Line Lead',   venue: 'Brightline', status: 'completed' },
+        tue: { start: '6:00a',  end: '2:00p',  role: 'Line Lead',   venue: 'Brightline', status: 'completed' },
+        wed: { start: '6:00a',  end: '2:00p',  role: 'Line Lead',   venue: 'Brightline', status: 'completed' },
+        thu: { start: '6:00a',  end: '2:00p',  role: 'Line Lead',   venue: 'Brightline', status: 'upcoming'  },
+        fri: { start: '6:00a',  end: '2:00p',  role: 'Line Lead',   venue: 'Brightline', status: 'upcoming'  },
+        sat: { start: '6:00a',  end: '12:00p', role: 'Line Lead',   venue: 'Brightline', status: 'upcoming'  },
+      } },
+    { userId: 'rachel', name: 'Rachel W.', avatar: AV.rachel,
+      estPay: '$848',   estHours: '32 hrs',
+      shifts: {
+        mon: { start: '6:00a',  end: '2:00p',  role: 'Forklift',    venue: 'Brightline', status: 'completed' },
+        tue: { start: '6:00a',  end: '2:00p',  role: 'Forklift',    venue: 'Brightline', status: 'completed' },
+        thu: { start: '6:00a',  end: '2:00p',  role: 'Forklift',    venue: 'Brightline', status: 'upcoming'  },
+        fri: { start: '6:00a',  end: '2:00p',  role: 'Forklift',    venue: 'Brightline', status: 'upcoming'  },
+      } },
+    { userId: 'miguel', name: 'Miguel R.', avatar: AV.miguel,
+      estPay: '$884',   estHours: '34 hrs',
+      shifts: {
+        mon: { start: '2:00p',  end: '10:00p', role: 'Forklift',    venue: 'Riverside',  status: 'completed' },
+        wed: { start: '2:00p',  end: '10:00p', role: 'Forklift',    venue: 'Riverside',  status: 'completed' },
+        thu: { start: '2:00p',  end: '10:00p', role: 'Forklift',    venue: 'Riverside',  status: 'upcoming'  },
+        fri: { start: '2:00p',  end: '12:00a', role: 'Forklift',    venue: 'Riverside',  status: 'upcoming'  },
+      } },
+    { userId: 'ashley', name: 'Ashley P.', avatar: AV.ashley,
+      estPay: '$588',   estHours: '28 hrs',
+      shifts: {
+        sun: { start: '6:00a',  end: '2:00p',  role: 'Picker',      venue: 'Brightline', status: 'completed' },
+        tue: { start: '6:00a',  end: '2:00p',  role: 'Picker',      venue: 'Brightline', status: 'no-show'   },
+        wed: { start: '6:00a',  end: '2:00p',  role: 'Picker',      venue: 'Brightline', status: 'completed' },
+        thu: { start: '6:00a',  end: '2:00p',  role: 'Picker',      venue: 'Brightline', status: 'upcoming'  },
+      } },
+    { userId: 'tasha',  name: 'Tasha K.', avatar: AV.tasha,
+      estPay: '$492',   estHours: '24 hrs',
+      shifts: {
+        mon: { start: '2:00p',  end: '10:00p', role: 'Packer',      venue: 'Riverside',  status: 'completed' },
+        wed: { start: '2:00p',  end: '10:00p', role: 'Packer',      venue: 'Riverside',  status: 'completed' },
+        sat: { start: '2:00p',  end: '10:00p', role: 'Packer',      venue: 'Riverside',  status: 'upcoming'  },
+      } },
+    { userId: 'sandra', name: 'Sandra Lee', avatar: AV.sandra,
+      estPay: '$0',     estHours: 'On leave',
+      shifts: {} },
+    { userId: 'marcus', name: 'Marcus J.', avatar: AV.marcus,
+      estPay: '$912',   estHours: '38 hrs',
+      shifts: {
+        mon: { start: '10:00p', end: '6:00a',  role: 'QA Tech',     venue: 'Brightline', status: 'completed' },
+        tue: { start: '10:00p', end: '6:00a',  role: 'QA Tech',     venue: 'Brightline', status: 'completed' },
+        wed: { start: '10:00p', end: '6:00a',  role: 'QA Tech',     venue: 'Brightline', status: 'completed' },
+        thu: { start: '10:00p', end: '6:00a',  role: 'QA Tech',     venue: 'Brightline', status: 'upcoming'  },
+        fri: { start: '10:00p', end: '4:00a',  role: 'QA Tech',     venue: 'Brightline', status: 'upcoming'  },
+      } },
+    { userId: 'priya',  name: 'Priya S.', avatar: AV.priya,
+      estPay: '$294',   estHours: '14 hrs',
+      shifts: {
+        tue: { start: '6:00a',  end: '12:00p', role: 'Picker',      venue: 'Riverside',  status: 'completed' },
+        thu: { start: '6:00a',  end: '2:00p',  role: 'Picker',      venue: 'Riverside',  status: 'upcoming'  },
+      } },
+    { userId: 'omar',   name: 'Omar K.', avatar: AV.omar,
+      estPay: '$1,254', estHours: '38 hrs',
+      shifts: {
+        mon: { start: '6:00a',  end: '2:00p',  role: 'Line Lead',   venue: 'Riverside',  status: 'completed' },
+        tue: { start: '6:00a',  end: '2:00p',  role: 'Line Lead',   venue: 'Riverside',  status: 'completed' },
+        wed: { start: '6:00a',  end: '2:00p',  role: 'Line Lead',   venue: 'Riverside',  status: 'completed' },
+        thu: { start: '6:00a',  end: '2:00p',  role: 'Line Lead',   venue: 'Riverside',  status: 'upcoming'  },
+        fri: { start: '6:00a',  end: '2:00p',  role: 'Line Lead',   venue: 'Riverside',  status: 'upcoming'  },
+        sat: { start: '6:00a',  end: '12:00p', role: 'Line Lead',   venue: 'Riverside',  status: 'upcoming'  },
+      } },
+    { userId: 'elena',  name: 'Elena V.', avatar: AV.elena,
+      estPay: '$768',   estHours: '32 hrs',
+      shifts: {
+        mon: { start: '6:00a',  end: '2:00p',  role: 'QA Tech',     venue: 'Riverside',  status: 'completed' },
+        wed: { start: '6:00a',  end: '2:00p',  role: 'QA Tech',     venue: 'Riverside',  status: 'completed' },
+        thu: { start: '6:00a',  end: '2:00p',  role: 'QA Tech',     venue: 'Riverside',  status: 'upcoming'  },
+        fri: { start: '6:00a',  end: '2:00p',  role: 'QA Tech',     venue: 'Riverside',  status: 'upcoming'  },
+      } },
+  ],
+}
+
+/* ── Construction ──────────────────────────────────────────────────── */
+
+INDUSTRY_DATA.construction.people = {
+  stats: [
+    { id: 'active',  label: 'Active crew',          value: '42', tone: 'blue'    },
+    { id: 'pending', label: 'OSHA renewals',        value: '4',  tone: 'warning' },
+    { id: 'avg-hrs', label: 'Avg weekly hours',     value: '40', tone: 'success' },
+  ],
+  rows: [
+    { id: 'jordan', name: 'Jordan K.',       role: 'Foreman',       venue: 'Eastside Tower',  hours: '40 / 50', certs: 'OSHA 30 · First Aid', status: 'active',         avatar: AV.jordan },
+    { id: 'rachel', name: 'Rachel Williams', role: 'Carpenter',     venue: 'Eastside Tower',  hours: '36 / 40', certs: 'OSHA 30',             status: 'active',         avatar: AV.rachel },
+    { id: 'miguel', name: 'Miguel R.',       role: 'Framing Lead',  venue: 'Riverwalk Build', hours: '40 / 50', certs: 'OSHA 30 · Lead',      status: 'active',         avatar: AV.miguel },
+    { id: 'ashley', name: 'Ashley P.',       role: 'Carpenter',     venue: 'Eastside Tower',  hours: '32 / 40', certs: 'OSHA 30',             status: 'active',         avatar: AV.ashley },
+    { id: 'tasha',  name: 'Tasha K.',        role: 'Apprentice',    venue: 'Riverwalk Build', hours: '28 / 40', certs: 'OSHA 10',             status: 'active',         avatar: AV.tasha  },
+    { id: 'sandra', name: 'Sandra Lee',      role: 'Laborer',       venue: 'Eastside Tower',  hours: '0 / 40',  certs: 'OSHA 10',             status: 'on-leave',       avatar: AV.sandra },
+    { id: 'marcus', name: 'Marcus J.',       role: 'Equipment Op',  venue: 'Riverwalk Build', hours: '46 / 50', certs: 'OSHA 30 · Crane',     status: 'ot-risk',        avatar: AV.marcus },
+    { id: 'priya',  name: 'Priya S.',        role: 'Apprentice',    venue: 'Eastside Tower',  hours: '16 / 40', certs: 'OSHA 10 · Expires May 4', status: 'cert-expiring', avatar: AV.priya  },
+    { id: 'sarah',  name: 'Sarah M.',        role: 'Carpenter',     venue: 'Riverwalk Build', hours: '8 / 32',  certs: 'OSHA 30 · Pending',   status: 'pending',        avatar: AV.sarah  },
+    { id: 'diego',  name: 'Diego P.',        role: 'Laborer',       venue: 'Eastside Tower',  hours: '12 / 32', certs: 'OSHA 10 · Verified',  status: 'new-hire',       avatar: AV.diego  },
+    { id: 'kelly',  name: 'Kelly T.',        role: 'Apprentice',    venue: 'Riverwalk Build', hours: '24 / 40', certs: 'OSHA 10',             status: 'active',         avatar: AV.kelly  },
+    { id: 'nate',   name: 'Nate H.',         role: 'Laborer',       venue: 'Eastside Tower',  hours: '20 / 32', certs: 'OSHA 10',             status: 'active',         avatar: AV.nate   },
+    { id: 'elena',  name: 'Elena V.',        role: 'Carpenter',     venue: 'Riverwalk Build', hours: '34 / 40', certs: 'OSHA 30',             status: 'active',         avatar: AV.elena  },
+    { id: 'omar',   name: 'Omar K.',         role: 'Foreman',       venue: 'Riverwalk Build', hours: '40 / 50', certs: 'OSHA 30 · First Aid', status: 'active',         avatar: AV.omar   },
+    { id: 'lydia',  name: 'Lydia C.',        role: 'Apprentice',    venue: 'Eastside Tower',  hours: '14 / 30', certs: 'OSHA 10 · Expires May 16', status: 'cert-expiring', avatar: AV.lydia },
+  ],
+}
+
+INDUSTRY_DATA.construction.schedule = {
+  weekLabel: WEEK_LABEL,
+  todayId: TODAY_ID,
+  rows: [
+    { userId: 'jordan', name: 'Jordan K.', avatar: AV.jordan,
+      estPay: '$1,680', estHours: '40 hrs',
+      shifts: {
+        mon: { start: '6:00a',  end: '2:00p',  role: 'Foreman',     venue: 'Eastside',  status: 'completed' },
+        tue: { start: '6:00a',  end: '2:00p',  role: 'Foreman',     venue: 'Eastside',  status: 'completed' },
+        wed: { start: '6:00a',  end: '2:00p',  role: 'Foreman',     venue: 'Eastside',  status: 'completed' },
+        thu: { start: '6:00a',  end: '2:00p',  role: 'Foreman',     venue: 'Eastside',  status: 'upcoming'  },
+        fri: { start: '6:00a',  end: '2:00p',  role: 'Foreman',     venue: 'Eastside',  status: 'upcoming'  },
+      } },
+    { userId: 'rachel', name: 'Rachel W.', avatar: AV.rachel,
+      estPay: '$1,224', estHours: '36 hrs',
+      shifts: {
+        mon: { start: '7:00a',  end: '3:30p',  role: 'Carpenter',   venue: 'Eastside',  status: 'completed' },
+        tue: { start: '7:00a',  end: '3:30p',  role: 'Carpenter',   venue: 'Eastside',  status: 'completed' },
+        wed: { start: '7:00a',  end: '3:30p',  role: 'Carpenter',   venue: 'Eastside',  status: 'completed' },
+        thu: { start: '7:00a',  end: '3:30p',  role: 'Carpenter',   venue: 'Eastside',  status: 'upcoming'  },
+        fri: { start: '7:00a',  end: '12:30p', role: 'Carpenter',   venue: 'Eastside',  status: 'upcoming'  },
+      } },
+    { userId: 'miguel', name: 'Miguel R.', avatar: AV.miguel,
+      estPay: '$1,440', estHours: '40 hrs',
+      shifts: {
+        mon: { start: '6:00a',  end: '2:00p',  role: 'Framing',     venue: 'Riverwalk', status: 'completed' },
+        tue: { start: '6:00a',  end: '2:00p',  role: 'Framing',     venue: 'Riverwalk', status: 'completed' },
+        wed: { start: '6:00a',  end: '2:00p',  role: 'Framing',     venue: 'Riverwalk', status: 'completed' },
+        thu: { start: '6:00a',  end: '2:00p',  role: 'Framing',     venue: 'Riverwalk', status: 'upcoming'  },
+        fri: { start: '6:00a',  end: '2:00p',  role: 'Framing',     venue: 'Riverwalk', status: 'upcoming'  },
+      } },
+    { userId: 'ashley', name: 'Ashley P.', avatar: AV.ashley,
+      estPay: '$992',   estHours: '32 hrs',
+      shifts: {
+        mon: { start: '7:00a',  end: '3:30p',  role: 'Carpenter',   venue: 'Eastside',  status: 'completed' },
+        tue: { start: '7:00a',  end: '3:30p',  role: 'Carpenter',   venue: 'Eastside',  status: 'completed' },
+        thu: { start: '7:00a',  end: '3:30p',  role: 'Carpenter',   venue: 'Eastside',  status: 'upcoming'  },
+        fri: { start: '7:00a',  end: '3:30p',  role: 'Carpenter',   venue: 'Eastside',  status: 'upcoming'  },
+      } },
+    { userId: 'tasha',  name: 'Tasha K.', avatar: AV.tasha,
+      estPay: '$616',   estHours: '28 hrs',
+      shifts: {
+        mon: { start: '7:00a',  end: '12:00p', role: 'Apprentice',  venue: 'Riverwalk', status: 'completed' },
+        wed: { start: '7:00a',  end: '3:30p',  role: 'Apprentice',  venue: 'Riverwalk', status: 'completed' },
+        thu: { start: '7:00a',  end: '3:30p',  role: 'Apprentice',  venue: 'Riverwalk', status: 'upcoming'  },
+        fri: { start: '7:00a',  end: '12:30p', role: 'Apprentice',  venue: 'Riverwalk', status: 'upcoming'  },
+      } },
+    { userId: 'sandra', name: 'Sandra Lee', avatar: AV.sandra,
+      estPay: '$0',     estHours: 'On leave',
+      shifts: {} },
+    { userId: 'marcus', name: 'Marcus J.', avatar: AV.marcus,
+      estPay: '$1,288', estHours: '46 hrs',
+      shifts: {
+        mon: { start: '6:00a',  end: '4:00p',  role: 'Equipment',   venue: 'Riverwalk', status: 'completed' },
+        tue: { start: '6:00a',  end: '4:00p',  role: 'Equipment',   venue: 'Riverwalk', status: 'completed' },
+        wed: { start: '6:00a',  end: '4:00p',  role: 'Equipment',   venue: 'Riverwalk', status: 'completed' },
+        thu: { start: '6:00a',  end: '4:00p',  role: 'Equipment',   venue: 'Riverwalk', status: 'upcoming'  },
+        fri: { start: '6:00a',  end: '12:00p', role: 'Equipment',   venue: 'Riverwalk', status: 'upcoming'  },
+      } },
+    { userId: 'priya',  name: 'Priya S.', avatar: AV.priya,
+      estPay: '$352',   estHours: '16 hrs',
+      shifts: {
+        tue: { start: '7:00a',  end: '12:00p', role: 'Apprentice',  venue: 'Eastside',  status: 'completed' },
+        thu: { start: '7:00a',  end: '3:30p',  role: 'Apprentice',  venue: 'Eastside',  status: 'no-show'   },
+        fri: { start: '7:00a',  end: '12:30p', role: 'Apprentice',  venue: 'Eastside',  status: 'upcoming'  },
+      } },
+    { userId: 'omar',   name: 'Omar K.', avatar: AV.omar,
+      estPay: '$1,680', estHours: '40 hrs',
+      shifts: {
+        mon: { start: '6:00a',  end: '2:00p',  role: 'Foreman',     venue: 'Riverwalk', status: 'completed' },
+        tue: { start: '6:00a',  end: '2:00p',  role: 'Foreman',     venue: 'Riverwalk', status: 'completed' },
+        wed: { start: '6:00a',  end: '2:00p',  role: 'Foreman',     venue: 'Riverwalk', status: 'completed' },
+        thu: { start: '6:00a',  end: '2:00p',  role: 'Foreman',     venue: 'Riverwalk', status: 'upcoming'  },
+        fri: { start: '6:00a',  end: '2:00p',  role: 'Foreman',     venue: 'Riverwalk', status: 'upcoming'  },
+      } },
+    { userId: 'elena',  name: 'Elena V.', avatar: AV.elena,
+      estPay: '$1,156', estHours: '34 hrs',
+      shifts: {
+        mon: { start: '7:00a',  end: '3:30p',  role: 'Carpenter',   venue: 'Riverwalk', status: 'completed' },
+        wed: { start: '7:00a',  end: '3:30p',  role: 'Carpenter',   venue: 'Riverwalk', status: 'completed' },
+        thu: { start: '7:00a',  end: '3:30p',  role: 'Carpenter',   venue: 'Riverwalk', status: 'upcoming'  },
+        fri: { start: '7:00a',  end: '3:30p',  role: 'Carpenter',   venue: 'Riverwalk', status: 'upcoming'  },
+        sat: { start: '7:00a',  end: '12:00p', role: 'Carpenter',   venue: 'Riverwalk', status: 'upcoming'  },
+      } },
+  ],
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
    Records — the thing each card is about.
    When the operator clicks a card, the right drawer opens on this record and
    shows its Details tab (fields) and Activity tab (AI work + record history).
