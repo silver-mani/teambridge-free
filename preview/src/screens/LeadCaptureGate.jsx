@@ -122,11 +122,6 @@ export default function LeadCaptureGate({ onSubmit }) {
             Continue to demo
           </button>
         </form>
-
-        <p className="lead-gate-foot">
-          By continuing you agree we can email you about Teambridge once.
-          We won't sell or share your details.
-        </p>
       </div>
     </div>
   )
