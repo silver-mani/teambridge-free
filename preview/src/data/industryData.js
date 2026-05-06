@@ -1518,3 +1518,262 @@ if (INDUSTRY_DATA.events.activeCard) {
 }
 INDUSTRY_DATA.events.feed     = INDUSTRY_DATA.events.feed.map(applyRecord)
 INDUSTRY_DATA.events.needsYou = INDUSTRY_DATA.events.needsYou.map(applyRecord)
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Extra background activity for the non-events industries. Each block mirrors
+   the shape of EVENTS_FEED_EXTRA above so the home page reads as a real day
+   of WFM work in that vertical, not just a thin demo. The cancellation flow
+   (active "Marcus T." card) is already provided by buildIndustry, so each
+   industry only needs:
+     - A subject on the activeCard (avatar / icon for visual consistency)
+     - A roster of ~12 background activity events with the right vocab
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* Generic helpers — keeps the card definitions terse below. */
+const personSubject = (name, secondary, image) => ({
+  kind: 'person',
+  primary: name,
+  secondary: secondary ?? name,
+  image,
+})
+const iconSubject = (icon, primary, secondary) => ({
+  kind: 'icon',
+  icon,
+  primary,
+  secondary: secondary ?? primary,
+})
+
+const FACE_F1 = 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=96&h=96&fit=crop&crop=faces&auto=format'
+const FACE_F2 = 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=96&h=96&fit=crop&crop=faces&auto=format'
+const FACE_F3 = 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=96&h=96&fit=crop&crop=faces&auto=format'
+const FACE_F4 = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=96&h=96&fit=crop&crop=faces&auto=format'
+const FACE_M1 = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=96&h=96&fit=crop&crop=faces&auto=format'
+const FACE_M2 = 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=96&h=96&fit=crop&crop=faces&auto=format'
+const FACE_M3 = 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=96&h=96&fit=crop&crop=faces&auto=format'
+
+/* ── Healthcare ──────────────────────────────────────────────────────── */
+const HEALTHCARE_FEED_EXTRA = [
+  { id: 'icu-pickup-priya', eyebrow: 'Shift picked up', status: 'resolved', statusLabel: 'Resolved', timestamp: '40 min ago',
+    description: 'Priya S. picked up the open 7pm ICU shift at Memorial North.',
+    subject: personSubject('Priya S.', 'Priya S. picked up Memorial North 7pm ICU', FACE_F4) },
+  { id: 'pto-keisha', eyebrow: 'PTO logged', status: 'monitoring', statusLabel: 'Pending review', timestamp: '1 hr 10 min ago',
+    description: 'Keisha N. requested PTO Saturday 7am-7pm — coverage check in flight.',
+    subject: personSubject('Keisha N.', 'Keisha N. requested Sat 7a-7p PTO', FACE_F1) },
+  { id: 'bls-expiring', eyebrow: 'Cred expiring', status: 'watching', statusLabel: 'Flagged', timestamp: '1 hr 35 min ago', agentId: 'iris',
+    description: 'flagged 3 BLS certs expiring within 14 days — group renewal Tuesday.',
+    subject: iconSubject('clock', 'BLS renewals', '3 BLS certs expire within 14 days') },
+  { id: 'float-er-ashley', eyebrow: 'Float assignment', status: 'resolved', statusLabel: 'Resolved', timestamp: '2 hrs ago',
+    description: 'Ashley P. floated from Med-Surg to ER for the 11p shift.',
+    subject: personSubject('Ashley P.', 'Ashley P. floated Med-Surg → ER (11p)', FACE_F2) },
+  { id: 'sick-call-er', eyebrow: 'Sick call', status: 'monitoring', statusLabel: 'Logged', timestamp: '2 hrs 30 min ago',
+    description: 'Cara M. called out for ER 3p — replacement pinged.',
+    subject: iconSubject('alert', 'Cara M.', 'Cara M. called out for ER 3p') },
+  { id: 'ratio-rebalanced', eyebrow: 'Patient ratio', status: 'resolved', statusLabel: 'Rebalanced', timestamp: '3 hrs ago', agentId: 'leo',
+    description: 'rebalanced ICU to a 2:1 nurse:patient ratio after an admit.',
+    subject: iconSubject('bell', 'Memorial North ICU', 'ICU rebalanced to 2:1 ratio') },
+  { id: 'pals-completed', eyebrow: 'Training completed', status: 'resolved', statusLabel: 'Completed', timestamp: '4 hrs ago',
+    description: '5 RNs completed PALS recertification.',
+    subject: iconSubject('bell', 'PALS recert', '5 RNs completed PALS recertification') },
+  { id: 'schedule-june', eyebrow: 'Schedule published', status: 'resolved', statusLabel: 'Published', timestamp: '5 hrs ago',
+    description: 'Memorial South June schedule published — 28 RNs across 4 units.',
+    subject: iconSubject('bell', 'Memorial South', 'June schedule · 28 RNs · 4 units') },
+  { id: 'no-call-marcus', eyebrow: 'No-show · no-call', status: 'in-progress', statusLabel: 'Escalated', timestamp: '6 hrs ago',
+    description: 'Marcus T. missed 3pm Med-Surg call-time — paged charge nurse.',
+    subject: iconSubject('alert', 'Marcus T.', 'Marcus T. missed Med-Surg 3p call') },
+  { id: 'handoff-logged', eyebrow: 'Handoff logged', status: 'resolved', statusLabel: 'Saved', timestamp: '7 hrs ago',
+    description: 'Charge nurse posted the day-shift handoff to Memorial North ICU.',
+    subject: personSubject('Diana R.', 'Diana R. posted ICU day-shift handoff', FACE_F3) },
+  { id: 'flu-surge-plan', eyebrow: 'Surge plan approved', status: 'resolved', statusLabel: 'Approved', timestamp: '8 hrs ago', agentId: 'atlas',
+    description: 'approved +6 nurses across nights for the flu-season surge.',
+    subject: iconSubject('bell', 'Flu-season surge', '+6 nurses staged across nights') },
+  { id: 'payroll-hc', eyebrow: 'Payroll submitted', status: 'resolved', statusLabel: 'Submitted', timestamp: 'Yesterday · 5:40 PM',
+    description: 'Payroll closed pay period Apr 13–19 for 64 nurses.',
+    subject: iconSubject('clock', 'Pay period', 'Pay period Apr 13–19 closed · 64 nurses') },
+  { id: 'feedback-diana', eyebrow: 'Worker feedback', status: 'resolved', statusLabel: 'Logged', timestamp: 'Yesterday · 3:20 PM',
+    description: 'Diana R. rated the night charge 5 / 5 after handoff.',
+    subject: iconSubject('bell', 'Diana R.', 'Diana R. rated night charge 5 / 5') },
+]
+
+/* ── Staffing ────────────────────────────────────────────────────────── */
+const STAFFING_FEED_EXTRA = [
+  { id: 'order-meridian', eyebrow: 'New order', status: 'resolved', statusLabel: 'Resolved', timestamp: '35 min ago', agentId: 'atlas',
+    description: 'accepted 3 RN slots at Meridian Healthcare for next weekend (96 hrs).',
+    subject: iconSubject('bell', 'Meridian Healthcare', '3 RN slots · next weekend · 96 hrs') },
+  { id: 'placement-stellar', eyebrow: 'Placement confirmed', status: 'resolved', statusLabel: 'Resolved', timestamp: '1 hr 5 min ago',
+    description: 'Janelle R. placed at Stellar Events · Friday 6pm load-in.',
+    subject: personSubject('Janelle R.', 'Janelle R. placed at Stellar Events Friday 6pm', FACE_F1) },
+  { id: 'rate-david', eyebrow: 'Rate increase', status: 'monitoring', statusLabel: 'Pending review', timestamp: '1 hr 50 min ago',
+    description: 'David K. requested $3/hr increase — 4.9 rating, 6 mo tenure.',
+    subject: personSubject('David K.', 'David K. requested $3/hr increase', FACE_M1) },
+  { id: 'bg-clear-sarah', eyebrow: 'Background check', status: 'resolved', statusLabel: 'Cleared', timestamp: '2 hrs 20 min ago', agentId: 'iris',
+    description: 'cleared Sarah M. for Meridian Healthcare placements.',
+    subject: personSubject('Sarah M.', 'Sarah M. cleared for Meridian placements', FACE_F2) },
+  { id: 'cancel-priya', eyebrow: 'Contractor cancellation', status: 'in-progress', statusLabel: 'In progress', timestamp: '3 hrs ago', agentId: 'nova',
+    description: 'Priya S. cancelled tonight\'s placement — finding replacement.',
+    subject: personSubject('Priya S.', 'Priya S. cancelled tonight\'s placement', FACE_F4) },
+  { id: 'invoice-stellar', eyebrow: 'Invoice sent', status: 'resolved', statusLabel: 'Sent', timestamp: '4 hrs ago',
+    description: 'Sent Stellar Events the Apr 7–13 invoice ($24,820 across 41 placements).',
+    subject: iconSubject('clock', 'Stellar Events', 'Invoice $24,820 · 41 placements') },
+  { id: 'fill-rate-week', eyebrow: 'Fill rate', status: 'resolved', statusLabel: 'On track', timestamp: '5 hrs ago', agentId: 'leo',
+    description: 'reported 97% fill rate on weekend orders — 2 unfilled at low-margin clients.',
+    subject: iconSubject('bell', 'Weekend fill rate', '97% fill · 2 low-margin gaps') },
+  { id: 'i9-amir', eyebrow: 'I-9 verified', status: 'resolved', statusLabel: 'On file', timestamp: '6 hrs ago', agentId: 'iris',
+    description: 'verified Amir N. I-9 — eligible for placements starting Monday.',
+    subject: personSubject('Amir N.', 'Amir N. I-9 verified · placements eligible Monday', FACE_M2) },
+  { id: 'client-renewal', eyebrow: 'Client renewal', status: 'resolved', statusLabel: 'Signed', timestamp: '7 hrs ago',
+    description: 'Stellar Events renewed for 12 months — auto-stage 18 contractors.',
+    subject: iconSubject('bell', 'Stellar Events', 'Stellar renewed · 12 mo · auto-stage 18') },
+  { id: 'feedback-meridian', eyebrow: 'Client feedback', status: 'resolved', statusLabel: 'Logged', timestamp: '8 hrs ago',
+    description: 'Meridian Healthcare rated last weekend\'s placements 5 / 5.',
+    subject: iconSubject('bell', 'Meridian Healthcare', 'Meridian rated weekend placements 5 / 5') },
+  { id: 'margin-flag', eyebrow: 'Margin alert', status: 'watching', statusLabel: 'Flagged', timestamp: 'Yesterday · 4:50 PM', agentId: 'leo',
+    description: 'flagged Apex Logistics — gross margin trending 9% below threshold.',
+    subject: iconSubject('alert', 'Apex Logistics', 'Margin trending 9% below threshold') },
+  { id: 'payroll-staffing', eyebrow: 'Payroll submitted', status: 'resolved', statusLabel: 'Submitted', timestamp: 'Yesterday · 5:50 PM',
+    description: 'Payroll closed pay period Apr 13–19 for 78 contractors.',
+    subject: iconSubject('clock', 'Pay period', 'Apr 13–19 closed · 78 contractors') },
+]
+
+/* ── Security ────────────────────────────────────────────────────────── */
+const SECURITY_FEED_EXTRA = [
+  { id: 'patrol-log-north', eyebrow: 'Patrol log', status: 'resolved', statusLabel: 'Logged', timestamp: '25 min ago',
+    description: 'Rivera completed routine patrol at North Gate · no flags.',
+    subject: personSubject('Rivera', 'Rivera · routine patrol at North Gate', FACE_M3) },
+  { id: 'incident-minor', eyebrow: 'Incident logged', status: 'monitoring', statusLabel: 'Open', timestamp: '1 hr ago',
+    description: 'Minor trespass logged at Corporate Campus A · client notified.',
+    subject: iconSubject('alert', 'Corporate Campus A', 'Minor trespass logged · client notified') },
+  { id: 'armed-permit', eyebrow: 'Cred verified', status: 'resolved', statusLabel: 'Verified', timestamp: '1 hr 30 min ago', agentId: 'iris',
+    description: 'verified Chen\'s armed-post permit · valid through 2027.',
+    subject: personSubject('Chen', 'Chen · armed permit valid 2027', FACE_M1) },
+  { id: 'sick-guard', eyebrow: 'Sick call', status: 'monitoring', statusLabel: 'Logged', timestamp: '2 hrs ago',
+    description: 'Patel called out for tonight\'s overnight at Industrial Park 4.',
+    subject: iconSubject('alert', 'Patel', 'Patel called out · IP-4 overnight') },
+  { id: 'post-add', eyebrow: 'Post added', status: 'resolved', statusLabel: 'Resolved', timestamp: '2 hrs 30 min ago',
+    description: 'Riverside Plaza added a Friday-night roving patrol post.',
+    subject: iconSubject('bell', 'Riverside Plaza', 'Friday-night roving patrol added') },
+  { id: 'k9-swap', eyebrow: 'K-9 handler swap', status: 'resolved', statusLabel: 'Resolved', timestamp: '3 hrs 15 min ago',
+    description: 'Approved K-9 handler swap between Reyes and Banks for Saturday.',
+    subject: personSubject('Reyes', 'Reyes ↔ Banks · K-9 swap Saturday', FACE_M2) },
+  { id: 'use-of-force', eyebrow: 'Training completed', status: 'resolved', statusLabel: 'Completed', timestamp: '4 hrs ago',
+    description: '8 guards completed annual use-of-force refresher.',
+    subject: iconSubject('bell', 'Use-of-force refresher', '8 guards completed annual refresher') },
+  { id: 'sched-week-may4', eyebrow: 'Schedule published', status: 'resolved', statusLabel: 'Published', timestamp: '5 hrs ago',
+    description: 'Schedule for week of May 4 published — 24 guards across 9 posts.',
+    subject: iconSubject('bell', 'Week of May 4', '24 guards · 9 posts') },
+  { id: 'camera-audit', eyebrow: 'Camera audit', status: 'resolved', statusLabel: 'Passed', timestamp: '6 hrs ago', agentId: 'leo',
+    description: 'completed quarterly camera-coverage audit at Corporate Campus A.',
+    subject: iconSubject('bell', 'Corporate Campus A', 'Camera-coverage audit passed') },
+  { id: 'no-call-banks', eyebrow: 'No-show · no-call', status: 'in-progress', statusLabel: 'Escalated', timestamp: '7 hrs ago',
+    description: 'Banks missed midnight post at Industrial Park 4 — replacement dispatched.',
+    subject: iconSubject('alert', 'Banks', 'Banks missed midnight post · IP-4') },
+  { id: 'feedback-rivera', eyebrow: 'Worker feedback', status: 'resolved', statusLabel: 'Logged', timestamp: '8 hrs ago',
+    description: 'Rivera rated post lead 5 / 5 after the Friday rotation.',
+    subject: personSubject('Rivera', 'Rivera rated post lead 5 / 5', FACE_M3) },
+  { id: 'payroll-sec', eyebrow: 'Payroll submitted', status: 'resolved', statusLabel: 'Submitted', timestamp: 'Yesterday · 5:30 PM',
+    description: 'Payroll closed pay period Apr 13–19 for 32 guards.',
+    subject: iconSubject('clock', 'Pay period', 'Apr 13–19 closed · 32 guards') },
+]
+
+/* ── Light-industrial ────────────────────────────────────────────────── */
+const LIGHT_INDUSTRIAL_FEED_EXTRA = [
+  { id: 'pick-rate-mon', eyebrow: 'Pick rate', status: 'resolved', statusLabel: 'On target', timestamp: '40 min ago', agentId: 'leo',
+    description: 'reported Mon AM pick rate 99.5% accuracy across DC-3.',
+    subject: iconSubject('bell', 'DC-3', 'Pick rate 99.5% · Monday AM') },
+  { id: 'forklift-cert', eyebrow: 'Forklift cert', status: 'resolved', statusLabel: 'Renewed', timestamp: '1 hr 15 min ago', agentId: 'iris',
+    description: 'renewed forklift certs for 4 pickers ahead of the May audit.',
+    subject: iconSubject('clock', 'Forklift renewals', '4 pickers renewed · May audit ready') },
+  { id: 'sick-picker', eyebrow: 'Sick call', status: 'monitoring', statusLabel: 'Logged', timestamp: '2 hrs ago',
+    description: 'Naidu called out for the AM line at DC-1 — replacement on the way.',
+    subject: iconSubject('alert', 'Naidu', 'Naidu called out · DC-1 AM line') },
+  { id: 'huddle-scheduled', eyebrow: 'Pre-shift huddle', status: 'resolved', statusLabel: 'Scheduled', timestamp: '2 hrs 30 min ago',
+    description: 'Pre-shift huddle scheduled for the Tuesday 6am pack line.',
+    subject: iconSubject('bell', 'Pack line', 'Tuesday 6am pre-shift huddle scheduled') },
+  { id: 'safety-strain', eyebrow: 'Safety incident', status: 'monitoring', statusLabel: 'Logged', timestamp: '3 hrs ago',
+    description: 'Minor back strain logged on the DC-2 receiving dock — first-aid kit used.',
+    subject: iconSubject('alert', 'DC-2 receiving', 'Minor back strain · first-aid logged') },
+  { id: 'productivity-bonus', eyebrow: 'Productivity bonus', status: 'resolved', statusLabel: 'Paid out', timestamp: '4 hrs ago',
+    description: 'Pack line A hit the weekly productivity target — bonus posted.',
+    subject: iconSubject('bell', 'Pack line A', 'Hit weekly target · bonus posted') },
+  { id: 'osha10-completed', eyebrow: 'Training completed', status: 'resolved', statusLabel: 'Completed', timestamp: '5 hrs ago',
+    description: '6 new hires completed OSHA 10 ahead of their first shift.',
+    subject: iconSubject('bell', 'OSHA 10', '6 new hires completed OSHA 10') },
+  { id: 'sched-publish-li', eyebrow: 'Schedule published', status: 'resolved', statusLabel: 'Published', timestamp: '5 hrs 45 min ago',
+    description: 'DC-3 weekly schedule published for May 4 — 36 pickers, 4 lines.',
+    subject: iconSubject('bell', 'DC-3', 'Week of May 4 · 36 pickers · 4 lines') },
+  { id: 'cycle-count', eyebrow: 'Cycle count', status: 'resolved', statusLabel: 'Completed', timestamp: '7 hrs ago',
+    description: 'Quarterly cycle count completed at DC-1 · 99.2% accuracy.',
+    subject: iconSubject('bell', 'DC-1', 'Cycle count completed · 99.2% accuracy') },
+  { id: 'feedback-li', eyebrow: 'Worker feedback', status: 'resolved', statusLabel: 'Logged', timestamp: '8 hrs ago',
+    description: 'Pack line A rated their floor lead 4 / 5 — feedback note saved.',
+    subject: iconSubject('bell', 'Pack line A', 'Floor lead rated 4 / 5') },
+  { id: 'pickup-saturday', eyebrow: 'Shift picked up', status: 'resolved', statusLabel: 'Resolved', timestamp: 'Yesterday · 6:10 PM',
+    description: 'Garcia picked up the open Saturday 5am shift at DC-2.',
+    subject: personSubject('Garcia', 'Garcia picked up Sat 5am · DC-2', FACE_M1) },
+  { id: 'payroll-li', eyebrow: 'Payroll submitted', status: 'resolved', statusLabel: 'Submitted', timestamp: 'Yesterday · 5:20 PM',
+    description: 'Payroll closed pay period Apr 13–19 for 92 floor staff.',
+    subject: iconSubject('clock', 'Pay period', 'Apr 13–19 closed · 92 floor staff') },
+]
+
+/* ── Construction ────────────────────────────────────────────────────── */
+const CONSTRUCTION_FEED_EXTRA = [
+  { id: 'rain-delay', eyebrow: 'Weather delay', status: 'monitoring', statusLabel: 'Pending review', timestamp: '20 min ago', agentId: 'atlas',
+    description: 'flagged Thursday rain — 5th & Main framing crew should move inside.',
+    subject: iconSubject('alert', '5th & Main', 'Rain Thursday · move framing inside') },
+  { id: 'ppe-check', eyebrow: 'PPE check', status: 'resolved', statusLabel: 'Passed', timestamp: '1 hr ago',
+    description: 'Morning PPE check passed at Elm Street site · 14 crew on book.',
+    subject: iconSubject('bell', 'Elm Street', 'PPE check passed · 14 crew') },
+  { id: 'sub-electrical', eyebrow: 'Sub callout', status: 'in-progress', statusLabel: 'In progress', timestamp: '1 hr 30 min ago', agentId: 'nova',
+    description: 'Electrical sub running 90 min late — backup sub queued.',
+    subject: iconSubject('alert', 'Electrical sub', 'Electrical sub 90 min late · backup queued') },
+  { id: 'inspection-frame', eyebrow: 'Inspection', status: 'resolved', statusLabel: 'Passed', timestamp: '2 hrs ago',
+    description: 'Framing inspection passed at 5th & Main · ready for drywall.',
+    subject: iconSubject('bell', '5th & Main', 'Framing passed · ready for drywall') },
+  { id: 'lumber-delivered', eyebrow: 'Material delivered', status: 'resolved', statusLabel: 'On site', timestamp: '2 hrs 45 min ago',
+    description: 'Lumber package #3 delivered to Elm Street · checked in.',
+    subject: iconSubject('bell', 'Elm Street', 'Lumber package #3 on site') },
+  { id: 'osha30-renewal', eyebrow: 'OSHA 30 renewals', status: 'watching', statusLabel: 'Flagged', timestamp: '3 hrs 20 min ago', agentId: 'iris',
+    description: 'flagged 4 OSHA 30 certs expiring in 21 days — group renewal $300.',
+    subject: iconSubject('clock', 'OSHA 30 renewals', '4 certs expire in 21 days · $300 group') },
+  { id: 'toolbox-talk', eyebrow: 'Toolbox talk', status: 'resolved', statusLabel: 'Logged', timestamp: '4 hrs ago',
+    description: 'Foreman ran the morning toolbox talk on lift safety at 5th & Main.',
+    subject: personSubject('Reyes (foreman)', 'Reyes ran toolbox talk · lift safety', FACE_M2) },
+  { id: 'apprentice-onboard', eyebrow: 'Apprentice onboarded', status: 'resolved', statusLabel: 'Cleared', timestamp: '5 hrs ago',
+    description: 'Walsh cleared as a carpenter apprentice — first day Monday.',
+    subject: personSubject('Walsh', 'Walsh cleared · carpenter apprentice', FACE_M3) },
+  { id: 'sched-publish-cx', eyebrow: 'Schedule published', status: 'resolved', statusLabel: 'Published', timestamp: '6 hrs ago',
+    description: 'Week of May 4 schedule published — 22 crew across 3 sites.',
+    subject: iconSubject('bell', 'Week of May 4', '22 crew · 3 sites') },
+  { id: 'daily-report', eyebrow: 'Daily report', status: 'resolved', statusLabel: 'Submitted', timestamp: '7 hrs ago',
+    description: 'Submitted the 5th & Main daily report — 96% productivity, no incidents.',
+    subject: iconSubject('bell', '5th & Main', 'Daily report · 96% productivity') },
+  { id: 'feedback-cx', eyebrow: 'Worker feedback', status: 'resolved', statusLabel: 'Logged', timestamp: '8 hrs ago',
+    description: 'Crew rated Reyes 5 / 5 — note logged for performance review.',
+    subject: iconSubject('bell', 'Reyes (foreman)', 'Crew rated Reyes 5 / 5') },
+  { id: 'payroll-cx', eyebrow: 'Payroll submitted', status: 'resolved', statusLabel: 'Submitted', timestamp: 'Yesterday · 5:00 PM',
+    description: 'Payroll closed pay period Apr 13–19 for 22 crew.',
+    subject: iconSubject('clock', 'Pay period', 'Apr 13–19 closed · 22 crew') },
+]
+
+/* Append the extras to each industry's feed and tag the active cancellation
+   card with a subject (avatar) so it renders at the same density as the
+   events flow. */
+function dressActiveCard(industryId, primary, image) {
+  const data = INDUSTRY_DATA[industryId]
+  if (!data || !data.activeCard) return
+  data.activeCard = {
+    ...data.activeCard,
+    subject: personSubject(primary, `${primary} cancelled — Nova finding replacement`, image),
+  }
+}
+
+INDUSTRY_DATA.healthcare.feed        = [...INDUSTRY_DATA.healthcare.feed,        ...HEALTHCARE_FEED_EXTRA]
+INDUSTRY_DATA.staffing.feed          = [...INDUSTRY_DATA.staffing.feed,          ...STAFFING_FEED_EXTRA]
+INDUSTRY_DATA.security.feed          = [...INDUSTRY_DATA.security.feed,          ...SECURITY_FEED_EXTRA]
+INDUSTRY_DATA['light-industrial'].feed = [...INDUSTRY_DATA['light-industrial'].feed, ...LIGHT_INDUSTRIAL_FEED_EXTRA]
+INDUSTRY_DATA.construction.feed      = [...INDUSTRY_DATA.construction.feed,      ...CONSTRUCTION_FEED_EXTRA]
+
+dressActiveCard('healthcare',       'Marcus T.', FACE_M1)
+dressActiveCard('staffing',         'Marcus T.', FACE_M2)
+dressActiveCard('security',         'Marcus T.', FACE_M3)
+dressActiveCard('light-industrial', 'Marcus T.', FACE_M1)
+dressActiveCard('construction',     'Marcus T.', FACE_M2)
