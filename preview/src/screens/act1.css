@@ -9059,3 +9059,142 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   color: var(--color-content-secondary);
   font-size: 13px;
 }
+
+/* ──────────────────────────────────────────────────────────────────────
+ * Lead-capture gate — blur-backed modal that pops 3s after a user
+ * lands inside any account. The blurred page behind the modal keeps
+ * the experience visible so the gate reads as a soft pause, not a
+ * hard wall.
+ * ────────────────────────────────────────────────────────────────────── */
+.lead-gate-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  background: rgba(15, 17, 20, 0.36);
+  backdrop-filter: blur(10px) saturate(120%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  animation: lead-gate-fade-in 240ms ease-out;
+}
+@keyframes lead-gate-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.lead-gate-modal {
+  width: min(440px, 100%);
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+  padding: 32px 32px 24px;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: 18px;
+  box-shadow: 0 32px 80px rgba(15, 17, 20, 0.32);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: lead-gate-pop-in 280ms cubic-bezier(0.2, 0, 0, 1);
+}
+@keyframes lead-gate-pop-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+.lead-gate-mark {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg,
+    var(--ai-grad-start, #8C4FE2) 0%,
+    var(--ai-grad-mid, #446CFF)   60%,
+    var(--ai-grad-end, #1EDFDE)   100%);
+  color: #fff;
+}
+.lead-gate-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+  letter-spacing: -0.01em;
+}
+.lead-gate-sub {
+  margin: 0 0 var(--space-2);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-content-secondary);
+}
+
+.lead-gate-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.lead-gate-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.lead-gate-label {
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-secondary);
+}
+.lead-gate-input {
+  appearance: none;
+  border: 1px solid var(--color-border-opaque);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--color-content-primary);
+  background: var(--color-bg-primary);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+.lead-gate-input:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--color-content-primary) 24%, var(--color-border-opaque));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-content-primary) 8%, transparent);
+}
+.lead-gate-input::placeholder { color: var(--color-content-tertiary); }
+.lead-gate-input.is-invalid {
+  border-color: #B91C1C;
+  box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
+}
+.lead-gate-hint {
+  font-size: 12px;
+  color: #B91C1C;
+}
+
+.lead-gate-submit {
+  appearance: none;
+  margin-top: 4px;
+  padding: 12px 16px;
+  border: 1px solid var(--color-content-primary);
+  border-radius: 10px;
+  background: var(--color-content-primary);
+  color: var(--color-bg-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+.lead-gate-submit:hover {
+  background: color-mix(in srgb, var(--color-content-primary) 88%, white);
+}
+.lead-gate-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.lead-gate-foot {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--color-content-tertiary);
+  line-height: 1.4;
+}

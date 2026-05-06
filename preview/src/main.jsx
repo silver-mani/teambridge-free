@@ -5,6 +5,7 @@ import IndustrySelector   from './screens/IndustrySelector.jsx'
 import Act1Dashboard      from './screens/Act1Dashboard.jsx'
 import SageDashboard      from './screens/sage/SageDashboard.jsx'
 import SageWorkforceEmbed from './screens/sage/SageWorkforceEmbed.jsx'
+import LeadCaptureGate    from './screens/LeadCaptureGate.jsx'
 
 const VALID_INDUSTRIES = new Set([
   'healthcare', 'staffing', 'events', 'security', 'light-industrial', 'construction',
@@ -60,48 +61,68 @@ function App() {
     } catch { /* ignore */ }
   }
 
+  // Lead capture — gate the demo behind a name / company / work-email
+  // form 3 seconds after the user lands inside any account. Persisted
+  // for the session so they don't see it again on every navigation.
+  const [leadCaptured, setLeadCaptured] = useState(() => {
+    try { return sessionStorage.getItem('tb:lead') === '1' } catch { return false }
+  })
+  const submitLead = (lead) => {
+    try {
+      sessionStorage.setItem('tb:lead', '1')
+      sessionStorage.setItem('tb:lead-data', JSON.stringify(lead))
+    } catch { /* ignore */ }
+    setLeadCaptured(true)
+  }
+
   useEffect(() => {
     const sync = () => setRoute(parseHash())
     window.addEventListener('hashchange', sync)
     return () => window.removeEventListener('hashchange', sync)
   }, [])
 
-  if (!route) {
-    return (
-      <IndustrySelector
-        onSelect={id => setHash(`/${id}`)}
-      />
-    )
-  }
+  // The gate runs on every route except the industry picker itself.
+  const showGate = !!route && !leadCaptured
 
-  if (route.kind === 'sage') {
+  let view
+  if (!route) {
+    view = <IndustrySelector onSelect={id => setHash(`/${id}`)} />
+  } else if (route.kind === 'sage') {
     const sageNav = (v) => setHash(v === 'dashboard' ? '/sage' : `/sage/${v}`)
     if (route.view === 'workforce') {
-      return (
+      view = (
         <SageWorkforceEmbed
           onNavigate={sageNav}
           otFixed={otFixed}
           onApplyOTFix={() => setOtFixed(true)}
         />
       )
+    } else {
+      view = (
+        <SageDashboard
+          onNavigate={sageNav}
+          otFixed={otFixed}
+          onResetOTFix={() => setOtFixed(false)}
+        />
+      )
     }
-    return (
-      <SageDashboard
-        onNavigate={sageNav}
-        otFixed={otFixed}
-        onResetOTFix={() => setOtFixed(false)}
+  } else {
+    view = (
+      <Act1Dashboard
+        industryId={route.industry}
+        view={route.view}
+        onBack={() => setHash('/')}
+        onSelectView={(v) => setHash(v === 'overview' ? `/${route.industry}` : `/${route.industry}/${v}`)}
+        onExplore={() => { /* Act 2 not built yet */ }}
       />
     )
   }
 
   return (
-    <Act1Dashboard
-      industryId={route.industry}
-      view={route.view}
-      onBack={() => setHash('/')}
-      onSelectView={(v) => setHash(v === 'overview' ? `/${route.industry}` : `/${route.industry}/${v}`)}
-      onExplore={() => { /* Act 2 not built yet */ }}
-    />
+    <>
+      {view}
+      {showGate && <LeadCaptureGate onSubmit={submitLead} />}
+    </>
   )
 }
 
