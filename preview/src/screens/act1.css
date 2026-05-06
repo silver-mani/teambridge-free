@@ -5208,7 +5208,7 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
 .wf-list-head,
 .wf-list-row {
   display: grid;
-  grid-template-columns: minmax(280px, 2fr) 1.3fr 1.6fr 1.1fr 1fr;
+  grid-template-columns: minmax(280px, 2fr) 1.2fr 1.5fr 1.2fr 0.9fr;
   align-items: center;
   column-gap: var(--space-3);
 }
@@ -5237,11 +5237,21 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   min-width: 0;
   font-size: 13px;
   color: var(--color-content-secondary);
+  /* Truncate long single-line cells (Owner / Trigger / Last edited)
+     so a verbose value doesn't wrap and stretch its row taller than
+     its neighbors. The Name cell has its own children with their
+     own truncation rules, so we re-enable wrap there. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .wf-list-cell-name {
   display: flex;
   align-items: center;
   gap: 12px;
+  /* Allow flex children to manage their own truncation. */
+  white-space: normal;
+  overflow: visible;
 }
 .wf-list-cell-icon {
   width: 30px;
@@ -5258,11 +5268,24 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   font-size: 13px;
   font-weight: var(--font-weight-medium);
   color: var(--color-content-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .wf-list-cell-sub {
   font-size: 12px;
   color: var(--color-content-tertiary);
   margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* The flex column inside the name cell needs min-width: 0 so its
+   children can shrink and truncate; otherwise the title/sub block
+   would push past the grid track. */
+.wf-list-cell-name > div {
+  min-width: 0;
+  flex: 1;
 }
 
 /* ── Status pill (list + detail header) ── */
