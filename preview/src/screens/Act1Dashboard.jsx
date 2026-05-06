@@ -2624,37 +2624,164 @@ function Message({ message, onApprove }) {
 }
 
 /* ─── Scripted "Sandra cancelled" scene ───────────────────────────────────
-   Four message specs that play back sequentially when the user lands on
-   the Events home with an empty chat. Shape matches the normal assistant
-   message shape so the streaming state machine animates them naturally. */
-const RACHEL_ATTACHMENT = {
-  type: 'attachment',
-  avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=160&h=160&fit=crop&crop=faces&auto=format',
-  title: 'Rachel Williams · Usher',
-  subtitle: '1.7 mi · 18 hrs this week · 4 events this month · 100% last-min accept rate',
-  actions: [{ label: 'View shift' }],
+   Plays whenever the operator lands on any industry's home with an empty
+   chat. Each industry gets its own copy of the scene generated from a
+   small per-industry config — same beats (signal → reasoning → reach
+   out → outcome → save workflow) but the role, venue, candidate-pool
+   filter chain, replacement attachment, and notify-target all swap to
+   the operator's world. */
+
+const SCENE_AVATARS = {
+  sandra: 'https://images.unsplash.com/photo-1489980557514-251d61e3eeb6?w=160&h=160&fit=crop&crop=faces&auto=format',
+  rachel: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=160&h=160&fit=crop&crop=faces&auto=format',
 }
 
-const SANDRA_SCENE = {
-  // 1) The first message the prospect sees — AI reasoning through the
-  //    replacement search, ending with a canned "Yes, reach out" button.
-  reachOutPrompt: {
+/* Per-industry scene parameters. Sandra Lee is the canonical canceller
+   across industries (always on-leave in our People roster), and Rachel
+   Williams is the canonical replacement; their roles flex per industry
+   so the narrative reads native to that operator. */
+const CANCEL_SCENE_CONFIGS = {
+  events: {
+    sandraRole:  'Usher',
+    shiftLabel:  'Saturday 7pm usher shift',
+    venue:       'Civic Auditorium',
+    noticeHrs:   '3.5',
+    poolNoun:    'ushers',
+    poolQualifier: 'Civic-credentialed',
+    poolHoursCap: '32 hrs',
+    poolFunnel:  '64 ushers in range → 38 Civic-qualified → 21 free at 7pm → 18 under OT cap → 12 opted in to last-min offers.',
+    finalCount:  12,
+    rachelRole:  'Usher',
+    rachelMeta:  '1.7 mi · 18 hrs this week · 4 events this month',
+    secondsToFill: 47,
+    notify:      { name: 'Miguel', role: 'event lead' },
+    scheduleLabel: 'Saturday schedule at Civic Auditorium',
+  },
+  healthcare: {
+    sandraRole:  'CNA',
+    shiftLabel:  'Saturday 7pm CNA shift',
+    venue:       'Memorial North · ICU',
+    noticeHrs:   '3.5',
+    poolNoun:    'CNAs',
+    poolQualifier: 'BLS-current ICU-trained',
+    poolHoursCap: '36 hrs',
+    poolFunnel:  '38 CNAs in range → 24 BLS-current → 14 free at 7pm → 11 under OT cap → 8 opted in to last-min offers.',
+    finalCount:  8,
+    rachelRole:  'RN',
+    rachelMeta:  '2.1 mi · 24 hrs this week · BLS · ACLS active',
+    secondsToFill: 52,
+    notify:      { name: 'Jordan', role: 'charge nurse' },
+    scheduleLabel: 'Saturday roster at Memorial North',
+  },
+  staffing: {
+    sandraRole:  'Warehouse',
+    shiftLabel:  'Friday 6am warehouse shift',
+    venue:       'Brightline Plant',
+    noticeHrs:   '4',
+    poolNoun:    'warehouse contractors',
+    poolQualifier: 'OSHA-cleared',
+    poolHoursCap: '36 hrs',
+    poolFunnel:  '48 contractors in range → 32 OSHA-cleared → 19 free at 6am → 15 under OT cap → 10 opted in to last-min offers.',
+    finalCount:  10,
+    rachelRole:  'Warehouse',
+    rachelMeta:  '2.4 mi · 22 hrs this week · 3 prior placements at Brightline',
+    secondsToFill: 58,
+    notify:      { name: 'Jordan', role: 'site lead' },
+    scheduleLabel: 'Friday roster at Brightline Plant',
+  },
+  security: {
+    sandraRole:  'Unarmed Guard',
+    shiftLabel:  'Saturday 10pm unarmed post',
+    venue:       'Crown Tower',
+    noticeHrs:   '3',
+    poolNoun:    'unarmed guards',
+    poolQualifier: 'license-current',
+    poolHoursCap: '36 hrs',
+    poolFunnel:  '31 guards in range → 22 license-current → 14 free at 10pm → 12 under OT cap → 8 opted in to last-min offers.',
+    finalCount:  8,
+    rachelRole:  'Armed Guard',
+    rachelMeta:  '2.8 mi · 24 hrs this week · site-familiar (11 prior posts)',
+    secondsToFill: 41,
+    notify:      { name: 'Jordan', role: 'site captain' },
+    scheduleLabel: 'Saturday post sheet at Crown Tower',
+  },
+  'light-industrial': {
+    sandraRole:  'Packer',
+    shiftLabel:  'Friday 6am packer shift',
+    venue:       'Brightline Plant',
+    noticeHrs:   '4',
+    poolNoun:    'packers',
+    poolQualifier: 'OSHA 10-current',
+    poolHoursCap: '36 hrs',
+    poolFunnel:  '56 packers in range → 34 OSHA 10-current → 18 free at 6am → 14 under OT cap → 9 opted in to last-min offers.',
+    finalCount:  9,
+    rachelRole:  'Forklift Op',
+    rachelMeta:  '1.9 mi · 22 hrs this week · cross-trained packer (4 prior fills)',
+    secondsToFill: 49,
+    notify:      { name: 'Jordan', role: 'line lead' },
+    scheduleLabel: 'Friday line sheet at Brightline Plant',
+  },
+  construction: {
+    sandraRole:  'Laborer',
+    shiftLabel:  'Friday 7am laborer shift',
+    venue:       'Eastside Tower',
+    noticeHrs:   '4.5',
+    poolNoun:    'laborers',
+    poolQualifier: 'OSHA 10-current',
+    poolHoursCap: '40 hrs',
+    poolFunnel:  '28 laborers in range → 18 OSHA 10-current → 12 free at 7am → 10 under OT cap → 7 opted in to last-min offers.',
+    finalCount:  7,
+    rachelRole:  'Carpenter',
+    rachelMeta:  '2.3 mi · 24 hrs this week · cross-trained (2 prior laborer fills)',
+    secondsToFill: 53,
+    notify:      { name: 'Jordan', role: 'foreman' },
+    scheduleLabel: 'Friday crew sheet at Eastside Tower',
+  },
+}
+
+function buildCancelScene(cfg) {
+  const replacementAttachment = {
+    type: 'attachment',
+    avatar: SCENE_AVATARS.rachel,
+    title: `Rachel Williams · ${cfg.rachelRole}`,
+    subtitle: `${cfg.rachelMeta} · 100% last-min accept rate`,
+    actions: [{ label: 'View shift' }],
+  }
+  const scene = {}
+
+  scene.activityCard = {
+    id: 'cancel-scene-active',
+    eyebrow: 'Shift update',
+    status: 'watching',
+    statusLabel: 'New',
+    timestamp: 'Just now',
+    title: `Sandra Lee cancelled her ${cfg.shiftLabel}`,
+    description: `Sandra Lee cancelled her ${cfg.shiftLabel} · ${cfg.venue} · ${cfg.noticeHrs} hrs notice`,
+    subject: {
+      kind: 'person',
+      primary: 'Sandra Lee',
+      secondary: `${cfg.sandraRole} · ${cfg.venue}`,
+      image: SCENE_AVATARS.sandra,
+    },
+  }
+
+  scene.reachOutPrompt = {
     content: { segments: [
       { type: 'signal',
         eyebrow: 'Activity flagged · might need resolution',
-        title: 'Sandra Lee cancelled her Saturday 7pm usher shift',
-        detail: 'Civic Auditorium · 3.5 hrs notice' },
+        title: `Sandra Lee cancelled her ${cfg.shiftLabel}`,
+        detail: `${cfg.venue} · ${cfg.noticeHrs} hrs notice` },
       { type: 'thinking', steps: [
         { title: 'Parsed the cancellation',
-          detail: 'Sandra Lee cancelled her Saturday 7pm usher shift at Civic Auditorium. 3.5 hrs notice.' },
+          detail: `Sandra Lee cancelled her ${cfg.shiftLabel} at ${cfg.venue}. ${cfg.noticeHrs} hrs notice.` },
         { title: 'Pulled the candidate pool',
-          detail: 'Civic-credentialed ushers in a sensible commute radius who are under 32 hrs this week, so no one gets pushed into overtime.' },
-        { title: 'Filtered down to 12',
-          detail: '64 ushers in range → 38 Civic-qualified → 21 free at 7pm → 18 under OT cap → 12 opted in to last-min offers.' },
-        { title: 'Ranked the 12',
+          detail: `${cfg.poolQualifier} ${cfg.poolNoun} in a sensible commute radius who are under ${cfg.poolHoursCap} this week, so no one gets pushed into overtime.` },
+        { title: `Filtered down to ${cfg.finalCount}`,
+          detail: cfg.poolFunnel },
+        { title: `Ranked the ${cfg.finalCount}`,
           detail: 'Proximity (traffic-adjusted), 90-day performance, last-min accept rate, and hours fairness so the same people aren\'t always on call.' },
       ] },
-      { type: 'text', text: "Found **12 qualified replacements**. Top 3 are inside 4 miles with 90%+ accept rates. Want me to reach out to them in parallel?" },
+      { type: 'text', text: `Found **${cfg.finalCount} qualified replacements**. Top 3 are inside 4 miles with 90%+ accept rates. Want me to reach out to them in parallel?` },
     ] },
     specialist: 'nova',
     approveLabel: 'Yes, reach out',
@@ -2663,47 +2790,42 @@ const SANDRA_SCENE = {
       'Monitoring responses (cut-off: 90 seconds)',
       'Confirming the winner and locking the schedule',
     ],
-    // Reach-out should feel like real work, not a blink. ~3.5s per step is
-    // the sweet spot — fast enough to keep momentum, long enough that the
-    // prospect reads each step and trusts Nova isn't faking it.
     stepDurationMs: 3500,
-    sceneAfter: ({ postAssistant }) => postAssistant(SANDRA_SCENE.rachelAccepted),
-  },
+    sceneAfter: ({ postAssistant }) => postAssistant(scene.rachelAccepted),
+  }
 
-  // 2) Outcome of reach-out — Rachel accepted. Prospect clicks Approve.
-  rachelAccepted: {
+  scene.rachelAccepted = {
     content: { segments: [
-      { type: 'text', text: "**Rachel Williams** accepted at the posted rate — no pay change needed. Offered in **47 seconds**." },
-      RACHEL_ATTACHMENT,
-      { type: 'cta', text: "Send her the pre-shift brief and lock the schedule?" },
+      { type: 'text', text: `**Rachel Williams** accepted at the posted rate — no pay change needed. Offered in **${cfg.secondsToFill} seconds**.` },
+      replacementAttachment,
+      { type: 'cta', text: 'Send her the pre-shift brief and lock the schedule?' },
     ] },
     specialist: 'nova',
     approveLabel: 'Approve & notify',
     approvePlan: [
       'Send the pre-shift brief to Rachel',
-      'Update the Saturday schedule at Civic Auditorium',
-      'Log the swap with Miguel (event lead)',
+      `Update the ${cfg.scheduleLabel}`,
+      `Log the swap with ${cfg.notify.name} (${cfg.notify.role})`,
     ],
     stepDurationMs: 1200,
     sceneAfter: ({ postAssistant, overrideActivityCard }) => {
-      overrideActivityCard?.('sandra-cancellation-live', {
+      overrideActivityCard?.('cancel-scene-active', {
         status: 'resolved',
         statusLabel: 'Resolved',
-        description: 'Rachel Williams picked up the shift · 47s to fill · no pay delta.',
+        description: `Rachel Williams picked up the shift · ${cfg.secondsToFill}s to fill · no pay delta.`,
       })
-      postAssistant(SANDRA_SCENE.success)
+      postAssistant(scene.success)
     },
-  },
+  }
 
-  // 3) Covered. Metrics block + offer to codify the pattern.
-  success: {
+  scene.success = {
     content: { segments: [
-      { type: 'text', text: "Shift covered. Schedule is locked and Miguel is notified." },
+      { type: 'text', text: `Shift covered. Schedule is locked and ${cfg.notify.name} is notified.` },
       { type: 'metrics', items: [
-        { value: '✓',    label: 'Coverage' },
-        { value: '47 s', label: 'Time to fill' },
-        { value: '$0',   label: 'Pay delta' },
-        { value: 'None', label: 'OT risk' },
+        { value: '✓',                            label: 'Coverage' },
+        { value: `${cfg.secondsToFill} s`,       label: 'Time to fill' },
+        { value: '$0',                            label: 'Pay delta' },
+        { value: 'None',                          label: 'OT risk' },
       ] },
       { type: 'cta', text: "Want to save this as a **Last-min Replacement** workflow? Nova will handle cancellations the same way next time — no approval required unless something's off." },
     ] },
@@ -2714,12 +2836,10 @@ const SANDRA_SCENE = {
       'Save as "Last-min Replacement" workflow · owner: you',
     ],
     stepDurationMs: 1200,
-    sceneAfter: ({ postAssistant }) => postAssistant(SANDRA_SCENE.savedConfirmation),
-  },
+    sceneAfter: ({ postAssistant }) => postAssistant(scene.savedConfirmation),
+  }
 
-  // 4) Final bubble — saved. The CTA button routes the operator straight
-  //    into the Workflow editor on the Last-min Replacement detail.
-  savedConfirmation: {
+  scene.savedConfirmation = {
     content: { segments: [
       { type: 'text', text: "Saved. Nova will auto-run **Last-min Replacement** next time someone cancels — I'll only ping you if hours are tight or a pay bump is needed." },
       { type: 'cta', text: "Open in **Agent Workflows** to tweak the rules." },
@@ -2728,8 +2848,14 @@ const SANDRA_SCENE = {
     approveLabel: 'Open workflow editor',
     target: 'workflows',
     workflowId: 'last-min-replacement',
-  },
+  }
+
+  return scene
 }
+
+const CANCEL_SCENES = Object.fromEntries(
+  Object.entries(CANCEL_SCENE_CONFIGS).map(([id, cfg]) => [id, buildCancelScene(cfg)])
+)
 
 /* ─── Prompt panel ──────────────────────────────────────────────────────── */
 
@@ -2960,12 +3086,15 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, onInjectActiv
   }
 
   /* ── Scripted "Sandra cancelled" live scene ─────────────────────────
-     Plays only when the operator lands on the Events home with an empty
-     chat. Deterministic timeline; the orchestrator re-runs on any empty
-     state so Clear-chat replays it cleanly. */
+     Plays whenever the operator lands on any industry's home with an
+     empty chat. Deterministic timeline; the orchestrator re-runs on any
+     empty state so Clear-chat replays it cleanly. The scene's copy
+     (role, venue, candidate pool, replacement, notify-target) comes
+     from CANCEL_SCENES[industryId] so each surface reads native. */
   const sceneStartedRef = useRef(false)
   useEffect(() => {
-    if (industryId !== 'events' || view !== 'overview') {
+    const scene = CANCEL_SCENES[industryId]
+    if (!scene || view !== 'overview') {
       sceneStartedRef.current = false
       return
     }
@@ -2976,33 +3105,20 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, onInjectActiv
     if (sceneStartedRef.current) return
     sceneStartedRef.current = true
 
-    // T=3s — Sandra's cancellation event arrives on its own. No agent is
-    // attached yet; the card is anchored to the person so the prospect sees
-    // it as a raw inbound event before the AI reacts.
+    // T=3s — the cancellation event arrives on its own. No agent is
+    // attached yet; the card is anchored to the person so the prospect
+    // sees it as a raw inbound event before the AI reacts.
     const activityTimer = setTimeout(() => {
-      onInjectActivityCard?.({
-        id: 'sandra-cancellation-live',
-        eyebrow: 'Shift update',
-        status: 'watching',
-        statusLabel: 'New',
-        timestamp: 'Just now',
-        title: 'Sandra Lee cancelled her Saturday 7pm usher shift',
-        description: 'Sandra Lee cancelled her Saturday 7pm usher shift · Civic Auditorium · 3.5 hrs notice',
-        subject: {
-          kind: 'person',
-          primary: 'Sandra Lee',
-          secondary: 'Usher · Civic Auditorium · Sat 7:00p',
-          image: 'https://images.unsplash.com/photo-1489980557514-251d61e3eeb6?w=160&h=160&fit=crop&crop=faces&auto=format',
-        },
-      })
+      onInjectActivityCard?.(scene.activityCard)
     }, 3000)
 
-    // T=~6s — only after the operator has had time to notice the activity
-    // popup does the chat react. We deliberately do NOT re-post the daily
-    // briefing into the chat: the empty-state greeting has already typed
-    // itself and re-rendering it would look like the AI was retyping.
+    // T=~6s — only after the operator has had time to notice the
+    // activity popup does the chat react. We deliberately do NOT re-post
+    // the daily briefing into the chat: the empty-state greeting has
+    // already typed itself and re-rendering it would look like the AI
+    // was retyping.
     const chatTimer = setTimeout(() => {
-      postAssistant(SANDRA_SCENE.reachOutPrompt)
+      postAssistant(scene.reachOutPrompt)
     }, 6000)
 
     return () => {
@@ -3048,7 +3164,7 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, onInjectActiv
             single container so the operator never sees a second inner
             scrollbar. Follow-up chips + compose input stay pinned below. */}
         <div className="prompt-scroll" ref={scrollRef}>
-          {(!hasChat || (industryId === 'events' && view === 'overview')) && (
+          {(!hasChat || view === 'overview') && (
             <DailyBriefing industryId={industryId} view={view} paySubRoute={paySubRoute} briefKey={briefKey} onAction={submit} />
           )}
           {hasChat && (
@@ -3132,10 +3248,12 @@ export default function Act1Dashboard({ industryId, view = 'overview', onBack, o
     if (view !== 'pay') setPaySubRoute({ screen: 'home' })
   }, [view, industryId])
 
-  // Scene state is scoped to events/overview; wipe on industry or view change
-  // so a user bouncing through Schedule/Pay doesn't return to a stale card.
+  // Each industry's home plays its own cancellation scene; wipe scene
+  // state on industry or view change so a user bouncing through
+  // Schedule/Pay or switching industries doesn't return to a stale card
+  // from another playthrough.
   useEffect(() => {
-    if (industryId !== 'events' || view !== 'overview') {
+    if (view !== 'overview') {
       setSceneInjectedCard(null)
       setSceneCardOverrides({})
     }
