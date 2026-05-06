@@ -69,6 +69,33 @@ const ConstructionIcon = () => (
   </svg>
 )
 
+const HospitalityIcon = () => (
+  <svg {...iconBase}>
+    {/* Bell on a tray — universal "service" mark */}
+    <path d="M4 18h16" />
+    <path d="M5 18a7 7 0 0 1 14 0" />
+    <path d="M12 6V4M10 4h4" />
+  </svg>
+)
+
+const LongTermCareIcon = () => (
+  <svg {...iconBase}>
+    {/* Hands-with-heart — caregiving */}
+    <path d="M12 21s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.5-7 10-7 10Z" />
+    <path d="M9 11h2l1-1.5L13 12l1-1.5h2" />
+  </svg>
+)
+
+const JanitorialIcon = () => (
+  <svg {...iconBase}>
+    {/* Spray-bottle / cleaning kit */}
+    <path d="M9 7V4h4v3" />
+    <path d="M14 7H8a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2Z" />
+    <path d="M9 12h4" />
+    <path d="M16 7l4-2v6l-4-2" />
+  </svg>
+)
+
 /* ─────────────────────────────────────────────────────────────────────────────
    Industry catalogue
    Colors pull from Alloy's semantic color families (e.g. --color-blue-bg-tertiary
@@ -76,12 +103,15 @@ const ConstructionIcon = () => (
    ───────────────────────────────────────────────────────────────────────────── */
 
 export const INDUSTRIES = [
-  { id: 'healthcare',       name: 'Healthcare',        description: 'Nursing, clinical, allied health',      color: 'blue',   Icon: HealthcareIcon },
-  { id: 'staffing',         name: 'Staffing',          description: 'Agency placements and per-diem',        color: 'purple', Icon: StaffingIcon },
-  { id: 'events',           name: 'Events & Venues',   description: 'Stadiums, arenas, conferences',         color: 'pink',   Icon: EventsIcon },
-  { id: 'security',         name: 'Security',          description: 'Guard services and site patrols',       color: 'slate',  Icon: SecurityIcon },
-  { id: 'light-industrial', name: 'Light Industrial',  description: 'Warehousing, logistics, manufacturing', color: 'orange', Icon: LightIndustrialIcon },
-  { id: 'construction',     name: 'Construction',      description: 'Trades, job sites, project crews',      color: 'matcha', Icon: ConstructionIcon },
+  { id: 'healthcare',       name: 'Healthcare',          description: 'Nursing, clinical, allied health',      color: 'blue',   Icon: HealthcareIcon },
+  { id: 'staffing',         name: 'Staffing',            description: 'Agency placements and per-diem',        color: 'purple', Icon: StaffingIcon },
+  { id: 'events',           name: 'Events & Venues',     description: 'Stadiums, arenas, conferences',         color: 'pink',   Icon: EventsIcon },
+  { id: 'hospitality',      name: 'Hospitality',         description: 'Hotels, restaurants, guest services',   color: 'matcha', Icon: HospitalityIcon },
+  { id: 'long-term-care',   name: 'Long Term Care',      description: 'Skilled nursing, assisted living, home', color: 'green', Icon: LongTermCareIcon },
+  { id: 'security',         name: 'Security',            description: 'Guard services and site patrols',       color: 'slate',  Icon: SecurityIcon },
+  { id: 'janitorial',       name: 'Janitorial & Facilities', description: 'Cleaning, building services, maintenance', color: 'azure', Icon: JanitorialIcon },
+  { id: 'light-industrial', name: 'Light Industrial',    description: 'Warehousing, logistics, manufacturing', color: 'orange', Icon: LightIndustrialIcon },
+  { id: 'construction',     name: 'Construction',        description: 'Trades, job sites, project crews',      color: 'matcha', Icon: ConstructionIcon },
 ]
 
 /* ─────────────────────────────────────────────────────────────────────────────

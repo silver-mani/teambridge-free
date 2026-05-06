@@ -9,6 +9,7 @@ import LeadCaptureGate    from './screens/LeadCaptureGate.jsx'
 
 const VALID_INDUSTRIES = new Set([
   'healthcare', 'staffing', 'events', 'security', 'light-industrial', 'construction',
+  'hospitality', 'long-term-care', 'janitorial',
 ])
 
 function parseHash() {

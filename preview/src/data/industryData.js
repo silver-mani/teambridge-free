@@ -43,6 +43,21 @@ const MATCH_TEMPLATE = {
     { name: 'David K.',   meta: '3.6 mi · Framer, 28 hrs',              winner: false },
     { name: 'Priya S.',   meta: '4.9 mi · Carpenter apprentice, 24 hrs',winner: false },
   ],
+  hospitality: [
+    { name: 'Janelle R.', meta: '1.5 mi · F&B certified, 28 hrs',        winner: true  },
+    { name: 'David K.',   meta: '3.0 mi · Front desk, 26 hrs',           winner: false },
+    { name: 'Priya S.',   meta: '4.4 mi · Banquet server, 32 hrs',       winner: false },
+  ],
+  'long-term-care': [
+    { name: 'Janelle R.', meta: '2.2 mi · LPN · resident-care current, 30 hrs', winner: true  },
+    { name: 'David K.',   meta: '3.4 mi · CNA · 24 hrs',                         winner: false },
+    { name: 'Priya S.',   meta: '4.6 mi · Med-tech, 32 hrs',                     winner: false },
+  ],
+  janitorial: [
+    { name: 'Janelle R.', meta: '1.6 mi · Floor-care lead, 30 hrs',  winner: true  },
+    { name: 'David K.',   meta: '3.2 mi · Day porter, 28 hrs',       winner: false },
+    { name: 'Priya S.',   meta: '4.5 mi · Restroom tech, 34 hrs',    winner: false },
+  ],
 }
 
 function buildIndustry({
@@ -590,6 +605,204 @@ export const INDUSTRY_DATA = {
         recommendation: 'Approve group renewal. Send links today.',
         resolvedTitle: 'Renewal approved for 4 crew',
         resolvedDescription: 'Links sent. All 4 started. Certs renewed within 5 days.',
+      },
+    ],
+  }),
+
+  hospitality: buildIndustry({
+    id: 'hospitality',
+    label: 'Hospitality',
+    workerNoun: 'team member',
+    workerNounPlural: 'team',
+    venueNoun: 'property',
+    activeLocation: 'Bayview Hotel',
+    shiftNoun: 'banquet shift',
+    offerReason: 'Closest match. 1.5 miles away. F&B-certified, 28 hrs this week.',
+    credentialCard: {
+      id: 'credential',
+      status: 'resolved',
+      statusLabel: 'Resolved',
+      timestamp: '1 hr ago',
+      agentId: 'iris',
+      agentTask: 'Service Cert',
+      title: 'Food-handler cert verified for new hire',
+      description: 'Sarah M. cleared for banquet service. First shift Friday at Bayview.',
+    },
+    mission: {
+      headline: 'Weekend wedding block is staffed. 2 decisions waiting on you.',
+      stats: [
+        { label: 'Open positions next 72 hrs', value: '1',    tone: 'warning' },
+        { label: 'Banquet readiness',          value: '98%',  tone: 'success' },
+        { label: 'Items needing approval',     value: '2',    tone: 'warning' },
+        { label: 'Auto resolved today',        value: '11',   tone: 'neutral' },
+      ],
+    },
+    needsYou: [
+      {
+        id: 'banquet-surge',
+        type: 'approval',
+        timestamp: '6 min ago',
+        agentId: 'atlas',
+        agentTask: 'Banquet Surge',
+        title: 'Saturday wedding block needs +4 servers',
+        summary: 'Banquet service for the Reyes-Patel wedding (180 covers) is short 4 servers.',
+        reasoning: [
+          '6 banquet-trained servers within commute, all under hours.',
+          'Pay rate +$2/hr for the wedding block — strong accept signal.',
+          'Bayview F&B Lead (Lara M.) has pre-approved the lift.',
+        ],
+        recommendation: 'Auto-offer to top 6, hold the top 4 accepts.',
+        resolvedTitle: '4 servers confirmed for Saturday',
+        resolvedDescription: 'Coverage staged. Lara notified. Brief ready for Friday huddle.',
+      },
+      {
+        id: 'breakfast-pull',
+        type: 'approval',
+        timestamp: '24 min ago',
+        agentId: 'sofia',
+        agentTask: 'Breakfast Pull',
+        title: 'Breakfast attendant pull from Bayview to Riverside',
+        summary: 'Riverside Hotel is short Sunday morning — Bayview can spare 2 attendants.',
+        reasoning: [
+          'Bayview projects 84% of forecast Sun, Riverside 112%.',
+          'Both hotels share the same brand standard, no re-training needed.',
+          'No overtime risk for either property.',
+        ],
+        recommendation: 'Approve the 2-person loan.',
+        resolvedTitle: 'Loan approved · 2 attendants reassigned',
+        resolvedDescription: 'Riverside back to 100%. Bayview unchanged.',
+      },
+    ],
+  }),
+
+  'long-term-care': buildIndustry({
+    id: 'long-term-care',
+    label: 'Long Term Care',
+    workerNoun: 'caregiver',
+    workerNounPlural: 'caregivers',
+    venueNoun: 'community',
+    activeLocation: 'Pine Ridge SNF',
+    shiftNoun: 'evening med-pass',
+    offerReason: 'Closest match. 2.2 miles away. LPN current, resident-care familiar.',
+    credentialCard: {
+      id: 'credential',
+      status: 'resolved',
+      statusLabel: 'Resolved',
+      timestamp: '1 hr ago',
+      agentId: 'iris',
+      agentTask: 'License Verification',
+      title: 'CNA license verified for new hire',
+      description: 'Sarah M. cleared. First shift Monday at Pine Ridge.',
+    },
+    mission: {
+      headline: 'Every wing has its ratios. 2 items need your call.',
+      stats: [
+        { label: 'Open shifts next 72 hrs',  value: '0',    tone: 'success' },
+        { label: 'CNA-to-resident ratio',    value: '1:7',  tone: 'success' },
+        { label: 'Items needing approval',   value: '2',    tone: 'warning' },
+        { label: 'Auto resolved today',      value: '8',    tone: 'neutral' },
+      ],
+    },
+    needsYou: [
+      {
+        id: 'agency-cna',
+        type: 'approval',
+        timestamp: '11 min ago',
+        agentId: 'nova',
+        agentTask: 'Agency Fill',
+        title: 'Pull agency CNA to cover Sunday overnight',
+        summary: 'In-house CNAs are at cap; Sunday 11p-7a at Pine Ridge needs one more body.',
+        reasoning: [
+          'No in-house CNA available without tipping into OT.',
+          'Sunrise Staffing has 2 vetted CNAs at the negotiated rate.',
+          'Approved budget cushion supports up to 2 agency shifts this week.',
+        ],
+        recommendation: 'Place the agency request for 1 CNA, 11p-7a Sunday.',
+        resolvedTitle: 'Agency CNA confirmed for Sunday overnight',
+        resolvedDescription: 'Agency placed Marisol O. Director of Nursing notified.',
+      },
+      {
+        id: 'med-pass-coverage',
+        type: 'approval',
+        timestamp: '36 min ago',
+        agentId: 'sofia',
+        agentTask: 'Med-Pass Coverage',
+        title: 'Med-pass coverage Tuesday 3-11p',
+        summary: 'Two LPNs out Tuesday — surge plan needs one more body for the south wing.',
+        reasoning: [
+          'Med-pass-current LPN, Devra A., available and under-cap.',
+          'Pull keeps south wing at 1:8 ratio (within policy).',
+          'Resident-care continuity preserved — Devra worked this wing last week.',
+        ],
+        recommendation: 'Schedule Devra for Tuesday 3-11p south wing.',
+        resolvedTitle: 'Devra scheduled · Tuesday 3-11p',
+        resolvedDescription: 'South wing ratio holds. DON acknowledged.',
+      },
+    ],
+  }),
+
+  janitorial: buildIndustry({
+    id: 'janitorial',
+    label: 'Janitorial & Facilities',
+    workerNoun: 'tech',
+    workerNounPlural: 'crew',
+    venueNoun: 'site',
+    activeLocation: 'Tower 4',
+    shiftNoun: 'evening turn-down',
+    offerReason: 'Closest match. 1.6 miles away. Floor-care lead, under hours.',
+    credentialCard: {
+      id: 'credential',
+      status: 'resolved',
+      statusLabel: 'Resolved',
+      timestamp: '1 hr ago',
+      agentId: 'iris',
+      agentTask: 'Site Onboarding',
+      title: 'Bloodborne-pathogen training verified for new hire',
+      description: 'Sarah M. cleared. First shift Monday at Tower 4 evening turn.',
+    },
+    mission: {
+      headline: 'All sites covered tonight. 2 decisions waiting on you.',
+      stats: [
+        { label: 'Open shifts next 72 hrs', value: '0',    tone: 'success' },
+        { label: 'Site coverage',           value: '100%', tone: 'success' },
+        { label: 'Items needing approval',  value: '2',    tone: 'warning' },
+        { label: 'Auto resolved today',     value: '13',   tone: 'neutral' },
+      ],
+    },
+    needsYou: [
+      {
+        id: 'special-strip-wax',
+        type: 'approval',
+        timestamp: '5 min ago',
+        agentId: 'atlas',
+        agentTask: 'Specialty Crew',
+        title: 'Strip-and-wax crew for Tower 4 lobby Saturday',
+        summary: 'Quarterly hard-floor strip needs 4 floor-care techs across 6 hrs.',
+        reasoning: [
+          'Floor-care leads available without OT.',
+          'Pay multiplier covered by tenant chargeback line.',
+          'Lobby is closed Saturday, so no daytime conflict.',
+        ],
+        recommendation: 'Auto-offer to top 6 leads, hold top 4 accepts.',
+        resolvedTitle: '4 leads confirmed for Saturday strip-and-wax',
+        resolvedDescription: 'Lobby blocked. Site GM notified. Tenant chargeback queued.',
+      },
+      {
+        id: 'porter-extension',
+        type: 'approval',
+        timestamp: '19 min ago',
+        agentId: 'sofia',
+        agentTask: 'Porter Extension',
+        title: 'Porter extension at Tower 4',
+        summary: 'Tenant requested an extra 2 hours/day of day-porter coverage for 4 weeks.',
+        reasoning: [
+          '2 day-porters under hours; can absorb the lift without new hires.',
+          'Tenant approved the rate change in writing.',
+          'Adds $1,360/wk in chargeback revenue.',
+        ],
+        recommendation: 'Approve the extension. Auto-update the schedule.',
+        resolvedTitle: 'Tower 4 porter extension live',
+        resolvedDescription: 'Schedule updated. Porters notified. Tenant invoice queued.',
       },
     ],
   }),
@@ -1777,6 +1990,326 @@ dressActiveCard('staffing',         'Marcus T.', FACE_M2)
 dressActiveCard('security',         'Marcus T.', FACE_M3)
 dressActiveCard('light-industrial', 'Marcus T.', FACE_M1)
 dressActiveCard('construction',     'Marcus T.', FACE_M2)
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Three additional verticals — Hospitality, Long Term Care, Janitorial &
+   Facilities. Same shape as the others above (feed extras, dressed
+   activeCard, people roster, schedule grid). Compact rosters again — enough
+   for the home / People / Schedule pages to render naturally.
+   ───────────────────────────────────────────────────────────────────────── */
+
+const HOSPITALITY_FEED_EXTRA = [
+  { id: 'pickup-hosp-priya', eyebrow: 'Shift picked up', status: 'resolved', statusLabel: 'Resolved', timestamp: '32 min ago',
+    description: 'Priya S. picked up the Saturday banquet 4-11p shift at Bayview Hotel.',
+    subject: personSubject('Priya S.', 'Priya S. picked up Bayview Sat banquet 4-11p', FACE_F4) },
+  { id: 'food-handler-cert', eyebrow: 'Cert renewed', status: 'resolved', statusLabel: 'Verified', timestamp: '1 hr 5 min ago', agentId: 'iris',
+    description: 'verified 4 food-handler renewals ahead of the weekend wedding block.',
+    subject: iconSubject('clock', 'Food-handler renewals', '4 verified · weekend block ready') },
+  { id: 'no-show-host', eyebrow: 'No-show · no-call', status: 'in-progress', statusLabel: 'Escalated', timestamp: '1 hr 45 min ago',
+    description: 'Mateo R. missed the breakfast 6am call at Riverside — escalated to F&B lead.',
+    subject: iconSubject('alert', 'Mateo R.', 'Mateo R. missed Riverside 6am breakfast') },
+  { id: 'walk-in', eyebrow: 'Walk-in covered', status: 'resolved', statusLabel: 'Resolved', timestamp: '2 hrs 20 min ago', agentId: 'nova',
+    description: 'pulled bell-stand cover for Riverside lobby walk-in spike — approved by GM.',
+    subject: iconSubject('bell', 'Riverside Hotel', 'Bell-stand cover for lobby walk-in spike') },
+  { id: 'menu-tasting', eyebrow: 'Menu tasting', status: 'resolved', statusLabel: 'Logged', timestamp: '3 hrs ago',
+    description: 'Bayview F&B team completed Friday menu tasting · 9 servers signed off.',
+    subject: iconSubject('bell', 'Bayview Hotel', 'Friday menu tasting · 9 servers signed off') },
+  { id: 'pms-sync', eyebrow: 'PMS sync', status: 'resolved', statusLabel: 'Synced', timestamp: '4 hrs ago', agentId: 'leo',
+    description: 'reconciled the PMS occupancy forecast for the weekend — staffing within 2%.',
+    subject: iconSubject('bell', 'Forecast sync', 'PMS occupancy forecast reconciled · within 2%') },
+  { id: 'in-room-dining', eyebrow: 'In-room dining', status: 'resolved', statusLabel: 'Approved', timestamp: '5 hrs ago',
+    description: 'Approved a 2nd evening in-room dining server at Bayview — high tip volume.',
+    subject: iconSubject('bell', 'Bayview Hotel', '+1 evening in-room dining server approved') },
+  { id: 'hr-onboard-host', eyebrow: 'New hire onboarded', status: 'resolved', statusLabel: 'Cleared', timestamp: '6 hrs ago',
+    description: 'Sarah M. cleared for Bayview banquets · first shift Friday.',
+    subject: personSubject('Sarah M.', 'Sarah M. cleared for Bayview banquets', FACE_F2) },
+  { id: 'late-call', eyebrow: 'Late call', status: 'monitoring', statusLabel: 'Logged', timestamp: '7 hrs ago',
+    description: 'Tasha K. ran 12 min late on the Riverside breakfast turn-down — pattern flag.',
+    subject: iconSubject('alert', 'Tasha K.', 'Tasha K. 12 min late · Riverside breakfast') },
+  { id: 'banquet-prep', eyebrow: 'Banquet prep', status: 'resolved', statusLabel: 'On track', timestamp: '8 hrs ago',
+    description: 'Lara M. confirmed the Reyes-Patel wedding floor plan with the banquet captain.',
+    subject: personSubject('Lara M.', 'Lara M. confirmed wedding floor plan', FACE_F3) },
+  { id: 'feedback-host', eyebrow: 'Worker feedback', status: 'resolved', statusLabel: 'Logged', timestamp: 'Yesterday · 4:50 PM',
+    description: 'Front desk lead rated Bayview night audit 5 / 5.',
+    subject: iconSubject('bell', 'Bayview night audit', 'Front desk lead rated night audit 5 / 5') },
+  { id: 'payroll-host', eyebrow: 'Payroll submitted', status: 'resolved', statusLabel: 'Submitted', timestamp: 'Yesterday · 5:00 PM',
+    description: 'Payroll closed pay period Apr 13–19 for 38 hospitality staff.',
+    subject: iconSubject('clock', 'Pay period', 'Apr 13–19 closed · 38 staff') },
+]
+
+const LTC_FEED_EXTRA = [
+  { id: 'pickup-ltc-marisol', eyebrow: 'Shift picked up', status: 'resolved', statusLabel: 'Resolved', timestamp: '38 min ago',
+    description: 'Marisol O. picked up the Sunday 11p-7a CNA shift at Pine Ridge.',
+    subject: personSubject('Marisol O.', 'Marisol O. picked up Sun overnight · Pine Ridge', FACE_F1) },
+  { id: 'cna-renewal', eyebrow: 'Cert renewed', status: 'resolved', statusLabel: 'Verified', timestamp: '1 hr 10 min ago', agentId: 'iris',
+    description: 'verified 5 CNA license renewals ahead of the May audit.',
+    subject: iconSubject('clock', 'CNA renewals', '5 CNA licenses renewed · May audit ready') },
+  { id: 'fall-incident', eyebrow: 'Resident incident', status: 'monitoring', statusLabel: 'Logged', timestamp: '1 hr 50 min ago',
+    description: 'Resident fall logged in north wing · DON notified, RCA started.',
+    subject: iconSubject('alert', 'North wing', 'Resident fall · RCA started') },
+  { id: 'agency-fill-cna', eyebrow: 'Agency fill', status: 'resolved', statusLabel: 'Resolved', timestamp: '2 hrs 30 min ago', agentId: 'nova',
+    description: 'placed 1 agency CNA for the Sunday south-wing 7a-3p shift.',
+    subject: iconSubject('bell', 'Pine Ridge', 'Sun 7a-3p south wing · agency CNA placed') },
+  { id: 'med-error-near-miss', eyebrow: 'Med-pass near-miss', status: 'resolved', statusLabel: 'Logged', timestamp: '3 hrs ago',
+    description: 'Devra A. caught a near-miss on the evening med-pass — process update logged.',
+    subject: personSubject('Devra A.', 'Devra A. caught med-pass near-miss', FACE_F3) },
+  { id: 'ratio-rebalanced-ltc', eyebrow: 'Ratio rebalance', status: 'resolved', statusLabel: 'Rebalanced', timestamp: '4 hrs ago', agentId: 'leo',
+    description: 'rebalanced south wing to 1:7 CNA:resident after a discharge.',
+    subject: iconSubject('bell', 'South wing', 'Rebalanced to 1:7 CNA:resident') },
+  { id: 'fam-update', eyebrow: 'Family update', status: 'resolved', statusLabel: 'Sent', timestamp: '5 hrs ago',
+    description: 'Sent weekly family update for the Pine Ridge ALU floor (32 residents).',
+    subject: iconSubject('bell', 'Pine Ridge ALU', 'Weekly family update sent · 32 residents') },
+  { id: 'training-ltc', eyebrow: 'Training completed', status: 'resolved', statusLabel: 'Completed', timestamp: '6 hrs ago',
+    description: '6 caregivers completed dementia-care refresher.',
+    subject: iconSubject('bell', 'Dementia-care refresher', '6 caregivers completed') },
+  { id: 'sched-week-ltc', eyebrow: 'Schedule published', status: 'resolved', statusLabel: 'Published', timestamp: '7 hrs ago',
+    description: 'Pine Ridge schedule for week of May 4 published — 26 caregivers across 3 wings.',
+    subject: iconSubject('bell', 'Pine Ridge', 'Week of May 4 · 26 caregivers · 3 wings') },
+  { id: 'compliance-ltc', eyebrow: 'Compliance check', status: 'resolved', statusLabel: 'Passed', timestamp: '8 hrs ago', agentId: 'leo',
+    description: 'completed monthly state-survey readiness check at Cedar Falls — 0 deficiencies.',
+    subject: iconSubject('bell', 'Cedar Falls', 'State-survey readiness check · 0 deficiencies') },
+  { id: 'feedback-ltc', eyebrow: 'Worker feedback', status: 'resolved', statusLabel: 'Logged', timestamp: 'Yesterday · 4:30 PM',
+    description: 'Devra A. rated her unit manager 5 / 5 after a tough overnight.',
+    subject: iconSubject('bell', 'Devra A.', 'Devra A. rated unit manager 5 / 5') },
+  { id: 'payroll-ltc', eyebrow: 'Payroll submitted', status: 'resolved', statusLabel: 'Submitted', timestamp: 'Yesterday · 5:10 PM',
+    description: 'Payroll closed pay period Apr 13–19 for 54 caregivers.',
+    subject: iconSubject('clock', 'Pay period', 'Apr 13–19 closed · 54 caregivers') },
+]
+
+const JANITORIAL_FEED_EXTRA = [
+  { id: 'pickup-jan-tasha', eyebrow: 'Shift picked up', status: 'resolved', statusLabel: 'Resolved', timestamp: '28 min ago',
+    description: 'Tasha K. picked up the open Tower 4 evening turn-down.',
+    subject: personSubject('Tasha K.', 'Tasha K. picked up Tower 4 evening turn', FACE_F3) },
+  { id: 'bbp-cert', eyebrow: 'Bloodborne-pathogen cert', status: 'resolved', statusLabel: 'Verified', timestamp: '1 hr ago', agentId: 'iris',
+    description: 'verified 6 BBP renewals across the property roster.',
+    subject: iconSubject('clock', 'BBP renewals', '6 verified · roster compliant') },
+  { id: 'tenant-request', eyebrow: 'Tenant request', status: 'in-progress', statusLabel: 'In progress', timestamp: '1 hr 40 min ago', agentId: 'nova',
+    description: 'tenant on Tower 4 floor 12 requested same-day deep-clean — assigning.',
+    subject: iconSubject('alert', 'Tower 4 · floor 12', 'Same-day deep-clean requested') },
+  { id: 'spot-audit', eyebrow: 'Spot audit', status: 'resolved', statusLabel: 'Passed', timestamp: '2 hrs 30 min ago', agentId: 'leo',
+    description: 'completed Tower 4 lobby spot audit — score 94/100.',
+    subject: iconSubject('bell', 'Tower 4 lobby', 'Spot audit · 94 / 100') },
+  { id: 'restroom-resupply', eyebrow: 'Resupply order', status: 'resolved', statusLabel: 'Placed', timestamp: '3 hrs 15 min ago',
+    description: 'Placed weekly resupply order for restroom consumables across 3 sites.',
+    subject: iconSubject('bell', 'Resupply', 'Weekly restroom consumables · 3 sites') },
+  { id: 'safety-spill', eyebrow: 'Safety incident', status: 'monitoring', statusLabel: 'Logged', timestamp: '4 hrs ago',
+    description: 'Minor mop-bucket spill in Tower 2 service corridor — wet-floor signage placed.',
+    subject: iconSubject('alert', 'Tower 2', 'Mop-bucket spill · wet-floor signage') },
+  { id: 'porter-extension-live', eyebrow: 'Porter extension', status: 'resolved', statusLabel: 'Live', timestamp: '5 hrs ago',
+    description: 'Tower 4 day-porter extension is live — +2 hrs/day for 4 weeks.',
+    subject: iconSubject('bell', 'Tower 4', 'Day-porter extension live · +2 hrs/day') },
+  { id: 'training-jan', eyebrow: 'Training completed', status: 'resolved', statusLabel: 'Completed', timestamp: '6 hrs ago',
+    description: '8 techs completed floor-machine certification.',
+    subject: iconSubject('bell', 'Floor-machine cert', '8 techs completed') },
+  { id: 'sched-week-jan', eyebrow: 'Schedule published', status: 'resolved', statusLabel: 'Published', timestamp: '7 hrs ago',
+    description: 'Tower 4 schedule for week of May 4 published — 18 techs across 3 shifts.',
+    subject: iconSubject('bell', 'Tower 4', 'Week of May 4 · 18 techs · 3 shifts') },
+  { id: 'feedback-jan', eyebrow: 'Tenant feedback', status: 'resolved', statusLabel: 'Logged', timestamp: '8 hrs ago',
+    description: 'Tower 4 floor-12 tenant rated the deep-clean 5 / 5.',
+    subject: iconSubject('bell', 'Tower 4 floor 12', 'Tenant rated deep-clean 5 / 5') },
+  { id: 'no-show-jan', eyebrow: 'No-show · no-call', status: 'in-progress', statusLabel: 'Escalated', timestamp: 'Yesterday · 11:00 PM',
+    description: 'Patel missed the Tower 2 overnight — escalated to site supervisor.',
+    subject: iconSubject('alert', 'Patel', 'Patel missed Tower 2 overnight') },
+  { id: 'payroll-jan', eyebrow: 'Payroll submitted', status: 'resolved', statusLabel: 'Submitted', timestamp: 'Yesterday · 5:00 PM',
+    description: 'Payroll closed pay period Apr 13–19 for 28 facilities crew.',
+    subject: iconSubject('clock', 'Pay period', 'Apr 13–19 closed · 28 crew') },
+]
+
+INDUSTRY_DATA.hospitality.feed     = [...INDUSTRY_DATA.hospitality.feed,     ...HOSPITALITY_FEED_EXTRA]
+INDUSTRY_DATA['long-term-care'].feed = [...INDUSTRY_DATA['long-term-care'].feed, ...LTC_FEED_EXTRA]
+INDUSTRY_DATA.janitorial.feed      = [...INDUSTRY_DATA.janitorial.feed,      ...JANITORIAL_FEED_EXTRA]
+
+dressActiveCard('hospitality',     'Marcus T.', FACE_M1)
+dressActiveCard('long-term-care',  'Marcus T.', FACE_M2)
+dressActiveCard('janitorial',      'Marcus T.', FACE_M3)
+
+/* ── Hospitality people + schedule ────────────────────────────────────── */
+INDUSTRY_DATA.hospitality.people = {
+  stats: [
+    { id: 'active',     label: 'Active team',           value: '42', tone: 'success' },
+    { id: 'food-cert',  label: 'Food-handler renewals', value: '4',  tone: 'warning' },
+    { id: 'avg-hrs',    label: 'Avg weekly hours',      value: '32', tone: 'info'    },
+  ],
+  rows: [
+    { id: 'lara-h',    name: 'Lara M.',       role: 'F&B Lead',          venue: 'Bayview Hotel',  hours: '40 / 40', certs: 'Food-handler · TIPS',     status: 'active',        avatar: FACE_F3 },
+    { id: 'janelle-h', name: 'Janelle Rivera', role: 'Banquet Server',   venue: 'Bayview Hotel',  hours: '28 / 40', certs: 'Food-handler · TIPS',     status: 'active',        avatar: FACE_F1 },
+    { id: 'priya-host', name: 'Priya S.',     role: 'Banquet Server',    venue: 'Bayview Hotel',  hours: '32 / 40', certs: 'Food-handler · expires May 22', status: 'cert-expiring', avatar: FACE_F4 },
+    { id: 'tasha-host', name: 'Tasha K.',     role: 'Front Desk',        venue: 'Riverside Hotel', hours: '32 / 40', certs: 'Brand-standard',          status: 'active',        avatar: FACE_F3 },
+    { id: 'mateo',     name: 'Mateo R.',      role: 'Breakfast Attendant', venue: 'Riverside Hotel', hours: '24 / 40', certs: 'Food-handler',          status: 'ot-risk',       avatar: FACE_M3 },
+    { id: 'sarah-host', name: 'Sarah M.',     role: 'Banquet Server',    venue: 'Bayview Hotel',  hours: '12 / 32', certs: 'Food-handler · pending',  status: 'new-hire',      avatar: FACE_F2 },
+    { id: 'david-host', name: 'David K.',     role: 'In-room Dining',    venue: 'Bayview Hotel',  hours: '28 / 40', certs: 'Food-handler · TIPS',     status: 'active',        avatar: FACE_M1 },
+    { id: 'amir-host',  name: 'Amir Naidu',   role: 'Bell Stand',        venue: 'Riverside Hotel', hours: '24 / 40', certs: 'Brand-standard',         status: 'active',        avatar: FACE_M2 },
+  ],
+}
+
+INDUSTRY_DATA.hospitality.schedule = {
+  weekLabel: 'Apr 27 – May 3, 2026, PDT',
+  todayId: 'tue',
+  rows: [
+    { userId: 'lara-h',    name: 'Lara M.',       avatar: FACE_F3, estPay: '$2,000', estHours: '40 hrs', shifts: {
+        mon: { start: '9:00a',  end: '5:00p', role: 'F&B Lead',         venue: 'Bayview',   status: 'completed' },
+        tue: { start: '9:00a',  end: '5:00p', role: 'F&B Lead',         venue: 'Bayview',   status: 'completed' },
+        wed: { start: '9:00a',  end: '5:00p', role: 'F&B Lead',         venue: 'Bayview',   status: 'completed' },
+        thu: { start: '9:00a',  end: '5:00p', role: 'F&B Lead',         venue: 'Bayview',   status: 'upcoming'  },
+        fri: { start: '9:00a',  end: '5:00p', role: 'F&B Lead',         venue: 'Bayview',   status: 'upcoming'  },
+      } },
+    { userId: 'janelle-h', name: 'Janelle Rivera', avatar: FACE_F1, estPay: '$1,400', estHours: '28 hrs', shifts: {
+        tue: { start: '4:00p',  end: '11:00p', role: 'Banquet Server',  venue: 'Bayview',   status: 'completed' },
+        thu: { start: '4:00p',  end: '11:00p', role: 'Banquet Server',  venue: 'Bayview',   status: 'upcoming'  },
+        sat: { start: '4:00p',  end: '11:00p', role: 'Banquet Server',  venue: 'Bayview',   status: 'upcoming'  },
+        sun: { start: '4:00p',  end: '11:00p', role: 'Banquet Server',  venue: 'Bayview',   status: 'upcoming'  },
+      } },
+    { userId: 'priya-host', name: 'Priya S.',      avatar: FACE_F4, estPay: '$1,600', estHours: '32 hrs', shifts: {
+        mon: { start: '4:00p',  end: '12:00a', role: 'Banquet Server',  venue: 'Bayview',   status: 'completed' },
+        wed: { start: '4:00p',  end: '12:00a', role: 'Banquet Server',  venue: 'Bayview',   status: 'completed' },
+        fri: { start: '4:00p',  end: '12:00a', role: 'Banquet Server',  venue: 'Bayview',   status: 'upcoming'  },
+        sat: { start: '4:00p',  end: '12:00a', role: 'Banquet Server',  venue: 'Bayview',   status: 'upcoming'  },
+      } },
+    { userId: 'tasha-host', name: 'Tasha K.',      avatar: FACE_F3, estPay: '$1,600', estHours: '32 hrs', shifts: {
+        mon: { start: '7:00a',  end: '3:00p', role: 'Front Desk',       venue: 'Riverside', status: 'completed' },
+        tue: { start: '7:00a',  end: '3:00p', role: 'Front Desk',       venue: 'Riverside', status: 'completed' },
+        wed: { start: '7:00a',  end: '3:00p', role: 'Front Desk',       venue: 'Riverside', status: 'completed' },
+        fri: { start: '7:00a',  end: '3:00p', role: 'Front Desk',       venue: 'Riverside', status: 'upcoming'  },
+      } },
+    { userId: 'mateo',     name: 'Mateo R.',       avatar: FACE_M3, estPay: '$960',   estHours: '24 hrs', shifts: {
+        tue: { start: '6:00a',  end: '12:00p', role: 'Breakfast',       venue: 'Riverside', status: 'no-show'   },
+        thu: { start: '6:00a',  end: '12:00p', role: 'Breakfast',       venue: 'Riverside', status: 'upcoming'  },
+        sat: { start: '6:00a',  end: '12:00p', role: 'Breakfast',       venue: 'Riverside', status: 'upcoming'  },
+        sun: { start: '6:00a',  end: '12:00p', role: 'Breakfast',       venue: 'Riverside', status: 'upcoming'  },
+      } },
+    { userId: 'david-host', name: 'David K.',      avatar: FACE_M1, estPay: '$1,400', estHours: '28 hrs', shifts: {
+        wed: { start: '6:00p',  end: '1:00a', role: 'In-room Dining',   venue: 'Bayview',   status: 'completed' },
+        thu: { start: '6:00p',  end: '1:00a', role: 'In-room Dining',   venue: 'Bayview',   status: 'upcoming'  },
+        fri: { start: '6:00p',  end: '1:00a', role: 'In-room Dining',   venue: 'Bayview',   status: 'upcoming'  },
+        sat: { start: '6:00p',  end: '1:00a', role: 'In-room Dining',   venue: 'Bayview',   status: 'upcoming'  },
+      } },
+  ],
+}
+
+/* ── Long Term Care people + schedule ─────────────────────────────────── */
+INDUSTRY_DATA['long-term-care'].people = {
+  stats: [
+    { id: 'active',     label: 'Active caregivers',     value: '54', tone: 'success' },
+    { id: 'cna-renew',  label: 'CNA license renewals',  value: '5',  tone: 'warning' },
+    { id: 'avg-hrs',    label: 'Avg weekly hours',      value: '36', tone: 'info'    },
+  ],
+  rows: [
+    { id: 'devra',     name: 'Devra A.',      role: 'LPN',           venue: 'Pine Ridge SNF',   hours: '40 / 40', certs: 'LPN · BLS · Med-pass',     status: 'ot-risk',       avatar: FACE_F3 },
+    { id: 'janelle-ltc', name: 'Janelle Rivera', role: 'CNA',         venue: 'Pine Ridge SNF',   hours: '32 / 40', certs: 'CNA · BLS',                status: 'active',        avatar: FACE_F1 },
+    { id: 'marisol',   name: 'Marisol O.',    role: 'CNA',           venue: 'Pine Ridge SNF',   hours: '28 / 40', certs: 'CNA · BLS',                status: 'active',        avatar: FACE_F4 },
+    { id: 'amir-ltc',  name: 'Amir Naidu',    role: 'Med-tech',      venue: 'Cedar Falls AL',   hours: '32 / 40', certs: 'Med-tech · BLS · expires May 18', status: 'cert-expiring', avatar: FACE_M2 },
+    { id: 'priya-ltc', name: 'Priya S.',      role: 'CNA',           venue: 'Cedar Falls AL',   hours: '24 / 40', certs: 'CNA · BLS',                status: 'active',        avatar: FACE_F4 },
+    { id: 'sarah-ltc', name: 'Sarah M.',      role: 'CNA',           venue: 'Pine Ridge SNF',   hours: '12 / 32', certs: 'CNA · pending',            status: 'new-hire',      avatar: FACE_F2 },
+    { id: 'don-r',     name: 'Diana R.',      role: 'DON',           venue: 'Pine Ridge SNF',   hours: '40 / 40', certs: 'RN · BLS · ACLS',          status: 'active',        avatar: FACE_F4 },
+    { id: 'david-ltc', name: 'David K.',      role: 'CNA',           venue: 'Pine Ridge SNF',   hours: '28 / 40', certs: 'CNA · BLS',                status: 'active',        avatar: FACE_M1 },
+  ],
+}
+
+INDUSTRY_DATA['long-term-care'].schedule = {
+  weekLabel: 'Apr 27 – May 3, 2026, PDT',
+  todayId: 'tue',
+  rows: [
+    { userId: 'devra',      name: 'Devra A.',        avatar: FACE_F3, estPay: '$2,400', estHours: '40 hrs', shifts: {
+        mon: { start: '3:00p',  end: '11:00p', role: 'LPN · med-pass', venue: 'Pine Ridge', status: 'completed' },
+        tue: { start: '3:00p',  end: '11:00p', role: 'LPN · med-pass', venue: 'Pine Ridge', status: 'completed' },
+        wed: { start: '3:00p',  end: '11:00p', role: 'LPN · med-pass', venue: 'Pine Ridge', status: 'completed' },
+        thu: { start: '3:00p',  end: '11:00p', role: 'LPN · med-pass', venue: 'Pine Ridge', status: 'upcoming'  },
+        fri: { start: '3:00p',  end: '11:00p', role: 'LPN · med-pass', venue: 'Pine Ridge', status: 'upcoming'  },
+      } },
+    { userId: 'janelle-ltc', name: 'Janelle Rivera', avatar: FACE_F1, estPay: '$1,920', estHours: '32 hrs', shifts: {
+        tue: { start: '7:00a',  end: '3:00p', role: 'CNA',           venue: 'Pine Ridge', status: 'completed' },
+        wed: { start: '7:00a',  end: '3:00p', role: 'CNA',           venue: 'Pine Ridge', status: 'completed' },
+        fri: { start: '7:00a',  end: '3:00p', role: 'CNA',           venue: 'Pine Ridge', status: 'upcoming'  },
+        sat: { start: '7:00a',  end: '3:00p', role: 'CNA',           venue: 'Pine Ridge', status: 'upcoming'  },
+      } },
+    { userId: 'marisol',    name: 'Marisol O.',     avatar: FACE_F4, estPay: '$1,680', estHours: '28 hrs', shifts: {
+        thu: { start: '11:00p', end: '7:00a', role: 'CNA · overnight', venue: 'Pine Ridge', status: 'upcoming'  },
+        sat: { start: '11:00p', end: '7:00a', role: 'CNA · overnight', venue: 'Pine Ridge', status: 'upcoming'  },
+        sun: { start: '11:00p', end: '7:00a', role: 'CNA · overnight', venue: 'Pine Ridge', status: 'upcoming'  },
+      } },
+    { userId: 'amir-ltc',   name: 'Amir Naidu',     avatar: FACE_M2, estPay: '$1,920', estHours: '32 hrs', shifts: {
+        mon: { start: '11:00a', end: '7:00p', role: 'Med-tech',       venue: 'Cedar Falls', status: 'completed' },
+        wed: { start: '11:00a', end: '7:00p', role: 'Med-tech',       venue: 'Cedar Falls', status: 'completed' },
+        thu: { start: '11:00a', end: '7:00p', role: 'Med-tech',       venue: 'Cedar Falls', status: 'upcoming'  },
+        sun: { start: '11:00a', end: '7:00p', role: 'Med-tech',       venue: 'Cedar Falls', status: 'upcoming'  },
+      } },
+    { userId: 'don-r',      name: 'Diana R.',       avatar: FACE_F4, estPay: '$2,800', estHours: '40 hrs', shifts: {
+        mon: { start: '7:00a',  end: '3:00p', role: 'DON',            venue: 'Pine Ridge', status: 'completed' },
+        tue: { start: '7:00a',  end: '3:00p', role: 'DON',            venue: 'Pine Ridge', status: 'completed' },
+        wed: { start: '7:00a',  end: '3:00p', role: 'DON',            venue: 'Pine Ridge', status: 'completed' },
+        thu: { start: '7:00a',  end: '3:00p', role: 'DON',            venue: 'Pine Ridge', status: 'upcoming'  },
+        fri: { start: '7:00a',  end: '3:00p', role: 'DON',            venue: 'Pine Ridge', status: 'upcoming'  },
+      } },
+    { userId: 'david-ltc',  name: 'David K.',       avatar: FACE_M1, estPay: '$1,680', estHours: '28 hrs', shifts: {
+        tue: { start: '7:00a',  end: '3:00p', role: 'CNA',           venue: 'Pine Ridge', status: 'completed' },
+        thu: { start: '7:00a',  end: '3:00p', role: 'CNA',           venue: 'Pine Ridge', status: 'upcoming'  },
+        fri: { start: '7:00a',  end: '3:00p', role: 'CNA',           venue: 'Pine Ridge', status: 'upcoming'  },
+        sat: { start: '7:00a',  end: '3:00p', role: 'CNA',           venue: 'Pine Ridge', status: 'upcoming'  },
+      } },
+  ],
+}
+
+/* ── Janitorial people + schedule ─────────────────────────────────────── */
+INDUSTRY_DATA.janitorial.people = {
+  stats: [
+    { id: 'active',     label: 'Active crew',           value: '28', tone: 'success' },
+    { id: 'bbp-renew',  label: 'BBP cert renewals',     value: '3',  tone: 'warning' },
+    { id: 'avg-hrs',    label: 'Avg weekly hours',      value: '34', tone: 'info'    },
+  ],
+  rows: [
+    { id: 'janelle-jan', name: 'Janelle Rivera',  role: 'Floor-care Lead', venue: 'Tower 4',  hours: '36 / 40', certs: 'Floor-machine · BBP',    status: 'active',        avatar: FACE_F1 },
+    { id: 'tasha-jan',   name: 'Tasha K.',        role: 'Day Porter',      venue: 'Tower 4',  hours: '32 / 40', certs: 'BBP',                    status: 'active',        avatar: FACE_F3 },
+    { id: 'priya-jan',   name: 'Priya S.',        role: 'Restroom Tech',   venue: 'Tower 4',  hours: '34 / 40', certs: 'BBP · expires May 24',   status: 'cert-expiring', avatar: FACE_F4 },
+    { id: 'patel-jan',   name: 'Patel',           role: 'Night Tech',      venue: 'Tower 2',  hours: '32 / 40', certs: 'BBP · Floor-machine',    status: 'active',        avatar: FACE_M1 },
+    { id: 'reyes-jan',   name: 'Reyes',           role: 'Night Tech',      venue: 'Tower 2',  hours: '32 / 40', certs: 'BBP · Floor-machine',    status: 'active',        avatar: FACE_M2 },
+    { id: 'sarah-jan',   name: 'Sarah M.',        role: 'Day Porter',      venue: 'Tower 4',  hours: '20 / 32', certs: 'BBP · pending',          status: 'new-hire',      avatar: FACE_F2 },
+    { id: 'amir-jan',    name: 'Amir Naidu',      role: 'Floor Tech',      venue: 'Tower 1',  hours: '28 / 40', certs: 'Floor-machine',          status: 'active',        avatar: FACE_M2 },
+  ],
+}
+
+INDUSTRY_DATA.janitorial.schedule = {
+  weekLabel: 'Apr 27 – May 3, 2026, PDT',
+  todayId: 'tue',
+  rows: [
+    { userId: 'janelle-jan', name: 'Janelle Rivera', avatar: FACE_F1, estPay: '$1,800', estHours: '36 hrs', shifts: {
+        mon: { start: '6:00a',  end: '12:00p', role: 'Floor-care',     venue: 'Tower 4', status: 'completed' },
+        tue: { start: '6:00a',  end: '12:00p', role: 'Floor-care',     venue: 'Tower 4', status: 'completed' },
+        wed: { start: '6:00a',  end: '12:00p', role: 'Floor-care',     venue: 'Tower 4', status: 'completed' },
+        thu: { start: '6:00a',  end: '12:00p', role: 'Floor-care',     venue: 'Tower 4', status: 'upcoming'  },
+        fri: { start: '6:00a',  end: '12:00p', role: 'Floor-care',     venue: 'Tower 4', status: 'upcoming'  },
+        sat: { start: '6:00a',  end: '12:00p', role: 'Strip-and-wax',  venue: 'Tower 4', status: 'upcoming'  },
+      } },
+    { userId: 'tasha-jan',   name: 'Tasha K.',       avatar: FACE_F3, estPay: '$1,600', estHours: '32 hrs', shifts: {
+        mon: { start: '8:00a',  end: '4:00p', role: 'Day Porter',      venue: 'Tower 4', status: 'completed' },
+        tue: { start: '8:00a',  end: '4:00p', role: 'Day Porter',      venue: 'Tower 4', status: 'completed' },
+        thu: { start: '8:00a',  end: '4:00p', role: 'Day Porter',      venue: 'Tower 4', status: 'upcoming'  },
+        fri: { start: '8:00a',  end: '4:00p', role: 'Day Porter',      venue: 'Tower 4', status: 'upcoming'  },
+      } },
+    { userId: 'priya-jan',   name: 'Priya S.',       avatar: FACE_F4, estPay: '$1,700', estHours: '34 hrs', shifts: {
+        mon: { start: '8:00a',  end: '4:00p', role: 'Restroom Tech',   venue: 'Tower 4', status: 'completed' },
+        wed: { start: '8:00a',  end: '4:00p', role: 'Restroom Tech',   venue: 'Tower 4', status: 'completed' },
+        thu: { start: '8:00a',  end: '4:00p', role: 'Restroom Tech',   venue: 'Tower 4', status: 'upcoming'  },
+        fri: { start: '8:00a',  end: '4:00p', role: 'Restroom Tech',   venue: 'Tower 4', status: 'upcoming'  },
+      } },
+    { userId: 'patel-jan',   name: 'Patel',          avatar: FACE_M1, estPay: '$1,600', estHours: '32 hrs', shifts: {
+        tue: { start: '11:00p', end: '7:00a', role: 'Night Tech',      venue: 'Tower 2', status: 'no-show'   },
+        thu: { start: '11:00p', end: '7:00a', role: 'Night Tech',      venue: 'Tower 2', status: 'upcoming'  },
+        sat: { start: '11:00p', end: '7:00a', role: 'Night Tech',      venue: 'Tower 2', status: 'upcoming'  },
+        sun: { start: '11:00p', end: '7:00a', role: 'Night Tech',      venue: 'Tower 2', status: 'upcoming'  },
+      } },
+    { userId: 'reyes-jan',   name: 'Reyes',          avatar: FACE_M2, estPay: '$1,600', estHours: '32 hrs', shifts: {
+        mon: { start: '11:00p', end: '7:00a', role: 'Night Tech',      venue: 'Tower 2', status: 'completed' },
+        wed: { start: '11:00p', end: '7:00a', role: 'Night Tech',      venue: 'Tower 2', status: 'completed' },
+        fri: { start: '11:00p', end: '7:00a', role: 'Night Tech',      venue: 'Tower 2', status: 'upcoming'  },
+        sun: { start: '11:00p', end: '7:00a', role: 'Night Tech',      venue: 'Tower 2', status: 'upcoming'  },
+      } },
+    { userId: 'amir-jan',    name: 'Amir Naidu',     avatar: FACE_M2, estPay: '$1,400', estHours: '28 hrs', shifts: {
+        tue: { start: '6:00a',  end: '12:00p', role: 'Floor Tech',     venue: 'Tower 1', status: 'completed' },
+        thu: { start: '6:00a',  end: '12:00p', role: 'Floor Tech',     venue: 'Tower 1', status: 'upcoming'  },
+        sat: { start: '6:00a',  end: '12:00p', role: 'Floor Tech',     venue: 'Tower 1', status: 'upcoming'  },
+      } },
+  ],
+}
 
 /* ─────────────────────────────────────────────────────────────────────────────
    People + schedule seed data for the non-events industries. Both views
