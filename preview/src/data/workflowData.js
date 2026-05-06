@@ -248,7 +248,7 @@ const LAST_MIN_REPLACEMENT = {
     'and waits 90 seconds for an accept. On accept, Iris confirms and publishes; ' +
     'otherwise Leo pages the ops lead.',
   owner: 'Nova (Schedule Coordinator)',
-  lastEdited: 'Created from the Sandra Lee scene',
+  lastEdited: 'Just now',
   stream: [
     TRIGGER,
     AGENT_RANK_AND_OFFER,
