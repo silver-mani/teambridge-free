@@ -95,9 +95,19 @@ export default async function handler(req, res) {
     Object.entries(convexBody.args).filter(([, v]) => v !== undefined)
   );
 
+  // The HubSpot form 23a819f9-… is the same one /book-demo on
+  // www.teambridge.com posts to. That form has `phone` and
+  // `numberofemployees` marked as required. Our gate only collects
+  // name / company / email, so we send blank placeholders for the
+  // two HubSpot-required fields. That lets the submission through
+  // and the lead lands in the CRM tagged as a Free Tier signup — the
+  // sales team can backfill phone / size when they reach out, or we
+  // can iterate the gate later to ask for them.
   const hubspotBody = {
     fields: [
-      { objectTypeId: "0-1", name: "email", value: email },
+      { objectTypeId: "0-1", name: "email",            value: email },
+      { objectTypeId: "0-1", name: "phone",            value: "" },
+      { objectTypeId: "0-1", name: "numberofemployees", value: "" },
       ...(firstName
         ? [{ objectTypeId: "0-1", name: "firstname", value: firstName }]
         : []),
