@@ -3728,7 +3728,7 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
    drawer. Workflows / Policies / Settings keep the hamburger but skip the
    right-side toggle since they don't surface a secondary panel.
    ───────────────────────────────────────────────────────────────────────── */
-function MobileTopBar({ industryLabel, view, sageMode, navOpen, contentOpen, showContentToggle, onToggleNav, onToggleContent }) {
+function MobileTopBar({ industryLabel, view, sageMode, navOpen, contentOpen, showContentToggle, activityDrawerOpen, showActivityToggle, onToggleNav, onToggleContent, onToggleActivity }) {
   const title = TITLE_FOR_VIEW[view] ?? 'Teambridge'
   return (
     <header className="act1-mobile-topbar" aria-label="Top bar (mobile)">
@@ -3747,6 +3747,17 @@ function MobileTopBar({ industryLabel, view, sageMode, navOpen, contentOpen, sho
           <span className="act1-mobile-title-sub">{industryLabel}</span>
         )}
       </div>
+      {showActivityToggle && (
+        <button
+          type="button"
+          className={`act1-mobile-iconbtn ${activityDrawerOpen ? 'is-active' : ''}`}
+          onClick={onToggleActivity}
+          aria-label={activityDrawerOpen ? 'Close activity feed' : 'Open activity feed'}
+          aria-pressed={activityDrawerOpen}
+        >
+          <BellSimpleGlyph />
+        </button>
+      )}
       {showContentToggle && (
         <button
           type="button"
@@ -3791,6 +3802,16 @@ function HamburgerGlyph() {
     </svg>
   )
 }
+function BellSimpleGlyph() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M6 8a6 6 0 1 1 12 0c0 5 2 7 2 7H4s2-2 2-7Z" />
+      <path d="M10 19a2 2 0 0 0 4 0" />
+    </svg>
+  )
+}
+
 /* Swap glyph — shown on the right of the mobile top bar. When the
    user is on the chat (default state), the icon hints at "open page
    content" with a small chevron. When the page content is open, the
@@ -3913,8 +3934,11 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
         navOpen={mobileNavOpen}
         contentOpen={mobileContentOpen}
         showContentToggle={isMobileDual}
+        activityDrawerOpen={activityDrawerOpen}
+        showActivityToggle={supportsActivityDrawer}
         onToggleNav={() => { setMobileNavOpen(o => !o); setMobileContentOpen(false) }}
         onToggleContent={() => { setMobileContentOpen(o => !o); setMobileNavOpen(false) }}
+        onToggleActivity={toggleActivityDrawer}
       />
 
       {/* Backdrop scrim — only ever needed for the LEFT nav drawer

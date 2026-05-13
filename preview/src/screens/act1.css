@@ -9462,4 +9462,64 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   .act1-root--pay      .prompt-panel {
     display: revert !important;
   }
+
+  /* The per-page activity-drawer toggle (list-bullet icon in each
+     page header) is now redundant — the global mobile top bar carries
+     a Bell icon that opens the same drawer. Hide the in-page toggles
+     so we don't show the affordance twice. */
+  .schedule-icon-btn,
+  .people-head-icon-btn,
+  .pay-icon-btn,
+  .time-tracking-icon-btn,
+  .shift-requests-icon-btn,
+  .timesheets-icon-btn,
+  .review-icon-btn,
+  .engage-thread-icon-btn {
+    /* Only the activity-drawer-toggle copies should hide; the AI /
+       config / dotted-menu buttons in those toolbars stay visible.
+       The list-bullet button always has aria-label starting with
+       "Open activity drawer" or "Close activity drawer", so we can
+       target it precisely. */
+  }
+  .schedule-icon-btn[aria-label*="activity drawer"],
+  .people-head-icon-btn[aria-label*="activity drawer"],
+  .pay-icon-btn[aria-label*="activity drawer"],
+  .time-tracking-icon-btn[aria-label*="activity drawer"],
+  .shift-requests-icon-btn[aria-label*="activity drawer"],
+  .timesheets-icon-btn[aria-label*="activity drawer"],
+  .review-icon-btn[aria-label*="activity drawer"],
+  .engage-thread-icon-btn[aria-label*="activity drawer"] {
+    display: none !important;
+  }
+
+  /* ─── List / table views: let dense rows scroll horizontally rather
+         than squashing into multi-line word wrap. ─── */
+  .people-table,
+  .people-table-head,
+  .people-table-row {
+    min-width: 720px;
+  }
+  .timesheets-table,
+  .timesheets-table-head,
+  .timesheets-row {
+    min-width: 720px;
+  }
+  .shift-requests-list,
+  .shift-alerts-list,
+  .review-list {
+    min-width: 560px;
+  }
+  .time-tracking-list {
+    min-width: 0;
+  }
+  /* Pay tables (period summary + rows) are the densest grids in the
+     app — give them room to breathe and let the page scroll. */
+  .pay-table,
+  .pay-table-head,
+  .pay-table-row,
+  .pay-period-table,
+  .pay-period-table-head,
+  .pay-period-table-row {
+    min-width: 800px;
+  }
 }
