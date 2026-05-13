@@ -75,11 +75,10 @@ function App() {
     } catch { /* ignore */ }
     setLeadCaptured(true)
 
-    // Fire-and-forget mirror to /api/capture-lead so this signup lands in
-    // the same Convex `leads` table + HubSpot CRM as /book-demo on
-    // www.teambridge.com. Errors are swallowed — the user is already in
-    // the demo by the time this resolves. `keepalive` lets the request
-    // survive any subsequent navigation.
+    // Mirror to /api/capture-lead so the signup lands in the same Convex
+    // `leads` table + HubSpot CRM as /book-demo on www.teambridge.com.
+    // We log success / failure to the console so the wiring is easy to
+    // verify from DevTools without having to dig through CRMs.
     try {
       fetch('/api/capture-lead', {
         method: 'POST',
@@ -92,8 +91,26 @@ function App() {
           referrer: document.referrer || undefined,
         }),
         keepalive: true,
-      }).catch(() => { /* silent */ })
-    } catch { /* silent */ }
+      })
+        .then(async (r) => {
+          let body = null
+          try { body = await r.json() } catch { /* tolerated */ }
+          if (!r.ok) {
+            console.error('[capture-lead] non-2xx', r.status, body)
+            return
+          }
+          if (body && Array.isArray(body.errors) && body.errors.length) {
+            console.error('[capture-lead] upstream errors', body.errors)
+            return
+          }
+          console.info('[capture-lead] ok', body ?? {})
+        })
+        .catch((err) => {
+          console.error('[capture-lead] request failed', err)
+        })
+    } catch (err) {
+      console.error('[capture-lead] threw before fetch', err)
+    }
   }
 
   useEffect(() => {
