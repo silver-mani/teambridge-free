@@ -98,16 +98,24 @@ export default async function handler(req, res) {
   // The HubSpot form 23a819f9-… is the same one /book-demo on
   // www.teambridge.com posts to. That form has `phone` and
   // `numberofemployees` marked as required. Our gate only collects
-  // name / company / email, so we send blank placeholders for the
-  // two HubSpot-required fields. That lets the submission through
-  // and the lead lands in the CRM tagged as a Free Tier signup — the
-  // sales team can backfill phone / size when they reach out, or we
-  // can iterate the gate later to ask for them.
+  // name / company / email, so we send placeholders for the
+  // two HubSpot-required fields. HubSpot treats empty-string as
+  // "missing" for required fields, so we send "Unknown" instead.
+  // Sales can backfill the real values when they reach out — or we
+  // can iterate the gate to ask for them if conversion data warrants
+  // the extra friction.
   const hubspotBody = {
     fields: [
-      { objectTypeId: "0-1", name: "email",            value: email },
-      { objectTypeId: "0-1", name: "phone",            value: "" },
-      { objectTypeId: "0-1", name: "numberofemployees", value: "" },
+      { objectTypeId: "0-1", name: "email",             value: email },
+      // Phone accepted as a free-text field; an obvious placeholder
+      // is safer than empty string because HubSpot treats "" as
+      // missing on a required field.
+      { objectTypeId: "0-1", name: "phone",             value: "Not provided" },
+      // numberofemployees is a HubSpot enumeration on this form
+      // ("1 - 5", "6 - 50", "51 - 200", …). Send the first bucket as
+      // a stand-in so the submission validates. Sales can correct
+      // when they reach out.
+      { objectTypeId: "0-1", name: "numberofemployees", value: "1 - 5" },
       ...(firstName
         ? [{ objectTypeId: "0-1", name: "firstname", value: firstName }]
         : []),
