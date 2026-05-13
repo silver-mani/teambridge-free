@@ -56,27 +56,11 @@ export default function LeadCaptureGate({ onSubmit }) {
     e.preventDefault()
     setTouched(true)
     if (!valid) return
-    const payload = {
+    onSubmit({
       name: name.trim(),
       company: company.trim(),
       email: email.trim().toLowerCase(),
-    }
-    onSubmit(payload)
-    // Match the wiring on teambridge.com/book-demo: submit pushes the
-    // lead's name + email straight to /book-demo/schedule as query
-    // params (the booking widget on that page picks them up and
-    // pre-fills). Opened in a new tab so the operator can keep poking
-    // around the demo in the original tab.
-    const params = new URLSearchParams({
-      name:    payload.name,
-      email:   payload.email,
-      company: payload.company,
     })
-    window.open(
-      `https://www.teambridge.com/book-demo/schedule?${params.toString()}`,
-      '_blank',
-      'noopener,noreferrer'
-    )
   }
 
   return (
