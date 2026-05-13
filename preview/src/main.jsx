@@ -74,6 +74,26 @@ function App() {
       sessionStorage.setItem('tb:lead-data', JSON.stringify(lead))
     } catch { /* ignore */ }
     setLeadCaptured(true)
+
+    // Fire-and-forget mirror to /api/capture-lead so this signup lands in
+    // the same Convex `leads` table + HubSpot CRM as /book-demo on
+    // www.teambridge.com. Errors are swallowed — the user is already in
+    // the demo by the time this resolves. `keepalive` lets the request
+    // survive any subsequent navigation.
+    try {
+      fetch('/api/capture-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: lead.name,
+          company: lead.company,
+          email: lead.email,
+          pageUrl: window.location.href,
+          referrer: document.referrer || undefined,
+        }),
+        keepalive: true,
+      }).catch(() => { /* silent */ })
+    } catch { /* silent */ }
   }
 
   useEffect(() => {
