@@ -9221,3 +9221,233 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   color: var(--color-content-tertiary);
   line-height: 1.4;
 }
+
+/* ──────────────────────────────────────────────────────────────────────
+ * MOBILE — ≤ 640 px
+ *   Single-column layout. Left nav becomes a slide-in drawer (hamburger
+ *   in the top bar). On the home view the activity-feed column slides
+ *   in from the right; on every other surface the chat (PromptPanel)
+ *   slides in from the right. /sage routes and the workflow detail
+ *   canvas are intentionally not redesigned for phone.
+ * ────────────────────────────────────────────────────────────────────── */
+.act1-mobile-topbar { display: none; }
+.act1-mobile-scrim  { display: none; }
+
+@media (max-width: 640px) {
+  /* ─── Top bar ─── */
+  .act1-mobile-topbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 52px;
+    padding: 0 12px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 80;
+    background: var(--color-bg-primary);
+    border-bottom: 1px solid var(--color-border-opaque);
+  }
+  .act1-mobile-iconbtn {
+    appearance: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border-opaque);
+    background: var(--color-bg-primary);
+    color: var(--color-content-secondary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .act1-mobile-iconbtn.is-active {
+    background: var(--color-content-primary);
+    color: var(--color-bg-primary);
+    border-color: var(--color-content-primary);
+  }
+  .act1-mobile-title {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1.1;
+  }
+  .act1-mobile-title-text {
+    font-size: 15px;
+    font-weight: var(--font-weight-medium);
+    color: var(--color-content-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  .act1-mobile-title-sub {
+    font-size: 11px;
+    color: var(--color-content-tertiary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  /* ─── Scrim that closes either drawer on tap ─── */
+  .act1-mobile-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    background: rgba(15, 17, 20, 0);
+    pointer-events: none;
+    transition: background-color 220ms ease;
+  }
+  .act1-mobile-scrim.is-open {
+    background: rgba(15, 17, 20, 0.36);
+    pointer-events: auto;
+  }
+
+  /* ─── Layout: stack everything in a single column ─── */
+  .act1-root,
+  .act1-root--schedule,
+  .act1-root--people,
+  .act1-root--pay,
+  .act1-root--engage,
+  .act1-root--policies,
+  .act1-root--settings,
+  .act1-root--time-tracking,
+  .act1-root--shift-requests,
+  .act1-root--timesheets,
+  .act1-root--review,
+  .act1-root--onboarding,
+  .act1-root--workflows {
+    display: block;
+    grid-template-columns: none !important;
+    min-height: 100vh;
+    padding-top: 52px; /* clear the fixed top bar */
+  }
+
+  /* ─── Left nav becomes a slide-in drawer ─── */
+  .act1-nav {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(86%, 320px);
+    height: 100vh;
+    padding-top: 60px;
+    transform: translateX(-100%);
+    transition: transform 240ms cubic-bezier(0.2, 0, 0, 1);
+    z-index: 100;
+    box-shadow: 12px 0 32px rgba(15, 17, 20, 0.18);
+    border-right: 1px solid var(--color-border-opaque);
+  }
+  .act1-nav.is-mobile-open { transform: translateX(0); }
+  .act1-nav-brand { display: none; }
+  .act1-nav-foot  { display: none; }
+
+  /* ─── Chat panel on non-home views becomes a right-slide drawer ─── */
+  .act1-root--schedule .prompt-panel,
+  .act1-root--people   .prompt-panel,
+  .act1-root--pay      .prompt-panel,
+  .act1-root--time-tracking .prompt-panel,
+  .act1-root--shift-requests .prompt-panel,
+  .act1-root--timesheets     .prompt-panel,
+  .act1-root--review         .prompt-panel,
+  .act1-root--onboarding     .prompt-panel {
+    position: fixed;
+    top: 52px;
+    right: 0;
+    bottom: 0;
+    width: min(94%, 420px);
+    height: calc(100vh - 52px);
+    transform: translateX(100%);
+    transition: transform 240ms cubic-bezier(0.2, 0, 0, 1);
+    z-index: 100;
+    box-shadow: -12px 0 32px rgba(15, 17, 20, 0.18);
+    border-left: 1px solid var(--color-border-opaque);
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+  .act1-root .prompt-panel.is-mobile-open { transform: translateX(0); }
+  /* On the home view the chat IS the page — keep it inline and full width. */
+  .act1-root .prompt-panel {
+    position: static;
+    width: 100%;
+    height: auto;
+    transform: none;
+    box-shadow: none;
+    border-left: none;
+  }
+  .act1-root--schedule .prompt-panel,
+  .act1-root--people   .prompt-panel,
+  .act1-root--pay      .prompt-panel,
+  .act1-root--time-tracking .prompt-panel,
+  .act1-root--shift-requests .prompt-panel,
+  .act1-root--timesheets     .prompt-panel,
+  .act1-root--review         .prompt-panel,
+  .act1-root--onboarding     .prompt-panel {
+    position: fixed;
+  }
+
+  /* ─── Activity feed on the home view becomes a right-slide drawer ─── */
+  .activity-feed {
+    position: fixed;
+    top: 52px;
+    right: 0;
+    bottom: 0;
+    width: min(94%, 420px);
+    height: calc(100vh - 52px);
+    transform: translateX(100%);
+    transition: transform 240ms cubic-bezier(0.2, 0, 0, 1);
+    z-index: 100;
+    box-shadow: -12px 0 32px rgba(15, 17, 20, 0.18);
+    border-left: 1px solid var(--color-border-opaque);
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    display: block !important;
+  }
+  .activity-feed.is-mobile-open { transform: translateX(0); }
+
+  /* ─── Page-content full width on mobile ─── */
+  .schedule,
+  .people,
+  .pay,
+  .engage,
+  .policies,
+  .settings-view,
+  .time-tracking,
+  .shift-requests,
+  .timesheets,
+  .review,
+  .onboarding,
+  .wf {
+    min-width: 0;
+    max-width: 100vw;
+    padding-left: 12px;
+    padding-right: 12px;
+    box-sizing: border-box;
+    overflow-x: auto;
+  }
+
+  /* The desktop activity-drawer overlay is positioned absolute inside
+     .act1-root; on mobile we want it pinned to the viewport. */
+  .activity-drawer-overlay,
+  .activity-drawer-scrim {
+    position: fixed;
+  }
+  .activity-drawer-overlay {
+    top: 52px;
+    height: calc(100vh - 52px);
+    width: min(94%, 420px);
+  }
+
+  /* Hide the second-row stats grid on Sage workforce schedule on mobile
+     so the calendar grid gets the whole viewport. */
+  .schedule-stats { display: none; }
+
+  /* Onboarding kanban — let columns scroll horizontally inside the page
+     instead of overflowing the viewport. */
+  .onboarding-board { padding-left: 0; padding-right: 0; }
+}

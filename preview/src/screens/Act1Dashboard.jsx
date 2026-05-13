@@ -166,7 +166,7 @@ const NAV_BOTTOM_GROUP = {
   ],
 }
 
-function LeftNav({ industryLabel, view, onBrand, onAsk, onSelectView, sageMode = false }) {
+function LeftNav({ industryLabel, view, onBrand, onAsk, onSelectView, sageMode = false, mobileOpen = false, onMobileClose }) {
   const renderItem = (item) => {
     const active = item.id === view || (item.id === 'overview' && view === 'overview')
     return (
@@ -197,7 +197,7 @@ function LeftNav({ industryLabel, view, onBrand, onAsk, onSelectView, sageMode =
   )
 
   return (
-    <aside className="act1-nav" aria-label="Primary">
+    <aside className={`act1-nav ${mobileOpen ? 'is-mobile-open' : ''}`} aria-label="Primary">
       {!sageMode && (
         <button
           type="button"
@@ -1273,14 +1273,14 @@ function RecordDrawer({ card, detail, onClose, onExplore }) {
 
 /* ─── Activity feed (right column) ───────────────────────────────────────── */
 
-function ActivityFeed({ data, injectedCard, cardOverrides, onClose }) {
+function ActivityFeed({ data, injectedCard, cardOverrides, onClose, mobileOpen = false }) {
   const [expandedId, setExpandedId] = useState(null)
   const toggle = id => setExpandedId(curr => curr === id ? null : id)
   // When the scripted scene has posted a live card, render it above the
   // data-driven cards so it reads as the freshest event.
   const applyOverride = (card) => cardOverrides?.[card.id] ? { ...card, ...cardOverrides[card.id] } : card
   return (
-    <aside className="activity-feed" aria-label="Activity">
+    <aside className={`activity-feed ${mobileOpen ? 'is-mobile-open' : ''}`} aria-label="Activity">
       <div className="activity-feed-inner">
         <div className="activity-feed-header">
           <h2 className="activity-feed-title">Activity</h2>
@@ -3286,7 +3286,7 @@ const OT_SCENE = {
 
 /* ─── Prompt panel ──────────────────────────────────────────────────────── */
 
-function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = false, otFixed = false, onApplyOTFix, onInjectActivityCard, onOverrideActivityCard, onResetScene, onOpenWorkflow }) {
+function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = false, otFixed = false, onApplyOTFix, onInjectActivityCard, onOverrideActivityCard, onResetScene, onOpenWorkflow, mobileOpen = false }) {
   const suggestions = PROMPT_SUGGESTIONS[industryId] ?? PROMPT_SUGGESTIONS.events
   const [input, setInput]       = useState('')
   const [messages, setMessages] = useState([])
@@ -3638,7 +3638,7 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
     .slice(0, 3)
 
   return (
-    <section className="prompt-panel" aria-label="Ask Teambridge">
+    <section className={`prompt-panel ${mobileOpen ? 'is-mobile-open' : ''}`} aria-label="Ask Teambridge">
       <div className="prompt-panel-inner">
         {hasChat && (
           <div className="prompt-panel-topbar">
@@ -3720,6 +3720,95 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
   )
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   Mobile top bar
+   Visible only under 640 px. Left = hamburger (toggles the left nav drawer).
+   Right = a context-aware toggle: on the home view it opens the activity
+   feed drawer; on every other surface it opens the chat (PromptPanel)
+   drawer. Workflows / Policies / Settings keep the hamburger but skip the
+   right-side toggle since they don't surface a secondary panel.
+   ───────────────────────────────────────────────────────────────────────── */
+function MobileTopBar({ industryLabel, view, sageMode, navOpen, secondaryOpen, onToggleNav, onToggleSecondary }) {
+  const isAdmin = view === 'workflows' || view === 'policies' || view === 'settings'
+  const isHome  = view === 'overview'
+  const title   = TITLE_FOR_VIEW[view] ?? 'Teambridge'
+  const secondaryLabel = isHome ? 'Activity' : 'Chat'
+  return (
+    <header className="act1-mobile-topbar" aria-label="Top bar (mobile)">
+      <button
+        type="button"
+        className={`act1-mobile-iconbtn ${navOpen ? 'is-active' : ''}`}
+        onClick={onToggleNav}
+        aria-label={navOpen ? 'Close navigation' : 'Open navigation'}
+        aria-expanded={navOpen}
+      >
+        <HamburgerGlyph />
+      </button>
+      <div className="act1-mobile-title">
+        <span className="act1-mobile-title-text">{title}</span>
+        {!sageMode && industryLabel && (
+          <span className="act1-mobile-title-sub">{industryLabel}</span>
+        )}
+      </div>
+      {!isAdmin && (
+        <button
+          type="button"
+          className={`act1-mobile-iconbtn ${secondaryOpen ? 'is-active' : ''}`}
+          onClick={onToggleSecondary}
+          aria-label={secondaryOpen ? `Close ${secondaryLabel.toLowerCase()}` : `Open ${secondaryLabel.toLowerCase()}`}
+          aria-expanded={secondaryOpen}
+        >
+          {isHome ? <BellSimpleGlyph /> : <ChatBubbleGlyph />}
+        </button>
+      )}
+    </header>
+  )
+}
+
+const TITLE_FOR_VIEW = {
+  overview:        'Home',
+  schedule:        'Schedule',
+  people:          'People',
+  pay:             'Pay',
+  engage:          'Engage',
+  workflows:       'Workflows',
+  policies:        'Policy Builder',
+  'time-tracking': 'Time Tracking',
+  'shift-requests': 'Shift Requests',
+  settings:        'Settings',
+  onboarding:      'Onboarding',
+  timesheets:      'Timesheets',
+  review:          'Pay Review',
+}
+
+function HamburgerGlyph() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <line x1="4" y1="7"  x2="20" y2="7"  />
+      <line x1="4" y1="12" x2="20" y2="12" />
+      <line x1="4" y1="17" x2="20" y2="17" />
+    </svg>
+  )
+}
+function BellSimpleGlyph() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M6 8a6 6 0 1 1 12 0c0 5 2 7 2 7H4s2-2 2-7Z" />
+      <path d="M10 19a2 2 0 0 0 4 0" />
+    </svg>
+  )
+}
+function ChatBubbleGlyph() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21 12a8 8 0 0 1-11.6 7.2L4 21l1.8-5.4A8 8 0 1 1 21 12Z" />
+    </svg>
+  )
+}
+
 export default function Act1Dashboard({ industryId, view = 'overview', sageMode = false, otFixed = false, onApplyOTFix, onBackToIntacct, onBack, onExplore, onSelectView }) {
   const data = useMemo(() => getIndustryData(industryId), [industryId])
   // Pay sub-route lives here so the chat panel can observe drill-downs
@@ -3767,15 +3856,59 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
   useEffect(() => { setActivityDrawerOpen(false) }, [view, industryId])
   const toggleActivityDrawer = () => setActivityDrawerOpen(o => !o)
 
+  // Mobile-only state. The top bar (rendered below) is hidden on
+  // desktop via CSS; on mobile it exposes a hamburger that toggles
+  // mobileNavOpen and a right-side icon that toggles mobileSecondaryOpen.
+  // "Secondary" means whichever surface isn't the page itself:
+  //   overview → the ActivityFeed drawer
+  //   schedule / people / pay / etc. → the chat (PromptPanel) drawer
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const [mobileSecondaryOpen, setMobileSecondaryOpen] = useState(false)
+  // Reset both drawers on view change so the next surface starts clean.
+  useEffect(() => {
+    setMobileNavOpen(false)
+    setMobileSecondaryOpen(false)
+  }, [view, industryId])
+  // ESC closes whichever mobile drawer is open.
+  useEffect(() => {
+    if (!mobileNavOpen && !mobileSecondaryOpen) return
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return
+      setMobileNavOpen(false)
+      setMobileSecondaryOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [mobileNavOpen, mobileSecondaryOpen])
+
   return (
     <div className={`act1-root${view === 'overview' ? '' : ` act1-root--${view}`}`}>
+      <MobileTopBar
+        industryLabel={data.label}
+        view={view}
+        sageMode={sageMode}
+        navOpen={mobileNavOpen}
+        secondaryOpen={mobileSecondaryOpen}
+        onToggleNav={() => { setMobileNavOpen(o => !o); setMobileSecondaryOpen(false) }}
+        onToggleSecondary={() => { setMobileSecondaryOpen(o => !o); setMobileNavOpen(false) }}
+      />
+
+      {/* Backdrop scrim — dismisses whichever mobile drawer is open on tap. */}
+      <div
+        className={`act1-mobile-scrim ${mobileNavOpen || mobileSecondaryOpen ? 'is-open' : ''}`}
+        aria-hidden="true"
+        onClick={() => { setMobileNavOpen(false); setMobileSecondaryOpen(false) }}
+      />
+
       <LeftNav
         industryLabel={data.label}
         view={view}
         sageMode={sageMode}
         onBrand={onBack}
         onAsk={onExplore}
-        onSelectView={onSelectView}
+        onSelectView={(v) => { setMobileNavOpen(false); onSelectView?.(v) }}
+        mobileOpen={mobileNavOpen}
+        onMobileClose={() => setMobileNavOpen(false)}
       />
 
       {/* Engage is a chat module of its own, Policies is a doc browser,
@@ -3794,6 +3927,9 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
           onOverrideActivityCard={(id, patch) => setSceneCardOverrides(prev => ({ ...prev, [id]: { ...(prev[id] ?? {}), ...patch } }))}
           onResetScene={() => { setSceneInjectedCard(null); setSceneCardOverrides({}) }}
           onOpenWorkflow={openWorkflow}
+          // On mobile, the chat panel is the secondary drawer for every
+          // surface except the home view (where the page IS the chat).
+          mobileOpen={view !== 'overview' && mobileSecondaryOpen}
         />
       )}
 
@@ -3809,7 +3945,7 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
        : view === 'policies'      ? <PoliciesView     onDemo={() => showDemoToast()} />
        : view === 'engage'        ? <EngageView       onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
        : view === 'settings'      ? <SettingsView     onDemo={() => showDemoToast()} />
-       :                            <ActivityFeed     data={data} injectedCard={sceneInjectedCard} cardOverrides={sceneCardOverrides} />}
+       :                            <ActivityFeed     data={data} injectedCard={sceneInjectedCard} cardOverrides={sceneCardOverrides} mobileOpen={view === 'overview' && mobileSecondaryOpen} onClose={() => setMobileSecondaryOpen(false)} />}
 
       {supportsActivityDrawer && (
         <>
