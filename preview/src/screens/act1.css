@@ -9450,4 +9450,16 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   /* Hide the secondary schedule stats drawer on phone — the calendar
      grid needs the whole viewport. */
   .schedule-stats { display: none; }
+
+  /* Override the @media (max-width: 1200px) tablet rule that hides the
+     chat panel on schedule / people / pay. At phone widths the chat
+     is the primary surface and must stay visible by default; the
+     mobile-content-open class still hides it when the user explicitly
+     toggles to the page UI (rule above has higher specificity and
+     wins). */
+  .act1-root--schedule .prompt-panel,
+  .act1-root--people   .prompt-panel,
+  .act1-root--pay      .prompt-panel {
+    display: revert !important;
+  }
 }
