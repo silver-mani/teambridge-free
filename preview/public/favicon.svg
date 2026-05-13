@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <rect width="64" height="64" rx="14" fill="#0A0A0A"/>
+  <g stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" fill="none">
+    <!-- Three sweeping cables forming the Teambridge "bridge" mark -->
+    <path d="M 12 48 Q 22 26 40 16"/>
+    <path d="M 18 54 Q 28 32 46 22"/>
+    <path d="M 24 58 Q 34 36 52 28"/>
+    <!-- Vertical stem + crossbar of the "T" -->
+    <path d="M 42 38 L 42 52"/>
+    <path d="M 36 38 L 50 38"/>
+  </g>
+</svg>
