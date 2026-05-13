@@ -9382,16 +9382,20 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   .act1-nav-spacer { flex: 1; min-height: 8px; }
 
   /* ─── Default state: chat (or the single full-page surface for
-         non-dual views) is visible; the page's main UI is hidden. ─── */
-  .act1-root.is-mobile-dual .schedule,
-  .act1-root.is-mobile-dual .people,
-  .act1-root.is-mobile-dual .pay,
-  .act1-root.is-mobile-dual .time-tracking,
-  .act1-root.is-mobile-dual .shift-requests,
-  .act1-root.is-mobile-dual .timesheets,
-  .act1-root.is-mobile-dual .review,
-  .act1-root.is-mobile-dual .onboarding,
-  .act1-root.is-mobile-dual .activity-feed {
+         non-dual views) is visible; the page's main UI is hidden.
+         Use the direct-child selector (> .activity-feed) for the
+         overview's column activity-feed so we don't also hide the
+         .activity-feed that lives INSIDE .activity-drawer-overlay
+         (that copy is what the bell icon reveals). ─── */
+  .act1-root.is-mobile-dual > .schedule,
+  .act1-root.is-mobile-dual > .people,
+  .act1-root.is-mobile-dual > .pay,
+  .act1-root.is-mobile-dual > .time-tracking,
+  .act1-root.is-mobile-dual > .shift-requests,
+  .act1-root.is-mobile-dual > .timesheets,
+  .act1-root.is-mobile-dual > .review,
+  .act1-root.is-mobile-dual > .onboarding,
+  .act1-root.is-mobile-dual > .activity-feed {
     display: none !important;
   }
 
@@ -9399,15 +9403,15 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   .act1-root.is-mobile-dual.mobile-content-open .prompt-panel {
     display: none !important;
   }
-  .act1-root.is-mobile-dual.mobile-content-open .schedule,
-  .act1-root.is-mobile-dual.mobile-content-open .people,
-  .act1-root.is-mobile-dual.mobile-content-open .pay,
-  .act1-root.is-mobile-dual.mobile-content-open .time-tracking,
-  .act1-root.is-mobile-dual.mobile-content-open .shift-requests,
-  .act1-root.is-mobile-dual.mobile-content-open .timesheets,
-  .act1-root.is-mobile-dual.mobile-content-open .review,
-  .act1-root.is-mobile-dual.mobile-content-open .onboarding,
-  .act1-root.is-mobile-dual.mobile-content-open .activity-feed {
+  .act1-root.is-mobile-dual.mobile-content-open > .schedule,
+  .act1-root.is-mobile-dual.mobile-content-open > .people,
+  .act1-root.is-mobile-dual.mobile-content-open > .pay,
+  .act1-root.is-mobile-dual.mobile-content-open > .time-tracking,
+  .act1-root.is-mobile-dual.mobile-content-open > .shift-requests,
+  .act1-root.is-mobile-dual.mobile-content-open > .timesheets,
+  .act1-root.is-mobile-dual.mobile-content-open > .review,
+  .act1-root.is-mobile-dual.mobile-content-open > .onboarding,
+  .act1-root.is-mobile-dual.mobile-content-open > .activity-feed {
     display: revert !important;
   }
 
