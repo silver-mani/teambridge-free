@@ -56,11 +56,42 @@ export default function LeadCaptureGate({ onSubmit }) {
     e.preventDefault()
     setTouched(true)
     if (!valid) return
-    onSubmit({
+    const payload = {
       name: name.trim(),
       company: company.trim(),
       email: email.trim().toLowerCase(),
+    }
+    onSubmit(payload)
+
+    // Open teambridge.com/book-demo/schedule in a background tab — the
+    // operator stays focused on the demo, but the booking flow is one
+    // click away on their other tab. Browsers don't honor
+    // window.open(..., '_blank') as "background" anymore, but a
+    // synthetic Cmd/Ctrl-click on a hidden anchor reliably opens in a
+    // background tab on macOS, Windows, and Linux.
+    const params = new URLSearchParams({
+      name:    payload.name,
+      email:   payload.email,
+      company: payload.company,
     })
+    const url = `https://www.teambridge.com/book-demo/schedule?${params.toString()}`
+    const a = document.createElement('a')
+    a.href   = url
+    a.target = '_blank'
+    a.rel    = 'noopener noreferrer'
+    a.style.display = 'none'
+    document.body.appendChild(a)
+    a.dispatchEvent(new MouseEvent('click', {
+      bubbles:    true,
+      cancelable: true,
+      view:       window,
+      ctrlKey:    true,  // Ctrl+Click → background tab on Windows/Linux
+      metaKey:    true,  // Cmd+Click   → background tab on macOS
+    }))
+    document.body.removeChild(a)
+    // Belt-and-braces: re-focus our tab in case the browser still
+    // promoted the new tab on top of us.
+    window.focus()
   }
 
   return (
