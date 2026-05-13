@@ -166,7 +166,7 @@ const NAV_BOTTOM_GROUP = {
   ],
 }
 
-function LeftNav({ industryLabel, view, onBrand, onAsk, onSelectView, sageMode = false }) {
+function LeftNav({ industryLabel, view, onBrand, onAsk, onSelectView, sageMode = false, mobileOpen = false, onMobileClose }) {
   const renderItem = (item) => {
     const active = item.id === view || (item.id === 'overview' && view === 'overview')
     return (
@@ -197,7 +197,7 @@ function LeftNav({ industryLabel, view, onBrand, onAsk, onSelectView, sageMode =
   )
 
   return (
-    <aside className="act1-nav" aria-label="Primary">
+    <aside className={`act1-nav ${mobileOpen ? 'is-mobile-open' : ''}`} aria-label="Primary">
       {!sageMode && (
         <button
           type="button"
@@ -1273,14 +1273,14 @@ function RecordDrawer({ card, detail, onClose, onExplore }) {
 
 /* ─── Activity feed (right column) ───────────────────────────────────────── */
 
-function ActivityFeed({ data, injectedCard, cardOverrides, onClose }) {
+function ActivityFeed({ data, injectedCard, cardOverrides, onClose, mobileOpen = false }) {
   const [expandedId, setExpandedId] = useState(null)
   const toggle = id => setExpandedId(curr => curr === id ? null : id)
   // When the scripted scene has posted a live card, render it above the
   // data-driven cards so it reads as the freshest event.
   const applyOverride = (card) => cardOverrides?.[card.id] ? { ...card, ...cardOverrides[card.id] } : card
   return (
-    <aside className="activity-feed" aria-label="Activity">
+    <aside className={`activity-feed ${mobileOpen ? 'is-mobile-open' : ''}`} aria-label="Activity">
       <div className="activity-feed-inner">
         <div className="activity-feed-header">
           <h2 className="activity-feed-title">Activity</h2>
@@ -3286,7 +3286,7 @@ const OT_SCENE = {
 
 /* ─── Prompt panel ──────────────────────────────────────────────────────── */
 
-function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = false, otFixed = false, onApplyOTFix, onInjectActivityCard, onOverrideActivityCard, onResetScene, onOpenWorkflow }) {
+function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = false, otFixed = false, onApplyOTFix, onInjectActivityCard, onOverrideActivityCard, onResetScene, onOpenWorkflow, mobileOpen = false }) {
   const suggestions = PROMPT_SUGGESTIONS[industryId] ?? PROMPT_SUGGESTIONS.events
   const [input, setInput]       = useState('')
   const [messages, setMessages] = useState([])
@@ -3638,7 +3638,7 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
     .slice(0, 3)
 
   return (
-    <section className="prompt-panel" aria-label="Ask Teambridge">
+    <section className={`prompt-panel ${mobileOpen ? 'is-mobile-open' : ''}`} aria-label="Ask Teambridge">
       <div className="prompt-panel-inner">
         {hasChat && (
           <div className="prompt-panel-topbar">
@@ -3720,6 +3720,123 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
   )
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   Mobile top bar
+   Visible only under 640 px. Left = hamburger (toggles the left nav drawer).
+   Right = a context-aware toggle: on the home view it opens the activity
+   feed drawer; on every other surface it opens the chat (PromptPanel)
+   drawer. Workflows / Policies / Settings keep the hamburger but skip the
+   right-side toggle since they don't surface a secondary panel.
+   ───────────────────────────────────────────────────────────────────────── */
+function MobileTopBar({ industryLabel, view, sageMode, navOpen, contentOpen, showContentToggle, activityDrawerOpen, showActivityToggle, onToggleNav, onToggleContent, onToggleActivity }) {
+  const title = TITLE_FOR_VIEW[view] ?? 'Teambridge'
+  return (
+    <header className="act1-mobile-topbar" aria-label="Top bar (mobile)">
+      <button
+        type="button"
+        className={`act1-mobile-iconbtn ${navOpen ? 'is-active' : ''}`}
+        onClick={onToggleNav}
+        aria-label={navOpen ? 'Close navigation' : 'Open navigation'}
+        aria-expanded={navOpen}
+      >
+        <HamburgerGlyph />
+      </button>
+      <div className="act1-mobile-title">
+        <span className="act1-mobile-title-text">{title}</span>
+        {!sageMode && industryLabel && (
+          <span className="act1-mobile-title-sub">{industryLabel}</span>
+        )}
+      </div>
+      {showActivityToggle && (
+        <button
+          type="button"
+          className={`act1-mobile-iconbtn ${activityDrawerOpen ? 'is-active' : ''}`}
+          onClick={onToggleActivity}
+          aria-label={activityDrawerOpen ? 'Close activity feed' : 'Open activity feed'}
+          aria-pressed={activityDrawerOpen}
+        >
+          <BellSimpleGlyph />
+        </button>
+      )}
+      {showContentToggle && (
+        <button
+          type="button"
+          className={`act1-mobile-iconbtn ${contentOpen ? 'is-active' : ''}`}
+          onClick={onToggleContent}
+          aria-label={contentOpen ? 'Show chat' : `Open ${title}`}
+          aria-pressed={contentOpen}
+        >
+          {/* Two-pane glyph — visually the same icon, but the active
+              state inverts colors so the operator can see which surface
+              is in focus. */}
+          <PanelSwapGlyph open={contentOpen} />
+        </button>
+      )}
+    </header>
+  )
+}
+
+const TITLE_FOR_VIEW = {
+  overview:        'Home',
+  schedule:        'Schedule',
+  people:          'People',
+  pay:             'Pay',
+  engage:          'Engage',
+  workflows:       'Workflows',
+  policies:        'Policy Builder',
+  'time-tracking': 'Time Tracking',
+  'shift-requests': 'Shift Requests',
+  settings:        'Settings',
+  onboarding:      'Onboarding',
+  timesheets:      'Timesheets',
+  review:          'Pay Review',
+}
+
+function HamburgerGlyph() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <line x1="4" y1="7"  x2="20" y2="7"  />
+      <line x1="4" y1="12" x2="20" y2="12" />
+      <line x1="4" y1="17" x2="20" y2="17" />
+    </svg>
+  )
+}
+function BellSimpleGlyph() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M6 8a6 6 0 1 1 12 0c0 5 2 7 2 7H4s2-2 2-7Z" />
+      <path d="M10 19a2 2 0 0 0 4 0" />
+    </svg>
+  )
+}
+
+/* Swap glyph — shown on the right of the mobile top bar. When the
+   user is on the chat (default state), the icon hints at "open page
+   content" with a small chevron. When the page content is open, the
+   icon flips to hint at "back to chat". */
+function PanelSwapGlyph({ open }) {
+  if (open) {
+    // Chat-bubble glyph (tap to go back to chat).
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M21 12a8 8 0 0 1-11.6 7.2L4 21l1.8-5.4A8 8 0 1 1 21 12Z" />
+      </svg>
+    )
+  }
+  // Two-panel / grid glyph (tap to reveal page content).
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <line x1="3" y1="9" x2="21" y2="9" />
+      <line x1="10" y1="9" x2="10" y2="20" />
+    </svg>
+  )
+}
+
 export default function Act1Dashboard({ industryId, view = 'overview', sageMode = false, otFixed = false, onApplyOTFix, onBackToIntacct, onBack, onExplore, onSelectView }) {
   const data = useMemo(() => getIndustryData(industryId), [industryId])
   // Pay sub-route lives here so the chat panel can observe drill-downs
@@ -3767,15 +3884,81 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
   useEffect(() => { setActivityDrawerOpen(false) }, [view, industryId])
   const toggleActivityDrawer = () => setActivityDrawerOpen(o => !o)
 
+  // Mobile-only state. The top bar (rendered below) is hidden on
+  // desktop via CSS. Two toggles:
+  //   - mobileNavOpen     → left-side drawer with the LeftNav (hamburger)
+  //   - mobileContentOpen → swap the chat for the page's main UI
+  //                         (ActivityFeed on overview, ScheduleCalendar /
+  //                          PeopleList / kanban / etc. on every other
+  //                          dual-surface view). Only the top-right icon
+  //                          shows for dual views; admin / engage views
+  //                          don't have a chat panel to swap with, so the
+  //                          page is always primary there.
+  const [mobileNavOpen, setMobileNavOpen]         = useState(false)
+  const [mobileContentOpen, setMobileContentOpen] = useState(false)
+  useEffect(() => {
+    setMobileNavOpen(false)
+    setMobileContentOpen(false)
+  }, [view, industryId])
+  useEffect(() => {
+    if (!mobileNavOpen && !mobileContentOpen) return
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return
+      setMobileNavOpen(false)
+      setMobileContentOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [mobileNavOpen, mobileContentOpen])
+
+  // Which views have BOTH a chat panel AND a content surface to swap
+  // between. Admin (workflows / policies / settings) and Engage render
+  // a single full-page surface, so they skip the toggle entirely.
+  const MOBILE_DUAL_VIEWS = new Set([
+    'overview', 'schedule', 'people', 'pay', 'time-tracking',
+    'shift-requests', 'timesheets', 'review', 'onboarding',
+  ])
+  const isMobileDual = MOBILE_DUAL_VIEWS.has(view)
+
   return (
-    <div className={`act1-root${view === 'overview' ? '' : ` act1-root--${view}`}`}>
+    <div className={[
+      'act1-root',
+      view === 'overview' ? '' : `act1-root--${view}`,
+      isMobileDual ? 'is-mobile-dual' : '',
+      isMobileDual && mobileContentOpen ? 'mobile-content-open' : '',
+    ].filter(Boolean).join(' ')}>
+      <MobileTopBar
+        industryLabel={data.label}
+        view={view}
+        sageMode={sageMode}
+        navOpen={mobileNavOpen}
+        contentOpen={mobileContentOpen}
+        showContentToggle={isMobileDual}
+        activityDrawerOpen={activityDrawerOpen}
+        showActivityToggle={supportsActivityDrawer}
+        onToggleNav={() => { setMobileNavOpen(o => !o); setMobileContentOpen(false) }}
+        onToggleContent={() => { setMobileContentOpen(o => !o); setMobileNavOpen(false) }}
+        onToggleActivity={toggleActivityDrawer}
+      />
+
+      {/* Backdrop scrim — only ever needed for the LEFT nav drawer
+          since the content/chat swap is an in-place display swap, not
+          an overlay. */}
+      <div
+        className={`act1-mobile-scrim ${mobileNavOpen ? 'is-open' : ''}`}
+        aria-hidden="true"
+        onClick={() => setMobileNavOpen(false)}
+      />
+
       <LeftNav
         industryLabel={data.label}
         view={view}
         sageMode={sageMode}
         onBrand={onBack}
         onAsk={onExplore}
-        onSelectView={onSelectView}
+        onSelectView={(v) => { setMobileNavOpen(false); onSelectView?.(v) }}
+        mobileOpen={mobileNavOpen}
+        onMobileClose={() => setMobileNavOpen(false)}
       />
 
       {/* Engage is a chat module of its own, Policies is a doc browser,

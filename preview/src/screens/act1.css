@@ -9221,3 +9221,309 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   color: var(--color-content-tertiary);
   line-height: 1.4;
 }
+
+/* ──────────────────────────────────────────────────────────────────────
+ * MOBILE — ≤ 640 px
+ *
+ * The mobile model is a hard swap, not a drawer overlay:
+ *   - LeftNav is hidden by default; hamburger in the top bar slides it
+ *     in from the left as a column drawer.
+ *   - The chat panel (PromptPanel) is the primary visible surface on
+ *     every page. On overview the ActivityFeed sits behind it; on
+ *     schedule / people / pay / etc. the page's main UI sits behind it.
+ *   - The right-side icon in the top bar swaps the two: tap once to
+ *     hide the chat and show the page's main UI; tap again to swap
+ *     back. No overlay — display: none on whichever surface isn't in
+ *     focus, so the active one gets the full viewport.
+ *   - Admin (workflows / policies / settings) and Engage skip the
+ *     toggle entirely: they're single-surface pages, so the chat is
+ *     hidden on those views and the page renders full-width.
+ *
+ * /sage routes and the workflow detail canvas are intentionally not
+ * redesigned for phone.
+ * ────────────────────────────────────────────────────────────────────── */
+.act1-mobile-topbar { display: none; }
+.act1-mobile-scrim  { display: none; }
+
+@media (max-width: 640px) {
+  /* ─── Top bar ─── */
+  .act1-mobile-topbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 52px;
+    padding: 0 12px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 80;
+    background: var(--color-bg-primary);
+    border-bottom: 1px solid var(--color-border-opaque);
+  }
+  .act1-mobile-iconbtn {
+    appearance: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border-opaque);
+    background: var(--color-bg-primary);
+    color: var(--color-content-secondary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .act1-mobile-iconbtn.is-active {
+    background: var(--color-content-primary);
+    color: var(--color-bg-primary);
+    border-color: var(--color-content-primary);
+  }
+  .act1-mobile-title {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1.1;
+  }
+  .act1-mobile-title-text {
+    font-size: 15px;
+    font-weight: var(--font-weight-medium);
+    color: var(--color-content-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  .act1-mobile-title-sub {
+    font-size: 11px;
+    color: var(--color-content-tertiary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  /* ─── LeftNav scrim ─── */
+  .act1-mobile-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    background: rgba(15, 17, 20, 0);
+    pointer-events: none;
+    transition: background-color 220ms ease;
+  }
+  .act1-mobile-scrim.is-open {
+    background: rgba(15, 17, 20, 0.36);
+    pointer-events: auto;
+  }
+
+  /* ─── Root: single column, padded to clear the fixed top bar ─── */
+  .act1-root,
+  .act1-root--schedule,
+  .act1-root--people,
+  .act1-root--pay,
+  .act1-root--engage,
+  .act1-root--policies,
+  .act1-root--settings,
+  .act1-root--time-tracking,
+  .act1-root--shift-requests,
+  .act1-root--timesheets,
+  .act1-root--review,
+  .act1-root--onboarding,
+  .act1-root--workflows {
+    display: block !important;
+    grid-template-columns: none !important;
+    min-height: 100vh;
+    padding-top: 52px;
+  }
+
+  /* ─── LeftNav as a left-slide drawer with a vertical item list ─── */
+  .act1-nav {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(86%, 320px);
+    height: 100vh;
+    padding: 60px 12px 16px;
+    transform: translateX(-100%);
+    transition: transform 240ms cubic-bezier(0.2, 0, 0, 1);
+    z-index: 100;
+    box-shadow: 12px 0 32px rgba(15, 17, 20, 0.18);
+    border-right: 1px solid var(--color-border-opaque);
+    overflow-y: auto;
+    /* Override the @media (max-width: 1200px) "tablet bar" styles that
+       turn the nav list into a horizontal flex row — at phone widths
+       we want the nav items stacked vertically again. */
+    grid-template-columns: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  .act1-nav.is-mobile-open { transform: translateX(0); }
+  .act1-nav-brand    { display: none !important; }
+  .act1-nav-foot     { display: none !important; }
+  .act1-nav-list {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 auto !important;
+    width: 100%;
+    gap: 4px;
+  }
+  .act1-nav-group       { width: 100%; }
+  .act1-nav-group-label { padding: 12px 12px 4px; }
+  .act1-nav-item {
+    width: 100%;
+    white-space: normal;
+    padding: 10px 12px;
+  }
+  .act1-nav-spacer { flex: 1; min-height: 8px; }
+
+  /* ─── Default state: chat (or the single full-page surface for
+         non-dual views) is visible; the page's main UI is hidden.
+         Use the direct-child selector (> .activity-feed) for the
+         overview's column activity-feed so we don't also hide the
+         .activity-feed that lives INSIDE .activity-drawer-overlay
+         (that copy is what the bell icon reveals). ─── */
+  .act1-root.is-mobile-dual > .schedule,
+  .act1-root.is-mobile-dual > .people,
+  .act1-root.is-mobile-dual > .pay,
+  .act1-root.is-mobile-dual > .time-tracking,
+  .act1-root.is-mobile-dual > .shift-requests,
+  .act1-root.is-mobile-dual > .timesheets,
+  .act1-root.is-mobile-dual > .review,
+  .act1-root.is-mobile-dual > .onboarding,
+  .act1-root.is-mobile-dual > .activity-feed {
+    display: none !important;
+  }
+
+  /* ─── Toggled state: chat hides, the page's main UI takes over. ─── */
+  .act1-root.is-mobile-dual.mobile-content-open .prompt-panel {
+    display: none !important;
+  }
+  .act1-root.is-mobile-dual.mobile-content-open > .schedule,
+  .act1-root.is-mobile-dual.mobile-content-open > .people,
+  .act1-root.is-mobile-dual.mobile-content-open > .pay,
+  .act1-root.is-mobile-dual.mobile-content-open > .time-tracking,
+  .act1-root.is-mobile-dual.mobile-content-open > .shift-requests,
+  .act1-root.is-mobile-dual.mobile-content-open > .timesheets,
+  .act1-root.is-mobile-dual.mobile-content-open > .review,
+  .act1-root.is-mobile-dual.mobile-content-open > .onboarding,
+  .act1-root.is-mobile-dual.mobile-content-open > .activity-feed {
+    display: revert !important;
+  }
+
+  /* ─── PromptPanel + page surfaces: full width, scrolling inside the
+         viewport below the fixed top bar. ─── */
+  .prompt-panel,
+  .schedule, .people, .pay, .engage, .policies, .settings-view,
+  .time-tracking, .shift-requests, .timesheets, .review, .onboarding,
+  .wf, .activity-feed {
+    width: 100% !important;
+    max-width: 100vw !important;
+    min-width: 0 !important;
+    box-sizing: border-box;
+    overflow-x: auto;
+  }
+  .prompt-panel {
+    height: calc(100vh - 52px);
+  }
+
+  /* Tighter padding on dense pages so they fit inside the viewport. */
+  .schedule, .people, .pay, .engage, .policies, .settings-view,
+  .time-tracking, .shift-requests, .timesheets, .review, .onboarding {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  /* The desktop activity-drawer overlay is anchored to .act1-root on
+     desktop; pin it to the viewport on mobile so it covers the right
+     side cleanly when invoked from inside the page UI. */
+  .activity-drawer-overlay,
+  .activity-drawer-scrim {
+    position: fixed;
+  }
+  .activity-drawer-overlay {
+    top: 52px;
+    height: calc(100vh - 52px);
+    width: min(94%, 420px);
+  }
+
+  /* Hide the secondary schedule stats drawer on phone — the calendar
+     grid needs the whole viewport. */
+  .schedule-stats { display: none; }
+
+  /* Override the @media (max-width: 1200px) tablet rule that hides the
+     chat panel on schedule / people / pay. At phone widths the chat
+     is the primary surface and must stay visible by default; the
+     mobile-content-open class still hides it when the user explicitly
+     toggles to the page UI (rule above has higher specificity and
+     wins). */
+  .act1-root--schedule .prompt-panel,
+  .act1-root--people   .prompt-panel,
+  .act1-root--pay      .prompt-panel {
+    display: revert !important;
+  }
+
+  /* The per-page activity-drawer toggle (list-bullet icon in each
+     page header) is now redundant — the global mobile top bar carries
+     a Bell icon that opens the same drawer. Hide the in-page toggles
+     so we don't show the affordance twice. */
+  .schedule-icon-btn,
+  .people-head-icon-btn,
+  .pay-icon-btn,
+  .time-tracking-icon-btn,
+  .shift-requests-icon-btn,
+  .timesheets-icon-btn,
+  .review-icon-btn,
+  .engage-thread-icon-btn {
+    /* Only the activity-drawer-toggle copies should hide; the AI /
+       config / dotted-menu buttons in those toolbars stay visible.
+       The list-bullet button always has aria-label starting with
+       "Open activity drawer" or "Close activity drawer", so we can
+       target it precisely. */
+  }
+  .schedule-icon-btn[aria-label*="activity drawer"],
+  .people-head-icon-btn[aria-label*="activity drawer"],
+  .pay-icon-btn[aria-label*="activity drawer"],
+  .time-tracking-icon-btn[aria-label*="activity drawer"],
+  .shift-requests-icon-btn[aria-label*="activity drawer"],
+  .timesheets-icon-btn[aria-label*="activity drawer"],
+  .review-icon-btn[aria-label*="activity drawer"],
+  .engage-thread-icon-btn[aria-label*="activity drawer"] {
+    display: none !important;
+  }
+
+  /* ─── List / table views: let dense rows scroll horizontally rather
+         than squashing into multi-line word wrap. ─── */
+  .people-table,
+  .people-table-head,
+  .people-table-row {
+    min-width: 720px;
+  }
+  .timesheets-table,
+  .timesheets-table-head,
+  .timesheets-row {
+    min-width: 720px;
+  }
+  .shift-requests-list,
+  .shift-alerts-list,
+  .review-list {
+    min-width: 560px;
+  }
+  .time-tracking-list {
+    min-width: 0;
+  }
+  /* Pay tables (period summary + rows) are the densest grids in the
+     app — give them room to breathe and let the page scroll. */
+  .pay-table,
+  .pay-table-head,
+  .pay-table-row,
+  .pay-period-table,
+  .pay-period-table-head,
+  .pay-period-table-row {
+    min-width: 800px;
+  }
+}
