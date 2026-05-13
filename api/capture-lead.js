@@ -164,8 +164,19 @@ export default async function handler(req, res) {
     errors.push({ which: "convex", error: String(convexResult.reason) });
   }
   if (hubspotResult.status === "rejected") {
-    console.error("[capture-lead] HubSpot failed:", hubspotResult.reason);
-    errors.push({ which: "hubspot", error: String(hubspotResult.reason) });
+    const reason = String(hubspotResult.reason);
+    // HubSpot's BLOCKED_EMAIL response is intentional — the marketing
+    // team keeps a submission block-list for internal / test domains
+    // so reps don't pollute the CRM with garbage signups. Treat that
+    // outcome as a soft "ignored" rather than a failure: log it
+    // server-side for auditing, but don't surface it as an error to
+    // the browser. Convex already has the lead.
+    if (reason.includes("BLOCKED_EMAIL")) {
+      console.info("[capture-lead] HubSpot BLOCKED_EMAIL (expected, lead still landed in Convex)");
+    } else {
+      console.error("[capture-lead] HubSpot failed:", reason);
+      errors.push({ which: "hubspot", error: reason });
+    }
   }
 
   return res.status(200).json({ ok: errors.length < 2, errors });
