@@ -64,6 +64,7 @@ export const ROSTER_OPTIONS = [
 export const STEPS = [
   {
     id: 'name',
+    phase: 'chat-centric',
     prompt: () =>
       "Hi! I'm Nova, your Teambridge AI. I'll help you stand up your account in a couple of minutes, then stick around as you run it. What should I call you?",
     input: { kind: 'text', field: 'firstName', placeholder: 'e.g. Alex' },
@@ -73,6 +74,7 @@ export const STEPS = [
   },
   {
     id: 'company',
+    phase: 'chat-centric',
     prompt: a => `Nice to meet you, ${a.firstName}. What's your company called?`,
     input: { kind: 'text', field: 'company', placeholder: 'e.g. Cascade Health' },
     validate: v => (v.trim().length >= 2 ? null : 'A company name helps me set things up.'),
@@ -81,6 +83,7 @@ export const STEPS = [
   },
   {
     id: 'industry',
+    phase: 'chat-centric',
     prompt: a => `Got it — setting up ${a.company}. Which industry best describes your work?`,
     input: {
       kind: 'choice',
@@ -91,52 +94,76 @@ export const STEPS = [
     transcript: a => INDUSTRIES.find(i => i.id === a.industry)?.name ?? a.industry,
     focus: 'overview',
   },
+
+  /* Batched setup card — three chip groups in one Nova message, with
+   * a single Skip/Continue at the bottom. Pattern matches the Claude
+   * for SMBs onboarding card. */
   {
-    id: 'team-size',
-    prompt: () => "How many people work shifts at your company today? I'll size your roster to match.",
-    input: { kind: 'choice', field: 'teamSize', options: TEAM_SIZE_OPTIONS, columns: 2 },
-    transcript: a => TEAM_SIZE_OPTIONS.find(o => o.id === a.teamSize)?.label ?? a.teamSize,
+    id: 'team-shape',
+    phase: 'chat-centric',
+    title: 'Set up your team shape',
+    prompt: () => "A few quick details and I'll have enough to start building.",
+    input: {
+      kind: 'batched',
+      groups: [
+        {
+          label: 'How many people work shifts?',
+          kind: 'choice', field: 'teamSize',
+          options: TEAM_SIZE_OPTIONS,
+        },
+        {
+          label: 'Where do they work?',
+          kind: 'choice', field: 'locationModel',
+          options: LOCATION_OPTIONS,
+        },
+        {
+          label: "What's slowing you down most? Pick up to 3.",
+          kind: 'multichoice', field: 'pains',
+          options: PAIN_OPTIONS, max: 3, optional: true,
+        },
+      ],
+    },
+    transcript: a => {
+      const ts = TEAM_SIZE_OPTIONS.find(o => o.id === a.teamSize)?.label
+      const loc = LOCATION_OPTIONS.find(o => o.id === a.locationModel)?.label
+      const pains = (a.pains || []).map(p => PAIN_OPTIONS.find(o => o.id === p)?.label).filter(Boolean)
+      const parts = []
+      if (ts) parts.push(ts)
+      if (loc) parts.push(loc.toLowerCase())
+      if (pains.length) parts.push(`${pains.length} pain${pains.length === 1 ? '' : 's'}`)
+      return parts.join(' · ') || 'Skip'
+    },
     focus: 'people',
   },
-  {
-    id: 'locations',
-    prompt: () => "Where do they work? I'll wire up your sites on the schedule.",
-    input: { kind: 'choice', field: 'locationModel', options: LOCATION_OPTIONS, columns: 1 },
-    transcript: a => LOCATION_OPTIONS.find(o => o.id === a.locationModel)?.label ?? a.locationModel,
-    focus: 'schedule',
-  },
-  {
-    id: 'pains',
-    prompt: () => "What slows your team down most right now? Pick up to three — I'll spin up agents for each one.",
-    input: { kind: 'multichoice', field: 'pains', options: PAIN_OPTIONS, max: 3 },
-    transcript: a => {
-      const labels = (a.pains || []).map(p => PAIN_OPTIONS.find(o => o.id === p)?.label).filter(Boolean)
-      return labels.length ? labels.join(', ') : 'Skip'
-    },
-    focus: 'agents',
-  },
+
   {
     id: 'connectors',
+    phase: 'chat-centric',
     prompt: () =>
       "Which tools should I talk to? Pick anything you use today — I'll keep data flowing in automatically.",
-    input: { kind: 'connectors', field: 'connectors', options: CONNECTOR_OPTIONS },
+    input: { kind: 'connectors', field: 'connectors', options: CONNECTOR_OPTIONS, optional: true },
     transcript: a => {
       const labels = (a.connectors || []).map(c => CONNECTOR_OPTIONS.find(o => o.id === c)?.label).filter(Boolean)
       return labels.length ? `Connected ${labels.length}: ${labels.join(', ')}` : 'No tools yet'
     },
     focus: 'integrations',
   },
+
+  /* ── Pivot point. From here on we render the full DashboardShell. ── */
+
   {
     id: 'roster',
-    prompt: () => "Want to bring your roster over now, or set that up later?",
+    phase: 'full',
+    prompt: () => "Last thing: want to bring your roster over now, or set that up later?",
     input: { kind: 'choice', field: 'rosterChoice', options: ROSTER_OPTIONS, columns: 1 },
     transcript: a => ROSTER_OPTIONS.find(o => o.id === a.rosterChoice)?.label ?? a.rosterChoice,
     focus: 'people',
   },
   {
     id: 'done',
+    phase: 'full',
     prompt: a =>
-      `That's everything I need, ${a.firstName}. Your Teambridge is live — take a look around on the right, and I'll keep working in the background.`,
+      `That's everything I need, ${a.firstName}. Your Teambridge is live — take a look around, and I'll keep working in the background.`,
     input: { kind: 'done' },
     transcript: () => null,
     focus: 'overview',

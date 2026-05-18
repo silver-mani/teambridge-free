@@ -6,6 +6,7 @@ import DashboardShell, { DEFAULT_NAV_GROUPS, DEFAULT_NAV_BOTTOM } from '../shell
 import OnboardingChat from './OnboardingChat.jsx'
 import BuildContent from './BuildContent.jsx'
 import BuildActivityFeed from './BuildActivityFeed.jsx'
+import InfoPanel from './InfoPanel.jsx'
 import { STEPS } from './steps.js'
 import '../act1.css'
 import './onboarding.css'
@@ -13,18 +14,24 @@ import './onboarding.css'
 /* ──────────────────────────────────────────────────────────────────────
  * OnboardingFlow — `#/build` route.
  *
- * Layout: this composes the shared `DashboardShell` (LeftNav · Nova chat ·
- * content · activity feed) — the same chrome Act1 will use post-migration.
- * Build mode is just the shell in its initial state:
- *   • Pre-industry: 'chat-prominent' — chat centered, faint "workspace
- *     forming" canvas on the right, nav hidden.
- *   • Post-industry: 'full' — nav appears with items progressively
- *     unlocking, content surface for the current view, activity feed
- *     narrating what Nova just built.
+ * Two-phase build experience:
  *
- * Each step's `focus` swings the active view (Home/People/Schedule/…)
- * to whichever surface is most relevant. The operator can click into
- * any unlocked nav item to override.
+ *   Phase 1 — chat-centric (steps 1–5: name, company, industry, batched
+ *             team-shape card, connectors). Layout is chat in a centered
+ *             column with a narrow InfoPanel on the right showing
+ *             progress + workspace-so-far + coming-next. Modeled on
+ *             Claude SMB's setup card pattern.
+ *
+ *   Phase 2 — full DashboardShell (steps 6–7: roster, done). Once we
+ *             have enough data (industry + team + locations + pains +
+ *             connectors), the layout pivots to the actual product
+ *             chrome — LeftNav · chat · content · activity feed — and
+ *             remaining steps populate inside the dashboard the operator
+ *             will live in post-go-live.
+ *
+ * The transition point is intentional: it's the wow moment where the
+ * operator sees Nova's work assemble into a real Teambridge in front
+ * of them.
  * ────────────────────────────────────────────────────────────────────── */
 
 const DEFAULT_ANSWERS = Object.freeze({
@@ -54,17 +61,22 @@ function saveAnswers(answers) {
 }
 
 function defaultDraftFor(step, answers) {
-  if (step.input.kind === 'text') return answers[step.input.field] || ''
-  if (step.input.kind === 'choice') return answers[step.input.field] || null
+  if (step.input.kind === 'text')        return answers[step.input.field] || ''
+  if (step.input.kind === 'choice')      return answers[step.input.field] || null
   if (step.input.kind === 'multichoice') return answers[step.input.field] || []
-  if (step.input.kind === 'connectors') return answers[step.input.field] || []
+  if (step.input.kind === 'connectors')  return answers[step.input.field] || []
+  if (step.input.kind === 'batched') {
+    const obj = {}
+    for (const g of step.input.groups) {
+      obj[g.field] = answers[g.field] ?? (g.kind === 'multichoice' ? [] : null)
+    }
+    return obj
+  }
   return null
 }
 
-/* Step focuses to nav view ids. Step.focus uses descriptive keys
- * (overview / people / schedule / agents / integrations); the shell's
- * LeftNav uses the Act1 nav ids (overview / people / schedule /
- * workflows / settings). This bridges them. */
+/* Step focus key → LeftNav view id mapping. Step.focus uses descriptive
+ * keys; the LeftNav uses the Act1 nav ids. */
 const FOCUS_TO_VIEW = {
   overview:     'overview',
   people:       'people',
@@ -82,18 +94,14 @@ function buildNavGroups(answers) {
   const hasPains    = (answers.pains || []).length > 0
   const hasConn     = (answers.connectors || []).length > 0
 
-  // Locking logic — keep it simple and forgiving.
   const lockSet = new Set()
   if (!hasIndustry) {
-    // Pre-industry, everything is locked.
     DEFAULT_NAV_GROUPS.forEach(g => g.items.forEach(it => it.id !== 'overview' && lockSet.add(it.id)))
     DEFAULT_NAV_BOTTOM.items.forEach(it => lockSet.add(it.id))
   } else {
-    if (!hasTeam)  lockSet.add('people').add('schedule').add('shift-requests').add('time-tracking').add('timesheets').add('onboarding').add('engage')
+    if (!hasTeam)  ['people','schedule','shift-requests','time-tracking','timesheets','onboarding','engage'].forEach(id => lockSet.add(id))
     if (!hasPains) lockSet.add('workflows')
-    if (!hasConn)  lockSet.add('pay').add('review')
-    // Settings / policies stay unlocked once industry is known — they're
-    // useful surfaces for configuring the workspace even mid-setup.
+    if (!hasConn)  ['pay','review'].forEach(id => lockSet.add(id))
   }
 
   const apply = group => ({
@@ -113,23 +121,23 @@ export default function OnboardingFlow({ onExit, onComplete }) {
   const [history, setHistory] = useState([])
   const [error, setError] = useState(null)
 
-  // Active view in the right-side content slot. Auto-follows step.focus
-  // until the operator clicks a nav item themselves; from then on we
-  // respect their choice.
+  // Active view in the Phase-2 content slot. Auto-follows step.focus
+  // until the operator clicks a nav item themselves.
   const [view, setView] = useState(FOCUS_TO_VIEW[STEPS[0].focus] || 'overview')
   const [viewPinned, setViewPinned] = useState(false)
 
   const step = STEPS[stepIndex]
   const isDone = step.id === 'done'
-  const mode = answers.industry ? 'full' : 'chat-prominent'
+  const phase = step.phase || 'chat-centric'
+  const chatCentricStepCount = STEPS.filter(s => s.phase === 'chat-centric').length
 
   // Recompute draft default whenever step changes.
   useMemo(() => { setDraft(defaultDraftFor(step, answers)) }, [stepIndex]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Swing the active view to whatever the current step wants to
-  // highlight, unless the operator pinned a view themselves.
+  // Swing view to the current step's focus on phase 2.
   useEffect(() => {
     if (viewPinned) return
+    if (phase !== 'full') return
     const target = FOCUS_TO_VIEW[step.focus] || 'overview'
     if (target !== view) setView(target)
   }, [stepIndex]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -141,20 +149,29 @@ export default function OnboardingFlow({ onExit, onComplete }) {
 
   const advance = (override) => {
     const value = override !== undefined ? override : draft
-    let writeValue = value
+    setError(null)
 
-    if (step.input.kind === 'text') {
+    let nextAnswers
+    if (step.input.kind === 'batched') {
+      // value is an object (or {} when skipped). Write each field;
+      // missing fields stay at current answers values.
+      const payload = (value && typeof value === 'object') ? value : {}
+      nextAnswers = { ...answers }
+      for (const g of step.input.groups) {
+        if (g.field in payload) nextAnswers[g.field] = payload[g.field]
+      }
+    } else if (step.input.kind === 'text') {
       const v = (value || '').trim()
       const err = step.validate ? step.validate(v) : null
       if (err) { setError(err); return }
-      writeValue = v
+      nextAnswers = step.input.field ? { ...answers, [step.input.field]: v } : answers
+    } else if (step.input.field) {
+      nextAnswers = { ...answers, [step.input.field]: value }
+    } else {
+      nextAnswers = answers
     }
-    setError(null)
 
-    const nextAnswers = step.input.field
-      ? { ...answers, [step.input.field]: writeValue }
-      : answers
-
+    // Push the just-completed turn into the transcript.
     const promptText = typeof step.prompt === 'function' ? step.prompt(answers) : step.prompt
     const transcriptText = step.transcript ? step.transcript(nextAnswers) : null
     setHistory(h => [...h, { prompt: promptText, answer: transcriptText }])
@@ -182,6 +199,8 @@ export default function OnboardingFlow({ onExit, onComplete }) {
   const industry = INDUSTRIES.find(i => i.id === answers.industry)
   const { navGroups, navBottom } = buildNavGroups(answers)
 
+  const totalStepsForProgress = phase === 'chat-centric' ? chatCentricStepCount : STEPS.length
+
   const topBar = (
     <header className="ob-topbar">
       <button type="button" className="ob-back" onClick={goBack}>
@@ -200,34 +219,49 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     </header>
   )
 
+  const chat = (
+    <OnboardingChat
+      step={step}
+      stepIndex={stepIndex}
+      totalSteps={totalStepsForProgress}
+      history={history}
+      answers={answers}
+      draft={draft}
+      setDraft={setDraft}
+      error={error}
+      onSubmit={advance}
+      onOpenDashboard={handleOpenDashboard}
+    />
+  )
+
+  if (phase === 'chat-centric') {
+    // Phase 1 — Claude-SMB style: chat centered, narrow info rail right.
+    return (
+      <div className="ob-root ob-root--phase1">
+        {topBar}
+        <div className="ob-phase1">
+          <div className="ob-phase1-chat">{chat}</div>
+          <InfoPanel stepIndex={stepIndex} answers={answers} />
+        </div>
+      </div>
+    )
+  }
+
+  // Phase 2 — full DashboardShell.
   return (
-    <div className="ob-root">
+    <div className="ob-root ob-root--phase2">
       {topBar}
       <DashboardShell
-        mode={mode}
+        mode="full"
         view={view}
         industryLabel={industry?.name ?? 'Workspace'}
         navGroups={navGroups}
         navBottom={navBottom}
         onBrand={onExit}
         onSelectView={handleSelectView}
-        chat={
-          <OnboardingChat
-            step={step}
-            stepIndex={stepIndex}
-            totalSteps={STEPS.length}
-            history={history}
-            answers={answers}
-            draft={draft}
-            setDraft={setDraft}
-            error={error}
-            onSubmit={advance}
-            onOpenDashboard={handleOpenDashboard}
-          />
-        }
-        content={<BuildContent view={view} answers={answers} mode={mode} />}
-        activityFeed={mode === 'full' ? <BuildActivityFeed answers={answers} /> : null}
-        showLeftNav={mode === 'full'}
+        chat={chat}
+        content={<BuildContent view={view} answers={answers} mode="full" />}
+        activityFeed={<BuildActivityFeed answers={answers} />}
       />
     </div>
   )

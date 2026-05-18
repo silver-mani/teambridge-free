@@ -194,6 +194,106 @@ function Connectors({ step, value, onChange, onSubmit }) {
   )
 }
 
+/* BatchedCard — Claude-SMB-style setup card. Renders multiple chip
+ * groups inside a single Nova message bubble with one Skip/Continue
+ * at the bottom. `draft` is an object keyed by each sub-question's
+ * field; setting one updates that key, advance writes the whole
+ * object into answers. */
+function BatchedCard({ step, draft, setDraft, onSubmit }) {
+  const updateField = (field, value) => {
+    setDraft({ ...(draft || {}), [field]: value })
+  }
+  const isRequired = (g) => !g.optional
+  const isAnswered = (g) => {
+    const v = draft?.[g.field]
+    if (g.kind === 'multichoice') return Array.isArray(v) && v.length > 0
+    return v != null && v !== ''
+  }
+  const allRequiredAnswered = step.input.groups
+    .filter(isRequired)
+    .every(isAnswered)
+
+  return (
+    <div className="ob-batched">
+      {step.title && <div className="ob-batched-title">{step.title}</div>}
+
+      {step.input.groups.map((g, gi) => (
+        <section className="ob-batched-group" key={`g-${gi}`}>
+          <div className="ob-batched-label">{g.label}</div>
+
+          {g.kind === 'choice' && (
+            <div className="ob-batched-chips">
+              {g.options.map(opt => {
+                const selected = draft?.[g.field] === opt.id
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    className={`ob-pill ${selected ? 'is-selected' : ''}`}
+                    onClick={() => updateField(g.field, opt.id)}
+                  >
+                    <span className="ob-pill-dot" aria-hidden="true">
+                      {selected && <CheckIcon size={12} />}
+                    </span>
+                    <span>{opt.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+
+          {g.kind === 'multichoice' && (
+            <div className="ob-batched-chips">
+              {g.options.map(opt => {
+                const set = new Set(draft?.[g.field] || [])
+                const selected = set.has(opt.id)
+                const toggle = () => {
+                  const next = new Set(set)
+                  if (next.has(opt.id)) next.delete(opt.id)
+                  else if (next.size < (g.max ?? Infinity)) next.add(opt.id)
+                  updateField(g.field, Array.from(next))
+                }
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    className={`ob-pill ${selected ? 'is-selected' : ''}`}
+                    onClick={toggle}
+                  >
+                    <span className="ob-pill-dot" aria-hidden="true">
+                      {selected && <CheckIcon size={12} />}
+                    </span>
+                    <span>{opt.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </section>
+      ))}
+
+      <div className="ob-batched-foot">
+        <button
+          type="button"
+          className="ob-back ob-back--ghost"
+          onClick={() => onSubmit({})}
+        >
+          Skip
+        </button>
+        <button
+          type="button"
+          className="ob-cta"
+          onClick={() => onSubmit()}
+          disabled={!allRequiredAnswered}
+        >
+          Continue
+          <ArrowNarrowRightIcon size={14} />
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function DoneAffordance({ onOpen }) {
   return (
     <div className="ob-done">
@@ -279,6 +379,9 @@ export default function OnboardingChat({
           )}
           {step.input.kind === 'connectors' && (
             <Connectors step={step} value={draft} onChange={setDraft} onSubmit={() => onSubmit()} />
+          )}
+          {step.input.kind === 'batched' && (
+            <BatchedCard step={step} draft={draft} setDraft={setDraft} onSubmit={onSubmit} />
           )}
           {step.input.kind === 'done' && (
             <DoneAffordance onOpen={onOpenDashboard} />
