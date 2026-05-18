@@ -10,11 +10,15 @@ import { ArrowNarrowUpIcon } from '../../../../src/components/icons/ArrowNarrowU
  * affordance for whatever input kind the step expects. The flow shell
  * owns the answers + step index — this component is purely presentational
  * plus an onSubmit hook back to the parent.
+ *
+ * Note: this is the same chat shell Nova lives in post-go-live. Setup
+ * is just its initial state — copy + affordances change, the surface
+ * doesn't go anywhere.
  * ────────────────────────────────────────────────────────────────────── */
 
-function AvatarSage() {
+function AvatarNova() {
   return (
-    <span className="ob-avatar ob-avatar--sage" aria-hidden="true">
+    <span className="ob-avatar ob-avatar--nova" aria-hidden="true">
       <TeambridgeAIIcon size={14} />
     </span>
   )
@@ -23,7 +27,7 @@ function AvatarSage() {
 function ChatBubble({ from, children }) {
   return (
     <div className={`ob-bubble-row ob-bubble-row--${from}`}>
-      {from === 'sage' && <AvatarSage />}
+      {from === 'nova' && <AvatarNova />}
       <div className={`ob-bubble ob-bubble--${from}`}>{children}</div>
     </div>
   )
@@ -231,10 +235,10 @@ export default function OnboardingChat({
     <section className="ob-chat" aria-label="Teambridge onboarding">
       <header className="ob-chat-head">
         <div className="ob-chat-head-left">
-          <AvatarSage />
+          <AvatarNova />
           <div className="ob-chat-head-text">
-            <span className="ob-chat-title">Sage</span>
-            <span className="ob-chat-sub">Setup assistant</span>
+            <span className="ob-chat-title">Nova</span>
+            <span className="ob-chat-sub">Teambridge AI</span>
           </div>
         </div>
         <div className="ob-chat-progress" aria-label={`Step ${stepIndex + 1} of ${totalSteps}`}>
@@ -246,12 +250,12 @@ export default function OnboardingChat({
         <div className="ob-chat-feed">
           {history.map((turn, i) => (
             <div key={`turn-${i}`} className="ob-turn">
-              <ChatBubble from="sage">{turn.prompt}</ChatBubble>
+              <ChatBubble from="nova">{turn.prompt}</ChatBubble>
               {turn.answer && <ChatBubble from="user">{turn.answer}</ChatBubble>}
             </div>
           ))}
           <div className="ob-turn ob-turn--current">
-            <ChatBubble from="sage">{promptText}</ChatBubble>
+            <ChatBubble from="nova">{promptText}</ChatBubble>
           </div>
         </div>
       </div>

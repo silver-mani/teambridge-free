@@ -1,18 +1,22 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { TeambridgeAIIcon } from '../../../../src/components/icons/TeambridgeAIIcon.tsx'
 import { ChevronLeftIcon } from '../../../../src/components/icons/ChevronLeftIcon.tsx'
 import OnboardingChat from './OnboardingChat.jsx'
-import OnboardingPreview from './OnboardingPreview.jsx'
+import BuildPreview from './BuildPreview.jsx'
 import { STEPS } from './steps.js'
 import './onboarding.css'
 
 /* ──────────────────────────────────────────────────────────────────────
  * OnboardingFlow — `#/build` route. Two-pane layout:
- *   • Left:  Sage chat assistant walking through ~8 setup turns
- *   • Right: live account preview that fills in as the user answers
- * When the operator finishes, we route them into the demo for the
- * industry they picked, with their company name / connectors carried
- * forward via sessionStorage so the dashboard greets them in context.
+ *   • Left:  Nova chat assistant walking through ~8 setup turns
+ *   • Right: live product preview — actual Teambridge surfaces
+ *           (Overview / Schedule / People / Agents / Integrations)
+ *           that populate from each answer.
+ *
+ * Each step has a `focus` hint that swings the preview to the tab
+ * most relevant to that question (e.g. team-size → People). Once the
+ * operator clicks into a different tab, we respect that choice and
+ * stop auto-switching for the rest of the session.
  * ────────────────────────────────────────────────────────────────────── */
 
 const DEFAULT_ANSWERS = Object.freeze({
@@ -55,12 +59,28 @@ export default function OnboardingFlow({ onExit, onComplete }) {
   const [draft, setDraft] = useState(() => defaultDraftFor(STEPS[0], loadAnswers()))
   const [history, setHistory] = useState([])
   const [error, setError] = useState(null)
+  // Preview tab. Auto-follows step.focus until the operator clicks a
+  // tab themselves; from then on we respect their choice.
+  const [activeTab, setActiveTab] = useState(STEPS[0].focus || 'overview')
+  const [tabPinned, setTabPinned] = useState(false)
 
   const step = STEPS[stepIndex]
   const isDone = step.id === 'done'
 
   // Recompute draft default whenever step changes.
   useMemo(() => { setDraft(defaultDraftFor(step, answers)) }, [stepIndex]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Swing the preview tab to whatever the current step wants to highlight,
+  // unless the operator has manually picked a tab.
+  useEffect(() => {
+    if (tabPinned) return
+    if (step.focus && step.focus !== activeTab) setActiveTab(step.focus)
+  }, [stepIndex]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab)
+    setTabPinned(true)
+  }
 
   const advance = (override) => {
     const value = override !== undefined ? override : draft
@@ -139,7 +159,12 @@ export default function OnboardingFlow({ onExit, onComplete }) {
           onSubmit={advance}
           onOpenDashboard={handleOpenDashboard}
         />
-        <OnboardingPreview answers={answers} isDone={isDone} />
+        <BuildPreview
+          answers={answers}
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          isDone={isDone}
+        />
       </div>
     </div>
   )

@@ -1,5 +1,5 @@
 /* Step definitions for the guided onboarding flow. Each step is one
- * "turn" in the Sage assistant chat: a prompt the AI says, plus the
+ * "turn" in the Nova chat: a prompt the AI says, plus the
  * answer affordance presented under it. The answer field gets persisted
  * onto the running `answers` object that drives the right-side preview.
  *
@@ -65,10 +65,11 @@ export const STEPS = [
   {
     id: 'name',
     prompt: () =>
-      "Hi! I'm Sage, your Teambridge guide. Let's get your account stood up — it takes about a minute. What should I call you?",
+      "Hi! I'm Nova, your Teambridge AI. I'll help you stand up your account in a couple of minutes, then stick around as you run it. What should I call you?",
     input: { kind: 'text', field: 'firstName', placeholder: 'e.g. Alex' },
     validate: v => (v.trim().length >= 2 ? null : 'Tell me your first name.'),
     transcript: a => `${a.firstName}.`,
+    focus: 'overview',
   },
   {
     id: 'company',
@@ -76,6 +77,7 @@ export const STEPS = [
     input: { kind: 'text', field: 'company', placeholder: 'e.g. Cascade Health' },
     validate: v => (v.trim().length >= 2 ? null : 'A company name helps me set things up.'),
     transcript: a => a.company,
+    focus: 'overview',
   },
   {
     id: 'industry',
@@ -87,49 +89,57 @@ export const STEPS = [
       columns: 2,
     },
     transcript: a => INDUSTRIES.find(i => i.id === a.industry)?.name ?? a.industry,
+    focus: 'overview',
   },
   {
     id: 'team-size',
-    prompt: () => 'How many people work shifts at your company today?',
+    prompt: () => "How many people work shifts at your company today? I'll size your roster to match.",
     input: { kind: 'choice', field: 'teamSize', options: TEAM_SIZE_OPTIONS, columns: 2 },
     transcript: a => TEAM_SIZE_OPTIONS.find(o => o.id === a.teamSize)?.label ?? a.teamSize,
+    focus: 'people',
   },
   {
     id: 'locations',
-    prompt: () => 'Where do they work?',
+    prompt: () => "Where do they work? I'll wire up your sites on the schedule.",
     input: { kind: 'choice', field: 'locationModel', options: LOCATION_OPTIONS, columns: 1 },
     transcript: a => LOCATION_OPTIONS.find(o => o.id === a.locationModel)?.label ?? a.locationModel,
+    focus: 'schedule',
   },
   {
     id: 'pains',
-    prompt: () => "What slows your team down most right now? Pick up to three — I'll set up agents for these first.",
+    prompt: () => "What slows your team down most right now? Pick up to three — I'll spin up agents for each one.",
     input: { kind: 'multichoice', field: 'pains', options: PAIN_OPTIONS, max: 3 },
     transcript: a => {
       const labels = (a.pains || []).map(p => PAIN_OPTIONS.find(o => o.id === p)?.label).filter(Boolean)
       return labels.length ? labels.join(', ') : 'Skip'
     },
+    focus: 'agents',
   },
   {
     id: 'connectors',
     prompt: () =>
-      "Which tools should Teambridge talk to? Pick anything you use today — we'll wire them up so data flows in automatically.",
+      "Which tools should I talk to? Pick anything you use today — I'll keep data flowing in automatically.",
     input: { kind: 'connectors', field: 'connectors', options: CONNECTOR_OPTIONS },
     transcript: a => {
       const labels = (a.connectors || []).map(c => CONNECTOR_OPTIONS.find(o => o.id === c)?.label).filter(Boolean)
       return labels.length ? `Connected ${labels.length}: ${labels.join(', ')}` : 'No tools yet'
     },
+    focus: 'integrations',
   },
   {
     id: 'roster',
-    prompt: () => 'Want to bring your roster over now, or set that up later?',
+    prompt: () => "Want to bring your roster over now, or set that up later?",
     input: { kind: 'choice', field: 'rosterChoice', options: ROSTER_OPTIONS, columns: 1 },
     transcript: a => ROSTER_OPTIONS.find(o => o.id === a.rosterChoice)?.label ?? a.rosterChoice,
+    focus: 'people',
   },
   {
     id: 'done',
     prompt: a =>
-      `That's everything I need, ${a.firstName}. Your Teambridge is ready — head into the dashboard when you're set.`,
+      `That's everything I need, ${a.firstName}. Your Teambridge is live — take a look around on the right, and I'll keep working in the background.`,
     input: { kind: 'done' },
     transcript: () => null,
+    focus: 'overview',
   },
 ]
+
