@@ -232,57 +232,59 @@ export default function OnboardingChat({
   const promptText = typeof step.prompt === 'function' ? step.prompt(answers) : step.prompt
 
   return (
-    <section className="ob-chat" aria-label="Teambridge onboarding">
-      <header className="ob-chat-head">
-        <div className="ob-chat-head-left">
-          <AvatarNova />
-          <div className="ob-chat-head-text">
-            <span className="ob-chat-title">Nova</span>
-            <span className="ob-chat-sub">Teambridge AI</span>
+    <section className="prompt-panel ob-chat" aria-label="Teambridge AI">
+      <div className="prompt-panel-inner">
+        <header className="prompt-panel-head ob-chat-head">
+          <div className="prompt-panel-title">
+            <span className="prompt-panel-mark" aria-hidden="true">
+              <TeambridgeAIIcon size={10} />
+            </span>
+            <span>Nova</span>
+            <span className="ob-chat-sub" aria-hidden="true">· Teambridge AI</span>
           </div>
-        </div>
-        <div className="ob-chat-progress" aria-label={`Step ${stepIndex + 1} of ${totalSteps}`}>
-          <span className="ob-chat-progress-fill" style={{ width: `${((stepIndex + 1) / totalSteps) * 100}%` }} />
-        </div>
-      </header>
+          <div className="ob-chat-progress" aria-label={`Step ${stepIndex + 1} of ${totalSteps}`}>
+            <span className="ob-chat-progress-fill" style={{ width: `${((stepIndex + 1) / totalSteps) * 100}%` }} />
+          </div>
+        </header>
 
-      <div className="ob-chat-scroll" ref={scrollRef}>
-        <div className="ob-chat-feed">
-          {history.map((turn, i) => (
-            <div key={`turn-${i}`} className="ob-turn">
-              <ChatBubble from="nova">{turn.prompt}</ChatBubble>
-              {turn.answer && <ChatBubble from="user">{turn.answer}</ChatBubble>}
+        <div className="prompt-scroll ob-chat-scroll" ref={scrollRef}>
+          <div className="prompt-messages ob-chat-feed">
+            {history.map((turn, i) => (
+              <div key={`turn-${i}`} className="ob-turn">
+                <ChatBubble from="nova">{turn.prompt}</ChatBubble>
+                {turn.answer && <ChatBubble from="user">{turn.answer}</ChatBubble>}
+              </div>
+            ))}
+            <div className="ob-turn ob-turn--current">
+              <ChatBubble from="nova">{promptText}</ChatBubble>
             </div>
-          ))}
-          <div className="ob-turn ob-turn--current">
-            <ChatBubble from="nova">{promptText}</ChatBubble>
           </div>
         </div>
-      </div>
 
-      <footer className="ob-chat-input">
-        {step.input.kind === 'text' && (
-          <TextInput
-            step={step}
-            value={draft}
-            onChange={setDraft}
-            onSubmit={onSubmit}
-            error={error}
-          />
-        )}
-        {step.input.kind === 'choice' && (
-          <ChoiceGrid step={step} value={draft} onSelect={(v) => { setDraft(v); onSubmit(v) }} />
-        )}
-        {step.input.kind === 'multichoice' && (
-          <MultiChoice step={step} value={draft} onChange={setDraft} onSubmit={() => onSubmit()} />
-        )}
-        {step.input.kind === 'connectors' && (
-          <Connectors step={step} value={draft} onChange={setDraft} onSubmit={() => onSubmit()} />
-        )}
-        {step.input.kind === 'done' && (
-          <DoneAffordance onOpen={onOpenDashboard} />
-        )}
-      </footer>
+        <footer className="ob-chat-input">
+          {step.input.kind === 'text' && (
+            <TextInput
+              step={step}
+              value={draft}
+              onChange={setDraft}
+              onSubmit={onSubmit}
+              error={error}
+            />
+          )}
+          {step.input.kind === 'choice' && (
+            <ChoiceGrid step={step} value={draft} onSelect={(v) => { setDraft(v); onSubmit(v) }} />
+          )}
+          {step.input.kind === 'multichoice' && (
+            <MultiChoice step={step} value={draft} onChange={setDraft} onSubmit={() => onSubmit()} />
+          )}
+          {step.input.kind === 'connectors' && (
+            <Connectors step={step} value={draft} onChange={setDraft} onSubmit={() => onSubmit()} />
+          )}
+          {step.input.kind === 'done' && (
+            <DoneAffordance onOpen={onOpenDashboard} />
+          )}
+        </footer>
+      </div>
     </section>
   )
 }
