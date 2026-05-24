@@ -1,5 +1,6 @@
 import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
+import { Analytics } from '@vercel/analytics/react'
 import './index.css'
 import IndustrySelector   from './screens/IndustrySelector.jsx'
 import Act1Dashboard      from './screens/Act1Dashboard.jsx'
@@ -193,5 +194,6 @@ function App() {
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <App />
+    <Analytics />
   </StrictMode>,
 )
