@@ -6,7 +6,7 @@ import Act1Dashboard      from './screens/Act1Dashboard.jsx'
 import SageDashboard      from './screens/sage/SageDashboard.jsx'
 import SageWorkforceEmbed from './screens/sage/SageWorkforceEmbed.jsx'
 import LeadCaptureGate    from './screens/LeadCaptureGate.jsx'
-import { getDemoSnapshot, trackDemoEvent } from './lib/demoTracking.js'
+import { getDemoSnapshot, initDemoBehaviorTracking, trackDemoEvent } from './lib/demoTracking.js'
 
 const VALID_INDUSTRIES = new Set([
   'healthcare', 'staffing', 'events', 'security', 'light-industrial', 'construction',
@@ -47,6 +47,7 @@ function setHash(path) {
 function App() {
   const [route, setRoute] = useState(() => parseHash())
   useEffect(() => {
+    initDemoBehaviorTracking()
     trackDemoEvent('session_started')
   }, [])
   // Cross-route flag for the OT-fix story arc. The CFO clicks Resolve OT
