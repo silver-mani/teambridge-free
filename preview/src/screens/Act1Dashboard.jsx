@@ -28,6 +28,7 @@ import { getIndustryData }     from '../data/industryData.js'
 import { getAgent, AGENTS }   from '../data/agents.js'
 import { getCardDetail }       from '../data/cardDetails.js'
 import { getPeriodSummary, getUserPeriod, fmt } from '../data/payData.js'
+import { trackDemoEvent } from '../lib/demoTracking.js'
 import ScheduleCalendar        from './ScheduleCalendar.jsx'
 import PeopleList              from './PeopleList.jsx'
 import PayView                 from './PayView.jsx'
@@ -63,6 +64,7 @@ function AgentAvatar({ agent, size = 32 }) {
 const DEMO_TOAST_EVENT = 'teambridge:demo-toast'
 function showDemoToast(message = 'This action is available in the full Teambridge product.') {
   if (typeof window === 'undefined') return
+  trackDemoEvent('demo_action_clicked', { message })
   window.dispatchEvent(new CustomEvent(DEMO_TOAST_EVENT, { detail: message }))
 }
 
@@ -174,7 +176,7 @@ function LeftNav({ industryLabel, view, onBrand, onAsk, onSelectView, sageMode =
         key={item.id}
         type="button"
         className={`act1-nav-item ${active ? 'act1-nav-item-active' : ''} ${item.ai ? 'act1-nav-item-ai' : ''}`}
-        onClick={() => onSelectView?.(item.id)}
+        onClick={() => { trackDemoEvent('nav_clicked', { view: item.id, label: item.label }); onSelectView?.(item.id) }}
         aria-current={active ? 'page' : undefined}
       >
         <span className="act1-nav-icon" aria-hidden="true">
@@ -3392,6 +3394,7 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
   }, [messages])
 
   const submitCanned = (label, content, specialist, approvePlan, approveLabel) => {
+    trackDemoEvent('ai_canned_prompt_clicked', { label, specialist })
     setMessages(prev => [
       ...prev,
       { id: ++idRef.current, role: 'user', content: label, status: 'done' },
@@ -3403,6 +3406,7 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
   }
 
   const submitFreeForm = async (text) => {
+    trackDemoEvent('ai_prompt_submitted', { length: text.length })
     const userId      = ++idRef.current
     const assistantId = ++idRef.current
     const history     = [...messages].filter(m => m.role === 'user' || (m.role === 'assistant' && typeof m.content === 'string'))

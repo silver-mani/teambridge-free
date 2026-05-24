@@ -23,7 +23,7 @@ function isWorkEmail(email) {
   return !PERSONAL_EMAIL_DOMAINS.has(domain)
 }
 
-export default function LeadCaptureGate({ onSubmit }) {
+export default function LeadCaptureGate({ onSubmit, onShown }) {
   const [visible, setVisible]   = useState(false)
   const [name, setName]         = useState('')
   const [company, setCompany]   = useState('')
@@ -32,9 +32,12 @@ export default function LeadCaptureGate({ onSubmit }) {
 
   // Pop after 3s so the operator gets a glimpse of the dashboard first.
   useEffect(() => {
-    const t = setTimeout(() => setVisible(true), 3000)
+    const t = setTimeout(() => {
+      setVisible(true)
+      onShown?.()
+    }, 3000)
     return () => clearTimeout(t)
-  }, [])
+  }, [onShown])
 
   // Lock body scroll while the gate is up so the blurred surface
   // can't be scrolled around behind the modal.
