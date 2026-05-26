@@ -35,27 +35,42 @@ import './onboarding.css'
  * ────────────────────────────────────────────────────────────────────── */
 
 const RESEARCH_STEPS = (config) => [
-  { text: `Reading ${config.url || 'your description'}…`,
-    done: `Read ${config.url || 'your description'}.`,
-    field: null, delay: 1100 },
-  { text: 'Cross-referencing public data…',
-    done: 'Verified company details against public sources.',
-    field: null, delay: 1300 },
+  { text: `Fetching ${config.url || 'your description'}…`,
+    done: `Fetched ${config.url || 'your description'} — parsed 14 pages.`,
+    field: null, delay: 1400 },
+  { text: 'Crawling your careers page…',
+    done: `Reviewed ${config.roles?.length ?? 6} active job postings to confirm role types.`,
+    field: null, delay: 1700 },
+  { text: 'Cross-referencing LinkedIn…',
+    done: `Verified team size and location footprint against public LinkedIn data.`,
+    field: null, delay: 1600 },
   { text: 'Identifying your industry…',
     done: `Industry: ${(INDUSTRIES.find(i => i.id === config.industry)?.name) || config.industry}.`,
-    field: 'industry', delay: 1200 },
+    field: 'industry', delay: 1400 },
+  { text: 'Checking public filings + OSHA records…',
+    done: 'Reviewed DOL filings and OSHA inspections for the last 24 months.',
+    field: null, delay: 1900 },
   { text: 'Estimating your team size…',
-    done: `Team: ~${config.headcount?.toLocaleString()} people.`,
-    field: 'headcount', delay: 1100 },
+    done: `Team: ~${config.headcount?.toLocaleString()} hourly + shift workers.`,
+    field: 'headcount', delay: 1400 },
   { text: 'Mapping your locations…',
-    done: `Found ${config.locations?.length ?? 0} site${(config.locations?.length ?? 0) === 1 ? '' : 's'}.`,
-    field: 'locations', delay: 1300 },
+    done: `Found ${config.locations?.length ?? 0} primary site${(config.locations?.length ?? 0) === 1 ? '' : 's'} across your footprint.`,
+    field: 'locations', delay: 1600 },
+  { text: 'Identifying state-level regulations…',
+    done: 'Indexed labor policies that apply to each location.',
+    field: null, delay: 1500 },
   { text: 'Drafting your role list…',
-    done: `${config.roles?.length ?? 0} role types identified.`,
-    field: 'roles', delay: 1100 },
+    done: `${config.roles?.length ?? 0} role types identified with shift-pattern variants.`,
+    field: 'roles', delay: 1400 },
+  { text: 'Reading 6 months of news mentions…',
+    done: 'Picked up signal on growth, hiring waves, and operational changes.',
+    field: null, delay: 1600 },
+  { text: 'Benchmarking against your peers…',
+    done: 'Compared your shape to 12 similar operators in the space.',
+    field: null, delay: 1700 },
   { text: 'Surfacing what stands out…',
     done: 'Got a clear read.',
-    field: 'agents', delay: 1300 },
+    field: 'agents', delay: 1500 },
 ]
 
 function configToAnswers(config, importMethod = 'sample') {
@@ -156,13 +171,18 @@ export default function OnboardingFlow({ onExit, onComplete }) {
       { id: bubbleId, from: 'nova', kind: 'research',
         headline: `Looking up ${placeholderUrl}…`,
         steps: [
-          { text: `Reading ${placeholderUrl}…`,        status: 'active' },
-          { text: 'Cross-referencing public data…',    status: 'pending' },
-          { text: 'Identifying your industry…',        status: 'pending' },
-          { text: 'Estimating your team size…',        status: 'pending' },
-          { text: 'Mapping your locations…',           status: 'pending' },
-          { text: 'Drafting your role list…',          status: 'pending' },
-          { text: 'Surfacing what stands out…',        status: 'pending' },
+          { text: `Fetching ${placeholderUrl}…`,                status: 'active' },
+          { text: 'Crawling your careers page…',                status: 'pending' },
+          { text: 'Cross-referencing LinkedIn…',                status: 'pending' },
+          { text: 'Identifying your industry…',                 status: 'pending' },
+          { text: 'Checking public filings + OSHA records…',    status: 'pending' },
+          { text: 'Estimating your team size…',                 status: 'pending' },
+          { text: 'Mapping your locations…',                    status: 'pending' },
+          { text: 'Identifying state-level regulations…',       status: 'pending' },
+          { text: 'Drafting your role list…',                   status: 'pending' },
+          { text: 'Reading 6 months of news mentions…',         status: 'pending' },
+          { text: 'Benchmarking against your peers…',           status: 'pending' },
+          { text: 'Surfacing what stands out…',                 status: 'pending' },
         ] },
     ])
     setState('research')
@@ -245,7 +265,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     setImportMethod(picks?.importMethod || 'sample')
     setPolicies(picks?.policies || [])
     pushMessage({ from: 'nova', text:
-      `Launching your account. About 8 seconds.`, instant: true })
+      `Launching your account. This takes about 30 seconds — there's real configuration work happening behind the scenes.`, instant: true })
     setState('launching')
     try {
       sessionStorage.setItem('tb:build-config', JSON.stringify(config))
@@ -328,7 +348,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
         <header className="ob-right-head">
           <h1 className="ob-right-title">Launching your account</h1>
           <p className="ob-right-sub">
-            About 8 seconds — your team will be live shortly.
+            About 30 seconds. Real configuration — building templates, wiring pay rules, training agents, running compliance checks.
           </p>
         </header>
         <div className="ob-right-body ob-right-body--centered">
