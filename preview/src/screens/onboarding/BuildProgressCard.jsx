@@ -8,16 +8,20 @@ import { CheckCircleIcon } from '../../../../src/components/icons/CheckCircleIco
  * has its own delay; total ~5-6 seconds before onComplete fires. */
 
 function buildSteps(config, importMethod) {
-  const importLine = importMethod === 'csv'    ? 'Importing employees from your CSV'
-                   : importMethod === 'api'    ? 'Syncing employees via API'
-                   :                              `Loading ${config?.headcount?.toLocaleString() || ''} sample employees`
+  const headcount = config?.headcount?.toLocaleString() || ''
+  const importLine = importMethod === 'csv'    ? `Importing ${headcount} employees from your CSV`
+                   : importMethod === 'api'    ? `Syncing ${headcount} employees from your HRIS`
+                   :                              `Loading ${headcount} sample employees`
   return [
-    { id: 's1', text: 'Connecting to data sources',              delay: 700 },
-    { id: 's2', text: importLine,                                delay: 1000 },
-    { id: 's3', text: 'Mapping roles to schedule templates',     delay: 800 },
-    { id: 's4', text: 'Wiring up the agents you chose',          delay: 900 },
-    { id: 's5', text: 'Provisioning policies and credentials',   delay: 800 },
-    { id: 's6', text: 'Spinning up your dashboard',              delay: 700 },
+    { id: 's1', text: 'Connecting to data sources',                  delay: 1100 },
+    { id: 's2', text: importLine,                                    delay: 1900 },
+    { id: 's3', text: 'Auto-mapping roles to schedule templates',    delay: 1400 },
+    { id: 's4', text: 'Detecting credentials and licensure',         delay: 1300 },
+    { id: 's5', text: 'Wiring up the agents you chose',              delay: 1500 },
+    { id: 's6', text: 'Provisioning policies and compliance rules',  delay: 1400 },
+    { id: 's7', text: 'Configuring time-and-attendance',             delay: 1100 },
+    { id: 's8', text: "Drafting next week's schedule",               delay: 1600 },
+    { id: 's9', text: 'Spinning up your dashboard',                  delay: 900 },
   ]
 }
 

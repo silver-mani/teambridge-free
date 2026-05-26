@@ -26,7 +26,7 @@ export default function AgentsCard({ agents = [] }) {
           if (!agent) return null
           return (
             <li key={id} className="cc-agent-row cc-agent-row--readonly">
-              <AgentAvatar painId={id} size={32} />
+              <AgentAvatar painId={id} size={28} />
               <span className="cc-agent-text">
                 <span className="cc-agent-name">{agent.name}</span>
                 <span className="cc-agent-detail">{agent.detail}</span>

@@ -19,24 +19,27 @@ import { CheckCircleIcon } from '../../../../src/components/icons/CheckCircleIco
  * update in-place with a checklist as Nova works.
  * ────────────────────────────────────────────────────────────────────── */
 
+/* Message renderer. Nova messages render as plain left-aligned text
+ * (no bubble) — modeled on Claude's chat UI; the AI is the surface,
+ * not a chip. User messages keep the bubble so it's obvious which
+ * turns came from them. */
 function Bubble({ from, children }) {
+  if (from === 'nova') {
+    return <div className="ob-msg ob-msg--nova">{children}</div>
+  }
   return (
-    <div className={`ob-bubble-row ob-bubble-row--${from}`}>
-      {from === 'nova' && (
-        <span className="ob-avatar ob-avatar--nova" aria-hidden="true">
-          <TeambridgeAIIcon size={14} />
-        </span>
-      )}
-      <div className={`ob-bubble ob-bubble--${from}`}>{children}</div>
+    <div className="ob-bubble-row ob-bubble-row--user">
+      <div className="ob-bubble ob-bubble--user">{children}</div>
     </div>
   )
 }
 
-/* A Nova bubble that contains a live checklist of research steps.
- * Items animate in as Nova "discovers" each one. */
+/* Nova's research turn — a self-updating checklist that fills in as
+ * each discovery step completes. Plain text (no bubble) like other
+ * Nova messages, with the checklist below. */
 function ResearchBubble({ headline, steps }) {
   return (
-    <Bubble from="nova">
+    <div className="ob-msg ob-msg--nova">
       <div className="ob-research-headline">{headline}</div>
       <ul className="ob-research-list">
         {steps.map((s, i) => (
@@ -49,7 +52,7 @@ function ResearchBubble({ headline, steps }) {
           </li>
         ))}
       </ul>
-    </Bubble>
+    </div>
   )
 }
 

@@ -324,18 +324,34 @@ export default function OnboardingFlow({ onExit, onComplete }) {
         </div>
       </div>
     )
+  } else if (state === 'building') {
+    // Fresh screen — BuildProgressCard owns the entire right pane while
+    // Nova provisions the workspace. No ConfigCard / AgentsCard
+    // distractions; the animation is the whole moment.
+    content = (
+      <div className="ob-right ob-right--building">
+        <header className="ob-right-head">
+          <h1 className="ob-right-title">Provisioning your workspace</h1>
+          <p className="ob-right-sub">
+            Nova is wiring up {config?.companyName ?? 'your account'} end-to-end. This usually takes 10-15 seconds.
+          </p>
+        </header>
+        <div className="ob-right-body ob-right-body--centered">
+          <BuildProgressCard
+            config={config}
+            importMethod={importMethod}
+            onComplete={handleBuildComplete}
+          />
+        </div>
+      </div>
+    )
   } else {
-    // agent-pick, import-pick, building — same shell, accumulating cards.
-    const heading =
-      state === 'agent-pick'  ? 'Your account'
-      : state === 'import-pick' ? 'Almost there'
-      :                          'Building'
-    const sub =
-      state === 'agent-pick'
-        ? (config?.url ? `Derived from ${config.url}. Tap any field to edit.` : 'Tap any field to edit.')
-        : state === 'import-pick'
-          ? 'Pick how you want to bring your team data over and Nova will build the rest.'
-          : "Hold tight — I'm wiring everything up."
+    // agent-pick, import-pick — same shell, AgentsCard stacks below
+    // ConfigCard once agents are confirmed.
+    const heading = state === 'agent-pick' ? 'Your account' : 'Almost there'
+    const sub = state === 'agent-pick'
+      ? (config?.url ? `Derived from ${config.url}. Tap any field to edit.` : 'Tap any field to edit.')
+      : 'Pick how you want to bring your team data over and Nova will build the rest.'
     content = (
       <div className="ob-right">
         <header className="ob-right-head">
@@ -349,15 +365,8 @@ export default function OnboardingFlow({ onExit, onComplete }) {
             onChange={setConfig}
             visibleFields={cardFields}
           />
-          {(state === 'import-pick' || state === 'building') && (
+          {state === 'import-pick' && (
             <AgentsCard agents={config?.agents || []} />
-          )}
-          {state === 'building' && (
-            <BuildProgressCard
-              config={config}
-              importMethod={importMethod}
-              onComplete={handleBuildComplete}
-            />
           )}
         </div>
       </div>
