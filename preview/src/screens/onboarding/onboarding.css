@@ -640,14 +640,22 @@
 
 .ob-right-body {
   /* 1fr row of .ob-right grid. min-height: 0 + overflow-y: auto =
-   * actually scrolls when card content (policy/agent grid, expanded
-   * ConfigCard, etc.) exceeds the row height. */
+   * scrolls when content exceeds row height. */
   min-height: 0;
   overflow-y: auto;
   padding: var(--space-5) var(--space-6) var(--space-6);
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
+}
+/* THE FIX: direct children of .ob-right-body must NOT shrink. Default
+ * flex-shrink: 1 was shrinking step cards to fit the body's height —
+ * card's own overflow: hidden then clipped the policy/agent grid, so
+ * the body's overflow-y: auto never engaged. With flex-shrink: 0
+ * children keep their natural height; when they exceed the body the
+ * body scrolls. */
+.ob-right-body > * {
+  flex-shrink: 0;
 }
 
 /* Building state — center the BuildProgressCard vertically + give it
