@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { TeambridgeAIIcon } from '../../../../src/components/icons/TeambridgeAIIcon.tsx'
 import { CheckCircleIcon } from '../../../../src/components/icons/CheckCircleIcon.tsx'
 import {
   PAIN_TO_AGENT, POLICY_OPTIONS, OUTCOME_OPTIONS,
@@ -150,29 +149,16 @@ export default function BuildProgressCard({
 
   return (
     <div className="cc cc--building">
-      <header className="cc-head cc-head--building">
-        <div className="cc-head-left">
-          <span className="cc-head-mark cc-head-mark--ai" aria-hidden="true">
-            <TeambridgeAIIcon size={18} />
-          </span>
-          <div className="cc-head-text">
-            <span className="cc-head-name">
-              {done ? 'Ready' : `Launching ${config?.companyName ?? 'your account'}`}
-            </span>
-            <span className="cc-head-sub">
-              {done
-                ? 'Opening your dashboard now…'
-                : 'Real configuration work — templates, pay rules, agent training, QA.'}
-            </span>
-          </div>
-        </div>
-        <div className="cc-progress">
-          <span
-            className="cc-progress-fill"
-            style={{ width: `${(stepIndex / steps.length) * 100}%` }}
-          />
-        </div>
-      </header>
+      {/* Card header removed — the right-pane head ("Launching your
+       * account" + sub) carries the same info, so showing it twice
+       * read as repetitive. Keep just the progress bar at the top
+       * of the card so the operator still sees overall progress. */}
+      <div className="cc-progress cc-progress--standalone">
+        <span
+          className="cc-progress-fill"
+          style={{ width: `${(stepIndex / steps.length) * 100}%` }}
+        />
+      </div>
 
       <ul className="bp-steps">
         {steps.map((s, i) => {

@@ -129,29 +129,50 @@
  * research-bubble checklist styling on top of Act1's prompt-panel
  * chrome. */
 
-.ob-chat-inner {
-  /* CSS Grid for the chat column — auto for head, 1fr for the scroll
-   * area, auto for the drawer/compose footer. This is the bulletproof
-   * way to make the middle row scroll inside a fixed-height container;
-   * nested flex was failing because of how flex-basis resolves through
-   * act1's .prompt-panel-inner inheritance.
-   *
-   * Overrides act1's flex layout + max-width 720px + gap so the chat
-   * column reads as one contained shell. */
-  padding: 0;
-  max-width: none;
+/* Chat panel — fully self-contained CSS, no inheritance from
+ * act1.css's .prompt-panel-* family. The chat column is rendered as
+ *
+ *   <section.ob-chat-section>
+ *     <div.ob-chat-frame>
+ *       <header.ob-chat-head>
+ *       <div.ob-chat-scroll>          ← min-height: 0; overflow-y: auto
+ *       <div.ob-drawer-slot|.ob-compose>
+ *
+ * by OnboardingChat. The CSS Grid template (auto · 1fr · auto) makes
+ * the scroll row bounded so overflow-y reliably engages. */
+.ob-chat-section {
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-bg-primary);
+  border-right: 1px solid var(--color-border-opaque);
+}
+.ob-chat-frame {
   height: 100%;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  gap: 0;
 }
 .ob-chat-head {
   padding: var(--space-4) var(--space-6) var(--space-2);
+  border-bottom: 1px solid var(--color-border-opaque);
+}
+.ob-chat-title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+}
+.ob-chat-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 .ob-chat-scroll {
-  min-height: 0;          /* lets the grid row's 1fr actually shrink */
+  min-height: 0;
   overflow-y: auto;
-  padding: var(--space-2) var(--space-6) var(--space-4);
+  padding: var(--space-3) var(--space-6) var(--space-4);
 }
 
 /* Typing indicator — three bouncing dots Nova shows while composing
@@ -2591,3 +2612,9 @@
   transition: background 120ms ease, color 120ms ease;
 }
 .cm-back:hover { background: var(--color-bg-secondary); color: var(--color-content-primary); }
+
+/* Standalone progress bar at the top of BuildProgressCard (header
+ * removed; this floats above the steps list with its own padding). */
+.cc-progress--standalone {
+  margin: var(--space-3) var(--space-5) 0;
+}

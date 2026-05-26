@@ -343,6 +343,10 @@ export default function OnboardingFlow({ onExit, onComplete }) {
       </div>
     )
   } else if (state === 'research') {
+    // While Claude is still researching, config is null — keep the
+    // animated wireframe visible so the right pane doesn't look empty.
+    // As soon as the API returns, swap to the ConfigCard which then
+    // reveals fields one by one.
     content = (
       <div className="ob-right">
         <header className="ob-right-head">
@@ -350,11 +354,15 @@ export default function OnboardingFlow({ onExit, onComplete }) {
           <p className="ob-right-sub">Filling in based on what we find.</p>
         </header>
         <div className="ob-right-body">
-          <ConfigCard
-            config={config}
-            editable={false}
-            visibleFields={cardFields.filter(f => revealedFields.has(f))}
-          />
+          {config ? (
+            <ConfigCard
+              config={config}
+              editable={false}
+              visibleFields={cardFields.filter(f => revealedFields.has(f))}
+            />
+          ) : (
+            <WireframeLoop />
+          )}
         </div>
       </div>
     )

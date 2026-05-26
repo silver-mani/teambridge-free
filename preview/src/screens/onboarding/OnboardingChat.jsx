@@ -4,25 +4,22 @@ import { CheckCircleIcon } from '../../../../src/components/icons/CheckCircleIco
 import TeambridgeLogo from './TeambridgeLogo.jsx'
 
 /* ──────────────────────────────────────────────────────────────────────
- * OnboardingChat — Nova's chat panel. Lives in the shell's chat column
- * (slots into `.prompt-panel` chrome from Act1) for the whole flow:
- * intake, research, review, live. The panel itself never changes; only
- * the message history and compose behavior do.
+ * OnboardingChat — Nova's chat panel. Uses ITS OWN class names (no
+ * inheritance from act1.css's .prompt-panel-* family) so the grid
+ * layout for the scrollable middle is bulletproof:
  *
- * Layout:
- *   header (Nova title)
- *   scroll (message history — grows as Nova posts + user replies)
- *   compose (locked to the bottom — text input + send button, with
- *            optional quick-reply chips)
+ *   .ob-chat-section          host (grid item from DashboardShell)
+ *     .ob-chat-frame          CSS grid: head / scroll / footer
+ *       .ob-chat-head         pinned top
+ *       .ob-chat-scroll       1fr row, min-height: 0, overflow-y: auto
+ *       .ob-drawer-slot |     pinned bottom (either drawer or compose)
+ *       .ob-compose
  *
- * Messages can be plain text bubbles or "research" bubbles that
- * update in-place with a checklist as Nova works.
+ * Earlier iterations layered .prompt-panel-inner on top with flex: 1 +
+ * gap + max-width that fought the grid override and broke the scroll.
+ * This is self-contained.
  * ────────────────────────────────────────────────────────────────────── */
 
-/* Message renderer. Nova messages render as plain left-aligned text
- * (no bubble) — modeled on Claude's chat UI; the AI is the surface,
- * not a chip. User messages keep the bubble so it's obvious which
- * turns came from them. */
 function Bubble({ from, children }) {
   if (from === 'nova') {
     return <div className="ob-msg ob-msg--nova">{children}</div>
@@ -34,9 +31,6 @@ function Bubble({ from, children }) {
   )
 }
 
-/* Nova's research turn — a self-updating checklist that fills in as
- * each discovery step completes. Plain text (no bubble) like other
- * Nova messages, with the checklist below. */
 function ResearchBubble({ headline, steps }) {
   return (
     <div className="ob-msg ob-msg--nova">
@@ -67,16 +61,12 @@ export default function OnboardingChat({
   const inputRef = useRef(null)
   const scrollRef = useRef(null)
 
-  // Auto-scroll to bottom whenever a new message lands or the
-  // composer becomes enabled (so the operator's eye lands on the
-  // input when it's their turn).
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
     requestAnimationFrame(() => { el.scrollTop = el.scrollHeight })
   }, [messages, composerDisabled, drawer])
 
-  // Re-focus the input when it becomes available again.
   useEffect(() => {
     if (!composerDisabled) inputRef.current?.focus()
   }, [composerDisabled])
@@ -90,19 +80,19 @@ export default function OnboardingChat({
   }
 
   return (
-    <section className="prompt-panel ob-chat" aria-label="Teambridge AI">
-      <div className="prompt-panel-inner ob-chat-inner">
-        <header className="prompt-panel-head ob-chat-head">
-          <div className="prompt-panel-title">
-            <span className="prompt-panel-mark" aria-hidden="true">
+    <section className="ob-chat-section" aria-label="Teambridge AI">
+      <div className="ob-chat-frame">
+        <header className="ob-chat-head">
+          <div className="ob-chat-title">
+            <span className="ob-chat-mark" aria-hidden="true">
               <TeambridgeLogo size={16} />
             </span>
             <span>Teambridge AI</span>
           </div>
         </header>
 
-        <div className="prompt-scroll ob-chat-scroll" ref={scrollRef}>
-          <div className="prompt-messages ob-chat-messages">
+        <div className="ob-chat-scroll" ref={scrollRef}>
+          <div className="ob-chat-messages">
             {messages.map((m, i) => {
               if (m.kind === 'research' || m.kind === 'thinking') {
                 return <ResearchBubble key={m.id || i} headline={m.headline} steps={m.steps} />
@@ -125,11 +115,6 @@ export default function OnboardingChat({
           </div>
         </div>
 
-        {/* When a drawer is active it replaces the compose entirely —
-         * avoids the confusing two-input-fields stack. The compose
-         * still renders in non-drawer states (research / building /
-         * future live) so there's always a visible affordance at the
-         * bottom of the chat. */}
         {drawer ? (
           <div className="ob-drawer-slot">{drawer}</div>
         ) : (
@@ -151,7 +136,7 @@ export default function OnboardingChat({
                 disabled={composerDisabled || !draft.trim()}
                 aria-label="Send"
               >
-              <ArrowNarrowUpIcon size={16} />
+                <ArrowNarrowUpIcon size={16} />
               </button>
             </form>
           </footer>
