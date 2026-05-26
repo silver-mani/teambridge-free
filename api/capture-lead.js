@@ -32,6 +32,15 @@ function decodeHeader(v) {
   }
 }
 
+function getClientIp(headers) {
+  return (
+    headers["x-vercel-forwarded-for"] ||
+    headers["x-forwarded-for"] ||
+    headers["x-real-ip"] ||
+    undefined
+  );
+}
+
 function splitName(full) {
   const trimmed = (full || "").trim();
   if (!trimmed) return { firstName: "", lastName: "" };
@@ -59,7 +68,20 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "invalid_json" });
   }
 
-  const { name, company, email, pageUrl, referrer } = body || {};
+  const {
+    name,
+    company,
+    email,
+    pageUrl,
+    referrer,
+    demoSessionId,
+    industry,
+    view,
+    route,
+    path,
+    landingPage,
+    timeInDemoMs,
+  } = body || {};
   if (!email || typeof email !== "string") {
     return res.status(400).json({ error: "email_required" });
   }
@@ -70,6 +92,8 @@ export default async function handler(req, res) {
   const country = decodeHeader(req.headers["x-vercel-ip-country"]);
   const city = decodeHeader(req.headers["x-vercel-ip-city"]);
   const region = decodeHeader(req.headers["x-vercel-ip-country-region"]);
+  const ipTimezone = decodeHeader(req.headers["x-vercel-ip-timezone"]);
+  const ipAddress = getClientIp(req.headers);
   const userAgent = req.headers["user-agent"];
 
   const convexBody = {
@@ -88,6 +112,21 @@ export default async function handler(req, res) {
       country,
       city,
       region,
+      ipTimezone,
+      ipAddress,
+      demoSessionId: demoSessionId || undefined,
+      industry: industry || undefined,
+      firstTouchLandingPage: landingPage || undefined,
+      firstTouchReferrer: referrer || undefined,
+      sessionDurationMs:
+        typeof timeInDemoMs === "number" ? Math.max(0, timeInDemoMs) : undefined,
+      extraFields: [
+        ...(industry ? [{ key: "demo_industry", value: String(industry) }] : []),
+        ...(view ? [{ key: "demo_view", value: String(view) }] : []),
+        ...(route ? [{ key: "demo_route", value: String(route) }] : []),
+        ...(path ? [{ key: "demo_path", value: String(path) }] : []),
+        ...(demoSessionId ? [{ key: "demo_session_id", value: String(demoSessionId) }] : []),
+      ],
     },
   };
   // Drop undefined values — Convex validators are strict about extras.
@@ -157,6 +196,37 @@ export default async function handler(req, res) {
       return r.json().catch(() => ({}));
     }),
   ]);
+
+  let leadId;
+  if (convexResult.status === "fulfilled") {
+    leadId =
+      convexResult.value?.value?.leadId ||
+      convexResult.value?.leadId ||
+      undefined;
+  }
+
+  if (demoSessionId) {
+    await fetch(`${CONVEX_URL}/api/mutation`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        path: "demoTracking:identifyLead",
+        format: "json",
+        args: Object.fromEntries(
+          Object.entries({
+            sessionId: demoSessionId,
+            email,
+            firstName: firstName || undefined,
+            lastName: lastName || undefined,
+            company: company || undefined,
+            leadId,
+          }).filter(([, v]) => v !== undefined)
+        ),
+      }),
+    }).catch(err => {
+      console.error("[capture-lead] demo identify failed:", err);
+    });
+  }
 
   const errors = [];
   if (convexResult.status === "rejected") {

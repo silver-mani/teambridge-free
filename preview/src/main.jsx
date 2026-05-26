@@ -1,5 +1,6 @@
 import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
+import { Analytics } from '@vercel/analytics/react'
 import './index.css'
 import EntryChoice        from './screens/EntryChoice.jsx'
 import IndustrySelector   from './screens/IndustrySelector.jsx'
@@ -8,6 +9,7 @@ import SageDashboard      from './screens/sage/SageDashboard.jsx'
 import SageWorkforceEmbed from './screens/sage/SageWorkforceEmbed.jsx'
 import LeadCaptureGate    from './screens/LeadCaptureGate.jsx'
 import OnboardingFlow     from './screens/onboarding/OnboardingFlow.jsx'
+import { getDemoSnapshot, initDemoBehaviorTracking, trackDemoEvent } from './lib/demoTracking.js'
 
 const VALID_INDUSTRIES = new Set([
   'healthcare', 'staffing', 'events', 'security', 'light-industrial', 'construction',
@@ -51,6 +53,10 @@ function setHash(path) {
  */
 function App() {
   const [route, setRoute] = useState(() => parseHash())
+  useEffect(() => {
+    initDemoBehaviorTracking()
+    trackDemoEvent('session_started')
+  }, [])
   // Cross-route flag for the OT-fix story arc. The CFO clicks Resolve OT
   // Crisis on the Sage dashboard → lands in workforce → runs Nova's
   // replacement flow. When the flow completes we flip this to true so
@@ -75,11 +81,16 @@ function App() {
     try { return sessionStorage.getItem('tb:lead') === '1' } catch { return false }
   })
   const submitLead = (lead) => {
+    const demo = getDemoSnapshot()
     try {
       sessionStorage.setItem('tb:lead', '1')
       sessionStorage.setItem('tb:lead-data', JSON.stringify(lead))
     } catch { /* ignore */ }
     setLeadCaptured(true)
+    trackDemoEvent('lead_gate_submitted', {
+      company: lead.company,
+      timeInDemoMs: demo.timeInDemoMs,
+    })
 
     // Mirror to /api/capture-lead so the signup lands in the same Convex
     // `leads` table + HubSpot CRM as /book-demo on www.teambridge.com.
@@ -95,6 +106,13 @@ function App() {
           email: lead.email,
           pageUrl: window.location.href,
           referrer: document.referrer || undefined,
+          demoSessionId: demo.sessionId,
+          industry: demo.industry,
+          view: demo.view,
+          route: demo.route,
+          path: demo.path,
+          landingPage: demo.landingPage,
+          timeInDemoMs: demo.timeInDemoMs,
         }),
         keepalive: true,
       })
@@ -125,6 +143,15 @@ function App() {
     return () => window.removeEventListener('hashchange', sync)
   }, [])
 
+  useEffect(() => {
+    const snapshot = getDemoSnapshot()
+    trackDemoEvent('route_viewed', {
+      routeKind: route?.kind ?? 'entry_choice',
+      industry: snapshot.industry,
+      view: snapshot.view,
+    })
+  }, [route])
+
   // The gate runs on every route except the front-of-funnel screens
   // (entry choice, demo picker, build flow). The build flow has its
   // own first-class signup capture in step 1.
@@ -140,7 +167,7 @@ function App() {
       />
     )
   } else if (route.kind === 'demos') {
-    view = <IndustrySelector onSelect={id => setHash(`/${id}`)} />
+    view = <IndustrySelector onSelect={id => { trackDemoEvent('industry_selected', { industry: id }); setHash(`/${id}`) }} />
   } else if (route.kind === 'build') {
     view = (
       <OnboardingFlow
@@ -163,7 +190,7 @@ function App() {
         <SageWorkforceEmbed
           onNavigate={sageNav}
           otFixed={otFixed}
-          onApplyOTFix={() => setOtFixed(true)}
+          onApplyOTFix={() => { trackDemoEvent('ot_fix_applied'); setOtFixed(true) }}
         />
       )
     } else {
@@ -190,7 +217,7 @@ function App() {
   return (
     <>
       {view}
-      {showGate && <LeadCaptureGate onSubmit={submitLead} />}
+      {showGate && <LeadCaptureGate onSubmit={submitLead} onShown={() => trackDemoEvent('lead_gate_shown')} />}
     </>
   )
 }
@@ -198,5 +225,6 @@ function App() {
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <App />
+    <Analytics />
   </StrictMode>,
 )

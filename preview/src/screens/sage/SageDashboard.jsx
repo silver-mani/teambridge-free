@@ -2,6 +2,7 @@ import SageShell from './SageShell.jsx'
 import {
   SageKpiCard, SageWidgetCard, SageAlertCard,
 } from './components.jsx'
+import { trackDemoEvent } from '../../lib/demoTracking.js'
 
 /* ──────────────────────────────────────────────────────────────────────
  * Mock data — Levi's Stadium operating account, single-venue context.
@@ -408,7 +409,7 @@ export default function SageDashboard({ onNavigate, otFixed = false, onResetOTFi
                   'No outstanding credential compliance flags',
                 ]}
                 ctaLabel="Open weekly recap"
-                onCta={() => onNavigate && onNavigate('workforce')}
+                onCta={() => { trackDemoEvent('sage_resolve_ot_clicked'); onNavigate && onNavigate('workforce') }}
               />
             ) : (
               <SageAlertCard
@@ -419,7 +420,7 @@ export default function SageDashboard({ onNavigate, otFixed = false, onResetOTFi
                   '5 credential compliance issues expiring within 7 days',
                 ]}
                 ctaLabel="Resolve OT Crisis"
-                onCta={() => onNavigate && onNavigate('workforce')}
+                onCta={() => { trackDemoEvent('sage_workforce_cta_clicked'); onNavigate && onNavigate('workforce') }}
               />
             )}
           </div>
