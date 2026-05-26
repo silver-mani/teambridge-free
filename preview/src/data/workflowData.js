@@ -677,6 +677,93 @@ export const WORKFLOWS = [
   ONBOARDING_AUTO_ADVANCE,
 ]
 
+/* Template catalog shown on the workflows landing page. Each template
+ * is a starting point an operator can spin up — they're not actual
+ * configured workflows yet. Featured cards get hero treatment (large
+ * gradient tile), the rest render as a categorized grid below.
+ * `agentId` ties each template to one of the named AI personas so the
+ * tile shows that agent's avatar; the gradient class drives the card's
+ * background.  */
+export const WORKFLOW_TEMPLATE_CATEGORIES = [
+  { id: 'coverage',   label: 'Coverage' },
+  { id: 'pay',        label: 'Pay & OT' },
+  { id: 'compliance', label: 'Compliance' },
+  { id: 'onboarding', label: 'Onboarding' },
+  { id: 'comms',      label: 'Communications' },
+  { id: 'scheduling', label: 'Scheduling' },
+]
+
+export const WORKFLOW_TEMPLATES_FEATURED = [
+  {
+    id: 'tpl-last-min-replacement',
+    title: 'Last-minute Replacement',
+    description: 'When a worker calls out, rank eligible candidates by proximity, performance, and hours fairness — then send timed offers to the top 3 in parallel.',
+    agentId: 'nova',
+    gradient: 'amber',
+    triggerLabel: 'Shift cancelled within 6h',
+    nodeCount: 14,
+  },
+  {
+    id: 'tpl-ot-cap-autoreplace',
+    title: 'OT Cap Auto-Replace',
+    description: 'Watch for workers about to cross your OT ceiling, surface compliant swaps, and rebalance hours before the pay period closes.',
+    agentId: 'atlas',
+    gradient: 'indigo',
+    triggerLabel: 'Worker hits 38h projected',
+    nodeCount: 11,
+  },
+  {
+    id: 'tpl-credential-watch',
+    title: 'Credential Watch',
+    description: 'Track every license, cert, and training across your workforce. Pre-clear renewals 30 days out so no one shows up to a shift without a current badge.',
+    agentId: 'iris',
+    gradient: 'matcha',
+    triggerLabel: 'Cert expires in ≤ 30 days',
+    nodeCount: 9,
+  },
+]
+
+export const WORKFLOW_TEMPLATES = [
+  /* Coverage */
+  { id: 'tpl-callout-cascade',  title: 'Callout Cascade',          description: 'Tiered offers to A→B→C candidates with 90s expiry per tier.', agentId: 'nova',  category: 'coverage' },
+  { id: 'tpl-no-show-recovery', title: 'No-Show Recovery',         description: 'Detect missed clock-in, ping the worker, escalate to manager at 15 min.', agentId: 'nova',  category: 'coverage' },
+  { id: 'tpl-event-day-surge',  title: 'Event-Day Surge Coverage', description: 'Pre-stage standby pool the morning of a peak event; auto-offer if any role unders.', agentId: 'atlas', category: 'coverage' },
+  { id: 'tpl-float-pool-route', title: 'Float Pool Routing',       description: 'Send float-eligible workers to units with the deepest gap first, by acuity.', agentId: 'nova',  category: 'coverage' },
+
+  /* Pay & OT */
+  { id: 'tpl-ot-projection',    title: 'OT Projection Alerts',     description: 'Flag workers projected to clear OT threshold 3 days before pay period close.', agentId: 'atlas', category: 'pay' },
+  { id: 'tpl-double-time',      title: 'Double-Time Guardrails',   description: 'Block shifts that would trigger double-time premium unless approved by a manager.', agentId: 'leo',   category: 'pay' },
+  { id: 'tpl-missed-punch',     title: 'Missed Punch Recovery',    description: 'Reconstruct missed clock events from schedule + door access, queue for approval.', agentId: 'sofia', category: 'pay' },
+  { id: 'tpl-premium-route',    title: 'Premium Pay Routing',      description: 'Route holiday and weekend differential shifts to opted-in workers first.', agentId: 'nova',  category: 'pay' },
+
+  /* Compliance */
+  { id: 'tpl-license-renew',    title: 'License Renewal Reminders', description: 'DM workers 60/30/7 days before expiry with the exact renewal link.', agentId: 'iris',  category: 'compliance' },
+  { id: 'tpl-training-due',     title: 'Training Due Watch',        description: 'Pull due dates from the LMS and block scheduling when training lapses.', agentId: 'iris',  category: 'compliance' },
+  { id: 'tpl-predictive-sched', title: 'Predictive Scheduling',     description: 'Hold schedules to your state\'s 14-day notice rule; flag any inside-window edits.', agentId: 'leo',   category: 'compliance' },
+
+  /* Onboarding */
+  { id: 'tpl-onb-advance',      title: 'Onboarding Auto-Advance',   description: 'Move new hires through I-9, badge, role training without operator nudges.', agentId: 'sofia', category: 'onboarding' },
+  { id: 'tpl-doc-collect',      title: 'Document Collection',       description: 'Chase missing W-4 / direct deposit / cert uploads on a polite cadence.', agentId: 'sofia', category: 'onboarding' },
+  { id: 'tpl-badge-issue',      title: 'Badge & Access Issuance',   description: 'Open badge request in security system the moment day-1 confirms; close ticket when picked up.', agentId: 'iris',  category: 'onboarding' },
+
+  /* Communications */
+  { id: 'tpl-shift-confirm',    title: 'Shift Confirmations',       description: 'Confirm next-day shifts 18h ahead; route non-confirms straight to the callout cascade.', agentId: 'nova',  category: 'comms' },
+  { id: 'tpl-broadcast-route',  title: 'Smart Broadcast Routing',   description: 'Send announcements only to the roles/sites that need them — no full-org noise.', agentId: 'sofia', category: 'comms' },
+  { id: 'tpl-manager-escalate', title: 'Manager Escalation',        description: 'Escalate stuck workflows to the right manager based on site, role, and time of day.', agentId: 'leo',   category: 'comms' },
+
+  /* Scheduling */
+  { id: 'tpl-auto-draft',       title: 'Schedule Auto-Draft',       description: 'Draft next week\'s schedule from demand forecast, availability, and fairness rules.', agentId: 'atlas', category: 'scheduling' },
+  { id: 'tpl-peak-forecast',    title: 'Peak Headcount Forecast',   description: 'Forecast peak demand 4 weeks out so you can pre-publish the matching skeleton.', agentId: 'atlas', category: 'scheduling' },
+  { id: 'tpl-hours-balance',    title: 'Hours Fairness Rebalance',  description: 'Spread shift offers across the team to keep no one chronically under- or over-hours.', agentId: 'nova',  category: 'scheduling' },
+]
+
+export function templatesByCategory() {
+  return WORKFLOW_TEMPLATE_CATEGORIES.map(cat => ({
+    ...cat,
+    items: WORKFLOW_TEMPLATES.filter(t => t.category === cat.id),
+  })).filter(c => c.items.length > 0)
+}
+
 export function getWorkflow(id) {
   return WORKFLOWS.find(w => w.id === id) ?? WORKFLOWS[0]
 }

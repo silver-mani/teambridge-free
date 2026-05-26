@@ -3,6 +3,7 @@ import { StatusTag }           from '../../../src/components/StatusTag/StatusTag
 import { Button }              from '../../../src/components/Button/Button.tsx'
 import { AILoader }            from '../../../src/components/ai/AILoader/AILoader.tsx'
 import { TeambridgeAIIcon }    from '../../../src/components/icons/TeambridgeAIIcon.tsx'
+import CompanyLogo             from './onboarding/CompanyLogo.jsx'
 import { ArrowNarrowRightIcon }from '../../../src/components/icons/ArrowNarrowRightIcon.tsx'
 import { CheckIcon }           from '../../../src/components/icons/CheckIcon.tsx'
 import { EyeIcon }             from '../../../src/components/icons/EyeIcon.tsx'
@@ -169,7 +170,7 @@ const NAV_BOTTOM_GROUP = {
   ],
 }
 
-function LeftNav({ industryLabel, view, onBrand, onAsk, onSelectView, sageMode = false, mobileOpen = false, onMobileClose }) {
+function LeftNav({ industryLabel, brandUrl, view, onBrand, onAsk, onSelectView, sageMode = false, mobileOpen = false, onMobileClose }) {
   const renderItem = (item) => {
     const active = item.id === view || (item.id === 'overview' && view === 'overview')
     return (
@@ -208,12 +209,12 @@ function LeftNav({ industryLabel, view, onBrand, onAsk, onSelectView, sageMode =
           onClick={onBrand}
           aria-label="Change industry"
         >
-          <span className="act1-nav-brandmark">
-            <TeambridgeAIIcon size={16} />
+          <span className={`act1-nav-brandmark ${brandUrl ? 'act1-nav-brandmark-company' : ''}`}>
+            <CompanyLogo url={brandUrl} size={20} fallbackSize={16} />
           </span>
           <span className="act1-nav-brandtext">
-            <span className="act1-nav-brandname">Teambridge</span>
-            <span className="act1-nav-brandindustry">{industryLabel}</span>
+            <span className="act1-nav-brandname">{industryLabel}</span>
+            <span className="act1-nav-brandindustry">Powered by Teambridge</span>
           </span>
         </button>
       )}
@@ -3978,6 +3979,7 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
 
       <LeftNav
         industryLabel={data.label}
+        brandUrl={data.brandUrl}
         view={view}
         sageMode={sageMode}
         onBrand={onBack}

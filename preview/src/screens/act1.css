@@ -68,6 +68,14 @@
   justify-content: center;
   flex-shrink: 0;
 }
+/* Company logo variant — neutral chip so the operator's favicon (which
+ * may have its own colors) reads cleanly without fighting the dark
+ * Teambridge chip background. */
+.act1-nav-brandmark-company {
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  color: var(--color-content-primary);
+}
 
 .act1-nav-brandtext { display: flex; flex-direction: column; min-width: 0; }
 
@@ -5107,8 +5115,15 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
 }
 .wf-head {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
+  gap: var(--space-4);
+}
+.wf-head-titlewrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
 }
 .wf-title {
   margin: 0;
@@ -5120,6 +5135,41 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   display: inline-flex;
   gap: 8px;
 }
+
+/* Browse / My Workflows tab strip — sits under the page title, low-key
+ * underline indicator on the active tab. */
+.wf-tabs {
+  display: inline-flex;
+  gap: var(--space-4);
+  border-bottom: 1px solid var(--color-border-opaque);
+}
+.wf-tab {
+  appearance: none;
+  background: transparent;
+  border: none;
+  padding: 8px 0;
+  margin-bottom: -1px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 120ms ease, border-color 120ms ease;
+}
+.wf-tab:hover { color: var(--color-content-primary); }
+.wf-tab.is-active {
+  color: var(--color-content-primary);
+  border-bottom-color: var(--color-content-primary);
+}
+
+.wf-section-title {
+  margin: var(--space-3) 0 var(--space-2);
+  font-size: 18px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+}
+.wf-section-title-flush { margin: 0; }
 
 .wf-btn {
   display: inline-flex;
@@ -5220,6 +5270,11 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   font-weight: var(--font-weight-medium);
   color: var(--color-content-secondary);
 }
+/* The first row cell has a 30px icon + 12px gap (42px) before its title.
+ * The header has just plain text — without compensation it sits flush
+ * left while every row's title sits 42px in. Pad the header column the
+ * same amount so columns line up. */
+.wf-list-cell-name-head { padding-left: 42px; }
 .wf-list-row {
   padding: 14px var(--space-3);
   background: transparent;
@@ -6089,6 +6144,201 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   cursor: pointer;
 }
 .wf-zoom-level:hover { background: var(--color-bg-tertiary); }
+
+/* ── Templates browse ── */
+
+/* Featured hero cards — 3-up gradient tiles at the top of Browse. Each
+ * leans into the assigned agent's vibe (amber for Nova/coverage, indigo
+ * for Atlas/forecast, matcha for Iris/credentialing). Pure CSS gradients
+ * — no extra assets. */
+.wf-featured {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+.wf-featured-card {
+  appearance: none;
+  border: none;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: 16px;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  min-height: 200px;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+.wf-featured-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -12px rgba(0, 0, 0, 0.25);
+}
+.wf-featured-card-amber  { background: linear-gradient(135deg, #FFB05A 0%, #F08A2E 55%, #D9651A 100%); }
+.wf-featured-card-indigo { background: linear-gradient(135deg, #6E7CFF 0%, #4858E8 55%, #2D3CB8 100%); }
+.wf-featured-card-matcha { background: linear-gradient(135deg, #6BD3A6 0%, #3DB988 55%, #218D63 100%); }
+
+.wf-featured-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.wf-featured-agent {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background-size: cover;
+  background-position: center;
+  background-color: rgba(255, 255, 255, 0.18);
+  flex-shrink: 0;
+}
+.wf-featured-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.wf-featured-agent-name {
+  font-size: 13px;
+  font-weight: var(--font-weight-semibold);
+  color: rgba(255, 255, 255, 0.96);
+}
+.wf-featured-agent-role {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.78);
+}
+.wf-featured-body { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.wf-featured-title {
+  font-size: 17px;
+  font-weight: var(--font-weight-semibold);
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+.wf-featured-desc {
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.86);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.wf-featured-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.wf-featured-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+  color: rgba(255, 255, 255, 0.92);
+}
+.wf-featured-nodes {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+/* Browse toolbar — section title + search/filters on one row. */
+.wf-browse-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.wf-browse-toolbar-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 1 540px;
+  min-width: 0;
+}
+.wf-browse-toolbar-right .wf-list-search { flex: 1; }
+
+/* Categorized template grid — each category gets its own header + 3-col
+ * grid of tiles. */
+.wf-tpl-groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+.wf-tpl-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.wf-tpl-group-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-content-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.wf-tpl-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+.wf-tpl-tile {
+  appearance: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: 12px;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 120ms ease, transform 120ms ease, box-shadow 120ms ease;
+}
+.wf-tpl-tile:hover {
+  border-color: var(--color-border-selected);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px -10px rgba(0, 0, 0, 0.18);
+}
+.wf-tpl-tile-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-bg-secondary);
+  flex-shrink: 0;
+}
+.wf-tpl-tile-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
+.wf-tpl-tile-title {
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+}
+.wf-tpl-tile-desc {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--color-content-tertiary);
+}
+
+@media (max-width: 1100px) {
+  .wf-featured  { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .wf-tpl-grid  { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 720px) {
+  .wf-featured  { grid-template-columns: 1fr; }
+  .wf-tpl-grid  { grid-template-columns: 1fr; }
+  .wf-browse-toolbar { flex-direction: column; align-items: stretch; }
+  .wf-browse-toolbar-right { flex: 1; flex-wrap: wrap; }
+}
 
 /* Place the toolbar relative to the detail body so it pins to the canvas
    bottom without fighting the grid. */
