@@ -734,6 +734,57 @@
   line-height: var(--line-height-loose);
 }
 
+/* Outcomes drawer — multi-select of outcome statements ("what are you
+ * looking to do") shown right after research completes. */
+.ob-drawer-outcomes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-height: 280px;
+  overflow-y: auto;
+}
+.ob-drawer-outcome {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--text-sm);
+  text-align: left;
+  color: var(--color-content-primary);
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.ob-drawer-outcome:hover { border-color: var(--color-border-selected); }
+.ob-drawer-outcome.is-on {
+  border-color: var(--color-content-primary);
+  background: var(--color-bg-primary);
+}
+.ob-drawer-outcome-toggle {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border-opaque);
+  color: var(--color-content-inverse-primary);
+}
+.ob-drawer-outcome-toggle.is-on {
+  background: var(--color-content-primary);
+  border-color: var(--color-content-primary);
+}
+
+.ob-drawer-foot-sub {
+  font-size: var(--text-xs);
+  color: var(--color-content-tertiary);
+}
+
 /* Agent picker — list of toggleable agent rows inside the drawer */
 .ob-drawer-agents {
   list-style: none;
@@ -1404,6 +1455,12 @@
   grid-template-rows: minmax(0, 1fr);
 }
 
+/* LeftNav-hidden variant — used by the build flow. Drop the 240px
+ * nav column so the chat and right pane take the whole width. */
+.ob-root--no-nav .act1-root {
+  grid-template-columns: 380px minmax(0, 1fr);
+}
+
 /* LeftNav — fixed column, internal nav-list scrolls if it overflows. */
 .ob-root .act1-nav {
   position: static;     /* not sticky inside a contained shell */
@@ -1944,4 +2001,242 @@
   .cc-row-label { padding-top: 0; }
   .cc-industry-picker { grid-template-columns: 1fr; }
   .entry-choice-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ─────────────────────── DataMappingCard ─────────────────────────── */
+/* Clean-slate right-pane card during the 'mapping' state. Animates
+ * a list of "X → Y" mappings with checkmark transitions to convey
+ * Nova wiring up the account. */
+.cc--mapping { animation: ob-fade-in 320ms ease; }
+.dm-list {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-3) var(--space-5) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dm-row {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-primary);
+  font-size: var(--text-sm);
+  color: var(--color-content-primary);
+  transition: opacity 200ms ease, border-color 200ms ease;
+}
+.dm-row--pending { opacity: 0.4; }
+.dm-row--active  { border-color: var(--color-border-selected); }
+.dm-row--done {
+  background: var(--color-matcha-bg-tertiary);
+  border-color: transparent;
+}
+.dm-row-mark {
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--color-matcha-content-secondary);
+}
+.dm-row-spin {
+  width: 11px; height: 11px;
+  border: 1.5px solid var(--color-border-opaque);
+  border-top-color: var(--color-content-primary);
+  border-radius: var(--radius-full);
+  animation: ob-spin 700ms linear infinite;
+}
+.dm-row-source {
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dm-row-arrow {
+  color: var(--color-content-tertiary);
+  font-size: var(--text-xs);
+}
+.dm-row-target {
+  color: var(--color-content-secondary);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ─────────────────────── PoliciesCard ────────────────────────────── */
+.cc--policies { animation: ob-fade-in 320ms ease; }
+.pc-all {
+  padding: 4px var(--space-3);
+  background: transparent;
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-md);
+  color: var(--color-content-secondary);
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+.pc-all:hover { color: var(--color-content-primary); border-color: var(--color-border-selected); }
+
+.pc-list {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.pc-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-md);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.pc-row:hover { border-color: var(--color-border-selected); }
+.pc-row.is-on {
+  border-color: var(--color-content-primary);
+  background: var(--color-bg-primary);
+}
+.pc-toggle {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border-opaque);
+  color: var(--color-content-inverse-primary);
+}
+.pc-toggle.is-on {
+  background: var(--color-content-primary);
+  border-color: var(--color-content-primary);
+}
+.pc-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pc-name {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+}
+.pc-detail {
+  font-size: var(--text-xs);
+  color: var(--color-content-tertiary);
+  line-height: var(--line-height-loose);
+}
+.pc-states {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.pc-state {
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-bg-tertiary);
+  color: var(--color-content-secondary);
+  font-size: 10px;
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.04em;
+}
+.pc-state--fed {
+  background: var(--color-azure-bg-tertiary);
+  color: var(--color-azure-content-secondary);
+}
+
+/* ─────────────────────── AgentsLaunchCard ────────────────────────── */
+.cc--agents-launch { animation: ob-fade-in 320ms ease; }
+.alc-list {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.alc-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 36px 1fr 22px;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-md);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.alc-row:hover { border-color: var(--color-border-selected); }
+.alc-row.is-on {
+  border-color: var(--color-content-primary);
+  background: var(--color-bg-primary);
+}
+.alc-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.alc-name {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+}
+.alc-detail {
+  font-size: var(--text-xs);
+  color: var(--color-content-tertiary);
+  line-height: var(--line-height-loose);
+}
+.alc-toggle {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border-opaque);
+  color: var(--color-content-inverse-primary);
+}
+.alc-toggle.is-on {
+  background: var(--color-content-primary);
+  border-color: var(--color-content-primary);
+}
+
+/* ─────────────────────── Shared card footer (CTAs) ────────────────── */
+.cc-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--color-border-opaque);
+  background: var(--color-bg-secondary);
+}
+.cc-foot-sub {
+  font-size: var(--text-xs);
+  color: var(--color-content-tertiary);
+}
+.cc-foot-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-bg-inverse-primary);
+  color: var(--color-content-inverse-primary);
+  border: 0;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+.cc-foot-cta:hover { opacity: 0.92; transform: translateY(-1px); }
+.cc-foot-cta:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.cc-foot-cta--launch {
+  padding: var(--space-3) var(--space-5);
+  font-size: var(--text-base);
 }

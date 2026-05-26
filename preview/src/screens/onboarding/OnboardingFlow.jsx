@@ -8,10 +8,13 @@ import DashboardShell, { DEFAULT_NAV_GROUPS, DEFAULT_NAV_BOTTOM } from '../shell
 import OnboardingChat from './OnboardingChat.jsx'
 import ConfigCard, { ALL_FIELDS } from './ConfigCard.jsx'
 import { deriveConfig } from './urlMatcher.js'
-import { PAIN_OPTIONS, PAIN_TO_AGENT } from './steps.js'
+import { PAIN_OPTIONS, PAIN_TO_AGENT, OUTCOME_OPTIONS, OUTCOME_TO_AGENTS } from './steps.js'
 import AgentAvatar from './AgentAvatar.jsx'
 import AgentsCard from './AgentsCard.jsx'
 import BuildProgressCard from './BuildProgressCard.jsx'
+import DataMappingCard from './DataMappingCard.jsx'
+import PoliciesCard from './PoliciesCard.jsx'
+import AgentsLaunchCard from './AgentsLaunchCard.jsx'
 import '../act1.css'
 import './onboarding.css'
 
@@ -74,20 +77,26 @@ function buildLockedNav() {
 
 export default function OnboardingFlow({ onExit, onComplete }) {
   // State machine — drives chat drawer + right pane composition.
-  //   intake       URL prompt (chat drawer)
-  //   research     Nova narrates discoveries; right pane reveals card
-  //   agent-pick   Drawer is the agent toggle list; right pane = ConfigCard
-  //                (without agents row)
-  //   import-pick  Drawer is CSV/API/Sample chooser; right pane adds
-  //                an AgentsCard below the ConfigCard
-  //   building     Drawer is hidden; right pane adds the animated
-  //                BuildProgressCard; onComplete fires when done.
+  //   intake       URL prompt (chat drawer); right = WireframeLoop
+  //   research     Right pane reveals ConfigCard field-by-field
+  //   outcomes     Chat drawer: "what are you looking to do?"
+  //                multi-select; right = ConfigCard (no agents row)
+  //   import       Chat drawer: CSV/API/Sample picker;
+  //                right = ConfigCard + outcomes summary
+  //   mapping      Clean slate on right; animated data-mapping list
+  //                "Security → Role", "SoFi Stadium → Site", etc.
+  //                Chat is quiet (no drawer, no compose).
+  //   policies     Right: PoliciesCard, state-based labor policies
+  //   agents       Right: AgentsLaunchCard with launch CTA
+  //   (no 'done' state — onComplete fires from AgentsLaunchCard)
   const [state, setState] = useState('intake')
   const [intakeMode, setIntakeMode] = useState('url')
   const [intakeDraft, setIntakeDraft] = useState('')
   const [config, setConfig] = useState(null)
   const [revealedFields, setRevealedFields] = useState(new Set(['summary']))
+  const [outcomes, setOutcomes] = useState([])      // outcome ids picked in 'outcomes' state
   const [importMethod, setImportMethod] = useState(null)  // 'csv' | 'api' | 'sample'
+  const [policies, setPolicies] = useState([])      // policy ids picked in 'policies' state
 
   // Chat
   const [messages, setMessages] = useState(() => [
@@ -205,11 +214,11 @@ export default function OnboardingFlow({ onExit, onComplete }) {
       researchTimersRef.current.push(timer)
     }
 
-    // After all reveals + a settling beat, transition to agent-pick.
+    // After all reveals + a settling beat, ask the outcomes question.
     const finalTimer = setTimeout(() => {
       pushMessage({ from: 'nova', text:
-        `Here's ${derived.companyName} on the right. Pick the agents to turn on below.` })
-      setState('agent-pick')
+        `Got a good read on ${derived.companyName}. What are you looking to do with Teambridge?` })
+      setState('outcomes')
     }, cumulative + 700)
     researchTimersRef.current.push(finalTimer)
   }
@@ -221,36 +230,58 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     }
   }, [])
 
-  /* ── Agent-pick → Import-pick ── */
-  const handleAgentsConfirmed = useCallback(() => {
-    if (!config?.agents || config.agents.length === 0) return
-    const labels = (config.agents || [])
-      .map(id => PAIN_TO_AGENT[id]?.name)
+  /* ── Outcomes → Import ── */
+  const handleOutcomesConfirmed = useCallback(() => {
+    if (outcomes.length === 0) return
+    const labels = outcomes
+      .map(id => OUTCOME_OPTIONS.find(o => o.id === id)?.label)
       .filter(Boolean)
     pushMessage({ from: 'user', text:
-      `${labels.length} agent${labels.length === 1 ? '' : 's'}: ${labels.join(', ')}` })
+      labels.length === 1 ? labels[0] : `${labels.length} goals` })
     pushMessage({ from: 'nova', text:
-      "Got it. Last step — choose how to bring your team in." })
-    setState('import-pick')
-  }, [config, pushMessage])
+      "Got it. Next — how should I bring your team's data in?" })
+    setState('import')
+  }, [outcomes, pushMessage])
 
-  /* ── Import-pick → Building ── */
+  /* ── Import → Mapping ── */
   const handleImportPicked = useCallback((method) => {
     setImportMethod(method)
-    const label = method === 'csv'    ? 'Upload a CSV'
-                : method === 'api'    ? 'Connect via API'
-                :                       'Use sample demo data'
+    const label = method === 'csv' ? 'Upload a CSV'
+                : method === 'api' ? 'Sync from HRIS'
+                :                    'Use sample data'
     pushMessage({ from: 'user', text: label })
-    pushMessage({ from: 'nova', text:
-      method === 'sample'
-        ? "Setting up your account now. This takes about 15 seconds."
-        : "For this demo we'll load sample employees. Setting up your account now." })
-    setState('building')
+    pushMessage({ from: 'nova', text: "Mapping things up on the right. Hang tight." })
+    setState('mapping')
     try { sessionStorage.setItem('tb:build-config', JSON.stringify(config)) } catch { /* ignore */ }
   }, [config, pushMessage])
 
-  /* ── Building animation complete → hand off to industry demo ── */
-  const handleBuildComplete = useCallback(() => {
+  /* ── Mapping animation complete → Policies ── */
+  const handleMappingComplete = useCallback(() => {
+    pushMessage({ from: 'nova', text:
+      "Now — labor policies for your states. Toggle off anything you don't need." })
+    setState('policies')
+  }, [pushMessage])
+
+  /* ── Policies → Agents ── */
+  const handlePoliciesContinue = useCallback((picked) => {
+    setPolicies(picked)
+    pushMessage({ from: 'user', text:
+      picked.length === 0 ? 'No policies' : `${picked.length} polic${picked.length === 1 ? 'y' : 'ies'} on` })
+    pushMessage({ from: 'nova', text:
+      "Last step — pick which agents I should run from day one." })
+    // Pre-select agents implied by the outcomes the operator picked.
+    const initialAgents = new Set()
+    for (const o of outcomes) {
+      for (const a of (OUTCOME_TO_AGENTS[o] || [])) initialAgents.add(a)
+    }
+    setConfig(c => ({ ...c, agents: c?.agents?.length ? c.agents : Array.from(initialAgents) }))
+    setState('agents')
+  }, [outcomes, pushMessage])
+
+  /* ── Agents launch → hand off to industry demo ── */
+  const handleAgentsLaunch = useCallback(() => {
+    if (!config?.agents?.length) return
+    try { sessionStorage.setItem('tb:build-config', JSON.stringify(config)) } catch { /* ignore */ }
     onComplete?.(config)
   }, [config, onComplete])
 
@@ -259,6 +290,9 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     researchTimersRef.current = []
     setConfig(null)
     setRevealedFields(new Set(['summary']))
+    setOutcomes([])
+    setImportMethod(null)
+    setPolicies([])
     setIntakeMode('url')
     setIntakeDraft('')
     setState('intake')
@@ -273,14 +307,15 @@ export default function OnboardingFlow({ onExit, onComplete }) {
   const { navGroups, navBottom } = buildLockedNav()
 
   const composerPlaceholder = (() => {
-    if (state === 'intake')      return 'Use the form below'
-    if (state === 'research')    return 'Setting up…'
-    if (state === 'agent-pick')  return 'Pick agents below'
-    if (state === 'import-pick') return 'Pick one below'
-    if (state === 'building')    return 'Setting up…'
+    if (state === 'intake')   return 'Use the form below'
+    if (state === 'research') return 'Setting up…'
+    if (state === 'outcomes') return 'Pick goals below'
+    if (state === 'import')   return 'Pick one below'
+    if (state === 'mapping')  return 'Setting up…'
+    if (state === 'policies' || state === 'agents') return 'Continue on the right →'
     return 'Type a message…'
   })()
-  const composerDisabled = true   // input flows through the drawer at every step
+  const composerDisabled = true   // input flows through the drawer / right pane at every step
 
   const drawer = (() => {
     if (state === 'intake') {
@@ -293,18 +328,17 @@ export default function OnboardingFlow({ onExit, onComplete }) {
         />
       )
     }
-    if (state === 'agent-pick') {
+    if (state === 'outcomes') {
       return (
-        <AgentPickDrawer
+        <OutcomesDrawer
           companyName={config?.companyName}
-          agents={config?.agents || []}
-          onAgentsChange={(next) => setConfig(c => ({ ...c, agents: next }))}
-          onSubmit={handleAgentsConfirmed}
-          onStartOver={handleStartOver}
+          selected={outcomes}
+          onChange={setOutcomes}
+          onSubmit={handleOutcomesConfirmed}
         />
       )
     }
-    if (state === 'import-pick') {
+    if (state === 'import') {
       return (
         <ImportPickDrawer
           companyName={config?.companyName}
@@ -360,57 +394,88 @@ export default function OnboardingFlow({ onExit, onComplete }) {
         </div>
       </div>
     )
-  } else if (state === 'building') {
-    // Fresh screen — BuildProgressCard owns the entire right pane while
-    // Nova provisions the workspace. No ConfigCard / AgentsCard
-    // distractions; the animation is the whole moment.
+  } else if (state === 'mapping') {
+    // Clean slate — DataMappingCard owns the right pane and animates
+    // through ~14 source → target mappings before handing off to the
+    // policies step.
     content = (
       <div className="ob-right ob-right--building">
         <header className="ob-right-head">
-          <h1 className="ob-right-title">Setting up your account</h1>
+          <h1 className="ob-right-title">Mapping your account</h1>
           <p className="ob-right-sub">
-            This takes about 15 seconds.
+            Wiring data into the right fields.
           </p>
         </header>
         <div className="ob-right-body ob-right-body--centered">
-          <BuildProgressCard
+          <DataMappingCard
             config={config}
             importMethod={importMethod}
-            onComplete={handleBuildComplete}
+            onComplete={handleMappingComplete}
+          />
+        </div>
+      </div>
+    )
+  } else if (state === 'policies') {
+    content = (
+      <div className="ob-right">
+        <header className="ob-right-head">
+          <h1 className="ob-right-title">Labor policies</h1>
+          <p className="ob-right-sub">
+            Based on the states you operate in. Toggle off anything you don't need.
+          </p>
+        </header>
+        <div className="ob-right-body">
+          <PoliciesCard
+            config={config}
+            onContinue={handlePoliciesContinue}
+          />
+        </div>
+      </div>
+    )
+  } else if (state === 'agents') {
+    content = (
+      <div className="ob-right">
+        <header className="ob-right-head">
+          <h1 className="ob-right-title">Your agents</h1>
+          <p className="ob-right-sub">
+            Pick which agents I should run from day one. Launch when ready.
+          </p>
+        </header>
+        <div className="ob-right-body">
+          <AgentsLaunchCard
+            companyName={config?.companyName}
+            agents={config?.agents || []}
+            onAgentsChange={(next) => setConfig(c => ({ ...c, agents: next }))}
+            onLaunch={handleAgentsLaunch}
           />
         </div>
       </div>
     )
   } else {
-    // agent-pick, import-pick — same shell, AgentsCard stacks below
-    // ConfigCard once agents are confirmed.
-    const heading = 'Your account'
-    const sub = state === 'agent-pick'
+    // outcomes, import — same shell, ConfigCard on the right.
+    const sub = state === 'outcomes'
       ? (config?.url ? `Based on ${config.url}. Tap to edit anything.` : 'Tap to edit anything.')
       : 'One more step to finish setup.'
     content = (
       <div className="ob-right">
         <header className="ob-right-head">
-          <h1 className="ob-right-title">{heading}</h1>
+          <h1 className="ob-right-title">Your account</h1>
           <p className="ob-right-sub">{sub}</p>
         </header>
         <div className="ob-right-body">
           <ConfigCard
             config={config}
-            editable={state === 'agent-pick'}
+            editable={state === 'outcomes'}
             onChange={setConfig}
             visibleFields={cardFields}
           />
-          {state === 'import-pick' && (
-            <AgentsCard agents={config?.agents || []} />
-          )}
         </div>
       </div>
     )
   }
 
   return (
-    <div className="ob-root">
+    <div className="ob-root ob-root--no-nav">
       <div className="ob-shell-frame">
         <DashboardShell
           mode="full"
@@ -422,6 +487,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
           onSelectView={() => { /* locked */ }}
           chat={chat}
           content={content}
+          showLeftNav={false}
           showActivityFeed={false}
         />
       </div>
@@ -487,56 +553,51 @@ function IntakeDrawer({ mode, value, onChange, onSubmit }) {
   )
 }
 
-/* ─── Agent-pick drawer — first review step. Toggleable list of all 6
- *     Teambridge agents with avatars + descriptions. Continue advances
- *     to the import-pick step. */
-function AgentPickDrawer({ companyName, agents, onAgentsChange, onSubmit, onStartOver }) {
-  const set = new Set(agents || [])
+/* ─── Outcomes drawer — first chat question after research. Multi-
+ *     select list of outcome statements ("what are you looking to do?")
+ *     framed around the freshly-researched company. The chosen
+ *     outcomes drive agent pre-selection later. */
+function OutcomesDrawer({ companyName, selected, onChange, onSubmit }) {
+  const set = new Set(selected || [])
   const toggle = (id) => {
     const next = new Set(set)
     if (next.has(id)) next.delete(id)
     else next.add(id)
-    onAgentsChange(Array.from(next))
+    onChange(Array.from(next))
   }
   const count = set.size
 
   return (
-    <div className="ob-drawer" role="group" aria-label="Activate agents and build">
+    <div className="ob-drawer" role="group" aria-label="What are you looking to do">
       <div className="ob-drawer-head">
         <span className="ob-drawer-mark" aria-hidden="true">
           <TeambridgeAIIcon size={14} />
         </span>
         <div className="ob-drawer-text">
           <div className="ob-drawer-title">
-            Pick your agents
+            I've got a good read on {companyName || 'your company'}.
           </div>
           <div className="ob-drawer-sub">
-            These run from day one. Change them anytime.
+            What are you looking to do? Pick anything that fits.
           </div>
         </div>
       </div>
 
-      <ul className="ob-drawer-agents">
-        {PAIN_OPTIONS.map(p => {
-          const agent = PAIN_TO_AGENT[p.id]
-          if (!agent) return null
-          const on = set.has(p.id)
+      <ul className="ob-drawer-outcomes">
+        {OUTCOME_OPTIONS.map(o => {
+          const on = set.has(o.id)
           return (
-            <li key={p.id}>
+            <li key={o.id}>
               <button
                 type="button"
-                className={`ob-drawer-agent ${on ? 'is-on' : ''}`}
-                onClick={() => toggle(p.id)}
+                className={`ob-drawer-outcome ${on ? 'is-on' : ''}`}
+                onClick={() => toggle(o.id)}
                 aria-pressed={on}
               >
-                <AgentAvatar painId={p.id} size={24} />
-                <span className="ob-drawer-agent-text">
-                  <span className="ob-drawer-agent-name">{agent.name}</span>
-                  <span className="ob-drawer-agent-detail">{agent.detail}</span>
+                <span className={`ob-drawer-outcome-toggle ${on ? 'is-on' : ''}`} aria-hidden="true">
+                  {on && <CheckCircleIcon size={12} />}
                 </span>
-                <span className={`ob-drawer-agent-toggle ${on ? 'is-on' : ''}`} aria-hidden="true">
-                  {on && <CheckCircleIcon size={14} />}
-                </span>
+                <span>{o.label}</span>
               </button>
             </li>
           )
@@ -544,9 +605,9 @@ function AgentPickDrawer({ companyName, agents, onAgentsChange, onSubmit, onStar
       </ul>
 
       <div className="ob-drawer-foot">
-        <button type="button" className="ob-drawer-back" onClick={onStartOver}>
-          Start over
-        </button>
+        <span className="ob-drawer-foot-sub">
+          {count === 0 ? 'Pick at least one' : `${count} selected`}
+        </span>
         <button
           type="button"
           className="ob-drawer-cta"

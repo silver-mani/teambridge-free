@@ -60,6 +60,64 @@ export const PAIN_TO_PERSONA = {
   scheduling: 'nova',
 }
 
+/* Outcome-style questions the operator answers right after research.
+ * Multi-select. The chosen outcomes drive which agents we
+ * pre-recommend later (OUTCOME_TO_AGENTS). */
+export const OUTCOME_OPTIONS = [
+  { id: 'sites',       label: 'A single place to manage all my locations' },
+  { id: 'compliance',  label: 'Reduce compliance risks and overtime' },
+  { id: 'scheduling',  label: 'Schedule my team smarter' },
+  { id: 'coverage',    label: 'Cover shifts faster when people drop' },
+  { id: 'onboarding',  label: 'Onboard new hires faster' },
+  { id: 'comms',       label: 'Reach my team without chasing texts' },
+]
+
+export const OUTCOME_TO_AGENTS = {
+  sites:      [],
+  compliance: ['compliance', 'overtime'],
+  scheduling: ['scheduling'],
+  coverage:   ['coverage'],
+  onboarding: ['onboarding'],
+  comms:      ['comms'],
+}
+
+/* Labor policies surfaced on the policies-pick step, keyed by state.
+ * Distilled from teambridge.com/compliance — common state policies
+ * across CA / NY / OR / WA / IL / etc., plus a federal baseline. */
+export const POLICY_OPTIONS = [
+  { id: 'daily-ot',   label: 'Daily overtime after 8 hrs',           detail: 'Track and flag shifts hitting daily OT thresholds.' },
+  { id: 'weekly-ot',  label: 'Weekly overtime after 40 hrs',         detail: 'FLSA federal standard. Flag before week closes.' },
+  { id: 'meal-rest',  label: 'Meal & rest break enforcement',        detail: 'Auto-insert breaks based on shift length.' },
+  { id: 'sick-leave', label: 'Paid sick leave accrual',              detail: 'Accrue hours per worked hour, by state rate.' },
+  { id: 'predictive', label: 'Predictive (fair workweek) scheduling', detail: 'Post schedules 14 days ahead; pay premiums on changes.' },
+  { id: 'spread-hrs', label: 'Spread of hours premium',              detail: 'Pay extra hour at minimum wage when spread exceeds 10 hrs.' },
+  { id: 'day-rest',   label: 'One day of rest in seven',             detail: 'Block 7-day-on schedules without consent.' },
+  { id: 'final-pay',  label: 'Same-day final pay on termination',    detail: 'Auto-cut final paycheck on separation.' },
+  { id: 'minor-work', label: 'Minor work-hour limits',               detail: 'Cap hours for under-18 workers, school nights.' },
+]
+
+/* Which policies typically apply per state. '*' is federal baseline. */
+export const POLICIES_BY_STATE = {
+  '*': ['weekly-ot', 'minor-work'],
+  CA:  ['daily-ot', 'meal-rest', 'sick-leave', 'predictive', 'final-pay'],
+  NY:  ['sick-leave', 'spread-hrs', 'day-rest', 'predictive', 'final-pay'],
+  OR:  ['meal-rest', 'sick-leave', 'predictive', 'final-pay'],
+  WA:  ['meal-rest', 'sick-leave', 'predictive'],
+  IL:  ['day-rest', 'predictive', 'sick-leave'],
+  TX:  ['weekly-ot'],
+  AZ:  ['sick-leave'],
+  MA:  ['sick-leave', 'final-pay', 'day-rest'],
+  NJ:  ['sick-leave', 'predictive'],
+  CO:  ['meal-rest', 'sick-leave', 'daily-ot'],
+  NV:  ['daily-ot', 'sick-leave'],
+  CT:  ['sick-leave', 'predictive'],
+  MD:  ['sick-leave'],
+  PA:  ['sick-leave'],
+  GA:  ['weekly-ot'],
+  FL:  ['weekly-ot'],
+  VA:  ['sick-leave'],
+}
+
 export const CONNECTOR_OPTIONS = [
   { id: 'gusto',       label: 'Gusto',           category: 'Payroll',     accent: 'orange' },
   { id: 'adp',         label: 'ADP',             category: 'Payroll',     accent: 'matcha' },
