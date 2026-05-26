@@ -9,19 +9,19 @@ import { CheckCircleIcon } from '../../../../src/components/icons/CheckCircleIco
 
 function buildSteps(config, importMethod) {
   const headcount = config?.headcount?.toLocaleString() || ''
-  const importLine = importMethod === 'csv'    ? `Importing ${headcount} employees from your CSV`
-                   : importMethod === 'api'    ? `Syncing ${headcount} employees from your HRIS`
-                   :                              `Loading ${headcount} sample employees`
+  const importLine = importMethod === 'csv' ? `Importing ${headcount} employees`
+                   : importMethod === 'api' ? `Syncing ${headcount} employees`
+                   :                          `Loading ${headcount} employees`
   return [
-    { id: 's1', text: 'Connecting to data sources',                  delay: 1100 },
-    { id: 's2', text: importLine,                                    delay: 1900 },
-    { id: 's3', text: 'Auto-mapping roles to schedule templates',    delay: 1400 },
-    { id: 's4', text: 'Detecting credentials and licensure',         delay: 1300 },
-    { id: 's5', text: 'Wiring up the agents you chose',              delay: 1500 },
-    { id: 's6', text: 'Provisioning policies and compliance rules',  delay: 1400 },
-    { id: 's7', text: 'Configuring time-and-attendance',             delay: 1100 },
-    { id: 's8', text: "Drafting next week's schedule",               delay: 1600 },
-    { id: 's9', text: 'Spinning up your dashboard',                  delay: 900 },
+    { id: 's1', text: 'Connecting data sources',     delay: 1100 },
+    { id: 's2', text: importLine,                    delay: 1900 },
+    { id: 's3', text: 'Mapping roles',               delay: 1400 },
+    { id: 's4', text: 'Checking credentials',        delay: 1300 },
+    { id: 's5', text: 'Activating your agents',      delay: 1500 },
+    { id: 's6', text: 'Setting up policies',         delay: 1400 },
+    { id: 's7', text: 'Configuring time tracking',   delay: 1100 },
+    { id: 's8', text: 'Drafting your first schedule', delay: 1600 },
+    { id: 's9', text: 'Opening your dashboard',      delay: 900 },
   ]
 }
 
@@ -56,12 +56,12 @@ export default function BuildProgressCard({ config, importMethod, onComplete }) 
           </span>
           <div className="cc-head-text">
             <span className="cc-head-name">
-              {done ? 'All set' : 'Configuring your account'}
+              {done ? 'Ready' : 'Setting up your account'}
             </span>
             <span className="cc-head-sub">
               {done
-                ? `${config?.companyName ?? 'Your workspace'} is ready. Opening now…`
-                : "I'm wiring up your workspace end-to-end."}
+                ? `${config?.companyName ?? 'Your account'} is ready. Opening now…`
+                : 'Hang tight — about 15 seconds.'}
             </span>
           </div>
         </div>

@@ -92,7 +92,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
   // Chat
   const [messages, setMessages] = useState(() => [
     { id: 'm0', from: 'nova', text:
-      "Welcome to Teambridge. Drop in your company's website below and I'll configure your account from what I learn — industry, headcount, locations, and the agents you'll need from day one." },
+      "Hi! Enter your company website below — we'll use it to set up your account in about a minute." },
   ])
   const researchTimersRef = useRef([])
 
@@ -112,7 +112,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
       setIntakeMode('free-text')
       setIntakeDraft('')
       pushMessage({ from: 'nova', text:
-        "I couldn't quite place that site. Mind giving me a two-line description of what your team does? I'll take it from there." })
+        "We couldn't find that site. Tell us what your team does in a sentence or two below." })
       return
     }
 
@@ -165,7 +165,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
 
     const finalTimer = setTimeout(() => {
       pushMessage({ from: 'nova', text:
-        `Here's what I found for ${derived.companyName}. Take a look on the right. Now — which agents should I activate?` })
+        `Here's ${derived.companyName} on the right. Pick the agents to turn on below.` })
       setState('agent-pick')
     }, cumulative + 700)
     researchTimersRef.current.push(finalTimer)
@@ -187,7 +187,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     pushMessage({ from: 'user', text:
       `${labels.length} agent${labels.length === 1 ? '' : 's'}: ${labels.join(', ')}` })
     pushMessage({ from: 'nova', text:
-      "Great. Last thing — how do you want to bring your team data over? I'll set it up either way." })
+      "Got it. Last step — choose how to bring your team in." })
     setState('import-pick')
   }, [config, pushMessage])
 
@@ -200,8 +200,8 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     pushMessage({ from: 'user', text: label })
     pushMessage({ from: 'nova', text:
       method === 'sample'
-        ? "Perfect — sample data is fastest. Configuring your account now…"
-        : "For this demo I'll preload sample employees. Configuring your account now…" })
+        ? "Setting up your account now. This takes about 15 seconds."
+        : "For this demo we'll load sample employees. Setting up your account now." })
     setState('building')
     try { sessionStorage.setItem('tb:build-config', JSON.stringify(config)) } catch { /* ignore */ }
   }, [config, pushMessage])
@@ -230,11 +230,11 @@ export default function OnboardingFlow({ onExit, onComplete }) {
   const { navGroups, navBottom } = buildLockedNav()
 
   const composerPlaceholder = (() => {
-    if (state === 'intake')      return "Tap below to share your company's URL…"
-    if (state === 'research')    return 'Working…'
-    if (state === 'agent-pick')  return 'Pick agents below, or send a message'
-    if (state === 'import-pick') return 'Choose an import method below'
-    if (state === 'building')    return 'Configuring your account…'
+    if (state === 'intake')      return 'Use the form below'
+    if (state === 'research')    return 'Setting up…'
+    if (state === 'agent-pick')  return 'Pick agents below'
+    if (state === 'import-pick') return 'Pick one below'
+    if (state === 'building')    return 'Setting up…'
     return 'Type a message…'
   })()
   const composerDisabled = true   // input flows through the drawer at every step
@@ -291,9 +291,9 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     content = (
       <div className="ob-right ob-right--intake">
         <header className="ob-right-head">
-          <h1 className="ob-right-title">Your Account</h1>
+          <h1 className="ob-right-title">Your account</h1>
           <p className="ob-right-sub">
-            Your dashboard will appear here as we learn about you.
+            Your dashboard will appear here as you go.
           </p>
         </header>
         <div className="ob-right-body">
@@ -305,8 +305,8 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     content = (
       <div className="ob-right">
         <header className="ob-right-head">
-          <h1 className="ob-right-title">Workspace forming</h1>
-          <p className="ob-right-sub">Watch your account come together in real time.</p>
+          <h1 className="ob-right-title">Your account</h1>
+          <p className="ob-right-sub">Filling in based on what we find.</p>
         </header>
         <div className="ob-right-body">
           <ConfigCard
@@ -324,9 +324,9 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     content = (
       <div className="ob-right ob-right--building">
         <header className="ob-right-head">
-          <h1 className="ob-right-title">Configuring your account</h1>
+          <h1 className="ob-right-title">Setting up your account</h1>
           <p className="ob-right-sub">
-            Wiring up {config?.companyName ?? 'your account'} end-to-end. This usually takes 10-15 seconds.
+            This takes about 15 seconds.
           </p>
         </header>
         <div className="ob-right-body ob-right-body--centered">
@@ -341,10 +341,10 @@ export default function OnboardingFlow({ onExit, onComplete }) {
   } else {
     // agent-pick, import-pick — same shell, AgentsCard stacks below
     // ConfigCard once agents are confirmed.
-    const heading = state === 'agent-pick' ? 'Your account' : 'Almost there'
+    const heading = 'Your account'
     const sub = state === 'agent-pick'
-      ? (config?.url ? `Derived from ${config.url}. Tap any field to edit.` : 'Tap any field to edit.')
-      : "Pick how you want to bring your team data over and I'll configure the rest."
+      ? (config?.url ? `Based on ${config.url}. Tap to edit anything.` : 'Tap to edit anything.')
+      : 'One more step to finish setup.'
     content = (
       <div className="ob-right">
         <header className="ob-right-head">
@@ -407,12 +407,12 @@ function IntakeDrawer({ mode, value, onChange, onSubmit }) {
         </span>
         <div className="ob-drawer-text">
           <div className="ob-drawer-title">
-            {isUrl ? "Where should I start?" : "Tell me about your team."}
+            {isUrl ? 'Enter your company website' : 'Describe your team'}
           </div>
           <div className="ob-drawer-sub">
             {isUrl
-              ? "Drop in your company website — I'll figure out the rest."
-              : "A two-line description is plenty for me to set things up."}
+              ? "We'll use it to set up your account."
+              : 'A sentence or two is enough.'}
           </div>
         </div>
       </div>
@@ -465,10 +465,10 @@ function AgentPickDrawer({ companyName, agents, onAgentsChange, onSubmit, onStar
         </span>
         <div className="ob-drawer-text">
           <div className="ob-drawer-title">
-            Which agents should I activate for {companyName || 'your Teambridge'}?
+            Pick your agents
           </div>
           <div className="ob-drawer-sub">
-            I'll run these from day one. You can switch any of them on or off later.
+            These run from day one. Change them anytime.
           </div>
         </div>
       </div>
@@ -527,19 +527,19 @@ function ImportPickDrawer({ companyName, onPick }) {
     {
       id: 'csv',
       title: 'Upload a CSV',
-      detail: "Drop your existing roster file — I'll auto-map the columns.",
+      detail: 'Use your existing roster file.',
       tag: null,
     },
     {
       id: 'api',
       title: 'Sync from your HRIS',
-      detail: 'Connect Workday, BambooHR, Rippling, or another HRIS via API.',
+      detail: 'Connect Workday, BambooHR, or Rippling.',
       tag: null,
     },
     {
       id: 'sample',
-      title: 'Use sample demo data',
-      detail: "Start with a seeded roster so you can explore right away.",
+      title: 'Use sample data',
+      detail: 'Explore with a pre-loaded roster.',
       tag: 'Fastest',
     },
   ]
@@ -551,10 +551,10 @@ function ImportPickDrawer({ companyName, onPick }) {
         </span>
         <div className="ob-drawer-text">
           <div className="ob-drawer-title">
-            How should I bring your team into {companyName || 'your Teambridge'}?
+            Bring in your team
           </div>
           <div className="ob-drawer-sub">
-            Pick one — I'll wire it up and finish provisioning your workspace.
+            Pick one to finish setup.
           </div>
         </div>
       </div>
@@ -619,7 +619,7 @@ function WireframeLoop() {
           </div>
         </div>
       </div>
-      <p className="ob-wf-caption">Your account will materialize here.</p>
+      <p className="ob-wf-caption">Your dashboard will appear here.</p>
     </div>
   )
 }
