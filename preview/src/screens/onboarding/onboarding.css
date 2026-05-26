@@ -130,25 +130,26 @@
  * chrome. */
 
 .ob-chat-inner {
-  /* Override Act1's .prompt-panel-inner padding + max-width so the
-   * compose footer + drawer slot sit flush against the bottom of
-   * the column. Head + scroll + drawer/compose stack as a contained
-   * flex column inside the chat. */
+  /* CSS Grid for the chat column — auto for head, 1fr for the scroll
+   * area, auto for the drawer/compose footer. This is the bulletproof
+   * way to make the middle row scroll inside a fixed-height container;
+   * nested flex was failing because of how flex-basis resolves through
+   * act1's .prompt-panel-inner inheritance.
+   *
+   * Overrides act1's flex layout + max-width 720px + gap so the chat
+   * column reads as one contained shell. */
   padding: 0;
-  max-width: none;       /* drop act1.css's 720px cap */
-  min-height: 0;          /* let .ob-chat-scroll actually shrink and overflow */
+  max-width: none;
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 0;                 /* override act1's gap so children sit flush */
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0;
 }
 .ob-chat-head {
-  flex-shrink: 0;
   padding: var(--space-4) var(--space-6) var(--space-2);
 }
 .ob-chat-scroll {
-  flex: 1 1 0;            /* explicit basis so flex math works on all browsers */
-  min-height: 0;          /* allow shrinking below content height = enables overflow */
+  min-height: 0;          /* lets the grid row's 1fr actually shrink */
   overflow-y: auto;
   padding: var(--space-2) var(--space-6) var(--space-4);
 }
@@ -2560,3 +2561,24 @@
   color: var(--color-content-tertiary);
   line-height: var(--line-height-loose);
 }
+
+/* Review step body — used by InsightsStep/AgentsStep/PoliciesStep/
+ * DataStep cards. Slightly more padding than the ConfirmCard sections
+ * since these are full-screen focused steps. */
+.cm-step-body {
+  padding: var(--space-4) var(--space-5);
+}
+.cm-back {
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--color-content-secondary);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+.cm-back:hover { background: var(--color-bg-secondary); color: var(--color-content-primary); }

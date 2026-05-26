@@ -5,7 +5,7 @@ import { INDUSTRIES } from '../IndustrySelector.jsx'
 import DashboardShell, { DEFAULT_NAV_GROUPS, DEFAULT_NAV_BOTTOM } from '../shell/DashboardShell.jsx'
 import OnboardingChat from './OnboardingChat.jsx'
 import ConfigCard, { ALL_FIELDS } from './ConfigCard.jsx'
-import ConfirmCard from './ConfirmCard.jsx'
+import { InsightsStep, AgentsStep, PoliciesStep, DataStep } from './ReviewSteps.jsx'
 import BuildProgressCard from './BuildProgressCard.jsx'
 import { deriveConfig } from './urlMatcher.js'
 import '../act1.css'
@@ -110,7 +110,7 @@ function buildLockedNav() {
 }
 
 export default function OnboardingFlow({ onExit, onComplete }) {
-  const [state, setState] = useState('intake')              // 'intake' | 'research' | 'confirm' | 'launching'
+  const [state, setState] = useState('intake')              // 'intake' | 'research' | 'insights' | 'agents' | 'policies' | 'data' | 'launching'
   const [intakeMode, setIntakeMode] = useState('url')       // 'url' | 'free-text'
   const [intakeDraft, setIntakeDraft] = useState('')
   const [config, setConfig] = useState(null)
@@ -245,12 +245,12 @@ export default function OnboardingFlow({ onExit, onComplete }) {
       researchTimersRef.current.push(timer)
     }
 
-    // After all reveals + a settling beat, push the confirm message
-    // and transition to the confirm step.
+    // After all reveals + a settling beat, push the insights message
+    // and transition to the first review step.
     const finalTimer = setTimeout(() => {
       pushMessage({ from: 'nova', text:
-        `Here's everything I set up for ${derived.companyName}. Edit anything on the right, or just hit Launch.` })
-      setState('confirm')
+        `Got a clear read on ${derived.companyName}. I'll walk you through what I set up on the right.` })
+      setState('insights')
     }, cumulative + 700)
     researchTimersRef.current.push(finalTimer)
   }
@@ -260,12 +260,27 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     researchTimersRef.current = []
   }, [])
 
-  /* ── Confirm → Launching → Done ── */
+  /* ── Review step transitions ──
+   * Each Continue advances state. Back goes one step earlier.
+   * Final step (DataStep) calls onLaunch which transitions to
+   * 'launching' (the BuildProgressCard animation). */
+  const handleInsightsContinue = useCallback(() => {
+    pushMessage({ from: 'nova', text: "Here are the agents I'm activating — toggle any on or off.", instant: true })
+    setState('agents')
+  }, [pushMessage])
+  const handleAgentsContinue = useCallback(() => {
+    pushMessage({ from: 'nova', text: "And here are the labor policies I'd apply — based on your states.", instant: true })
+    setState('policies')
+  }, [pushMessage])
+  const handlePoliciesContinue = useCallback((picked) => {
+    setPolicies(picked || [])
+    pushMessage({ from: 'nova', text: "Last step — how should I bring your team's data in?", instant: true })
+    setState('data')
+  }, [pushMessage])
   const handleLaunch = useCallback((picks) => {
     setImportMethod(picks?.importMethod || 'sample')
-    setPolicies(picks?.policies || [])
     pushMessage({ from: 'nova', text:
-      `Launching your account. This takes about 30 seconds — there's real configuration work happening behind the scenes.`, instant: true })
+      `Launching your account. About 30 seconds — there's real configuration work happening behind the scenes.`, instant: true })
     setState('launching')
     try {
       sessionStorage.setItem('tb:build-config', JSON.stringify(config))
@@ -284,7 +299,8 @@ export default function OnboardingFlow({ onExit, onComplete }) {
   const composerPlaceholder = (() => {
     if (state === 'intake')    return 'Use the form below'
     if (state === 'research')  return 'Setting up…'
-    if (state === 'confirm')   return 'Review on the right →'
+    if (state === 'insights' || state === 'agents' || state === 'policies' || state === 'data')
+                                return 'Continue on the right →'
     if (state === 'launching') return 'Launching…'
     return 'Type a message…'
   })()
@@ -363,22 +379,48 @@ export default function OnboardingFlow({ onExit, onComplete }) {
       </div>
     )
   } else {
-    // confirm
+    // insights / agents / policies / data — each is its own focused card
+    let stepCard = null
+    if (state === 'insights') {
+      stepCard = <InsightsStep config={config} onChange={setConfig} onContinue={handleInsightsContinue} />
+    } else if (state === 'agents') {
+      stepCard = (
+        <AgentsStep
+          config={config}
+          onChange={setConfig}
+          onBack={() => setState('insights')}
+          onContinue={handleAgentsContinue}
+        />
+      )
+    } else if (state === 'policies') {
+      stepCard = (
+        <PoliciesStep
+          config={config}
+          onBack={() => setState('agents')}
+          onContinue={handlePoliciesContinue}
+        />
+      )
+    } else {
+      stepCard = (
+        <DataStep
+          config={config}
+          onBack={() => setState('policies')}
+          onLaunch={handleLaunch}
+        />
+      )
+    }
+    const headTitle = state === 'insights' ? 'Review your account'
+                    : state === 'agents'   ? 'Agents'
+                    : state === 'policies' ? 'Labor policies'
+                    :                        'Starting data'
+    const stepNum = state === 'insights' ? 1 : state === 'agents' ? 2 : state === 'policies' ? 3 : 4
     content = (
       <div className="ob-right">
         <header className="ob-right-head">
-          <h1 className="ob-right-title">Your account</h1>
-          <p className="ob-right-sub">
-            Everything below is defaulted — change anything, or just launch.
-          </p>
+          <h1 className="ob-right-title">{headTitle}</h1>
+          <p className="ob-right-sub">Step {stepNum} of 4 · Continue when ready.</p>
         </header>
-        <div className="ob-right-body">
-          <ConfirmCard
-            config={config}
-            onChange={setConfig}
-            onLaunch={handleLaunch}
-          />
-        </div>
+        <div className="ob-right-body">{stepCard}</div>
       </div>
     )
   }
