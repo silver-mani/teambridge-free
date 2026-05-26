@@ -3,106 +3,38 @@ import { TeambridgeAIIcon } from '../../../../src/components/icons/TeambridgeAII
 import { ChevronLeftIcon } from '../../../../src/components/icons/ChevronLeftIcon.tsx'
 import { Bell01Icon } from '../../../../src/components/icons/Bell01Icon.tsx'
 import { ArrowNarrowRightIcon } from '../../../../src/components/icons/ArrowNarrowRightIcon.tsx'
+import { ArrowNarrowUpIcon } from '../../../../src/components/icons/ArrowNarrowUpIcon.tsx'
 import { CheckCircleIcon } from '../../../../src/components/icons/CheckCircleIcon.tsx'
 import { INDUSTRIES } from '../IndustrySelector.jsx'
 import DashboardShell, { DEFAULT_NAV_GROUPS, DEFAULT_NAV_BOTTOM } from '../shell/DashboardShell.jsx'
 import OnboardingChat from './OnboardingChat.jsx'
 import ConfigCard, { ALL_FIELDS } from './ConfigCard.jsx'
-import BuildContent from './BuildContent.jsx'
-import BuildActivityFeed from './BuildActivityFeed.jsx'
-import { deriveConfig, headcountRangeFor } from './urlMatcher.js'
+import { deriveConfig } from './urlMatcher.js'
 import '../act1.css'
 import './onboarding.css'
 
 /* ──────────────────────────────────────────────────────────────────────
  * OnboardingFlow — `#/build` route.
  *
- * One consistent layout throughout: DashboardShell with LeftNav (left)
- * · Nova chat (middle) · Right pane content · Activity feed dock
- * (right, collapsed during onboarding).
+ * Three-state machine; consistent shell throughout (LeftNav · Nova chat ·
+ * right-side UI · activity-drawer overlay).
  *
- * State machine — only changes WHAT renders in the chat history and
- * right pane, not where things live:
+ *   intake    Nova greets in chat. The URL is captured via a Claude-
+ *             style bottom drawer inside the chat (compose disabled).
+ *             Right pane shows an animated wireframe loop indicating
+ *             where the dashboard will appear.
+ *   research  Nova posts a single research bubble that updates with a
+ *             checklist over ~5s. Right pane's ConfigCard reveals one
+ *             field at a time. Compose disabled.
+ *   review    Nova asks for confirmation in chat. Right pane's
+ *             ConfigCard is fully editable (no buttons there — passive
+ *             preview). The bottom drawer asks for work email and
+ *             surfaces the Build CTA.
  *
- *   intake    Nova asks for the URL via the chat compose bar; right
- *             pane shows an Intake hero.
- *   research  Nova posts a self-updating research bubble (checklist
- *             that fills in over ~5s); right pane's ConfigCard reveals
- *             one field at a time as Nova "discovers" it.
- *   review    Nova asks the operator to confirm; right pane's
- *             ConfigCard becomes fully editable with a Confirm CTA.
- *   live      Nova's chat is open-ended; right pane shows BuildContent
- *             surfaces (Overview/Schedule/People/...); LeftNav unlocks;
- *             activity feed populates.
+ * Once confirmed → onComplete(config) hands off to main.jsx which
+ * routes to `#/<industry>` for the existing Act1 demo experience.
+ * The full live dashboard lives there, not inside the build flow.
  * ────────────────────────────────────────────────────────────────────── */
-
-const RESEARCH_STEPS = (config) => [
-  { id: 's1', text: `Reading ${config.url || 'your description'}…`,
-    done: `Read ${config.url || 'your description'}.`,
-    field: null, delay: 600 },
-  { id: 's2', text: 'Identifying your industry…',
-    done: `Industry: ${(INDUSTRIES.find(i => i.id === config.industry)?.name) || config.industry}.`,
-    field: 'industry', delay: 800 },
-  { id: 's3', text: 'Estimating your team size…',
-    done: `Team: ~${config.headcount?.toLocaleString()} people.`,
-    field: 'headcount', delay: 700 },
-  { id: 's4', text: 'Mapping your locations…',
-    done: `Found ${config.locations?.length ?? 0} site${(config.locations?.length ?? 0) === 1 ? '' : 's'}.`,
-    field: 'locations', delay: 900 },
-  { id: 's5', text: 'Drafting your role list…',
-    done: `${config.roles?.length ?? 0} role types identified.`,
-    field: 'roles', delay: 700 },
-  { id: 's6', text: 'Recommending your first agents…',
-    done: `${config.agents?.length ?? 0} agents ready to activate.`,
-    field: 'agents', delay: 800 },
-]
-
-/* Convert a confirmed config into the answers shape that BuildContent
- * + BuildActivityFeed already understand. */
-function configToAnswers(config) {
-  return {
-    firstName:     '',
-    company:       config.companyName,
-    industry:      config.industry,
-    teamSize:      config.headcountRange || headcountRangeFor(config.headcount || 0),
-    locationModel: locationModelFor(config.locations),
-    pains:         config.agents || [],
-    connectors:    config.suggestedConnectors || [],
-    rosterChoice:  'hris',
-    roles:         config.roles || [],
-  }
-}
-function locationModelFor(locations = []) {
-  if (locations.length <= 1) return 'single'
-  if (locations.length <= 3) return 'multi-local'
-  return 'multi-regional'
-}
-
-const FOCUS_TO_VIEW = {
-  overview: 'overview', people: 'people', schedule: 'schedule',
-  agents: 'workflows', integrations: 'settings',
-}
-
-/* Lock every nav item during onboarding — the operator can't
- * meaningfully click into them until the dashboard is live. */
-function buildLockedNav() {
-  const apply = group => ({
-    ...group,
-    items: group.items.map(it => ({ ...it, locked: true })),
-  })
-  return {
-    navGroups: DEFAULT_NAV_GROUPS.map(apply),
-    navBottom: apply(DEFAULT_NAV_BOTTOM),
-  }
-}
-
-function buildLiveNav() {
-  const clone = group => ({ ...group, items: group.items.map(it => ({ ...it })) })
-  return {
-    navGroups: DEFAULT_NAV_GROUPS.map(clone),
-    navBottom: clone(DEFAULT_NAV_BOTTOM),
-  }
-}
 
 const PERSONAL_EMAIL_DOMAINS = new Set([
   'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com',
@@ -115,86 +47,98 @@ function isWorkEmail(email) {
   return !PERSONAL_EMAIL_DOMAINS.has(domain)
 }
 
+const RESEARCH_STEPS = (config) => [
+  { text: `Reading ${config.url || 'your description'}…`,
+    done: `Read ${config.url || 'your description'}.`,
+    field: null, delay: 600 },
+  { text: 'Identifying your industry…',
+    done: `Industry: ${(INDUSTRIES.find(i => i.id === config.industry)?.name) || config.industry}.`,
+    field: 'industry', delay: 800 },
+  { text: 'Estimating your team size…',
+    done: `Team: ~${config.headcount?.toLocaleString()} people.`,
+    field: 'headcount', delay: 700 },
+  { text: 'Mapping your locations…',
+    done: `Found ${config.locations?.length ?? 0} site${(config.locations?.length ?? 0) === 1 ? '' : 's'}.`,
+    field: 'locations', delay: 900 },
+  { text: 'Drafting your role list…',
+    done: `${config.roles?.length ?? 0} role types identified.`,
+    field: 'roles', delay: 700 },
+  { text: 'Recommending your first agents…',
+    done: `${config.agents?.length ?? 0} agents ready to activate.`,
+    field: 'agents', delay: 800 },
+]
+
+/* Lock all nav items during onboarding — the operator can't navigate
+ * into anything until the dashboard hand-off. */
+function buildLockedNav() {
+  const apply = group => ({
+    ...group,
+    items: group.items.map(it => ({ ...it, locked: true })),
+  })
+  return {
+    navGroups: DEFAULT_NAV_GROUPS.map(apply),
+    navBottom: apply(DEFAULT_NAV_BOTTOM),
+  }
+}
+
 export default function OnboardingFlow({ onExit, onComplete }) {
-  // State machine
-  const [state, setState] = useState('intake')            // 'intake' | 'research' | 'review' | 'live'
+  const [state, setState] = useState('intake')            // 'intake' | 'research' | 'review'
   const [intakeMode, setIntakeMode] = useState('url')     // 'url' | 'free-text'
+  const [intakeDraft, setIntakeDraft] = useState('')
   const [config, setConfig] = useState(null)
   const [revealedFields, setRevealedFields] = useState(new Set(['summary']))
-  const [researchSteps, setResearchSteps] = useState([])  // for the live-updating Nova bubble
-  const [composerDisabled, setComposerDisabled] = useState(false)
 
-  // Review-state confirm drawer
+  // Review drawer
   const [confirmEmail, setConfirmEmail] = useState('')
   const [confirmTouched, setConfirmTouched] = useState(false)
 
-  // Chat message history. Nova's research bubble is identified by id
-  // so we can update it in place as the checklist progresses.
+  // Activity drawer
+  const [activityOpen, setActivityOpen] = useState(false)
+
+  // Chat
   const [messages, setMessages] = useState(() => [
     { id: 'm0', from: 'nova', text:
-      "Hi! I'm Nova, your Teambridge AI. Drop in your company website below and I'll set up your account from what I learn about you — industry, headcount, locations, agents." },
+      "Hi! I'm Nova, your Teambridge AI. Drop in your company's website below and I'll set up your account from what I learn about you — industry, headcount, locations, and the agents you'll need from day one." },
   ])
-
   const researchTimersRef = useRef([])
-
-  // Dashboard view + activity drawer
-  const [view, setView] = useState('overview')
-  const [viewPinned, setViewPinned] = useState(false)
-  const [activityOpen, setActivityOpen] = useState(false)
 
   const pushMessage = useCallback((m) => {
     setMessages(prev => [...prev, { id: `m${prev.length}`, ...m }])
   }, [])
 
-  /* ── Intake ── */
-  const handleUserMessage = useCallback((text) => {
-    // Push the user's message immediately.
+  /* ── Intake submit (from the chat-side IntakeDrawer) ── */
+  const handleIntakeSubmit = useCallback((rawInput) => {
+    const text = rawInput.trim()
+    if (!text) return
+
     pushMessage({ from: 'user', text })
 
-    if (state === 'intake') {
-      const derived = deriveConfig(text, { fromFreeText: intakeMode === 'free-text' })
-      if (!derived) {
-        // No match — switch to free-text and ask for a description.
-        setIntakeMode('free-text')
-        pushMessage({ from: 'nova', text:
-          "I couldn't quite place that site. Mind giving me a two-line description of what your team does? I'll take it from there." })
-        return
-      }
-
-      setConfig(derived)
-      // Disable composer during the research animation.
-      setComposerDisabled(true)
-      kickoffResearch(derived)
-      setState('research')
-      return
-    }
-
-    if (state === 'review' || state === 'live') {
-      // For now we just acknowledge — production wires this into a real
-      // Nova model. Free-form chat doesn't change the config.
+    const derived = deriveConfig(text, { fromFreeText: intakeMode === 'free-text' })
+    if (!derived) {
+      setIntakeMode('free-text')
+      setIntakeDraft('')
       pushMessage({ from: 'nova', text:
-        state === 'review'
-          ? "Thanks for the note — for this demo, tap the field on the right to edit, or hit Confirm when you're happy."
-          : "Got it. (Free-form Nova chat is wired up in the real product — for the demo, take a look around the dashboard!)" })
+        "I couldn't quite place that site. Mind giving me a two-line description of what your team does? I'll take it from there." })
       return
     }
-  }, [state, intakeMode, pushMessage]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* Kick off the time-paced research animation. Posts a single Nova
-   * "research" bubble whose `steps` array updates in place as each
-   * delay fires. Right pane's ConfigCard reveals matching fields. */
+    setConfig(derived)
+    setIntakeDraft('')
+    kickoffResearch(derived)
+    setState('research')
+  }, [intakeMode, pushMessage]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Kick off the research animation. Posts a single Nova "research"
+   * bubble whose `steps` array updates in place as each delay fires.
+   * Right pane's ConfigCard reveals matching fields. */
   function kickoffResearch(derived) {
     const steps = RESEARCH_STEPS(derived)
-
-    // Initial bubble — first step active, rest pending.
     const initialSteps = steps.map((s, i) => ({
       text: s.text,
       status: i === 0 ? 'active' : 'pending',
     }))
-    setResearchSteps(initialSteps)
     setRevealedFields(new Set(['summary']))
 
-    // Insert a placeholder research bubble.
     const researchId = `r-${Date.now()}`
     setMessages(prev => [
       ...prev,
@@ -212,26 +156,22 @@ export default function OnboardingFlow({ onExit, onComplete }) {
           if (step.field) next.add(step.field)
           return next
         })
-        setResearchSteps(prevSteps => {
-          const next = prevSteps.map((ps, idx) => {
+        setMessages(msgs => msgs.map(m => {
+          if (m.id !== researchId) return m
+          const nextSteps = m.steps.map((ps, idx) => {
             if (idx < i)  return { ...ps, status: 'done' }
             if (idx === i) return { ...ps, status: 'done', text: step.done }
             if (idx === i + 1) return { ...ps, status: 'active' }
             return ps
           })
-          // Sync the research bubble in messages with the new steps.
-          setMessages(msgs => msgs.map(m => m.id === researchId ? { ...m, steps: next } : m))
-          return next
-        })
+          return { ...m, steps: nextSteps }
+        }))
       }, cumulative)
     })
 
-    // After all steps + a beat, post the "review" message and enable
-    // the composer with a review-mode placeholder.
     const finalTimer = setTimeout(() => {
       pushMessage({ from: 'nova', text:
-        `Here's what I set up for ${derived.companyName}. Take a look on the right — tap any field to edit, then hit Confirm when it looks right.` })
-      setComposerDisabled(false)
+        `Here's what I set up for ${derived.companyName}. Take a look on the right — tap any field to edit, then drop your work email below and I'll build it out.` })
       setState('review')
     }, cumulative + 700)
     researchTimersRef.current.push(finalTimer)
@@ -250,8 +190,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
       setConfirmTouched(true)
       return
     }
-    // Mirror to the existing capture-lead API (Convex + HubSpot) so this
-    // signup lands in the CRM same as the old lead gate.
+    // Mirror to capture-lead so the signup lands in Convex + HubSpot.
     try {
       fetch('/api/capture-lead', {
         method: 'POST',
@@ -285,19 +224,21 @@ export default function OnboardingFlow({ onExit, onComplete }) {
       sessionStorage.setItem('tb:build-config', JSON.stringify(config))
     } catch { /* ignore */ }
 
-    setState('live')
-    pushMessage({ from: 'nova', text:
-      `All set. Your Teambridge for ${config?.companyName} is live — take a look around. I'll keep working in the background, and I'm here whenever you need me.` })
-  }, [config, confirmEmail, pushMessage])
+    // Hand off to main.jsx which routes to `#/<industry>` for the
+    // existing demo experience. No "live" state here — the full
+    // dashboard lives in the industry route.
+    onComplete?.(config)
+  }, [config, confirmEmail, onComplete])
 
   const handleStartOver = useCallback(() => {
     researchTimersRef.current.forEach(clearTimeout)
     researchTimersRef.current = []
     setConfig(null)
     setRevealedFields(new Set(['summary']))
-    setResearchSteps([])
     setIntakeMode('url')
-    setComposerDisabled(false)
+    setIntakeDraft('')
+    setConfirmEmail('')
+    setConfirmTouched(false)
     setState('intake')
     setMessages([
       { id: 'm0', from: 'nova', text:
@@ -305,37 +246,43 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     ])
   }, [])
 
-  /* ── Live actions ── */
-  const handleSelectView = (v) => {
-    setView(v); setViewPinned(true)
-  }
-  const handleOpenDashboard = useCallback(() => {
-    onComplete?.(config)
-  }, [config, onComplete])
-
-  /* ── Render pieces ── */
+  /* ── Render ── */
   const industry = state === 'intake' ? null : (config ? INDUSTRIES.find(i => i.id === config.industry) : null)
-  const { navGroups, navBottom } = state === 'live' ? buildLiveNav() : buildLockedNav()
-  const liveView = viewPinned ? view : (FOCUS_TO_VIEW[view] || view || 'overview')
+  const { navGroups, navBottom } = buildLockedNav()
 
   const composerPlaceholder = (() => {
-    if (state === 'intake' && intakeMode === 'url')       return 'yourcompany.com'
-    if (state === 'intake' && intakeMode === 'free-text') return 'e.g. We run 3 senior-living communities across LA.'
+    if (state === 'intake')   return "Tap below to share your company's URL…"
     if (state === 'research') return 'Nova is working…'
     if (state === 'review')   return 'Add a note, or tap fields on the right to edit'
-    return 'Ask Nova anything…'
+    return 'Type a message…'
   })()
+  const composerDisabled = state === 'intake' || state === 'research'
 
-  const drawer = state === 'review' ? (
-    <ConfirmDrawer
-      companyName={config?.companyName}
-      email={confirmEmail}
-      onEmailChange={setConfirmEmail}
-      touched={confirmTouched}
-      onSubmit={handleConfirm}
-      onStartOver={handleStartOver}
-    />
-  ) : null
+  const drawer = (() => {
+    if (state === 'intake') {
+      return (
+        <IntakeDrawer
+          mode={intakeMode}
+          value={intakeDraft}
+          onChange={setIntakeDraft}
+          onSubmit={handleIntakeSubmit}
+        />
+      )
+    }
+    if (state === 'review') {
+      return (
+        <ConfirmDrawer
+          companyName={config?.companyName}
+          email={confirmEmail}
+          onEmailChange={setConfirmEmail}
+          touched={confirmTouched}
+          onSubmit={handleConfirm}
+          onStartOver={handleStartOver}
+        />
+      )
+    }
+    return null
+  })()
 
   const chat = (
     <OnboardingChat
@@ -343,53 +290,62 @@ export default function OnboardingFlow({ onExit, onComplete }) {
       composerPlaceholder={composerPlaceholder}
       composerDisabled={composerDisabled}
       drawer={drawer}
-      onSend={handleUserMessage}
+      onSend={() => { /* compose disabled across the build flow */ }}
     />
   )
 
   let content
   if (state === 'intake') {
-    content = <IntakeHero />
+    content = (
+      <div className="ob-right ob-right--intake">
+        <header className="ob-right-head">
+          <h1 className="ob-right-title">Your Teambridge</h1>
+          <p className="ob-right-sub">
+            Your dashboard will appear here as Nova learns about you.
+          </p>
+        </header>
+        <div className="ob-right-body">
+          <WireframeLoop />
+        </div>
+      </div>
+    )
   } else if (state === 'research') {
     content = (
-      <RightPaneFrame title="Workspace forming" subtitle="Watch your account come together as Nova works.">
-        <ConfigCard
-          config={config}
-          editable={false}
-          visibleFields={ALL_FIELDS.filter(f => revealedFields.has(f))}
-        />
-      </RightPaneFrame>
-    )
-  } else if (state === 'review') {
-    content = (
-      <RightPaneFrame
-        title="Your account"
-        subtitle={config?.url ? `Derived from ${config.url}. Tap any field to edit.` : 'Tap any field to edit.'}
-      >
-        <ConfigCard
-          config={config}
-          editable={true}
-          onChange={setConfig}
-          visibleFields={ALL_FIELDS}
-        />
-      </RightPaneFrame>
+      <div className="ob-right">
+        <header className="ob-right-head">
+          <h1 className="ob-right-title">Workspace forming</h1>
+          <p className="ob-right-sub">Watch your account come together as Nova works.</p>
+        </header>
+        <div className="ob-right-body">
+          <ConfigCard
+            config={config}
+            editable={false}
+            visibleFields={ALL_FIELDS.filter(f => revealedFields.has(f))}
+          />
+        </div>
+      </div>
     )
   } else {
-    // live
-    const answers = configToAnswers(config)
+    // review
     content = (
-      <div className="ob-live-content">
-        <BuildContent view={liveView} answers={answers} mode="full" />
+      <div className="ob-right">
+        <header className="ob-right-head">
+          <h1 className="ob-right-title">Your account</h1>
+          <p className="ob-right-sub">
+            {config?.url ? `Derived from ${config.url}. Tap any field to edit.` : 'Tap any field to edit.'}
+          </p>
+        </header>
+        <div className="ob-right-body">
+          <ConfigCard
+            config={config}
+            editable={true}
+            onChange={setConfig}
+            visibleFields={ALL_FIELDS}
+          />
+        </div>
       </div>
     )
   }
-
-  // Live activity feed gets the BuildActivityFeed contents; onboarding
-  // states get an empty placeholder so the dock has something to slide
-  // into when the operator clicks the bell.
-  const activityFeed = state === 'live'
-    ? <BuildActivityFeed answers={configToAnswers(config)} />
-    : <OnboardingActivityPlaceholder />
 
   return (
     <div className="ob-root">
@@ -414,78 +370,112 @@ export default function OnboardingFlow({ onExit, onComplete }) {
         </button>
       </header>
 
-      <DashboardShell
-        mode="full"
-        view={state === 'live' ? liveView : 'overview'}
-        industryLabel={industry?.name ?? 'Workspace'}
-        navGroups={navGroups}
-        navBottom={navBottom}
-        onBrand={onExit}
-        onSelectView={handleSelectView}
-        chat={chat}
-        content={content}
-        showActivityFeed={false}  /* feed lives in the drawer overlay only */
-      />
+      <div className="ob-shell-frame">
+        <DashboardShell
+          mode="full"
+          view="overview"
+          industryLabel={industry?.name ?? 'Workspace'}
+          navGroups={navGroups}
+          navBottom={navBottom}
+          onBrand={onExit}
+          onSelectView={() => { /* locked */ }}
+          chat={chat}
+          content={content}
+          showActivityFeed={false}
+        />
 
-      {/* Activity feed drawer — slides in from the right when opened. */}
-      <div
-        className={`activity-drawer-scrim ${activityOpen ? 'is-open' : ''}`}
-        aria-hidden="true"
-        onClick={() => setActivityOpen(false)}
-      />
-      <aside
-        className={`activity-drawer-overlay ${activityOpen ? 'is-open' : ''}`}
-        aria-hidden={!activityOpen}
-      >
-        {activityFeed}
-      </aside>
-    </div>
-  )
-}
-
-/* ─── Right-pane chrome shared across phases ─────────────────────── */
-
-function RightPaneFrame({ title, subtitle, children }) {
-  return (
-    <div className="ob-right">
-      <header className="ob-right-head">
-        <h1 className="ob-right-title">{title}</h1>
-        {subtitle && <p className="ob-right-sub">{subtitle}</p>}
-      </header>
-      <div className="ob-right-body">{children}</div>
-    </div>
-  )
-}
-
-function IntakeHero() {
-  return (
-    <div className="ob-right ob-right--intake">
-      <div className="ob-intake-hero">
-        <span className="ob-intake-hero-mark" aria-hidden="true">
-          <TeambridgeAIIcon size={32} />
-        </span>
-        <h1 className="ob-intake-hero-title">
-          Your Teambridge will appear here.
-        </h1>
-        <p className="ob-intake-hero-sub">
-          Drop your company website into the chat on the left. Nova will derive your industry,
-          headcount, locations, and agents — and have your dashboard built before you finish your coffee.
-        </p>
-        <div className="ob-intake-examples">
-          <span className="ob-intake-examples-label">Try one:</span>
-          {['hollywoodparkca.com', 'dignityhealth.org', 'marriott.com'].map(url => (
-            <code key={url} className="ob-intake-example-chip">{url}</code>
-          ))}
-        </div>
+        {/* Activity drawer — overlays the shell. Hidden until toggled. */}
+        <div
+          className={`activity-drawer-scrim ${activityOpen ? 'is-open' : ''}`}
+          aria-hidden="true"
+          onClick={() => setActivityOpen(false)}
+        />
+        <aside
+          className={`activity-drawer-overlay ${activityOpen ? 'is-open' : ''}`}
+          aria-hidden={!activityOpen}
+        >
+          <OnboardingActivityPlaceholder />
+        </aside>
       </div>
     </div>
   )
 }
 
-/* Bottom drawer in the chat — surfaced during the review state.
- * Nova asks one last thing (work email) before building, with a
- * primary "Build my Teambridge" action. No buttons live in the right
- * pane — all progression happens here. */
+/* ─── Intake drawer — Claude-style bottom drawer for the URL prompt ─ */
+function IntakeDrawer({ mode, value, onChange, onSubmit }) {
+  const ref = useRef(null)
+  useEffect(() => { ref.current?.focus() }, [mode])
+
+  const submit = (e) => {
+    e?.preventDefault?.()
+    if (!value.trim()) return
+    onSubmit(value)
+  }
+
+  const isUrl = mode === 'url'
+
+  return (
+    <div className="ob-drawer" role="group" aria-label={isUrl ? 'Company URL' : 'Describe your team'}>
+      <div className="ob-drawer-head">
+        <span className="ob-drawer-mark" aria-hidden="true">
+          <TeambridgeAIIcon size={14} />
+        </span>
+        <div className="ob-drawer-text">
+          <div className="ob-drawer-title">
+            {isUrl ? "Where should I start?" : "Tell me about your team."}
+          </div>
+          <div className="ob-drawer-sub">
+            {isUrl
+              ? "Drop in your company website — I'll figure out the rest."
+              : "A two-line description is plenty for me to set things up."}
+          </div>
+        </div>
+      </div>
+
+      <form className="ob-drawer-url-form" onSubmit={submit}>
+        <div className="ob-drawer-url-field">
+          {isUrl && <span className="ob-drawer-url-prefix">https://</span>}
+          <input
+            ref={ref}
+            type="text"
+            className="ob-drawer-url-input"
+            value={value}
+            onChange={e => onChange(e.target.value)}
+            placeholder={isUrl ? 'yourcompany.com' : 'e.g. We run 3 senior-living communities across LA.'}
+            autoComplete="off"
+            spellCheck={!isUrl}
+          />
+          <button
+            type="submit"
+            className="ob-drawer-url-submit"
+            disabled={!value.trim()}
+            aria-label="Continue"
+          >
+            <ArrowNarrowUpIcon size={16} />
+          </button>
+        </div>
+      </form>
+
+      {isUrl && (
+        <div className="ob-drawer-examples">
+          <span className="ob-drawer-examples-label">Try one:</span>
+          {['hollywoodparkca.com', 'dignityhealth.org', 'marriott.com'].map(url => (
+            <button
+              key={url}
+              type="button"
+              className="ob-drawer-example"
+              onClick={() => onSubmit(url)}
+            >
+              {url}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ─── Confirm drawer — review-state bottom drawer for the build CTA ─ */
 function ConfirmDrawer({ companyName, email, onEmailChange, touched, onSubmit, onStartOver }) {
   const valid = isWorkEmail(email)
   const showError = touched && !valid && email.trim().length > 0
@@ -535,6 +525,47 @@ function ConfirmDrawer({ companyName, email, onEmailChange, touched, onSubmit, o
           <ArrowNarrowRightIcon size={14} />
         </button>
       </div>
+    </div>
+  )
+}
+
+/* ─── Wireframe loop — animated placeholder for the right pane during
+ *     intake. Pulses a faint mockup of the dashboard to indicate where
+ *     the operator's account will appear. */
+function WireframeLoop() {
+  const cells = Array.from({ length: 35 }, (_, i) => i)
+  return (
+    <div className="ob-wf" aria-hidden="true">
+      <div className="ob-wf-app">
+        <div className="ob-wf-app-head">
+          <div className="ob-wf-pill ob-wf-pill--lg" />
+          <div className="ob-wf-pill ob-wf-pill--sm" />
+        </div>
+        <div className="ob-wf-stats">
+          {[0, 1, 2, 3].map(i => (
+            <div key={i} className="ob-wf-tile" style={{ animationDelay: `${i * 120}ms` }}>
+              <div className="ob-wf-tile-label" />
+              <div className="ob-wf-tile-value" />
+              <div className="ob-wf-tile-sub" />
+            </div>
+          ))}
+        </div>
+        <div className="ob-wf-section">
+          <div className="ob-wf-section-head">
+            <div className="ob-wf-pill ob-wf-pill--sm" />
+          </div>
+          <div className="ob-wf-grid">
+            {cells.map(i => (
+              <div
+                key={i}
+                className="ob-wf-cell"
+                style={{ animationDelay: `${(i % 7) * 80 + Math.floor(i / 7) * 120}ms` }}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+      <p className="ob-wf-caption">Your Teambridge will materialize here.</p>
     </div>
   )
 }

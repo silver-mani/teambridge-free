@@ -336,7 +336,7 @@
   flex-shrink: 0;
   padding: var(--space-5) var(--space-6) var(--space-4);
   border-bottom: 1px solid var(--color-border-opaque);
-  background: var(--color-bg-primary);
+  background: transparent;  /* read as one surface with the body */
 }
 .ob-right-title {
   margin: 0;
@@ -362,64 +362,92 @@
   gap: var(--space-5);
 }
 
-/* Intake hero — what's shown in the right pane before any URL is given. */
-.ob-right--intake {
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-8);
-  background: var(--color-bg-primary);
-}
-.ob-intake-hero {
-  max-width: 480px;
-  text-align: center;
+/* ─────────────────────── Wireframe loop (intake state) ──────────── */
+/* Faint, animated mockup of the future dashboard shown in the right
+ * pane during intake. Indicates where the operator's workspace will
+ * materialize. Pulses on loop with staggered cell delays. */
+
+.ob-wf {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-3);
-  animation: ob-fade-in 360ms ease;
+  gap: var(--space-4);
+  padding: var(--space-2);
 }
-.ob-intake-hero-mark {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 72px; height: 72px;
-  border-radius: var(--radius-full);
-  background: linear-gradient(135deg, var(--ai-grad-start, #8C4FE2) 0%, var(--ai-grad-mid, #446CFF) 55%, var(--ai-grad-end, #1EDFDE) 100%);
-  color: #fff;
-  margin-bottom: var(--space-3);
-}
-.ob-intake-hero-title {
-  margin: 0;
-  font-size: var(--text-3xl);
-  font-weight: var(--font-weight-regular);
-  letter-spacing: -0.02em;
-  line-height: var(--line-height-snug);
-  color: var(--color-content-primary);
-}
-.ob-intake-hero-sub {
-  margin: 0;
-  font-size: var(--text-base);
-  line-height: var(--line-height-loose);
-  color: var(--color-content-tertiary);
-}
-.ob-intake-examples {
-  margin-top: var(--space-4);
+.ob-wf-app {
+  width: 100%;
+  max-width: 640px;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-5);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-lg);
+}
+.ob-wf-app-head {
+  display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border-opaque);
+}
+.ob-wf-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-2);
 }
-.ob-intake-examples-label {
-  font-size: var(--text-xs);
-  color: var(--color-content-tertiary);
-}
-.ob-intake-example-chip {
-  padding: 4px var(--space-2);
-  background: var(--color-bg-secondary);
+.ob-wf-tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
   border: 1px solid var(--color-border-opaque);
   border-radius: var(--radius-md);
-  font-size: 12px;
-  color: var(--color-content-secondary);
-  font-family: var(--font-mono, monospace);
+  background: var(--color-bg-primary);
+  animation: ob-wf-pulse 3.2s ease-in-out infinite;
+}
+.ob-wf-tile-label, .ob-wf-tile-value, .ob-wf-tile-sub {
+  border-radius: var(--radius-full);
+  background: var(--color-bg-tertiary);
+}
+.ob-wf-tile-label { width: 50%;  height: 6px; }
+.ob-wf-tile-value { width: 70%;  height: 14px; }
+.ob-wf-tile-sub   { width: 80%;  height: 6px; opacity: 0.6; }
+
+.ob-wf-section { display: flex; flex-direction: column; gap: var(--space-2); }
+.ob-wf-section-head { display: flex; align-items: center; }
+
+.ob-wf-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+.ob-wf-cell {
+  height: 20px;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-tertiary);
+  animation: ob-wf-pulse 2.4s ease-in-out infinite;
+}
+
+.ob-wf-pill {
+  border-radius: var(--radius-full);
+  background: var(--color-bg-tertiary);
+  animation: ob-wf-pulse 3.2s ease-in-out infinite;
+}
+.ob-wf-pill--lg { width: 180px; height: 14px; }
+.ob-wf-pill--sm { width: 90px;  height: 10px; opacity: 0.7; }
+
+.ob-wf-caption {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-xs);
+  color: var(--color-content-tertiary);
+  text-align: center;
+}
+
+@keyframes ob-wf-pulse {
+  0%, 100% { opacity: 0.45; transform: translateY(0); }
+  50%      { opacity: 1;    transform: translateY(-1px); }
 }
 
 /* ─────────────────────── Chat bottom drawer (Claude-style) ─────── */
@@ -493,6 +521,78 @@
   font-size: var(--text-xs);
   color: var(--color-red-content-secondary);
 }
+
+/* Intake-drawer URL field (prefix + input + submit on one row). */
+.ob-drawer-url-form { display: block; }
+.ob-drawer-url-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-md);
+  padding: var(--space-1);
+  padding-left: var(--space-3);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+.ob-drawer-url-field:focus-within {
+  border-color: var(--color-border-selected);
+  box-shadow: 0 0 0 3px var(--color-border-opaque);
+}
+.ob-drawer-url-prefix {
+  font-size: var(--text-xs);
+  color: var(--color-content-tertiary);
+  font-family: var(--font-mono, monospace);
+  flex-shrink: 0;
+}
+.ob-drawer-url-input {
+  flex: 1;
+  background: transparent;
+  border: 0;
+  outline: none;
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--color-content-primary);
+  padding: var(--space-2) 0;
+  min-width: 0;
+}
+.ob-drawer-url-input::placeholder { color: var(--color-content-tertiary); }
+.ob-drawer-url-submit {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-inverse-primary);
+  color: var(--color-content-inverse-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 120ms ease;
+}
+.ob-drawer-url-submit:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.ob-drawer-examples {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+.ob-drawer-examples-label {
+  font-size: 11px;
+  color: var(--color-content-tertiary);
+  margin-right: var(--space-1);
+}
+.ob-drawer-example {
+  padding: 2px var(--space-2);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-full);
+  color: var(--color-content-secondary);
+  font: inherit;
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
+  cursor: pointer;
+}
+.ob-drawer-example:hover { color: var(--color-content-primary); background: var(--color-bg-primary); }
 
 .ob-drawer-foot {
   display: flex;
@@ -952,13 +1052,30 @@
 /* ─────────────────────── DashboardShell host (viewport-locked) ───── */
 /* Override Act1's grid + column heights so:
  *   - .act1-root fills the available space below the topbar
- *   - each grid column scrolls internally, not the whole page */
+ *   - each grid column scrolls internally, not the whole page
+ *   - column proportions match the "post-onboarding" UX:
+ *     left nav 240 · chat 360 · right pane 1fr  (chat narrower than
+ *     the right side, like Act1's schedule/people/etc. views). */
+
+.ob-shell-frame {
+  /* Wraps DashboardShell + the activity-drawer overlay. Acts as the
+   * positioned ancestor for the absolute-positioned drawer/scrim so
+   * they're contained (and clipped) inside this frame instead of
+   * leaking out to the right of the viewport. */
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
 
 .ob-root .act1-root {
   flex: 1;
   min-height: 0;
   height: 100%;
   overflow: hidden;
+  grid-template-columns: 240px 360px minmax(0, 1fr);  /* chat narrower than content */
 }
 
 /* LeftNav — fixed column, internal nav-list scrolls if it overflows. */
