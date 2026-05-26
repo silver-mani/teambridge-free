@@ -684,13 +684,18 @@ export const WORKFLOWS = [
  * `agentId` ties each template to one of the named AI personas so the
  * tile shows that agent's avatar; the gradient class drives the card's
  * background.  */
+/* Templates below are grouped by the operator outcome they drive,
+ * not the surface they touch — "Improve Show Rate", "Reduce Labor
+ * Costs", etc. reads like the COO's whiteboard instead of an admin
+ * settings tree. */
 export const WORKFLOW_TEMPLATE_CATEGORIES = [
-  { id: 'coverage',   label: 'Coverage' },
-  { id: 'pay',        label: 'Pay & OT' },
-  { id: 'compliance', label: 'Compliance' },
-  { id: 'onboarding', label: 'Onboarding' },
-  { id: 'comms',      label: 'Communications' },
-  { id: 'scheduling', label: 'Scheduling' },
+  { id: 'show-rate',    label: 'Improve Show Rate' },
+  { id: 'fill-faster',  label: 'Fill Shifts Faster' },
+  { id: 'labor-costs',  label: 'Reduce Labor Costs' },
+  { id: 'compliance',   label: 'Stay Compliant' },
+  { id: 'onboarding',   label: 'Speed Up Onboarding' },
+  { id: 'scheduling',   label: 'Plan Smarter Schedules' },
+  { id: 'manager-burden', label: 'Cut Manager Burden' },
 ]
 
 export const WORKFLOW_TEMPLATES_FEATURED = [
@@ -757,7 +762,7 @@ export const WORKFLOW_TEMPLATES_FEATURED = [
 
 export const WORKFLOW_TEMPLATES = [
   /* Coverage */
-  { id: 'tpl-callout-cascade',  title: 'Callout Cascade',          description: 'Tiered offers to A→B→C candidates with 90s expiry per tier.', agentId: 'nova',  category: 'coverage',
+  { id: 'tpl-callout-cascade',  title: 'Callout Cascade',          description: 'Tiered offers to A→B→C candidates with 90s expiry per tier.', agentId: 'nova',  category: 'fill-faster',
     triggerLabel: 'Shift cancelled, no backup',
     highlights: [
       'Builds 3 tiers of candidates by performance + proximity; each tier gets 90s to accept.',
@@ -770,7 +775,7 @@ export const WORKFLOW_TEMPLATES = [
       { label: 'Cancellations to manager', value: '8%' },
     ],
   },
-  { id: 'tpl-no-show-recovery', title: 'No-Show Recovery',         description: 'Detect missed clock-in, ping the worker, escalate to manager at 15 min.', agentId: 'nova',  category: 'coverage',
+  { id: 'tpl-no-show-recovery', title: 'No-Show Recovery',         description: 'Detect missed clock-in, ping the worker, escalate to manager at 15 min.', agentId: 'nova',  category: 'show-rate',
     triggerLabel: 'No clock-in 5 min after start',
     highlights: [
       'Pings the worker on the channel they prefer; reads geofence + last app open to gauge intent.',
@@ -783,7 +788,7 @@ export const WORKFLOW_TEMPLATES = [
       { label: 'Manager escalations', value: '−62%' },
     ],
   },
-  { id: 'tpl-event-day-surge',  title: 'Event-Day Surge Coverage', description: 'Pre-stage standby pool the morning of a peak event; auto-offer if any role unders.', agentId: 'atlas', category: 'coverage',
+  { id: 'tpl-event-day-surge',  title: 'Event-Day Surge Coverage', description: 'Pre-stage standby pool the morning of a peak event; auto-offer if any role unders.', agentId: 'atlas', category: 'fill-faster',
     triggerLabel: 'Peak-event day, 8am local',
     highlights: [
       'Pulls a standby pool sized to the historical no-show rate for events of this size.',
@@ -796,7 +801,7 @@ export const WORKFLOW_TEMPLATES = [
       { label: 'Standby utilization', value: '74%' },
     ],
   },
-  { id: 'tpl-float-pool-route', title: 'Float Pool Routing',       description: 'Send float-eligible workers to units with the deepest gap first, by acuity.', agentId: 'nova',  category: 'coverage',
+  { id: 'tpl-float-pool-route', title: 'Float Pool Routing',       description: 'Send float-eligible workers to units with the deepest gap first, by acuity.', agentId: 'nova',  category: 'fill-faster',
     triggerLabel: 'Float worker clocks in',
     highlights: [
       'Ranks units by acuity-weighted gap; floats land where they\'ll move the needle first.',
@@ -811,7 +816,7 @@ export const WORKFLOW_TEMPLATES = [
   },
 
   /* Pay & OT */
-  { id: 'tpl-ot-projection',    title: 'OT Projection Alerts',     description: 'Flag workers projected to clear OT threshold 3 days before pay period close.', agentId: 'atlas', category: 'pay',
+  { id: 'tpl-ot-projection',    title: 'OT Projection Alerts',     description: 'Flag workers projected to clear OT threshold 3 days before pay period close.', agentId: 'atlas', category: 'labor-costs',
     triggerLabel: 'Worker projected to clear OT cap',
     highlights: [
       'Re-projects every worker\'s period total each evening based on punches + published schedule.',
@@ -824,7 +829,7 @@ export const WORKFLOW_TEMPLATES = [
       { label: 'Action rate',   value: '88%', sub: 'managers act on the alert' },
     ],
   },
-  { id: 'tpl-double-time',      title: 'Double-Time Guardrails',   description: 'Block shifts that would trigger double-time premium unless approved by a manager.', agentId: 'leo',   category: 'pay',
+  { id: 'tpl-double-time',      title: 'Double-Time Guardrails',   description: 'Block shifts that would trigger double-time premium unless approved by a manager.', agentId: 'leo',   category: 'labor-costs',
     triggerLabel: 'Shift edit would trigger 2x pay',
     highlights: [
       'Catches edits that would push a worker past your double-time threshold before publish.',
@@ -837,7 +842,7 @@ export const WORKFLOW_TEMPLATES = [
       { label: 'Compliance audit time', value: '−5h/wk' },
     ],
   },
-  { id: 'tpl-missed-punch',     title: 'Missed Punch Recovery',    description: 'Reconstruct missed clock events from schedule + door access, queue for approval.', agentId: 'sofia', category: 'pay',
+  { id: 'tpl-missed-punch',     title: 'Missed Punch Recovery',    description: 'Reconstruct missed clock events from schedule + door access, queue for approval.', agentId: 'sofia', category: 'labor-costs',
     triggerLabel: 'Punch missing at shift end',
     highlights: [
       'Reconstructs likely start/end from schedule, door access, and team chat presence.',
@@ -850,7 +855,7 @@ export const WORKFLOW_TEMPLATES = [
       { label: 'Pay-period adjustments',   value: '−12 per period' },
     ],
   },
-  { id: 'tpl-premium-route',    title: 'Premium Pay Routing',      description: 'Route holiday and weekend differential shifts to opted-in workers first.', agentId: 'nova',  category: 'pay',
+  { id: 'tpl-premium-route',    title: 'Premium Pay Routing',      description: 'Route holiday and weekend differential shifts to opted-in workers first.', agentId: 'nova',  category: 'labor-costs',
     triggerLabel: 'Premium-rate shift published',
     highlights: [
       'Maintains an opt-in list of workers who want premium shifts.',
@@ -947,7 +952,7 @@ export const WORKFLOW_TEMPLATES = [
   },
 
   /* Communications */
-  { id: 'tpl-shift-confirm',    title: 'Shift Confirmations',       description: 'Confirm next-day shifts 18h ahead; route non-confirms straight to the callout cascade.', agentId: 'nova',  category: 'comms',
+  { id: 'tpl-shift-confirm',    title: 'Shift Confirmations',       description: 'Confirm next-day shifts 18h ahead; route non-confirms straight to the callout cascade.', agentId: 'nova',  category: 'show-rate',
     triggerLabel: '18h before shift start',
     highlights: [
       'Pings each worker 18h before the shift to confirm.',
@@ -960,7 +965,7 @@ export const WORKFLOW_TEMPLATES = [
       { label: 'Manager comms', value: '−14 msgs/day' },
     ],
   },
-  { id: 'tpl-broadcast-route',  title: 'Smart Broadcast Routing',   description: 'Send announcements only to the roles/sites that need them — no full-org noise.', agentId: 'sofia', category: 'comms',
+  { id: 'tpl-broadcast-route',  title: 'Smart Broadcast Routing',   description: 'Send announcements only to the roles/sites that need them — no full-org noise.', agentId: 'sofia', category: 'manager-burden',
     triggerLabel: 'New broadcast posted',
     highlights: [
       'Routes broadcasts only to the roles + sites the content applies to.',
@@ -973,7 +978,7 @@ export const WORKFLOW_TEMPLATES = [
       { label: 'Mistargeted broadcasts', value: '−84%' },
     ],
   },
-  { id: 'tpl-manager-escalate', title: 'Manager Escalation',        description: 'Escalate stuck workflows to the right manager based on site, role, and time of day.', agentId: 'leo',   category: 'comms',
+  { id: 'tpl-manager-escalate', title: 'Manager Escalation',        description: 'Escalate stuck workflows to the right manager based on site, role, and time of day.', agentId: 'leo',   category: 'manager-burden',
     triggerLabel: 'Workflow stuck > policy SLA',
     highlights: [
       'Routes escalations to the on-call manager for that site + time-of-day.',
