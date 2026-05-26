@@ -440,22 +440,6 @@ function IntakeDrawer({ mode, value, onChange, onSubmit }) {
           </button>
         </div>
       </form>
-
-      {isUrl && (
-        <div className="ob-drawer-examples">
-          <span className="ob-drawer-examples-label">Try one:</span>
-          {['hollywoodparkca.com', 'dignityhealth.org', 'marriott.com'].map(url => (
-            <button
-              key={url}
-              type="button"
-              className="ob-drawer-example"
-              onClick={() => onSubmit(url)}
-            >
-              {url}
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   )
 }

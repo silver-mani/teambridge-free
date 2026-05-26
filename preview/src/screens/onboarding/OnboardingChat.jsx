@@ -116,30 +116,37 @@ export default function OnboardingChat({
           </div>
         </div>
 
-        {drawer && <div className="ob-drawer-slot">{drawer}</div>}
-
-        <footer className="ob-compose">
-          <form className="ob-compose-row" onSubmit={submit}>
-            <input
-              ref={inputRef}
-              type="text"
-              className="ob-compose-input"
-              value={draft}
-              onChange={e => setDraft(e.target.value)}
-              placeholder={composerPlaceholder}
-              disabled={composerDisabled}
-              autoComplete="off"
-            />
-            <button
-              type="submit"
-              className="ob-compose-send"
-              disabled={composerDisabled || !draft.trim()}
-              aria-label="Send"
-            >
+        {/* When a drawer is active it replaces the compose entirely —
+         * avoids the confusing two-input-fields stack. The compose
+         * still renders in non-drawer states (research / building /
+         * future live) so there's always a visible affordance at the
+         * bottom of the chat. */}
+        {drawer ? (
+          <div className="ob-drawer-slot">{drawer}</div>
+        ) : (
+          <footer className="ob-compose">
+            <form className="ob-compose-row" onSubmit={submit}>
+              <input
+                ref={inputRef}
+                type="text"
+                className="ob-compose-input"
+                value={draft}
+                onChange={e => setDraft(e.target.value)}
+                placeholder={composerPlaceholder}
+                disabled={composerDisabled}
+                autoComplete="off"
+              />
+              <button
+                type="submit"
+                className="ob-compose-send"
+                disabled={composerDisabled || !draft.trim()}
+                aria-label="Send"
+              >
               <ArrowNarrowUpIcon size={16} />
-            </button>
-          </form>
-        </footer>
+              </button>
+            </form>
+          </footer>
+        )}
       </div>
     </section>
   )

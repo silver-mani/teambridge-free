@@ -691,7 +691,9 @@
 
 .ob-drawer-slot {
   flex-shrink: 0;
-  padding: var(--space-2) var(--space-6) 0;
+  /* Matches .ob-compose padding so the drawer naturally takes its
+   * place when it replaces the compose bar (no double inputs). */
+  padding: var(--space-3) var(--space-6) var(--space-5);
   background: transparent;  /* inherits the chat column's white surface */
 }
 
