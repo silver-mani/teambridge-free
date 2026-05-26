@@ -12,6 +12,8 @@ import ConfigCard, { ALL_FIELDS } from './ConfigCard.jsx'
 import { deriveConfig } from './urlMatcher.js'
 import { PAIN_OPTIONS, PAIN_TO_AGENT } from './steps.js'
 import AgentAvatar from './AgentAvatar.jsx'
+import AgentsCard from './AgentsCard.jsx'
+import BuildProgressCard from './BuildProgressCard.jsx'
 import '../act1.css'
 import './onboarding.css'
 
@@ -73,13 +75,21 @@ function buildLockedNav() {
 }
 
 export default function OnboardingFlow({ onExit, onComplete }) {
-  const [state, setState] = useState('intake')            // 'intake' | 'research' | 'review'
-  const [intakeMode, setIntakeMode] = useState('url')     // 'url' | 'free-text'
+  // State machine — drives chat drawer + right pane composition.
+  //   intake       URL prompt (chat drawer)
+  //   research     Nova narrates discoveries; right pane reveals card
+  //   agent-pick   Drawer is the agent toggle list; right pane = ConfigCard
+  //                (without agents row)
+  //   import-pick  Drawer is CSV/API/Sample chooser; right pane adds
+  //                an AgentsCard below the ConfigCard
+  //   building     Drawer is hidden; right pane adds the animated
+  //                BuildProgressCard; onComplete fires when done.
+  const [state, setState] = useState('intake')
+  const [intakeMode, setIntakeMode] = useState('url')
   const [intakeDraft, setIntakeDraft] = useState('')
   const [config, setConfig] = useState(null)
   const [revealedFields, setRevealedFields] = useState(new Set(['summary']))
-
-  // Review drawer — agents picker is bound directly to config.agents
+  const [importMethod, setImportMethod] = useState(null)  // 'csv' | 'api' | 'sample'
 
   // Activity drawer
   const [activityOpen, setActivityOpen] = useState(false)
@@ -160,8 +170,8 @@ export default function OnboardingFlow({ onExit, onComplete }) {
 
     const finalTimer = setTimeout(() => {
       pushMessage({ from: 'nova', text:
-        `Here's what I set up for ${derived.companyName}. Take a look on the right — tap any field to edit, then drop your work email below and I'll build it out.` })
-      setState('review')
+        `Here's what I found for ${derived.companyName}. Take a look on the right. Now — which agents would you like me to activate?` })
+      setState('agent-pick')
     }, cumulative + 700)
     researchTimersRef.current.push(finalTimer)
   }
@@ -173,15 +183,38 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     }
   }, [])
 
-  /* ── Review actions ── */
-  const handleConfirm = useCallback(() => {
+  /* ── Agent-pick → Import-pick ── */
+  const handleAgentsConfirmed = useCallback(() => {
     if (!config?.agents || config.agents.length === 0) return
-    try { sessionStorage.setItem('tb:build-config', JSON.stringify(config)) } catch { /* ignore */ }
+    const labels = (config.agents || [])
+      .map(id => PAIN_TO_AGENT[id]?.name)
+      .filter(Boolean)
+    pushMessage({ from: 'user', text:
+      `${labels.length} agent${labels.length === 1 ? '' : 's'}: ${labels.join(', ')}` })
+    pushMessage({ from: 'nova', text:
+      "Great. Last thing — how do you want to bring your team data over? I'll set it up either way." })
+    setState('import-pick')
+  }, [config, pushMessage])
 
-    // Hand off to main.jsx which routes to `#/<industry>` for the
-    // existing demo experience. The LeadCaptureGate on the industry
-    // route will collect name/company/email there — we kept the
-    // build flow focused on the product (agents/config) by design.
+  /* ── Import-pick → Building ── */
+  const handleImportPicked = useCallback((method) => {
+    setImportMethod(method)
+    const label = method === 'csv'    ? 'Upload a CSV'
+                : method === 'api'    ? 'Connect via API'
+                :                       'Use sample demo data'
+    pushMessage({ from: 'user', text: label })
+    pushMessage({ from: 'nova', text:
+      method === 'sample'
+        ? "Perfect — sample data is fastest. Building your workspace now…"
+        : method === 'csv'
+          ? "For this demo I'll preload sample employees. Hold on while I set everything up…"
+          : "For this demo I'll preload sample employees. Hold on while I set everything up…" })
+    setState('building')
+    try { sessionStorage.setItem('tb:build-config', JSON.stringify(config)) } catch { /* ignore */ }
+  }, [config, pushMessage])
+
+  /* ── Building animation complete → hand off to industry demo ── */
+  const handleBuildComplete = useCallback(() => {
     onComplete?.(config)
   }, [config, onComplete])
 
@@ -204,12 +237,14 @@ export default function OnboardingFlow({ onExit, onComplete }) {
   const { navGroups, navBottom } = buildLockedNav()
 
   const composerPlaceholder = (() => {
-    if (state === 'intake')   return "Tap below to share your company's URL…"
-    if (state === 'research') return 'Nova is working…'
-    if (state === 'review')   return 'Add a note, or tap fields on the right to edit'
+    if (state === 'intake')      return "Tap below to share your company's URL…"
+    if (state === 'research')    return 'Nova is working…'
+    if (state === 'agent-pick')  return 'Pick agents below, or chat with Nova'
+    if (state === 'import-pick') return 'Choose an import method below'
+    if (state === 'building')    return 'Nova is building…'
     return 'Type a message…'
   })()
-  const composerDisabled = state === 'intake' || state === 'research'
+  const composerDisabled = true   // input flows through the drawer at every step
 
   const drawer = (() => {
     if (state === 'intake') {
@@ -222,14 +257,22 @@ export default function OnboardingFlow({ onExit, onComplete }) {
         />
       )
     }
-    if (state === 'review') {
+    if (state === 'agent-pick') {
       return (
-        <ConfirmDrawer
+        <AgentPickDrawer
           companyName={config?.companyName}
           agents={config?.agents || []}
           onAgentsChange={(next) => setConfig(c => ({ ...c, agents: next }))}
-          onSubmit={handleConfirm}
+          onSubmit={handleAgentsConfirmed}
           onStartOver={handleStartOver}
+        />
+      )
+    }
+    if (state === 'import-pick') {
+      return (
+        <ImportPickDrawer
+          companyName={config?.companyName}
+          onPick={handleImportPicked}
         />
       )
     }
@@ -245,6 +288,10 @@ export default function OnboardingFlow({ onExit, onComplete }) {
       onSend={() => { /* compose disabled across the build flow */ }}
     />
   )
+
+  /* Fields shown in the main ConfigCard — agents are intentionally
+   * pulled out into their own AgentsCard once picked. */
+  const cardFields = ALL_FIELDS.filter(f => f !== 'agents')
 
   let content
   if (state === 'intake') {
@@ -272,28 +319,46 @@ export default function OnboardingFlow({ onExit, onComplete }) {
           <ConfigCard
             config={config}
             editable={false}
-            visibleFields={ALL_FIELDS.filter(f => revealedFields.has(f))}
+            visibleFields={cardFields.filter(f => revealedFields.has(f))}
           />
         </div>
       </div>
     )
   } else {
-    // review
+    // agent-pick, import-pick, building — same shell, accumulating cards.
+    const heading =
+      state === 'agent-pick'  ? 'Your account'
+      : state === 'import-pick' ? 'Almost there'
+      :                          'Building'
+    const sub =
+      state === 'agent-pick'
+        ? (config?.url ? `Derived from ${config.url}. Tap any field to edit.` : 'Tap any field to edit.')
+        : state === 'import-pick'
+          ? 'Pick how you want to bring your team data over and Nova will build the rest.'
+          : "Hold tight — I'm wiring everything up."
     content = (
       <div className="ob-right">
         <header className="ob-right-head">
-          <h1 className="ob-right-title">Your account</h1>
-          <p className="ob-right-sub">
-            {config?.url ? `Derived from ${config.url}. Tap any field to edit.` : 'Tap any field to edit.'}
-          </p>
+          <h1 className="ob-right-title">{heading}</h1>
+          <p className="ob-right-sub">{sub}</p>
         </header>
         <div className="ob-right-body">
           <ConfigCard
             config={config}
-            editable={true}
+            editable={state === 'agent-pick'}
             onChange={setConfig}
-            visibleFields={ALL_FIELDS}
+            visibleFields={cardFields}
           />
+          {(state === 'import-pick' || state === 'building') && (
+            <AgentsCard agents={config?.agents || []} />
+          )}
+          {state === 'building' && (
+            <BuildProgressCard
+              config={config}
+              importMethod={importMethod}
+              onComplete={handleBuildComplete}
+            />
+          )}
         </div>
       </div>
     )
@@ -427,10 +492,10 @@ function IntakeDrawer({ mode, value, onChange, onSubmit }) {
   )
 }
 
-/* ─── Confirm drawer — review-state bottom drawer for agent activation
- *     + build CTA. No more email collection here; the LeadCaptureGate on
- *     the industry demo handles that after handoff. */
-function ConfirmDrawer({ companyName, agents, onAgentsChange, onSubmit, onStartOver }) {
+/* ─── Agent-pick drawer — first review step. Toggleable list of all 6
+ *     Teambridge agents with avatars + descriptions. Continue advances
+ *     to the import-pick step. */
+function AgentPickDrawer({ companyName, agents, onAgentsChange, onSubmit, onStartOver }) {
   const set = new Set(agents || [])
   const toggle = (id) => {
     const next = new Set(set)
@@ -493,10 +558,75 @@ function ConfirmDrawer({ companyName, agents, onAgentsChange, onSubmit, onStartO
           onClick={onSubmit}
           disabled={count === 0}
         >
-          Build my Teambridge{count > 0 ? ` (${count} agent${count === 1 ? '' : 's'})` : ''}
+          Continue{count > 0 ? ` with ${count} agent${count === 1 ? '' : 's'}` : ''}
           <ArrowNarrowRightIcon size={14} />
         </button>
       </div>
+    </div>
+  )
+}
+
+/* ─── Import-pick drawer — second review step. Three big choices for
+ *     how to bring team data over. Sample is the recommended demo
+ *     path; CSV / API map to the same animation with adjusted
+ *     narration for the demo. */
+function ImportPickDrawer({ companyName, onPick }) {
+  const options = [
+    {
+      id: 'csv',
+      title: 'Upload a CSV',
+      detail: "Drop your existing roster file — I'll auto-map the columns.",
+      tag: null,
+    },
+    {
+      id: 'api',
+      title: 'Sync from your HRIS',
+      detail: 'Connect Workday, BambooHR, Rippling, or another HRIS via API.',
+      tag: null,
+    },
+    {
+      id: 'sample',
+      title: 'Use sample demo data',
+      detail: "Start with a seeded roster so you can explore right away.",
+      tag: 'Fastest',
+    },
+  ]
+  return (
+    <div className="ob-drawer" role="group" aria-label="Choose import method">
+      <div className="ob-drawer-head">
+        <span className="ob-drawer-mark" aria-hidden="true">
+          <TeambridgeAIIcon size={14} />
+        </span>
+        <div className="ob-drawer-text">
+          <div className="ob-drawer-title">
+            How should I bring your team into {companyName || 'your Teambridge'}?
+          </div>
+          <div className="ob-drawer-sub">
+            Pick one — I'll wire it up and finish provisioning your workspace.
+          </div>
+        </div>
+      </div>
+
+      <ul className="ob-drawer-imports">
+        {options.map(opt => (
+          <li key={opt.id}>
+            <button
+              type="button"
+              className={`ob-drawer-import ${opt.id === 'sample' ? 'is-recommended' : ''}`}
+              onClick={() => onPick(opt.id)}
+            >
+              <div className="ob-drawer-import-text">
+                <span className="ob-drawer-import-title">
+                  {opt.title}
+                  {opt.tag && <span className="ob-drawer-import-tag">{opt.tag}</span>}
+                </span>
+                <span className="ob-drawer-import-detail">{opt.detail}</span>
+              </div>
+              <ArrowNarrowRightIcon size={14} />
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }
