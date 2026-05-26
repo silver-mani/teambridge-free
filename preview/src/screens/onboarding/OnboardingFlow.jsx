@@ -278,10 +278,17 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     setState('agents')
   }, [outcomes, pushMessage])
 
-  /* ── Agents launch → hand off to industry demo ── */
+  /* ── Agents → Launching (rich provisioning animation) ── */
   const handleAgentsLaunch = useCallback(() => {
     if (!config?.agents?.length) return
     try { sessionStorage.setItem('tb:build-config', JSON.stringify(config)) } catch { /* ignore */ }
+    pushMessage({ from: 'nova', text:
+      `Launching ${config?.companyName ?? 'your account'}. Walk-through on the right.` })
+    setState('launching')
+  }, [config, pushMessage])
+
+  /* ── Launching animation complete → hand off to industry demo ── */
+  const handleLaunchComplete = useCallback(() => {
     onComplete?.(config)
   }, [config, onComplete])
 
@@ -307,11 +314,12 @@ export default function OnboardingFlow({ onExit, onComplete }) {
   const { navGroups, navBottom } = buildLockedNav()
 
   const composerPlaceholder = (() => {
-    if (state === 'intake')   return 'Use the form below'
-    if (state === 'research') return 'Setting up…'
-    if (state === 'outcomes') return 'Pick goals below'
-    if (state === 'import')   return 'Pick one below'
-    if (state === 'mapping')  return 'Setting up…'
+    if (state === 'intake')    return 'Use the form below'
+    if (state === 'research')  return 'Setting up…'
+    if (state === 'outcomes')  return 'Pick goals below'
+    if (state === 'import')    return 'Pick one below'
+    if (state === 'mapping')   return 'Setting up…'
+    if (state === 'launching') return 'Launching…'
     if (state === 'policies' || state === 'agents') return 'Continue on the right →'
     return 'Type a message…'
   })()
@@ -447,6 +455,30 @@ export default function OnboardingFlow({ onExit, onComplete }) {
             agents={config?.agents || []}
             onAgentsChange={(next) => setConfig(c => ({ ...c, agents: next }))}
             onLaunch={handleAgentsLaunch}
+          />
+        </div>
+      </div>
+    )
+  } else if (state === 'launching') {
+    // Final step — BuildProgressCard takes over the right pane and
+    // walks through provisioning each piece of the workspace before
+    // handing off to the industry demo.
+    content = (
+      <div className="ob-right ob-right--building">
+        <header className="ob-right-head">
+          <h1 className="ob-right-title">Launching your account</h1>
+          <p className="ob-right-sub">
+            Provisioning {config?.companyName ?? 'your workspace'} — about 15 seconds.
+          </p>
+        </header>
+        <div className="ob-right-body ob-right-body--centered">
+          <BuildProgressCard
+            config={config}
+            importMethod={importMethod}
+            policies={policies}
+            agents={config?.agents}
+            outcomes={outcomes}
+            onComplete={handleLaunchComplete}
           />
         </div>
       </div>

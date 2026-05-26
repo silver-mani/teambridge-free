@@ -1,32 +1,117 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { TeambridgeAIIcon } from '../../../../src/components/icons/TeambridgeAIIcon.tsx'
 import { CheckCircleIcon } from '../../../../src/components/icons/CheckCircleIcon.tsx'
+import {
+  PAIN_TO_AGENT, POLICY_OPTIONS, OUTCOME_OPTIONS,
+} from './steps.js'
 
-/* BuildProgressCard — appears in the right pane once the operator picks
- * an import method. Walks through 6 build steps with checkmark animations
- * so it feels like Nova is doing real work behind the scenes. Each step
- * has its own delay; total ~5-6 seconds before onComplete fires. */
+/* BuildProgressCard — final step of the build flow. Walks through a
+ * substantive list of provisioning steps (workspace, roster, sites,
+ * each chosen policy, each chosen agent, integrations, schedule
+ * draft, dashboard open) with title + one-line detail per step,
+ * spinner → checkmark transitions, and a progress bar. Each step
+ * is tied to the operator's actual picks so it reads as "I'm
+ * activating Last-minute Replacement for you" not just "starting
+ * agents". Total runtime ~14-18s depending on how many policies +
+ * agents were selected. */
 
-function buildSteps(config, importMethod) {
+function provisioningSteps(config, importMethod, policies, agents, outcomes) {
   const headcount = config?.headcount?.toLocaleString() || ''
-  const importLine = importMethod === 'csv' ? `Importing ${headcount} employees`
-                   : importMethod === 'api' ? `Syncing ${headcount} employees`
-                   :                          `Loading ${headcount} employees`
-  return [
-    { id: 's1', text: 'Connecting data sources',     delay: 1100 },
-    { id: 's2', text: importLine,                    delay: 1900 },
-    { id: 's3', text: 'Mapping roles',               delay: 1400 },
-    { id: 's4', text: 'Checking credentials',        delay: 1300 },
-    { id: 's5', text: 'Activating your agents',      delay: 1500 },
-    { id: 's6', text: 'Setting up policies',         delay: 1400 },
-    { id: 's7', text: 'Configuring time tracking',   delay: 1100 },
-    { id: 's8', text: 'Drafting your first schedule', delay: 1600 },
-    { id: 's9', text: 'Opening your dashboard',      delay: 900 },
-  ]
+  const company = config?.companyName ?? 'your account'
+  const out = []
+
+  out.push({
+    id: 'workspace',
+    title: 'Provisioning workspace',
+    detail: `Creating ${company}'s Teambridge instance.`,
+    delay: 1200,
+  })
+  out.push({
+    id: 'roster',
+    title: 'Loading roster',
+    detail: importMethod === 'csv'
+      ? `Importing ${headcount} employees from your CSV.`
+      : importMethod === 'api'
+      ? `Syncing ${headcount} employees from your HRIS.`
+      : `Loading ${headcount} sample employees mapped to roles.`,
+    delay: 1500,
+  })
+  out.push({
+    id: 'sites',
+    title: 'Wiring up locations',
+    detail: `${config?.locations?.length || 0} sites added to the schedule grid.`,
+    delay: 1100,
+  })
+
+  // One step per policy picked
+  ;(policies || []).slice(0, 5).forEach(id => {
+    const p = POLICY_OPTIONS.find(o => o.id === id)
+    if (!p) return
+    out.push({
+      id: `policy-${id}`,
+      title: `Activating ${p.label.toLowerCase()}`,
+      detail: p.detail,
+      delay: 1000,
+    })
+  })
+
+  // One step per agent toggled on
+  ;(agents || []).slice(0, 6).forEach(id => {
+    const a = PAIN_TO_AGENT[id]
+    if (!a) return
+    out.push({
+      id: `agent-${id}`,
+      title: `Standing up ${a.name}`,
+      detail: a.detail,
+      delay: 1100,
+    })
+  })
+
+  out.push({
+    id: 'modules',
+    title: 'Enabling modules',
+    detail: 'Time tracking, payroll, shift requests, engage.',
+    delay: 1100,
+  })
+  out.push({
+    id: 'schedule',
+    title: "Drafting next week's schedule",
+    detail: `Templates seeded from your ${config?.roles?.length || 0} roles.`,
+    delay: 1500,
+  })
+
+  if (config?.suggestedConnectors?.length) {
+    out.push({
+      id: 'connectors',
+      title: 'Connecting integrations',
+      detail: `Syncing ${config.suggestedConnectors.length} tool${config.suggestedConnectors.length === 1 ? '' : 's'} into payroll + HRIS.`,
+      delay: 1200,
+    })
+  }
+
+  out.push({
+    id: 'notifications',
+    title: 'Setting up notifications',
+    detail: 'Routes by role + shift, with mobile + Slack delivery.',
+    delay: 1000,
+  })
+  out.push({
+    id: 'dashboard',
+    title: 'Opening your dashboard',
+    detail: 'Almost there — final touches.',
+    delay: 900,
+  })
+
+  return out
 }
 
-export default function BuildProgressCard({ config, importMethod, onComplete }) {
-  const steps = buildSteps(config, importMethod)
+export default function BuildProgressCard({
+  config, importMethod, policies, agents, outcomes, onComplete,
+}) {
+  const steps = useMemo(
+    () => provisioningSteps(config, importMethod, policies, agents, outcomes),
+    [config, importMethod, policies, agents, outcomes],
+  )
   const [stepIndex, setStepIndex] = useState(0)
   const timersRef = useRef([])
 
@@ -36,14 +121,10 @@ export default function BuildProgressCard({ config, importMethod, onComplete }) 
       cumulative += step.delay
       return setTimeout(() => setStepIndex(i + 1), cumulative)
     })
-    // After all steps complete + a settling beat, hand off.
-    const finalTimer = setTimeout(() => onComplete?.(), cumulative + 700)
+    const finalTimer = setTimeout(() => onComplete?.(), cumulative + 900)
     timersRef.current.push(finalTimer)
-    return () => {
-      timersRef.current.forEach(clearTimeout)
-      timersRef.current = []
-    }
-  }, [importMethod]) // eslint-disable-line react-hooks/exhaustive-deps
+    return () => { timersRef.current.forEach(clearTimeout); timersRef.current = [] }
+  }, [steps, onComplete])
 
   const done = stepIndex >= steps.length
 
@@ -56,12 +137,12 @@ export default function BuildProgressCard({ config, importMethod, onComplete }) 
           </span>
           <div className="cc-head-text">
             <span className="cc-head-name">
-              {done ? 'Ready' : 'Setting up your account'}
+              {done ? 'Ready' : `Launching ${config?.companyName ?? 'your account'}`}
             </span>
             <span className="cc-head-sub">
               {done
-                ? `${config?.companyName ?? 'Your account'} is ready. Opening now…`
-                : 'Hang tight — about 15 seconds.'}
+                ? 'Opening your dashboard now…'
+                : 'Hang tight — provisioning every piece of your workspace.'}
             </span>
           </div>
         </div>
@@ -84,7 +165,10 @@ export default function BuildProgressCard({ config, importMethod, onComplete }) 
                 {isDone && <CheckCircleIcon size={14} />}
                 {isActive && <span className="bp-step-spin" />}
               </span>
-              <span className="bp-step-text">{s.text}</span>
+              <div className="bp-step-text">
+                <span className="bp-step-title">{s.title}</span>
+                <span className="bp-step-detail">{s.detail}</span>
+              </div>
               {isDone && <span className="bp-step-tick">Done</span>}
             </li>
           )
