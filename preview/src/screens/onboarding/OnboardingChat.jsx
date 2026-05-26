@@ -104,7 +104,7 @@ export default function OnboardingChat({
         <div className="prompt-scroll ob-chat-scroll" ref={scrollRef}>
           <div className="prompt-messages ob-chat-messages">
             {messages.map((m, i) => {
-              if (m.kind === 'research') {
+              if (m.kind === 'research' || m.kind === 'thinking') {
                 return <ResearchBubble key={m.id || i} headline={m.headline} steps={m.steps} />
               }
               if (m.kind === 'typing') {

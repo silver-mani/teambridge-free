@@ -255,7 +255,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     }
   }, [])
 
-  /* ── Outcomes → Import ── */
+  /* ── Outcomes → Thinking → Import ── */
   const handleOutcomesConfirmed = useCallback(() => {
     if (outcomes.length === 0) return
     const labels = outcomes
@@ -264,41 +264,76 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     pushMessage({ from: 'user', text:
       labels.length === 1 ? labels[0] : `${labels.length} goals` })
 
-    // Smart-thinking sequence — Nova reflects on the goals and shows
-    // how they translate into agent + policy choices. Spaced ~2s
-    // apart so the typing indicator can finish on each before the
-    // next one starts. Reads as deliberate reasoning.
-    const sequence = ['Got it. Thinking through what this means for your setup…']
-
-    // For each outcome that maps to specific agents, surface one
-    // "smart thinking" line connecting goal → agent.
+    // Build the thinking points — one per outcome that maps to
+    // specific agents. Format: "{outcome} → {agent names}".
+    const points = []
     const seenAgents = new Set()
     for (const outId of outcomes) {
       const agentIds = (OUTCOME_TO_AGENTS[outId] || []).filter(a => !seenAgents.has(a))
       if (agentIds.length === 0) continue
       agentIds.forEach(a => seenAgents.add(a))
       const agentNames = agentIds.map(a => PAIN_TO_AGENT[a]?.name).filter(Boolean)
-      const outcomeLabel = OUTCOME_OPTIONS.find(o => o.id === outId)?.label.toLowerCase()
+      const outcomeLabel = OUTCOME_OPTIONS.find(o => o.id === outId)?.label
       if (!outcomeLabel || agentNames.length === 0) continue
       const list = agentNames.length === 1
         ? agentNames[0]
         : `${agentNames.slice(0, -1).join(', ')} and ${agentNames[agentNames.length - 1]}`
-      sequence.push(`For "${outcomeLabel}", I'll line up ${list}.`)
+      points.push(`${outcomeLabel} → ${list}`)
     }
 
-    sequence.push("Now — how should I bring your team's data in?")
+    // Drawer must disappear immediately — transition out of 'outcomes'
+    // state so the OutcomesDrawer unmounts. 'thinking' state has no
+    // drawer; chat will compose stays empty during the animation.
+    setState('thinking')
 
-    // Schedule the chat messages and the state transition.
-    const interval = 2200  // typing (1.3s) + small gap (0.9s)
-    sequence.forEach((text, i) => {
-      const t = setTimeout(() => pushMessage({ from: 'nova', text }), i * interval)
+    if (points.length === 0) {
+      // No specific mapping (operator picked only "sites") — short
+      // path: just one message + transition.
+      pushMessage({ from: 'nova', text: "Got it. Now — how should I bring your team's data in?" })
+      const t = setTimeout(() => setState('import'), 2200)
+      typingTimersRef.current.push(t)
+      return
+    }
+
+    // Post the animated thinking bubble (same visual as the research
+    // bubble — headline + checklist that fills in over time).
+    const thinkingId = `t-${Date.now()}`
+    const initialSteps = points.map((text, i) => ({
+      text,
+      status: i === 0 ? 'active' : 'pending',
+    }))
+    setMessages(prev => [...prev, {
+      id: thinkingId, from: 'nova', kind: 'thinking',
+      headline: 'Thinking through what this means for your setup…',
+      steps: initialSteps,
+    }])
+
+    // Cascade points one by one with a delay.
+    const perStep = 1500
+    points.forEach((_, i) => {
+      const t = setTimeout(() => {
+        setMessages(msgs => msgs.map(m => {
+          if (m.id !== thinkingId) return m
+          const next = m.steps.map((s, k) => {
+            if (k < i)        return { ...s, status: 'done' }
+            if (k === i)      return { ...s, status: 'done' }
+            if (k === i + 1)  return { ...s, status: 'active' }
+            return s
+          })
+          return { ...m, steps: next }
+        }))
+      }, (i + 1) * perStep)
       typingTimersRef.current.push(t)
     })
-    const stateTimer = setTimeout(
-      () => setState('import'),
-      sequence.length * interval + 200,
-    )
-    typingTimersRef.current.push(stateTimer)
+
+    // After all points + a beat, post the next-question message and
+    // then transition. pushMessage handles its own typing delay.
+    const totalThinking = points.length * perStep + 700
+    const askTimer = setTimeout(() => {
+      pushMessage({ from: 'nova', text: "Now — how should I bring your team's data in?" })
+    }, totalThinking)
+    const stateTimer = setTimeout(() => setState('import'), totalThinking + 2200)
+    typingTimersRef.current.push(askTimer, stateTimer)
   }, [outcomes, pushMessage])
 
   /* ── Import → Mapping ── */
@@ -375,6 +410,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     if (state === 'intake')    return 'Use the form below'
     if (state === 'research')  return 'Setting up…'
     if (state === 'outcomes')  return 'Pick goals below'
+    if (state === 'thinking')  return 'Thinking…'
     if (state === 'import')    return 'Pick one below'
     if (state === 'mapping')   return 'Setting up…'
     if (state === 'launching') return 'Launching…'
