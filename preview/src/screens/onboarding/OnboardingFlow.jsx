@@ -1,113 +1,66 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { TeambridgeAIIcon } from '../../../../src/components/icons/TeambridgeAIIcon.tsx'
 import { ChevronLeftIcon } from '../../../../src/components/icons/ChevronLeftIcon.tsx'
 import { INDUSTRIES } from '../IndustrySelector.jsx'
 import DashboardShell, { DEFAULT_NAV_GROUPS, DEFAULT_NAV_BOTTOM } from '../shell/DashboardShell.jsx'
-import OnboardingChat from './OnboardingChat.jsx'
+import UrlIntake from './UrlIntake.jsx'
+import ResearchNarrative from './ResearchNarrative.jsx'
+import ConfigReview from './ConfigReview.jsx'
 import BuildContent from './BuildContent.jsx'
 import BuildActivityFeed from './BuildActivityFeed.jsx'
-import InfoPanel from './InfoPanel.jsx'
-import { STEPS } from './steps.js'
+import { deriveConfig, headcountRangeFor } from './urlMatcher.js'
 import '../act1.css'
 import './onboarding.css'
 
 /* ──────────────────────────────────────────────────────────────────────
  * OnboardingFlow — `#/build` route.
  *
- * Two-phase build experience:
+ * Four-state machine, Context → Configuration → Confirm:
  *
- *   Phase 1 — chat-centric (steps 1–5: name, company, industry, batched
- *             team-shape card, connectors). Layout is chat in a centered
- *             column with a narrow InfoPanel on the right showing
- *             progress + workspace-so-far + coming-next. Modeled on
- *             Claude SMB's setup card pattern.
+ *   intake    URL input (single field). Free-text fallback on unmatched.
+ *   research  Nova narrates discoveries while ConfigCard fills in on
+ *             the right (~5s, time-paced).
+ *   review    Fully editable ConfigCard. Confirm or start over.
+ *   live      Full DashboardShell, populated from the confirmed config.
  *
- *   Phase 2 — full DashboardShell (steps 6–7: roster, done). Once we
- *             have enough data (industry + team + locations + pains +
- *             connectors), the layout pivots to the actual product
- *             chrome — LeftNav · chat · content · activity feed — and
- *             remaining steps populate inside the dashboard the operator
- *             will live in post-go-live.
- *
- * The transition point is intentional: it's the wow moment where the
- * operator sees Nova's work assemble into a real Teambridge in front
- * of them.
+ * The flow does the work; the operator confirms. One real input, one
+ * review, one click to land in the dashboard.
  * ────────────────────────────────────────────────────────────────────── */
 
-const DEFAULT_ANSWERS = Object.freeze({
-  firstName: '',
-  company: '',
-  industry: null,
-  teamSize: null,
-  locationModel: null,
-  pains: [],
-  connectors: [],
-  rosterChoice: null,
-})
-
-function loadAnswers() {
-  try {
-    const raw = sessionStorage.getItem('tb:build-answers')
-    if (!raw) return { ...DEFAULT_ANSWERS }
-    return { ...DEFAULT_ANSWERS, ...JSON.parse(raw) }
-  } catch {
-    return { ...DEFAULT_ANSWERS }
+/* Convert a confirmed config into the `answers` shape the existing
+ * BuildContent + BuildActivityFeed expect. Keeps those components
+ * unchanged across the rewrite. */
+function configToAnswers(config) {
+  return {
+    firstName:     '',
+    company:       config.companyName,
+    industry:      config.industry,
+    teamSize:      config.headcountRange || headcountRangeFor(config.headcount || 0),
+    locationModel: locationModelFor(config.locations),
+    pains:         config.agents || [],
+    connectors:    config.suggestedConnectors || [],
+    rosterChoice:  'hris',
+    roles:         config.roles || [],
   }
 }
 
-function saveAnswers(answers) {
-  try { sessionStorage.setItem('tb:build-answers', JSON.stringify(answers)) }
-  catch { /* ignore */ }
+function locationModelFor(locations = []) {
+  if (locations.length <= 1) return 'single'
+  if (locations.length <= 3) return 'multi-local'
+  return 'multi-regional'
 }
 
-function defaultDraftFor(step, answers) {
-  if (step.input.kind === 'text')        return answers[step.input.field] || ''
-  if (step.input.kind === 'choice')      return answers[step.input.field] || null
-  if (step.input.kind === 'multichoice') return answers[step.input.field] || []
-  if (step.input.kind === 'connectors')  return answers[step.input.field] || []
-  if (step.input.kind === 'batched') {
-    const obj = {}
-    for (const g of step.input.groups) {
-      obj[g.field] = answers[g.field] ?? (g.kind === 'multichoice' ? [] : null)
-    }
-    return obj
-  }
-  return null
-}
-
-/* Step focus key → LeftNav view id mapping. Step.focus uses descriptive
- * keys; the LeftNav uses the Act1 nav ids. */
 const FOCUS_TO_VIEW = {
-  overview:     'overview',
-  people:       'people',
-  schedule:     'schedule',
-  agents:       'workflows',
-  integrations: 'settings',
+  overview: 'overview', people: 'people', schedule: 'schedule',
+  agents: 'workflows', integrations: 'settings',
 }
 
-/* Build the nav groups with `locked: true` for items the operator
- * can't meaningfully interact with yet. Locks progressively lift as
- * answers come in. */
 function buildNavGroups(answers) {
-  const hasIndustry = !!answers.industry
-  const hasTeam     = !!answers.teamSize
-  const hasPains    = (answers.pains || []).length > 0
-  const hasConn     = (answers.connectors || []).length > 0
-
-  const lockSet = new Set()
-  if (!hasIndustry) {
-    DEFAULT_NAV_GROUPS.forEach(g => g.items.forEach(it => it.id !== 'overview' && lockSet.add(it.id)))
-    DEFAULT_NAV_BOTTOM.items.forEach(it => lockSet.add(it.id))
-  } else {
-    if (!hasTeam)  ['people','schedule','shift-requests','time-tracking','timesheets','onboarding','engage'].forEach(id => lockSet.add(id))
-    if (!hasPains) lockSet.add('workflows')
-    if (!hasConn)  ['pay','review'].forEach(id => lockSet.add(id))
-  }
-
-  const apply = group => ({
-    ...group,
-    items: group.items.map(it => lockSet.has(it.id) ? { ...it, locked: true } : it),
-  })
+  // Once we're live, all the nav is unlocked — the config has populated
+  // everything. (Pre-confirm we don't even render the nav.) But we keep
+  // the helper around so this is symmetric with the run-mode case
+  // when we migrate Act1 onto the shared shell.
+  const apply = group => ({ ...group, items: group.items.map(it => ({ ...it })) })
   return {
     navGroups: DEFAULT_NAV_GROUPS.map(apply),
     navBottom: apply(DEFAULT_NAV_BOTTOM),
@@ -115,97 +68,60 @@ function buildNavGroups(answers) {
 }
 
 export default function OnboardingFlow({ onExit, onComplete }) {
-  const [stepIndex, setStepIndex] = useState(0)
-  const [answers, setAnswers] = useState(loadAnswers)
-  const [draft, setDraft] = useState(() => defaultDraftFor(STEPS[0], loadAnswers()))
-  const [history, setHistory] = useState([])
-  const [error, setError] = useState(null)
-
-  // Active view in the Phase-2 content slot. Auto-follows step.focus
-  // until the operator clicks a nav item themselves.
-  const [view, setView] = useState(FOCUS_TO_VIEW[STEPS[0].focus] || 'overview')
+  const [state, setState]   = useState('intake')        // 'intake' | 'research' | 'review' | 'live'
+  const [intakeMode, setIntakeMode] = useState('url')   // 'url' | 'free-text'
+  const [intakeError, setIntakeError] = useState(null)
+  const [config, setConfig] = useState(null)
+  const [view, setView]     = useState('overview')
   const [viewPinned, setViewPinned] = useState(false)
 
-  const step = STEPS[stepIndex]
-  const isDone = step.id === 'done'
-  const phase = step.phase || 'chat-centric'
-  const chatCentricStepCount = STEPS.filter(s => s.phase === 'chat-centric').length
+  const handleIntakeSubmit = useCallback((input) => {
+    const derived = deriveConfig(input, { fromFreeText: intakeMode === 'free-text' })
+    if (!derived) {
+      // No curated or heuristic match — fall back to free-text input.
+      setIntakeMode('free-text')
+      setIntakeError(null)
+      return
+    }
+    setIntakeError(null)
+    setConfig(derived)
+    setState('research')
+  }, [intakeMode])
 
-  // Recompute draft default whenever step changes.
-  useMemo(() => { setDraft(defaultDraftFor(step, answers)) }, [stepIndex]) // eslint-disable-line react-hooks/exhaustive-deps
+  const handleResearchComplete = useCallback(() => {
+    setState('review')
+  }, [])
 
-  // Swing view to the current step's focus on phase 2.
-  useEffect(() => {
-    if (viewPinned) return
-    if (phase !== 'full') return
-    const target = FOCUS_TO_VIEW[step.focus] || 'overview'
-    if (target !== view) setView(target)
-  }, [stepIndex]) // eslint-disable-line react-hooks/exhaustive-deps
+  const handleConfirm = useCallback(() => {
+    setState('live')
+    try { sessionStorage.setItem('tb:build-config', JSON.stringify(config)) } catch { /* ignore */ }
+  }, [config])
 
-  const handleSelectView = (v) => {
+  const handleStartOver = useCallback(() => {
+    setConfig(null)
+    setIntakeMode('url')
+    setIntakeError(null)
+    setState('intake')
+  }, [])
+
+  const handleSelectView = useCallback((v) => {
     setView(v)
     setViewPinned(true)
-  }
+  }, [])
 
-  const advance = (override) => {
-    const value = override !== undefined ? override : draft
-    setError(null)
-
-    let nextAnswers
-    if (step.input.kind === 'batched') {
-      // value is an object (or {} when skipped). Write each field;
-      // missing fields stay at current answers values.
-      const payload = (value && typeof value === 'object') ? value : {}
-      nextAnswers = { ...answers }
-      for (const g of step.input.groups) {
-        if (g.field in payload) nextAnswers[g.field] = payload[g.field]
-      }
-    } else if (step.input.kind === 'text') {
-      const v = (value || '').trim()
-      const err = step.validate ? step.validate(v) : null
-      if (err) { setError(err); return }
-      nextAnswers = step.input.field ? { ...answers, [step.input.field]: v } : answers
-    } else if (step.input.field) {
-      nextAnswers = { ...answers, [step.input.field]: value }
-    } else {
-      nextAnswers = answers
-    }
-
-    // Push the just-completed turn into the transcript.
-    const promptText = typeof step.prompt === 'function' ? step.prompt(answers) : step.prompt
-    const transcriptText = step.transcript ? step.transcript(nextAnswers) : null
-    setHistory(h => [...h, { prompt: promptText, answer: transcriptText }])
-
-    setAnswers(nextAnswers)
-    saveAnswers(nextAnswers)
-
-    if (stepIndex < STEPS.length - 1) {
-      setStepIndex(stepIndex + 1)
-    }
-  }
-
-  const goBack = () => {
-    if (stepIndex === 0) { onExit?.(); return }
-    setStepIndex(stepIndex - 1)
-    setHistory(h => h.slice(0, -1))
-    setError(null)
-  }
-
-  const handleOpenDashboard = () => {
-    saveAnswers(answers)
-    onComplete?.(answers)
-  }
-
-  const industry = INDUSTRIES.find(i => i.id === answers.industry)
-  const { navGroups, navBottom } = buildNavGroups(answers)
-
-  const totalStepsForProgress = phase === 'chat-centric' ? chatCentricStepCount : STEPS.length
+  const handleOpenDashboard = useCallback(() => {
+    onComplete?.(config)
+  }, [config, onComplete])
 
   const topBar = (
     <header className="ob-topbar">
-      <button type="button" className="ob-back" onClick={goBack}>
+      <button type="button" className="ob-back" onClick={() => {
+        if (state === 'intake') onExit?.()
+        else if (state === 'review') handleStartOver()
+        else onExit?.()
+      }}>
         <ChevronLeftIcon size={14} />
-        {stepIndex === 0 ? 'Back' : 'Previous'}
+        {state === 'intake' ? 'Back' : state === 'review' ? 'Start over' : 'Exit'}
       </button>
       <div className="ob-topbar-brand">
         <span className="ob-brand-mark" aria-hidden="true">
@@ -219,50 +135,111 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     </header>
   )
 
-  const chat = (
-    <OnboardingChat
-      step={step}
-      stepIndex={stepIndex}
-      totalSteps={totalStepsForProgress}
-      history={history}
-      answers={answers}
-      draft={draft}
-      setDraft={setDraft}
-      error={error}
-      onSubmit={advance}
-      onOpenDashboard={handleOpenDashboard}
-    />
-  )
-
-  if (phase === 'chat-centric') {
-    // Phase 1 — Claude-SMB style: chat centered, narrow info rail right.
+  if (state === 'intake') {
     return (
-      <div className="ob-root ob-root--phase1">
+      <div className="ob-root ob-root--intake">
         {topBar}
-        <div className="ob-phase1">
-          <div className="ob-phase1-chat">{chat}</div>
-          <InfoPanel stepIndex={stepIndex} answers={answers} />
-        </div>
+        <UrlIntake mode={intakeMode} onSubmit={handleIntakeSubmit} error={intakeError} />
       </div>
     )
   }
 
-  // Phase 2 — full DashboardShell.
+  if (state === 'research') {
+    return (
+      <div className="ob-root ob-root--research">
+        {topBar}
+        <ResearchNarrative config={config} onComplete={handleResearchComplete} />
+      </div>
+    )
+  }
+
+  if (state === 'review') {
+    return (
+      <div className="ob-root ob-root--review">
+        {topBar}
+        <ConfigReview
+          config={config}
+          onChange={setConfig}
+          onConfirm={handleConfirm}
+          onStartOver={handleStartOver}
+        />
+      </div>
+    )
+  }
+
+  // state === 'live'
+  const answers = configToAnswers(config)
+  const industry = INDUSTRIES.find(i => i.id === answers.industry)
+  const { navGroups, navBottom } = buildNavGroups(answers)
+  const liveView = viewPinned ? view : (FOCUS_TO_VIEW[view] || view || 'overview')
+
   return (
-    <div className="ob-root ob-root--phase2">
+    <div className="ob-root ob-root--live">
       {topBar}
       <DashboardShell
         mode="full"
-        view={view}
+        view={liveView}
         industryLabel={industry?.name ?? 'Workspace'}
         navGroups={navGroups}
         navBottom={navBottom}
         onBrand={onExit}
         onSelectView={handleSelectView}
-        chat={chat}
-        content={<BuildContent view={view} answers={answers} mode="full" />}
+        chat={
+          <LiveChatStub
+            config={config}
+            onOpenDashboard={handleOpenDashboard}
+          />
+        }
+        content={<BuildContent view={liveView} answers={answers} mode="full" />}
         activityFeed={<BuildActivityFeed answers={answers} />}
       />
     </div>
+  )
+}
+
+/* In the 'live' state the chat is no longer asking onboarding questions
+ * — Nova has done her work. This small stub renders Nova's closing
+ * message and a primary CTA to "open" the dashboard (which routes the
+ * operator into the real industry demo with their config). */
+function LiveChatStub({ config, onOpenDashboard }) {
+  return (
+    <section className="prompt-panel" aria-label="Teambridge AI">
+      <div className="prompt-panel-inner">
+        <div className="prompt-panel-head">
+          <div className="prompt-panel-title">
+            <span className="prompt-panel-mark" aria-hidden="true">
+              <TeambridgeAIIcon size={10} />
+            </span>
+            <span>Nova</span>
+          </div>
+        </div>
+
+        <div className="prompt-scroll">
+          <div className="prompt-messages">
+            <div className="ob-turn">
+              <div className="ob-bubble-row ob-bubble-row--nova">
+                <span className="ob-avatar ob-avatar--nova" aria-hidden="true">
+                  <TeambridgeAIIcon size={14} />
+                </span>
+                <div className="ob-bubble ob-bubble--nova">
+                  Your Teambridge is live, {config.companyName}. Take a look around —
+                  I've set up your roster, locations, and the agents most teams in
+                  your space run from day one. I'll be here whenever you need me.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <footer className="ob-chat-input">
+          <button type="button" className="ob-cta ob-cta--primary" onClick={onOpenDashboard}>
+            Open the full demo
+          </button>
+          <p className="ob-done-foot">
+            Or poke around right here — every section on the right is real.
+          </p>
+        </footer>
+      </div>
+    </section>
   )
 }
