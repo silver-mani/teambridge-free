@@ -130,23 +130,54 @@
  * chrome. */
 
 .ob-chat-inner {
-  /* Override Act1's .prompt-panel-inner padding so the compose footer
-   * sits flush against the bottom of the column. The head + scroll
-   * + drawer + compose stack as a contained flex column. */
-  height: 100%;
+  /* Override Act1's .prompt-panel-inner padding + max-width so the
+   * compose footer + drawer slot sit flush against the bottom of
+   * the column. Head + scroll + drawer/compose stack as a contained
+   * flex column inside the chat. */
   padding: 0;
+  max-width: none;       /* drop act1.css's 720px cap */
+  min-height: 0;          /* let .ob-chat-scroll actually shrink and overflow */
+  height: 100%;
   display: flex;
   flex-direction: column;
+  gap: 0;                 /* override act1's gap so children sit flush */
 }
 .ob-chat-head {
   flex-shrink: 0;
   padding: var(--space-4) var(--space-6) var(--space-2);
 }
 .ob-chat-scroll {
-  flex: 1;
-  min-height: 0;
+  flex: 1 1 0;            /* explicit basis so flex math works on all browsers */
+  min-height: 0;          /* allow shrinking below content height = enables overflow */
   overflow-y: auto;
   padding: var(--space-2) var(--space-6) var(--space-4);
+}
+
+/* Typing indicator — three bouncing dots Nova shows while composing
+ * a reply. Lives in a Nova bubble (.ob-msg--nova) so it inherits
+ * the left alignment + spacing. */
+.ob-msg--typing {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) 0;
+}
+.ob-typing-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.ob-typing-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-content-tertiary);
+  animation: ob-typing-bounce 1.4s ease-in-out infinite;
+}
+.ob-typing-dots span:nth-child(2) { animation-delay: 0.18s; }
+.ob-typing-dots span:nth-child(3) { animation-delay: 0.36s; }
+@keyframes ob-typing-bounce {
+  0%, 60%, 100% { transform: translateY(0);    opacity: 0.4; }
+  30%           { transform: translateY(-3px); opacity: 1; }
 }
 
 .ob-chat-sub {
@@ -156,9 +187,6 @@
   color: var(--color-content-tertiary);
 }
 
-.ob-chat-scroll { /* same shape as .prompt-scroll, keep loose */
-  padding-bottom: var(--space-4);
-}
 
 .ob-chat-messages {
   display: flex;
@@ -2099,20 +2127,22 @@
 }
 .pc-all:hover { color: var(--color-content-primary); border-color: var(--color-border-selected); }
 
-/* Policy card grid — 2-column layout, each card a substantive tile
- * (similar to teambridge.com/compliance/california). */
+/* Policy card grid — denser 3-4 column layout. Each card is a
+ * compact tile with status pill (top-left), toggle (top-right),
+ * bold title, description, and state badges at the bottom.
+ * Modeled on teambridge.com/compliance/california cards. */
 .pc-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-3);
-  padding: var(--space-4);
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
 }
 .pc-card {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-4);
+  gap: var(--space-2);
+  padding: var(--space-3);
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border-opaque);
   border-radius: var(--radius-md);
@@ -2120,15 +2150,13 @@
   text-align: left;
   cursor: pointer;
   transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
-  min-height: 168px;
 }
 .pc-card:hover {
   border-color: var(--color-border-selected);
   transform: translateY(-1px);
-  box-shadow: var(--shadow-below-sm, 0 1px 2px rgba(0,0,0,0.04));
 }
 .pc-card.is-on {
-  border-color: var(--color-content-primary);
+  border-color: var(--color-border-opaque);
   background: var(--color-bg-primary);
 }
 .pc-card-top {
@@ -2136,14 +2164,22 @@
   align-items: center;
   justify-content: space-between;
 }
-.pc-card-mark {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 40px; height: 40px;
-  border-radius: var(--radius-md);
+.pc-card-pill {
+  display: inline-flex; align-items: center;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-bg-tertiary);
+  color: var(--color-content-tertiary);
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+}
+.pc-card-pill.is-on {
+  background: var(--color-matcha-bg-tertiary);
+  color: var(--color-matcha-content-secondary);
 }
 .pc-card-toggle {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 24px; height: 24px;
+  width: 20px; height: 20px;
   border-radius: var(--radius-full);
   border: 1px solid var(--color-border-opaque);
   color: var(--color-content-inverse-primary);
@@ -2153,13 +2189,13 @@
   background: var(--color-content-primary);
   border-color: var(--color-content-primary);
 }
-.pc-card-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .pc-card-title {
-  font-size: var(--text-base);
-  font-weight: var(--font-weight-medium);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
   letter-spacing: -0.005em;
   color: var(--color-content-primary);
   line-height: var(--line-height-snug);
+  overflow-wrap: anywhere;
 }
 .pc-card-detail {
   font-size: var(--text-xs);
@@ -2172,9 +2208,10 @@
   gap: 4px;
   flex-wrap: wrap;
   margin-top: auto;
+  padding-top: var(--space-1);
 }
 .pc-card-state {
-  padding: 2px var(--space-2);
+  padding: 1px var(--space-2);
   border-radius: var(--radius-full);
   background: var(--color-bg-tertiary);
   color: var(--color-content-secondary);
@@ -2189,21 +2226,21 @@
 
 /* ─────────────────────── AgentsLaunchCard ────────────────────────── */
 .cc--agents-launch { animation: ob-fade-in 320ms ease; }
-/* Agent card grid — same 2-column visual weight as policies. Big
- * persona avatar (animated GIF), agent name, description, and a
- * "Powered by [persona]" attribution line at the bottom. */
+/* Agent card grid — same compact dense layout as policies. Agent
+ * avatar sits inline with the title; powered-by attribution at
+ * the bottom. */
 .alc-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-3);
-  padding: var(--space-4);
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
 }
 .alc-card {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-4);
+  gap: var(--space-2);
+  padding: var(--space-3);
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border-opaque);
   border-radius: var(--radius-md);
@@ -2211,15 +2248,13 @@
   text-align: left;
   cursor: pointer;
   transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
-  min-height: 192px;
 }
 .alc-card:hover {
   border-color: var(--color-border-selected);
   transform: translateY(-1px);
-  box-shadow: var(--shadow-below-sm, 0 1px 2px rgba(0,0,0,0.04));
 }
 .alc-card.is-on {
-  border-color: var(--color-content-primary);
+  border-color: var(--color-border-opaque);
   background: var(--color-bg-primary);
 }
 .alc-card-top {
@@ -2227,9 +2262,22 @@
   align-items: center;
   justify-content: space-between;
 }
+.alc-card-pill {
+  display: inline-flex; align-items: center;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-bg-tertiary);
+  color: var(--color-content-tertiary);
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+}
+.alc-card-pill.is-on {
+  background: var(--color-matcha-bg-tertiary);
+  color: var(--color-matcha-content-secondary);
+}
 .alc-card-toggle {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 24px; height: 24px;
+  width: 20px; height: 20px;
   border-radius: var(--radius-full);
   border: 1px solid var(--color-border-opaque);
   color: var(--color-content-inverse-primary);
@@ -2239,13 +2287,19 @@
   background: var(--color-content-primary);
   border-color: var(--color-content-primary);
 }
-.alc-card-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.alc-card-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
 .alc-card-title {
-  font-size: var(--text-base);
-  font-weight: var(--font-weight-medium);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
   letter-spacing: -0.005em;
   color: var(--color-content-primary);
   line-height: var(--line-height-snug);
+  overflow-wrap: anywhere;
 }
 .alc-card-detail {
   font-size: var(--text-xs);
@@ -2254,19 +2308,13 @@
 }
 .alc-card-foot {
   margin-top: auto;
-  padding-top: var(--space-2);
-  border-top: 1px solid var(--color-border-opaque);
+  padding-top: var(--space-1);
   font-size: 11px;
   color: var(--color-content-tertiary);
 }
 .alc-card-foot strong {
   font-weight: var(--font-weight-medium);
   color: var(--color-content-primary);
-}
-
-/* Single-column at narrow widths */
-@media (max-width: 1100px) {
-  .pc-grid, .alc-grid { grid-template-columns: 1fr; }
 }
 
 /* ─────────────────────── Shared card footer (CTAs) ────────────────── */

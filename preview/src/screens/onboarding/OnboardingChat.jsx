@@ -107,6 +107,15 @@ export default function OnboardingChat({
               if (m.kind === 'research') {
                 return <ResearchBubble key={m.id || i} headline={m.headline} steps={m.steps} />
               }
+              if (m.kind === 'typing') {
+                return (
+                  <div key={m.id || i} className="ob-msg ob-msg--nova ob-msg--typing" aria-label="Composing…">
+                    <span className="ob-typing-dots" aria-hidden="true">
+                      <span /><span /><span />
+                    </span>
+                  </div>
+                )
+              }
               return (
                 <Bubble key={m.id || i} from={m.from}>
                   {m.text}

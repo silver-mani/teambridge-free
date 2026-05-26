@@ -56,18 +56,21 @@ export default function AgentsLaunchCard({ agents = [], onAgentsChange, onLaunch
               aria-pressed={on}
             >
               <div className="alc-card-top">
-                <AgentAvatar painId={p.id} size={48} />
+                <span className={`alc-card-pill ${on ? 'is-on' : ''}`}>
+                  {on ? 'Active' : 'Off'}
+                </span>
                 <span className={`alc-card-toggle ${on ? 'is-on' : ''}`} aria-hidden="true">
-                  {on && <CheckCircleIcon size={16} />}
+                  {on && <CheckCircleIcon size={14} />}
                 </span>
               </div>
-              <div className="alc-card-text">
+              <div className="alc-card-head">
+                <AgentAvatar painId={p.id} size={32} />
                 <span className="alc-card-title">{agent.name}</span>
-                <span className="alc-card-detail">{agent.detail}</span>
               </div>
+              <span className="alc-card-detail">{agent.detail}</span>
               {persona && (
                 <div className="alc-card-foot">
-                  Powered by <strong>{persona.name}</strong> · {persona.role}
+                  Powered by <strong>{persona.name}</strong>
                 </div>
               )}
             </button>

@@ -105,8 +105,30 @@ export default function OnboardingFlow({ onExit, onComplete }) {
   ])
   const researchTimersRef = useRef([])
 
+  const typingTimersRef = useRef([])
+  /* Push a message into the chat. Nova messages get a brief typing
+   * indicator (3 animated dots) before the real text appears, so the
+   * conversation reads as the AI actually composing a reply. */
   const pushMessage = useCallback((m) => {
-    setMessages(prev => [...prev, { id: `m${prev.length}`, ...m }])
+    if (m.from !== 'nova' || m.kind === 'research') {
+      // Non-nova or research bubbles render instantly.
+      setMessages(prev => [...prev, { id: `m${prev.length}`, ...m }])
+      return
+    }
+    const typingId = `typing-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+    setMessages(prev => [...prev, { id: typingId, from: 'nova', kind: 'typing' }])
+    const timer = setTimeout(() => {
+      setMessages(prev => {
+        const without = prev.filter(x => x.id !== typingId)
+        return [...without, { id: `m${without.length}`, ...m }]
+      })
+    }, 750)
+    typingTimersRef.current.push(timer)
+  }, [])
+
+  useEffect(() => () => {
+    typingTimersRef.current.forEach(clearTimeout)
+    typingTimersRef.current = []
   }, [])
 
   /* ── Intake submit (from the chat-side IntakeDrawer) ──
