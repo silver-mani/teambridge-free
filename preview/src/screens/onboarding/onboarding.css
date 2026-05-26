@@ -366,10 +366,17 @@
  * reveal / ConfigCard editable / BuildContent surfaces in live). */
 
 .ob-right {
+  /* CSS Grid for the right pane — auto row for the head, 1fr row for
+   * the body. Same bulletproof pattern as .ob-chat-inner: nested flex
+   * with min-height: 0 wasn't reliably making the body scroll because
+   * flex-basis didn't always resolve through the grid-cell parent.
+   * grid-template-rows: minmax(0, 1fr) explicitly tells the row to
+   * shrink below content height, which is what makes overflow-y on
+   * the body actually trigger a scrollbar. */
   height: 100%;
-  min-height: 0;       /* allow shrinking inside the grid cell */
-  display: flex;
-  flex-direction: column;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
   background: var(--color-bg-secondary);
 }
@@ -591,10 +598,10 @@
 }
 
 .ob-right-head {
-  flex-shrink: 0;
+  /* Auto row of .ob-right grid — natural content height. */
   padding: var(--space-5) var(--space-6) var(--space-4);
   border-bottom: 1px solid var(--color-border-opaque);
-  background: transparent;  /* read as one surface with the body */
+  background: transparent;
 }
 .ob-right-title {
   margin: 0;
@@ -611,7 +618,9 @@
 }
 
 .ob-right-body {
-  flex: 1;
+  /* 1fr row of .ob-right grid. min-height: 0 + overflow-y: auto =
+   * actually scrolls when card content (policy/agent grid, expanded
+   * ConfigCard, etc.) exceeds the row height. */
   min-height: 0;
   overflow-y: auto;
   padding: var(--space-5) var(--space-6) var(--space-6);
