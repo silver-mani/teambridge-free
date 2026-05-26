@@ -97,7 +97,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
   // Chat
   const [messages, setMessages] = useState(() => [
     { id: 'm0', from: 'nova', text:
-      "Hi! I'm Nova, your Teambridge AI. Drop in your company's website below and I'll set up your account from what I learn about you — industry, headcount, locations, and the agents you'll need from day one." },
+      "Welcome to Teambridge. Drop in your company's website below and I'll configure your account from what I learn — industry, headcount, locations, and the agents you'll need from day one." },
   ])
   const researchTimersRef = useRef([])
 
@@ -170,7 +170,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
 
     const finalTimer = setTimeout(() => {
       pushMessage({ from: 'nova', text:
-        `Here's what I found for ${derived.companyName}. Take a look on the right. Now — which agents would you like me to activate?` })
+        `Here's what I found for ${derived.companyName}. Take a look on the right. Now — which agents should I activate?` })
       setState('agent-pick')
     }, cumulative + 700)
     researchTimersRef.current.push(finalTimer)
@@ -205,10 +205,8 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     pushMessage({ from: 'user', text: label })
     pushMessage({ from: 'nova', text:
       method === 'sample'
-        ? "Perfect — sample data is fastest. Building your workspace now…"
-        : method === 'csv'
-          ? "For this demo I'll preload sample employees. Hold on while I set everything up…"
-          : "For this demo I'll preload sample employees. Hold on while I set everything up…" })
+        ? "Perfect — sample data is fastest. Configuring your account now…"
+        : "For this demo I'll preload sample employees. Configuring your account now…" })
     setState('building')
     try { sessionStorage.setItem('tb:build-config', JSON.stringify(config)) } catch { /* ignore */ }
   }, [config, pushMessage])
@@ -238,10 +236,10 @@ export default function OnboardingFlow({ onExit, onComplete }) {
 
   const composerPlaceholder = (() => {
     if (state === 'intake')      return "Tap below to share your company's URL…"
-    if (state === 'research')    return 'Nova is working…'
-    if (state === 'agent-pick')  return 'Pick agents below, or chat with Nova'
+    if (state === 'research')    return 'Working…'
+    if (state === 'agent-pick')  return 'Pick agents below, or send a message'
     if (state === 'import-pick') return 'Choose an import method below'
-    if (state === 'building')    return 'Nova is building…'
+    if (state === 'building')    return 'Configuring your account…'
     return 'Type a message…'
   })()
   const composerDisabled = true   // input flows through the drawer at every step
@@ -300,7 +298,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
         <header className="ob-right-head">
           <h1 className="ob-right-title">Your Teambridge</h1>
           <p className="ob-right-sub">
-            Your dashboard will appear here as Nova learns about you.
+            Your dashboard will appear here as we learn about you.
           </p>
         </header>
         <div className="ob-right-body">
@@ -313,7 +311,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
       <div className="ob-right">
         <header className="ob-right-head">
           <h1 className="ob-right-title">Workspace forming</h1>
-          <p className="ob-right-sub">Watch your account come together as Nova works.</p>
+          <p className="ob-right-sub">Watch your account come together in real time.</p>
         </header>
         <div className="ob-right-body">
           <ConfigCard
@@ -331,9 +329,9 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     content = (
       <div className="ob-right ob-right--building">
         <header className="ob-right-head">
-          <h1 className="ob-right-title">Provisioning your workspace</h1>
+          <h1 className="ob-right-title">Configuring your account</h1>
           <p className="ob-right-sub">
-            Nova is wiring up {config?.companyName ?? 'your account'} end-to-end. This usually takes 10-15 seconds.
+            Wiring up {config?.companyName ?? 'your account'} end-to-end. This usually takes 10-15 seconds.
           </p>
         </header>
         <div className="ob-right-body ob-right-body--centered">
@@ -351,7 +349,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     const heading = state === 'agent-pick' ? 'Your account' : 'Almost there'
     const sub = state === 'agent-pick'
       ? (config?.url ? `Derived from ${config.url}. Tap any field to edit.` : 'Tap any field to edit.')
-      : 'Pick how you want to bring your team data over and Nova will build the rest.'
+      : "Pick how you want to bring your team data over and I'll configure the rest."
     content = (
       <div className="ob-right">
         <header className="ob-right-head">
@@ -567,7 +565,7 @@ function AgentPickDrawer({ companyName, agents, onAgentsChange, onSubmit, onStar
           onClick={onSubmit}
           disabled={count === 0}
         >
-          Continue{count > 0 ? ` with ${count} agent${count === 1 ? '' : 's'}` : ''}
+          Continue
           <ArrowNarrowRightIcon size={14} />
         </button>
       </div>
@@ -693,7 +691,7 @@ function OnboardingActivityPlaceholder() {
             <CheckCircleIcon size={14} />
           </span>
           <span>
-            Once your workspace is live, Nova posts every action she takes here —
+            Once your workspace is live, every agent action lands here —
             shift coverage, OT swaps, agent runs, the lot.
           </span>
         </div>

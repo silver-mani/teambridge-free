@@ -15,7 +15,7 @@ export default function AgentsCard({ agents = [] }) {
               {agents.length} agent{agents.length === 1 ? '' : 's'} activating
             </span>
             <span className="cc-head-sub">
-              These run from day one. You can switch them on or off later.
+              Running from day one. Toggle any off later.
             </span>
           </div>
         </div>

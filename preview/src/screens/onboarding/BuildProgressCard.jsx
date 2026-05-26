@@ -56,12 +56,12 @@ export default function BuildProgressCard({ config, importMethod, onComplete }) 
           </span>
           <div className="cc-head-text">
             <span className="cc-head-name">
-              {done ? 'All set' : 'Building your Teambridge'}
+              {done ? 'All set' : 'Configuring your account'}
             </span>
             <span className="cc-head-sub">
               {done
                 ? `${config?.companyName ?? 'Your workspace'} is ready. Opening now…`
-                : 'Nova is configuring your workspace.'}
+                : "I'm wiring up your workspace end-to-end."}
             </span>
           </div>
         </div>

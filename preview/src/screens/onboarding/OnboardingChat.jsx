@@ -97,8 +97,7 @@ export default function OnboardingChat({
             <span className="prompt-panel-mark" aria-hidden="true">
               <TeambridgeAIIcon size={10} />
             </span>
-            <span>Nova</span>
-            <span className="ob-chat-sub" aria-hidden="true">· Teambridge AI</span>
+            <span>Teambridge AI</span>
           </div>
         </header>
 

@@ -359,13 +359,6 @@
   flex-shrink: 0;
 }
 
-/* ── Sub-card head treatment shared by AgentsCard + BuildProgressCard ── */
-.cc-head-sub {
-  font-size: var(--text-xs);
-  color: var(--color-content-tertiary);
-  line-height: var(--line-height-loose);
-}
-
 /* ── AgentsCard — read-only confirmation of the agents picked ── */
 .cc--agents .cc-head { padding: var(--space-4) var(--space-5); }
 .cc-agent-list--padded {
@@ -942,6 +935,8 @@
 /* ─────────────────────── ConfigCard (shared) ─────────────────────── */
 
 .cc {
+  width: 100%;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   background: var(--color-bg-primary);
@@ -974,12 +969,28 @@
   flex-shrink: 0;
   transition: background 200ms ease, color 200ms ease;
 }
-.cc-head-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cc-head-text {
+  display: flex; flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
 .cc-head-name {
+  display: block;
+  max-width: 100%;
   font-size: var(--text-lg);
   font-weight: var(--font-weight-medium);
   letter-spacing: -0.01em;
   color: var(--color-content-primary);
+  overflow-wrap: anywhere;
+}
+.cc-head-sub {
+  display: block;
+  max-width: 100%;
+  font-size: var(--text-xs);
+  color: var(--color-content-tertiary);
+  line-height: var(--line-height-loose);
+  overflow-wrap: anywhere;
 }
 .cc-head-url {
   font-size: var(--text-xs);
