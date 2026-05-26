@@ -63,10 +63,10 @@ export default function AgentsLaunchCard({ agents = [], onAgentsChange, onLaunch
                   {on && <CheckCircleIcon size={14} />}
                 </span>
               </div>
-              <div className="alc-card-head">
-                <AgentAvatar painId={p.id} size={32} />
-                <span className="alc-card-title">{agent.name}</span>
+              <div className="alc-card-avatar-wrap">
+                <AgentAvatar painId={p.id} size={64} />
               </div>
+              <span className="alc-card-title">{agent.name}</span>
               <span className="alc-card-detail">{agent.detail}</span>
               {persona && (
                 <div className="alc-card-foot">
@@ -88,7 +88,7 @@ export default function AgentsLaunchCard({ agents = [], onAgentsChange, onLaunch
           onClick={onLaunch}
           disabled={count === 0}
         >
-          Launch {companyName || 'your account'}
+          Launch account
           <ArrowNarrowRightIcon size={14} />
         </button>
       </footer>

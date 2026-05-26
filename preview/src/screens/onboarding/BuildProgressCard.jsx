@@ -18,41 +18,62 @@ import {
 function provisioningSteps(config, importMethod, policies, agents, outcomes) {
   const headcount = config?.headcount?.toLocaleString() || ''
   const company = config?.companyName ?? 'your account'
+  const roleCount = config?.roles?.length || 0
+  const locCount = config?.locations?.length || 0
   const out = []
 
   out.push({
     id: 'workspace',
     title: 'Provisioning workspace',
-    detail: `Creating ${company}'s Teambridge instance.`,
-    delay: 1200,
+    detail: `Spinning up ${company}'s isolated tenant on Teambridge's infrastructure.`,
+    delay: 1600,
+  })
+  out.push({
+    id: 'analyze',
+    title: 'Analyzing your team shape',
+    detail: `Reading ${roleCount} role types across ${locCount} site${locCount === 1 ? '' : 's'} to set baselines.`,
+    delay: 1800,
   })
   out.push({
     id: 'roster',
     title: 'Loading roster',
     detail: importMethod === 'csv'
-      ? `Importing ${headcount} employees from your CSV.`
+      ? `Importing ${headcount} employees from your CSV and auto-mapping columns.`
       : importMethod === 'api'
-      ? `Syncing ${headcount} employees from your HRIS.`
-      : `Loading ${headcount} sample employees mapped to roles.`,
-    delay: 1500,
+      ? `Pulling ${headcount} employees from your HRIS and matching to roles.`
+      : `Seeding ${headcount} sample employees, distributed across roles realistically.`,
+    delay: 2200,
   })
   out.push({
     id: 'sites',
     title: 'Wiring up locations',
-    detail: `${config?.locations?.length || 0} sites added to the schedule grid.`,
-    delay: 1100,
+    detail: `${locCount} site${locCount === 1 ? '' : 's'} added to the schedule grid with shift templates.`,
+    delay: 1500,
+  })
+  out.push({
+    id: 'shifts',
+    title: 'Inferring your shift patterns',
+    detail: 'Cross-referencing industry norms with your role types to seed defaults.',
+    delay: 1800,
   })
 
   // One step per policy picked
-  ;(policies || []).slice(0, 5).forEach(id => {
+  ;(policies || []).slice(0, 6).forEach(id => {
     const p = POLICY_OPTIONS.find(o => o.id === id)
     if (!p) return
     out.push({
       id: `policy-${id}`,
       title: `Activating ${p.label.toLowerCase()}`,
       detail: p.detail,
-      delay: 1000,
+      delay: 1400,
     })
+  })
+
+  out.push({
+    id: 'thresholds',
+    title: 'Calibrating overtime + break thresholds',
+    detail: 'Aligning daily and weekly cutoffs with the policies you enabled.',
+    delay: 1500,
   })
 
   // One step per agent toggled on
@@ -63,43 +84,62 @@ function provisioningSteps(config, importMethod, policies, agents, outcomes) {
       id: `agent-${id}`,
       title: `Standing up ${a.name}`,
       detail: a.detail,
-      delay: 1100,
+      delay: 1500,
     })
+  })
+
+  out.push({
+    id: 'agent-train',
+    title: 'Pre-training agents on your data',
+    detail: 'Feeding each agent context about your roles, sites, and policies.',
+    delay: 2000,
   })
 
   out.push({
     id: 'modules',
     title: 'Enabling modules',
-    detail: 'Time tracking, payroll, shift requests, engage.',
-    delay: 1100,
+    detail: 'Time tracking, payroll, shift requests, engage — all switched on.',
+    delay: 1400,
   })
   out.push({
     id: 'schedule',
     title: "Drafting next week's schedule",
-    detail: `Templates seeded from your ${config?.roles?.length || 0} roles.`,
-    delay: 1500,
+    detail: `Templates seeded from your ${roleCount} roles; AI-balanced for coverage.`,
+    delay: 2000,
   })
 
   if (config?.suggestedConnectors?.length) {
     out.push({
       id: 'connectors',
       title: 'Connecting integrations',
-      detail: `Syncing ${config.suggestedConnectors.length} tool${config.suggestedConnectors.length === 1 ? '' : 's'} into payroll + HRIS.`,
-      delay: 1200,
+      detail: `Wiring ${config.suggestedConnectors.length} tool${config.suggestedConnectors.length === 1 ? '' : 's'} into payroll + HRIS sync.`,
+      delay: 1500,
     })
   }
 
   out.push({
     id: 'notifications',
     title: 'Setting up notifications',
-    detail: 'Routes by role + shift, with mobile + Slack delivery.',
-    delay: 1000,
+    detail: 'Routing by role + shift, with mobile and Slack delivery configured.',
+    delay: 1300,
+  })
+  out.push({
+    id: 'compliance',
+    title: 'Running first compliance check',
+    detail: 'Validating no roster conflicts with the policies you turned on.',
+    delay: 1700,
+  })
+  out.push({
+    id: 'integrity',
+    title: 'Validating data integrity',
+    detail: 'Every record mapped, every reference resolved, every agent ready.',
+    delay: 1400,
   })
   out.push({
     id: 'dashboard',
     title: 'Opening your dashboard',
-    detail: 'Almost there — final touches.',
-    delay: 900,
+    detail: 'Final handoff — your team is live.',
+    delay: 1200,
   })
 
   return out

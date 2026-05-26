@@ -44,22 +44,25 @@ import './onboarding.css'
 const RESEARCH_STEPS = (config) => [
   { text: `Reading ${config.url || 'your description'}…`,
     done: `Read ${config.url || 'your description'}.`,
-    field: null, delay: 600 },
+    field: null, delay: 1100 },
+  { text: 'Cross-referencing public data…',
+    done: 'Verified company details against LinkedIn and public filings.',
+    field: null, delay: 1300 },
   { text: 'Identifying your industry…',
     done: `Industry: ${(INDUSTRIES.find(i => i.id === config.industry)?.name) || config.industry}.`,
-    field: 'industry', delay: 800 },
+    field: 'industry', delay: 1200 },
   { text: 'Estimating your team size…',
     done: `Team: ~${config.headcount?.toLocaleString()} people.`,
-    field: 'headcount', delay: 700 },
+    field: 'headcount', delay: 1100 },
   { text: 'Mapping your locations…',
     done: `Found ${config.locations?.length ?? 0} site${(config.locations?.length ?? 0) === 1 ? '' : 's'}.`,
-    field: 'locations', delay: 900 },
+    field: 'locations', delay: 1300 },
   { text: 'Drafting your role list…',
     done: `${config.roles?.length ?? 0} role types identified.`,
-    field: 'roles', delay: 700 },
-  { text: 'Recommending your first agents…',
-    done: `${config.agents?.length ?? 0} agents ready to activate.`,
-    field: 'agents', delay: 800 },
+    field: 'roles', delay: 1100 },
+  { text: 'Matching workflows to your shape…',
+    done: 'Surfaced the agents typical for your industry and size.',
+    field: 'agents', delay: 1200 },
 ]
 
 /* Lock all nav items during onboarding — the operator can't navigate
@@ -122,7 +125,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
         const without = prev.filter(x => x.id !== typingId)
         return [...without, { id: `m${without.length}`, ...m }]
       })
-    }, 750)
+    }, 1300)   // ~1.3s feels like the AI is actually composing
     typingTimersRef.current.push(timer)
   }, [])
 

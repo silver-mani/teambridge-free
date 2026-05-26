@@ -238,8 +238,8 @@
   border-bottom-left-radius: var(--radius-xs);
 }
 .ob-bubble--user {
-  background: var(--color-bg-inverse-primary);
-  color: var(--color-content-inverse-primary);
+  background: var(--color-bg-tertiary);
+  color: var(--color-content-primary);
   border-bottom-right-radius: var(--radius-xs);
 }
 
@@ -2240,12 +2240,13 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  padding: var(--space-3);
+  padding: var(--space-4) var(--space-3);
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border-opaque);
   border-radius: var(--radius-md);
   font: inherit;
-  text-align: left;
+  text-align: center;        /* agent cards center their content */
+  align-items: center;
   cursor: pointer;
   transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
 }
@@ -2258,9 +2259,16 @@
   background: var(--color-bg-primary);
 }
 .alc-card-top {
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+.alc-card-avatar-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) 0 var(--space-1);
 }
 .alc-card-pill {
   display: inline-flex; align-items: center;
@@ -2287,14 +2295,8 @@
   background: var(--color-content-primary);
   border-color: var(--color-content-primary);
 }
-.alc-card-head {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-width: 0;
-}
 .alc-card-title {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-weight: var(--font-weight-semibold);
   letter-spacing: -0.005em;
   color: var(--color-content-primary);
@@ -2305,10 +2307,11 @@
   font-size: var(--text-xs);
   color: var(--color-content-tertiary);
   line-height: var(--line-height-loose);
+  max-width: 220px;
 }
 .alc-card-foot {
   margin-top: auto;
-  padding-top: var(--space-1);
+  padding-top: var(--space-2);
   font-size: 11px;
   color: var(--color-content-tertiary);
 }

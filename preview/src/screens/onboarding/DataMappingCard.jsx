@@ -37,9 +37,9 @@ export default function DataMappingCard({ config, importMethod, onComplete }) {
   const timersRef = useRef([])
 
   useEffect(() => {
-    const perStep = 650
+    const perStep = 900   // slower per-mapping so it reads as deliberate work
     timersRef.current = mappings.map((_, i) => setTimeout(() => setIdx(i + 1), (i + 1) * perStep))
-    const final = setTimeout(() => onComplete?.(), mappings.length * perStep + 800)
+    const final = setTimeout(() => onComplete?.(), mappings.length * perStep + 1000)
     timersRef.current.push(final)
     return () => { timersRef.current.forEach(clearTimeout); timersRef.current = [] }
   }, [mappings, onComplete])
