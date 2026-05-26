@@ -45,6 +45,11 @@ Return ONLY a single JSON object — no markdown, no commentary, no code fences.
   "roles": ["Role 1", "Role 2", ...],
   "agents": ["coverage", "overtime", ...],
   "suggestedConnectors": ["adp", "slack", ...],
+  "insights": [
+    "Specific observation 1",
+    "Specific observation 2",
+    "Specific observation 3"
+  ],
   "confidence": {
     "industry": "high|medium|low",
     "headcount": "high|medium|low",
@@ -67,6 +72,15 @@ Guidance:
   - comms       = smart notify / role-routing (high for multi-site, distributed teams)
   - scheduling  = schedule auto-draft (high for stable rotating teams)
 - CONNECTORS: 2-4 integration IDs the company most likely uses. Pick from the enum based on industry norms (e.g. Workday for large enterprises, BambooHR for mid-market, Gusto/Rippling for small/medium, Sage Intacct for construction, ADP very common across).
+- INSIGHTS: this is the most important field. Three SPECIFIC observations about this company's workforce that demonstrate you actually researched them — not generic industry truisms. Each insight should:
+    * Reference something verifiable: a specific event, a public stat, a known fact about the company, a quirk of their operating model, a regulatory exposure their state creates, a competitor benchmark, a recent news item, a known shift pattern.
+    * Connect to a Teambridge capability they'd activate: an agent that addresses it, a policy that matters because of it, a workflow that fits their shape.
+    * Read like a thoughtful consultant would say it on first meeting, not a brochure.
+  Bad: "Healthcare companies often face nurse shortages." (generic, useless)
+  Good: "Memorial reported 14% RN turnover in your 2024 CMS filing — Credential Watch + Smart Notify would catch onboarding gaps before they become callouts."
+  Good: "SoFi Stadium averages 22 ticketed events/month with 240% peak-to-trough staff variance — Last-minute Replacement is the highest-leverage agent for that pattern."
+  Good: "California's predictive scheduling rule (SB 478) applies to most of your roles; we've activated 14-day post-ahead so you're never below the compliance floor."
+  Each insight should be ONE sentence, ≤ 35 words, end with a period. No markdown, no asterisks.
 - CONFIDENCE: be honest. URL with a clear public website → high. URL with little info found → medium. Pure description → medium at best. Guesses → low.
 
 If you can't find the company, set companyName to your best guess derived from the URL, and use low confidence throughout.`
@@ -166,6 +180,9 @@ export default async function handler(req, res) {
       : []
     config.locations = Array.isArray(config.locations) ? config.locations.slice(0, 6) : []
     config.roles = Array.isArray(config.roles) ? config.roles.slice(0, 8) : []
+    config.insights = Array.isArray(config.insights)
+      ? config.insights.filter(s => typeof s === 'string' && s.trim()).slice(0, 3)
+      : []
     config.url = fromFreeText ? '' : input
     config.origin = fromFreeText ? 'ai-text' : 'ai-url'
 

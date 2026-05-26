@@ -1,44 +1,37 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { TeambridgeAIIcon } from '../../../../src/components/icons/TeambridgeAIIcon.tsx'
-import { ArrowNarrowRightIcon } from '../../../../src/components/icons/ArrowNarrowRightIcon.tsx'
 import { ArrowNarrowUpIcon } from '../../../../src/components/icons/ArrowNarrowUpIcon.tsx'
-import { CheckCircleIcon } from '../../../../src/components/icons/CheckCircleIcon.tsx'
 import { INDUSTRIES } from '../IndustrySelector.jsx'
 import DashboardShell, { DEFAULT_NAV_GROUPS, DEFAULT_NAV_BOTTOM } from '../shell/DashboardShell.jsx'
 import OnboardingChat from './OnboardingChat.jsx'
 import ConfigCard, { ALL_FIELDS } from './ConfigCard.jsx'
-import { deriveConfig } from './urlMatcher.js'
-import { PAIN_OPTIONS, PAIN_TO_AGENT, OUTCOME_OPTIONS, OUTCOME_TO_AGENTS } from './steps.js'
-import AgentAvatar from './AgentAvatar.jsx'
-import AgentsCard from './AgentsCard.jsx'
+import ConfirmCard from './ConfirmCard.jsx'
 import BuildProgressCard from './BuildProgressCard.jsx'
-import DataMappingCard from './DataMappingCard.jsx'
-import PoliciesCard from './PoliciesCard.jsx'
-import AgentsLaunchCard from './AgentsLaunchCard.jsx'
+import { deriveConfig } from './urlMatcher.js'
 import '../act1.css'
 import './onboarding.css'
 
 /* ──────────────────────────────────────────────────────────────────────
  * OnboardingFlow — `#/build` route.
  *
- * Three-state machine; consistent shell throughout (LeftNav · Nova chat ·
- * right-side UI · activity-drawer overlay).
+ * Collapsed 4-state machine (was 9):
  *
- *   intake    Nova greets in chat. The URL is captured via a Claude-
- *             style bottom drawer inside the chat (compose disabled).
- *             Right pane shows an animated wireframe loop indicating
- *             where the dashboard will appear.
- *   research  Nova posts a single research bubble that updates with a
- *             checklist over ~5s. Right pane's ConfigCard reveals one
- *             field at a time. Compose disabled.
- *   review    Nova asks for confirmation in chat. Right pane's
- *             ConfigCard is fully editable (no buttons there — passive
- *             preview). The bottom drawer asks for work email and
- *             surfaces the Build CTA.
+ *   intake     URL prompt (chat drawer)
+ *   research   Right pane reveals ConfigCard field-by-field while
+ *              Claude looks up the company; ~5s animation paced to
+ *              cover the API call.
+ *   confirm    Right pane: ConfirmCard — ONE screen with everything
+ *              Nova derived (insights, agents, policies, import
+ *              method). Defaults are all set so the operator just
+ *              clicks "Launch my account"; sections expand to edit.
+ *              No chat drawer; chat is quiet.
+ *   launching  Right pane: BuildProgressCard, 5 substantive steps
+ *              over ~8s. Hand-off to industry demo when done.
  *
- * Once confirmed → onComplete(config) hands off to main.jsx which
- * routes to `#/<industry>` for the existing Act1 demo experience.
- * The full live dashboard lives there, not inside the build flow.
+ * On launch we set sessionStorage tb:fresh-launch=1 — Act1Dashboard
+ * reads this on first mount and skips the scripted cancellation scene
+ * so the operator lands on a calm "this is mine" view instead of
+ * "watch Sandra Lee cancel".
  * ────────────────────────────────────────────────────────────────────── */
 
 const RESEARCH_STEPS = (config) => [
@@ -46,7 +39,7 @@ const RESEARCH_STEPS = (config) => [
     done: `Read ${config.url || 'your description'}.`,
     field: null, delay: 1100 },
   { text: 'Cross-referencing public data…',
-    done: 'Verified company details against LinkedIn and public filings.',
+    done: 'Verified company details against public sources.',
     field: null, delay: 1300 },
   { text: 'Identifying your industry…',
     done: `Industry: ${(INDUSTRIES.find(i => i.id === config.industry)?.name) || config.industry}.`,
@@ -60,13 +53,36 @@ const RESEARCH_STEPS = (config) => [
   { text: 'Drafting your role list…',
     done: `${config.roles?.length ?? 0} role types identified.`,
     field: 'roles', delay: 1100 },
-  { text: 'Matching workflows to your shape…',
-    done: 'Surfaced the agents typical for your industry and size.',
-    field: 'agents', delay: 1200 },
+  { text: 'Surfacing what stands out…',
+    done: 'Got a clear read.',
+    field: 'agents', delay: 1300 },
 ]
 
-/* Lock all nav items during onboarding — the operator can't navigate
- * into anything until the dashboard hand-off. */
+function configToAnswers(config, importMethod = 'sample') {
+  return {
+    firstName:     '',
+    company:       config?.companyName,
+    industry:      config?.industry,
+    teamSize:      headcountRangeFor(config?.headcount || 0),
+    locationModel: locationModelFor(config?.locations),
+    pains:         config?.agents || [],
+    connectors:    config?.suggestedConnectors || [],
+    rosterChoice:  importMethod === 'csv' ? 'csv' : importMethod === 'api' ? 'hris' : 'sample',
+    roles:         config?.roles || [],
+  }
+}
+function headcountRangeFor(h) {
+  if (h <= 25)  return '1-25'
+  if (h <= 100) return '26-100'
+  if (h <= 500) return '101-500'
+  return '500+'
+}
+function locationModelFor(locations = []) {
+  if (locations.length <= 1) return 'single'
+  if (locations.length <= 3) return 'multi-local'
+  return 'multi-regional'
+}
+
 function buildLockedNav() {
   const apply = group => ({
     ...group,
@@ -79,42 +95,28 @@ function buildLockedNav() {
 }
 
 export default function OnboardingFlow({ onExit, onComplete }) {
-  // State machine — drives chat drawer + right pane composition.
-  //   intake       URL prompt (chat drawer); right = WireframeLoop
-  //   research     Right pane reveals ConfigCard field-by-field
-  //   outcomes     Chat drawer: "what are you looking to do?"
-  //                multi-select; right = ConfigCard (no agents row)
-  //   import       Chat drawer: CSV/API/Sample picker;
-  //                right = ConfigCard + outcomes summary
-  //   mapping      Clean slate on right; animated data-mapping list
-  //                "Security → Role", "SoFi Stadium → Site", etc.
-  //                Chat is quiet (no drawer, no compose).
-  //   policies     Right: PoliciesCard, state-based labor policies
-  //   agents       Right: AgentsLaunchCard with launch CTA
-  //   (no 'done' state — onComplete fires from AgentsLaunchCard)
-  const [state, setState] = useState('intake')
-  const [intakeMode, setIntakeMode] = useState('url')
+  const [state, setState] = useState('intake')              // 'intake' | 'research' | 'confirm' | 'launching'
+  const [intakeMode, setIntakeMode] = useState('url')       // 'url' | 'free-text'
   const [intakeDraft, setIntakeDraft] = useState('')
   const [config, setConfig] = useState(null)
   const [revealedFields, setRevealedFields] = useState(new Set(['summary']))
-  const [outcomes, setOutcomes] = useState([])      // outcome ids picked in 'outcomes' state
-  const [importMethod, setImportMethod] = useState(null)  // 'csv' | 'api' | 'sample'
-  const [policies, setPolicies] = useState([])      // policy ids picked in 'policies' state
+  const [importMethod, setImportMethod] = useState('sample')
+  const [policies, setPolicies] = useState([])
 
-  // Chat
   const [messages, setMessages] = useState(() => [
     { id: 'm0', from: 'nova', text:
-      "Hi! Enter your company website below — we'll use it to set up your account in about a minute." },
+      "Welcome to Teambridge. Drop your company website below — I'll set up your account from what I learn." },
   ])
   const researchTimersRef = useRef([])
-
   const typingTimersRef = useRef([])
-  /* Push a message into the chat. Nova messages get a brief typing
-   * indicator (3 animated dots) before the real text appears, so the
-   * conversation reads as the AI actually composing a reply. */
+
+  /* Push a chat message. Nova messages get a typing-indicator pause
+   * before they reveal. Action-triggered transactional acks (user
+   * just clicked something) can bypass the typing by passing
+   * { instant: true } — that keeps the chat snappy when the user
+   * is in control. */
   const pushMessage = useCallback((m) => {
-    if (m.from !== 'nova' || m.kind === 'research') {
-      // Non-nova or research bubbles render instantly.
+    if (m.from !== 'nova' || m.kind === 'research' || m.kind === 'thinking' || m.instant) {
       setMessages(prev => [...prev, { id: `m${prev.length}`, ...m }])
       return
     }
@@ -125,7 +127,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
         const without = prev.filter(x => x.id !== typingId)
         return [...without, { id: `m${without.length}`, ...m }]
       })
-    }, 1300)   // ~1.3s feels like the AI is actually composing
+    }, 1100)
     typingTimersRef.current.push(timer)
   }, [])
 
@@ -134,15 +136,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     typingTimersRef.current = []
   }, [])
 
-  /* ── Intake submit (from the chat-side IntakeDrawer) ──
-   * Async: transitions to 'research' state immediately, posts a
-   * placeholder research bubble with step 0 ("Reading…") active,
-   * fires the Claude-backed /api/derive-config call in parallel, and
-   * cascades the remaining reveal steps once the config returns.
-   *
-   * urlMatcher.deriveConfig falls back to a heuristic if the API
-   * errors out, so this resolves with a usable config unless the
-   * input was empty. */
+  /* ── Intake submit ── */
   const handleIntakeSubmit = useCallback(async (rawInput) => {
     const text = rawInput.trim()
     if (!text) return
@@ -156,24 +150,23 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     setIntakeDraft('')
     setRevealedFields(new Set(['summary']))
 
-    // Post the placeholder research bubble (step 0 active).
     const bubbleId = `r-${Date.now()}`
     setMessages(prev => [
       ...prev,
       { id: bubbleId, from: 'nova', kind: 'research',
         headline: `Looking up ${placeholderUrl}…`,
         steps: [
-          { text: `Reading ${placeholderUrl}…`,           status: 'active' },
-          { text: 'Identifying your industry…',           status: 'pending' },
-          { text: 'Estimating your team size…',           status: 'pending' },
-          { text: 'Mapping your locations…',              status: 'pending' },
-          { text: 'Drafting your role list…',             status: 'pending' },
-          { text: 'Recommending your first agents…',      status: 'pending' },
+          { text: `Reading ${placeholderUrl}…`,        status: 'active' },
+          { text: 'Cross-referencing public data…',    status: 'pending' },
+          { text: 'Identifying your industry…',        status: 'pending' },
+          { text: 'Estimating your team size…',        status: 'pending' },
+          { text: 'Mapping your locations…',           status: 'pending' },
+          { text: 'Drafting your role list…',          status: 'pending' },
+          { text: 'Surfacing what stands out…',        status: 'pending' },
         ] },
     ])
     setState('research')
 
-    // Hit /api/derive-config (or fall back to heuristic on error).
     let derived = null
     try {
       derived = await deriveConfig(text, { fromFreeText: isFreeText })
@@ -182,7 +175,6 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     }
 
     if (!derived) {
-      // Empty input or hard failure — bail back to free-text intake.
       setMessages(msgs => msgs.filter(m => m.id !== bubbleId))
       setIntakeMode('free-text')
       pushMessage({ from: 'nova', text:
@@ -195,15 +187,10 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     cascadeResearchSteps(derived, bubbleId)
   }, [intakeMode, pushMessage]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* Once the API has responded, fast-forward step 0 (Reading…) to done
-   * and cascade through steps 1-5 with their delays. Right pane's
-   * ConfigCard reveals each field as its matching step completes. */
   function cascadeResearchSteps(derived, bubbleId) {
     const fullSteps = RESEARCH_STEPS(derived)
-    const finalHeadline = `Looking up ${derived.url || 'your description'}…`
+    const finalHeadline = `Read ${derived.url || 'your description'}.`
 
-    // Mark step 0 done + step 1 active immediately (no delay — the API
-    // already took its time, no need to wait further).
     setMessages(msgs => msgs.map(m => {
       if (m.id !== bubbleId) return m
       const nextSteps = fullSteps.map((s, idx) => ({
@@ -216,7 +203,6 @@ export default function OnboardingFlow({ onExit, onComplete }) {
       setRevealedFields(prev => new Set([...prev, fullSteps[0].field]))
     }
 
-    // Cascade steps 1..N with their delays.
     let cumulative = 0
     researchTimersRef.current = []
     for (let i = 1; i < fullSteps.length; i++) {
@@ -228,9 +214,9 @@ export default function OnboardingFlow({ onExit, onComplete }) {
         setMessages(msgs => msgs.map(m => {
           if (m.id !== bubbleId) return m
           const next = m.steps.map((ps, k) => {
-            if (k < idx)  return { ...ps, status: 'done', text: fullSteps[k].done }
-            if (k === idx) return { ...ps, status: 'done', text: fullSteps[idx].done }
-            if (k === idx + 1) return { ...ps, status: 'active' }
+            if (k < idx)     return { ...ps, status: 'done', text: fullSteps[k].done }
+            if (k === idx)   return { ...ps, status: 'done', text: fullSteps[idx].done }
+            if (k === idx+1) return { ...ps, status: 'active' }
             return ps
           })
           return { ...m, steps: next }
@@ -239,168 +225,37 @@ export default function OnboardingFlow({ onExit, onComplete }) {
       researchTimersRef.current.push(timer)
     }
 
-    // After all reveals + a settling beat, ask the outcomes question.
+    // After all reveals + a settling beat, push the confirm message
+    // and transition to the confirm step.
     const finalTimer = setTimeout(() => {
       pushMessage({ from: 'nova', text:
-        `Got a good read on ${derived.companyName}. What are you looking to do with Teambridge?` })
-      setState('outcomes')
+        `Here's everything I set up for ${derived.companyName}. Edit anything on the right, or just hit Launch.` })
+      setState('confirm')
     }, cumulative + 700)
     researchTimersRef.current.push(finalTimer)
   }
 
-  useEffect(() => {
-    return () => {
-      researchTimersRef.current.forEach(clearTimeout)
-      researchTimersRef.current = []
-    }
+  useEffect(() => () => {
+    researchTimersRef.current.forEach(clearTimeout)
+    researchTimersRef.current = []
   }, [])
 
-  /* ── Outcomes → Thinking → Import ── */
-  const handleOutcomesConfirmed = useCallback(() => {
-    if (outcomes.length === 0) return
-    const labels = outcomes
-      .map(id => OUTCOME_OPTIONS.find(o => o.id === id)?.label)
-      .filter(Boolean)
-    pushMessage({ from: 'user', text:
-      labels.length === 1 ? labels[0] : `${labels.length} goals` })
-
-    // Build the thinking points — one per outcome that maps to
-    // specific agents. Format: "{outcome} → {agent names}".
-    const points = []
-    const seenAgents = new Set()
-    for (const outId of outcomes) {
-      const agentIds = (OUTCOME_TO_AGENTS[outId] || []).filter(a => !seenAgents.has(a))
-      if (agentIds.length === 0) continue
-      agentIds.forEach(a => seenAgents.add(a))
-      const agentNames = agentIds.map(a => PAIN_TO_AGENT[a]?.name).filter(Boolean)
-      const outcomeLabel = OUTCOME_OPTIONS.find(o => o.id === outId)?.label
-      if (!outcomeLabel || agentNames.length === 0) continue
-      const list = agentNames.length === 1
-        ? agentNames[0]
-        : `${agentNames.slice(0, -1).join(', ')} and ${agentNames[agentNames.length - 1]}`
-      points.push(`${outcomeLabel} → ${list}`)
-    }
-
-    // Drawer must disappear immediately — transition out of 'outcomes'
-    // state so the OutcomesDrawer unmounts. 'thinking' state has no
-    // drawer; chat will compose stays empty during the animation.
-    setState('thinking')
-
-    if (points.length === 0) {
-      // No specific mapping (operator picked only "sites") — short
-      // path: just one message + transition.
-      pushMessage({ from: 'nova', text: "Got it. Now — how should I bring your team's data in?" })
-      const t = setTimeout(() => setState('import'), 2200)
-      typingTimersRef.current.push(t)
-      return
-    }
-
-    // Post the animated thinking bubble (same visual as the research
-    // bubble — headline + checklist that fills in over time).
-    const thinkingId = `t-${Date.now()}`
-    const initialSteps = points.map((text, i) => ({
-      text,
-      status: i === 0 ? 'active' : 'pending',
-    }))
-    setMessages(prev => [...prev, {
-      id: thinkingId, from: 'nova', kind: 'thinking',
-      headline: 'Thinking through what this means for your setup…',
-      steps: initialSteps,
-    }])
-
-    // Cascade points one by one with a delay.
-    const perStep = 1500
-    points.forEach((_, i) => {
-      const t = setTimeout(() => {
-        setMessages(msgs => msgs.map(m => {
-          if (m.id !== thinkingId) return m
-          const next = m.steps.map((s, k) => {
-            if (k < i)        return { ...s, status: 'done' }
-            if (k === i)      return { ...s, status: 'done' }
-            if (k === i + 1)  return { ...s, status: 'active' }
-            return s
-          })
-          return { ...m, steps: next }
-        }))
-      }, (i + 1) * perStep)
-      typingTimersRef.current.push(t)
-    })
-
-    // After all points + a beat, post the next-question message and
-    // then transition. pushMessage handles its own typing delay.
-    const totalThinking = points.length * perStep + 700
-    const askTimer = setTimeout(() => {
-      pushMessage({ from: 'nova', text: "Now — how should I bring your team's data in?" })
-    }, totalThinking)
-    const stateTimer = setTimeout(() => setState('import'), totalThinking + 2200)
-    typingTimersRef.current.push(askTimer, stateTimer)
-  }, [outcomes, pushMessage])
-
-  /* ── Import → Mapping ── */
-  const handleImportPicked = useCallback((method) => {
-    setImportMethod(method)
-    const label = method === 'csv' ? 'Upload a CSV'
-                : method === 'api' ? 'Sync from HRIS'
-                :                    'Use sample data'
-    pushMessage({ from: 'user', text: label })
-    pushMessage({ from: 'nova', text: "Mapping things up on the right. Hang tight." })
-    setState('mapping')
-    try { sessionStorage.setItem('tb:build-config', JSON.stringify(config)) } catch { /* ignore */ }
-  }, [config, pushMessage])
-
-  /* ── Mapping animation complete → Policies ── */
-  const handleMappingComplete = useCallback(() => {
+  /* ── Confirm → Launching → Done ── */
+  const handleLaunch = useCallback((picks) => {
+    setImportMethod(picks?.importMethod || 'sample')
+    setPolicies(picks?.policies || [])
     pushMessage({ from: 'nova', text:
-      "Now — labor policies for your states. Toggle off anything you don't need." })
-    setState('policies')
-  }, [pushMessage])
-
-  /* ── Policies → Agents ── */
-  const handlePoliciesContinue = useCallback((picked) => {
-    setPolicies(picked)
-    pushMessage({ from: 'user', text:
-      picked.length === 0 ? 'No policies' : `${picked.length} polic${picked.length === 1 ? 'y' : 'ies'} on` })
-    pushMessage({ from: 'nova', text:
-      "Last step — pick which agents I should run from day one." })
-    // Pre-select agents implied by the outcomes the operator picked.
-    const initialAgents = new Set()
-    for (const o of outcomes) {
-      for (const a of (OUTCOME_TO_AGENTS[o] || [])) initialAgents.add(a)
-    }
-    setConfig(c => ({ ...c, agents: c?.agents?.length ? c.agents : Array.from(initialAgents) }))
-    setState('agents')
-  }, [outcomes, pushMessage])
-
-  /* ── Agents → Launching (rich provisioning animation) ── */
-  const handleAgentsLaunch = useCallback(() => {
-    if (!config?.agents?.length) return
-    try { sessionStorage.setItem('tb:build-config', JSON.stringify(config)) } catch { /* ignore */ }
-    pushMessage({ from: 'nova', text:
-      `Launching ${config?.companyName ?? 'your account'}. Walk-through on the right.` })
+      `Launching your account. About 8 seconds.`, instant: true })
     setState('launching')
+    try {
+      sessionStorage.setItem('tb:build-config', JSON.stringify(config))
+      sessionStorage.setItem('tb:fresh-launch', '1')
+    } catch { /* ignore */ }
   }, [config, pushMessage])
 
-  /* ── Launching animation complete → hand off to industry demo ── */
   const handleLaunchComplete = useCallback(() => {
     onComplete?.(config)
   }, [config, onComplete])
-
-  const handleStartOver = useCallback(() => {
-    researchTimersRef.current.forEach(clearTimeout)
-    researchTimersRef.current = []
-    setConfig(null)
-    setRevealedFields(new Set(['summary']))
-    setOutcomes([])
-    setImportMethod(null)
-    setPolicies([])
-    setIntakeMode('url')
-    setIntakeDraft('')
-    setState('intake')
-    setMessages([
-      { id: 'm0', from: 'nova', text:
-        "Let's try again — drop in a different website (or description) below." },
-    ])
-  }, [])
 
   /* ── Render ── */
   const industry = state === 'intake' ? null : (config ? INDUSTRIES.find(i => i.id === config.industry) : null)
@@ -409,47 +264,20 @@ export default function OnboardingFlow({ onExit, onComplete }) {
   const composerPlaceholder = (() => {
     if (state === 'intake')    return 'Use the form below'
     if (state === 'research')  return 'Setting up…'
-    if (state === 'outcomes')  return 'Pick goals below'
-    if (state === 'thinking')  return 'Thinking…'
-    if (state === 'import')    return 'Pick one below'
-    if (state === 'mapping')   return 'Setting up…'
+    if (state === 'confirm')   return 'Review on the right →'
     if (state === 'launching') return 'Launching…'
-    if (state === 'policies' || state === 'agents') return 'Continue on the right →'
     return 'Type a message…'
   })()
-  const composerDisabled = true   // input flows through the drawer / right pane at every step
+  const composerDisabled = true
 
-  const drawer = (() => {
-    if (state === 'intake') {
-      return (
-        <IntakeDrawer
-          mode={intakeMode}
-          value={intakeDraft}
-          onChange={setIntakeDraft}
-          onSubmit={handleIntakeSubmit}
-        />
-      )
-    }
-    if (state === 'outcomes') {
-      return (
-        <OutcomesDrawer
-          companyName={config?.companyName}
-          selected={outcomes}
-          onChange={setOutcomes}
-          onSubmit={handleOutcomesConfirmed}
-        />
-      )
-    }
-    if (state === 'import') {
-      return (
-        <ImportPickDrawer
-          companyName={config?.companyName}
-          onPick={handleImportPicked}
-        />
-      )
-    }
-    return null
-  })()
+  const drawer = state === 'intake' ? (
+    <IntakeDrawer
+      mode={intakeMode}
+      value={intakeDraft}
+      onChange={setIntakeDraft}
+      onSubmit={handleIntakeSubmit}
+    />
+  ) : null
 
   const chat = (
     <OnboardingChat
@@ -457,12 +285,10 @@ export default function OnboardingFlow({ onExit, onComplete }) {
       composerPlaceholder={composerPlaceholder}
       composerDisabled={composerDisabled}
       drawer={drawer}
-      onSend={() => { /* compose disabled across the build flow */ }}
+      onSend={() => { /* disabled */ }}
     />
   )
 
-  /* Fields shown in the main ConfigCard — agents are intentionally
-   * pulled out into their own AgentsCard once picked. */
   const cardFields = ALL_FIELDS.filter(f => f !== 'agents')
 
   let content
@@ -496,73 +322,13 @@ export default function OnboardingFlow({ onExit, onComplete }) {
         </div>
       </div>
     )
-  } else if (state === 'mapping') {
-    // Clean slate — DataMappingCard owns the right pane and animates
-    // through ~14 source → target mappings before handing off to the
-    // policies step.
-    content = (
-      <div className="ob-right ob-right--building">
-        <header className="ob-right-head">
-          <h1 className="ob-right-title">Mapping your account</h1>
-          <p className="ob-right-sub">
-            Wiring data into the right fields.
-          </p>
-        </header>
-        <div className="ob-right-body ob-right-body--centered">
-          <DataMappingCard
-            config={config}
-            importMethod={importMethod}
-            onComplete={handleMappingComplete}
-          />
-        </div>
-      </div>
-    )
-  } else if (state === 'policies') {
-    content = (
-      <div className="ob-right">
-        <header className="ob-right-head">
-          <h1 className="ob-right-title">Labor policies</h1>
-          <p className="ob-right-sub">
-            Based on the states you operate in. Toggle off anything you don't need.
-          </p>
-        </header>
-        <div className="ob-right-body">
-          <PoliciesCard
-            config={config}
-            onContinue={handlePoliciesContinue}
-          />
-        </div>
-      </div>
-    )
-  } else if (state === 'agents') {
-    content = (
-      <div className="ob-right">
-        <header className="ob-right-head">
-          <h1 className="ob-right-title">Your agents</h1>
-          <p className="ob-right-sub">
-            Pick which agents I should run from day one. Launch when ready.
-          </p>
-        </header>
-        <div className="ob-right-body">
-          <AgentsLaunchCard
-            companyName={config?.companyName}
-            agents={config?.agents || []}
-            onAgentsChange={(next) => setConfig(c => ({ ...c, agents: next }))}
-            onLaunch={handleAgentsLaunch}
-          />
-        </div>
-      </div>
-    )
   } else if (state === 'launching') {
-    // Final step — BuildProgressCard takes over the right pane and
-    // walks through provisioning each piece of the workspace before
-    // handing off to the industry demo.
     content = (
       <div className="ob-right ob-right--building">
         <header className="ob-right-head">
           <h1 className="ob-right-title">Launching your account</h1>
           <p className="ob-right-sub">
-            Provisioning {config?.companyName ?? 'your workspace'} — about 15 seconds.
+            About 8 seconds — your team will be live shortly.
           </p>
         </header>
         <div className="ob-right-body ob-right-body--centered">
@@ -571,29 +337,26 @@ export default function OnboardingFlow({ onExit, onComplete }) {
             importMethod={importMethod}
             policies={policies}
             agents={config?.agents}
-            outcomes={outcomes}
             onComplete={handleLaunchComplete}
           />
         </div>
       </div>
     )
   } else {
-    // outcomes, import — same shell, ConfigCard on the right.
-    const sub = state === 'outcomes'
-      ? (config?.url ? `Based on ${config.url}. Tap to edit anything.` : 'Tap to edit anything.')
-      : 'One more step to finish setup.'
+    // confirm
     content = (
       <div className="ob-right">
         <header className="ob-right-head">
           <h1 className="ob-right-title">Your account</h1>
-          <p className="ob-right-sub">{sub}</p>
+          <p className="ob-right-sub">
+            Everything below is defaulted — change anything, or just launch.
+          </p>
         </header>
         <div className="ob-right-body">
-          <ConfigCard
+          <ConfirmCard
             config={config}
-            editable={state === 'outcomes'}
             onChange={setConfig}
-            visibleFields={cardFields}
+            onLaunch={handleLaunch}
           />
         </div>
       </div>
@@ -679,143 +442,8 @@ function IntakeDrawer({ mode, value, onChange, onSubmit }) {
   )
 }
 
-/* ─── Outcomes drawer — first chat question after research. Multi-
- *     select list of outcome statements ("what are you looking to do?")
- *     framed around the freshly-researched company. The chosen
- *     outcomes drive agent pre-selection later. */
-function OutcomesDrawer({ companyName, selected, onChange, onSubmit }) {
-  const set = new Set(selected || [])
-  const toggle = (id) => {
-    const next = new Set(set)
-    if (next.has(id)) next.delete(id)
-    else next.add(id)
-    onChange(Array.from(next))
-  }
-  const count = set.size
-
-  return (
-    <div className="ob-drawer" role="group" aria-label="What are you looking to do">
-      <div className="ob-drawer-head">
-        <span className="ob-drawer-mark" aria-hidden="true">
-          <TeambridgeAIIcon size={14} />
-        </span>
-        <div className="ob-drawer-text">
-          <div className="ob-drawer-title">
-            I've got a good read on {companyName || 'your company'}.
-          </div>
-          <div className="ob-drawer-sub">
-            What are you looking to do? Pick anything that fits.
-          </div>
-        </div>
-      </div>
-
-      <ul className="ob-drawer-outcomes">
-        {OUTCOME_OPTIONS.map(o => {
-          const on = set.has(o.id)
-          return (
-            <li key={o.id}>
-              <button
-                type="button"
-                className={`ob-drawer-outcome ${on ? 'is-on' : ''}`}
-                onClick={() => toggle(o.id)}
-                aria-pressed={on}
-              >
-                <span className={`ob-drawer-outcome-toggle ${on ? 'is-on' : ''}`} aria-hidden="true">
-                  {on && <CheckCircleIcon size={12} />}
-                </span>
-                <span>{o.label}</span>
-              </button>
-            </li>
-          )
-        })}
-      </ul>
-
-      <div className="ob-drawer-foot">
-        <span className="ob-drawer-foot-sub">
-          {count === 0 ? 'Pick at least one' : `${count} selected`}
-        </span>
-        <button
-          type="button"
-          className="ob-drawer-cta"
-          onClick={onSubmit}
-          disabled={count === 0}
-        >
-          Continue
-          <ArrowNarrowRightIcon size={14} />
-        </button>
-      </div>
-    </div>
-  )
-}
-
-/* ─── Import-pick drawer — second review step. Three big choices for
- *     how to bring team data over. Sample is the recommended demo
- *     path; CSV / API map to the same animation with adjusted
- *     narration for the demo. */
-function ImportPickDrawer({ companyName, onPick }) {
-  const options = [
-    {
-      id: 'csv',
-      title: 'Upload a CSV',
-      detail: 'Use your existing roster file.',
-      tag: null,
-    },
-    {
-      id: 'api',
-      title: 'Sync from your HRIS',
-      detail: 'Connect Workday, BambooHR, or Rippling.',
-      tag: null,
-    },
-    {
-      id: 'sample',
-      title: 'Use sample data',
-      detail: 'Explore with a pre-loaded roster.',
-      tag: 'Fastest',
-    },
-  ]
-  return (
-    <div className="ob-drawer" role="group" aria-label="Choose import method">
-      <div className="ob-drawer-head">
-        <span className="ob-drawer-mark" aria-hidden="true">
-          <TeambridgeAIIcon size={14} />
-        </span>
-        <div className="ob-drawer-text">
-          <div className="ob-drawer-title">
-            Bring in your team
-          </div>
-          <div className="ob-drawer-sub">
-            Pick one to finish setup.
-          </div>
-        </div>
-      </div>
-
-      <ul className="ob-drawer-imports">
-        {options.map(opt => (
-          <li key={opt.id}>
-            <button
-              type="button"
-              className={`ob-drawer-import ${opt.id === 'sample' ? 'is-recommended' : ''}`}
-              onClick={() => onPick(opt.id)}
-            >
-              <div className="ob-drawer-import-text">
-                <span className="ob-drawer-import-title">
-                  {opt.title}
-                  {opt.tag && <span className="ob-drawer-import-tag">{opt.tag}</span>}
-                </span>
-                <span className="ob-drawer-import-detail">{opt.detail}</span>
-              </div>
-              <ArrowNarrowRightIcon size={14} />
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  )
-}
-
 /* ─── Wireframe loop — animated placeholder for the right pane during
- *     intake. Pulses a faint mockup of the dashboard to indicate where
- *     the operator's account will appear. */
+ *     intake. Pulses a faint mockup of the dashboard. */
 function WireframeLoop() {
   const cells = Array.from({ length: 35 }, (_, i) => i)
   return (
@@ -853,4 +481,3 @@ function WireframeLoop() {
     </div>
   )
 }
-

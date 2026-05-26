@@ -2355,3 +2355,208 @@
   padding: var(--space-3) var(--space-5);
   font-size: var(--text-base);
 }
+
+/* ─────────────────────── ConfirmCard ─────────────────────────────── */
+/* Single-screen confirmation. Replaced the 4-step outcomes/import/
+ * policies/agents drawer sequence — everything Claude derived is
+ * shown here pre-set; sections expand to edit. */
+
+.cc--confirm { animation: ob-fade-in 320ms ease; }
+
+/* "3 things I noticed" insight strip — Claude's company-specific
+ * observations that earn trust at first glance. */
+.cm-insights {
+  margin: 0 var(--space-5) var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-purple-bg-tertiary);
+  border-radius: var(--radius-md);
+}
+.cm-insights-head {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+.cm-insights-mark {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--ai-grad-start, #8C4FE2) 0%, var(--ai-grad-mid, #446CFF) 55%, var(--ai-grad-end, #1EDFDE) 100%);
+  color: #fff;
+}
+.cm-insights-title {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-content-primary);
+}
+.cm-insights-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.cm-insights-item {
+  display: grid;
+  grid-template-columns: 12px 1fr;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-content-primary);
+  line-height: var(--line-height-loose);
+}
+.cm-insights-bullet {
+  color: var(--color-purple-content-secondary);
+  font-weight: var(--font-weight-semibold);
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* Expandable sections — Company / Agents / Policies / Starting data */
+.cm-sections { display: flex; flex-direction: column; }
+.cm-section { border-top: 1px solid var(--color-border-opaque); }
+.cm-section-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  background: transparent;
+  border: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+.cm-section-head:hover { background: var(--color-bg-secondary); }
+.cm-section.is-expanded .cm-section-head { background: var(--color-bg-secondary); }
+.cm-section-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.cm-section-title {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-content-primary);
+}
+.cm-section-summary {
+  font-size: var(--text-xs);
+  color: var(--color-content-tertiary);
+  line-height: var(--line-height-loose);
+}
+.cm-section-chev {
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--color-content-tertiary);
+  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.cm-section-chev.is-open { transform: rotate(90deg); }
+.cm-section-body {
+  padding: 0 var(--space-3) var(--space-4);
+  background: var(--color-bg-secondary);
+}
+
+/* Dense tile grid used inside expanded Agents / Policies sections */
+.cm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-2);
+}
+.cm-tile {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-md);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 120ms ease, transform 120ms ease;
+}
+.cm-tile:hover { border-color: var(--color-border-selected); transform: translateY(-1px); }
+.cm-tile.is-on { border-color: var(--color-content-primary); }
+.cm-tile-top { display: flex; align-items: center; justify-content: space-between; }
+.cm-tile-pill {
+  display: inline-flex; align-items: center;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-bg-tertiary);
+  color: var(--color-content-tertiary);
+  font-size: 10px;
+  font-weight: var(--font-weight-medium);
+}
+.cm-tile-pill.is-on {
+  background: var(--color-matcha-bg-tertiary);
+  color: var(--color-matcha-content-secondary);
+}
+.cm-tile-toggle {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border-opaque);
+  color: var(--color-content-inverse-primary);
+}
+.cm-tile-toggle.is-on {
+  background: var(--color-content-primary);
+  border-color: var(--color-content-primary);
+}
+.cm-tile-avatar { display: flex; justify-content: center; padding: var(--space-1) 0; }
+.cm-tile-title {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-content-primary);
+  line-height: var(--line-height-snug);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.cm-tile-title--no-avatar { text-align: left; }
+.cm-tile-detail {
+  font-size: var(--text-xs);
+  color: var(--color-content-tertiary);
+  line-height: var(--line-height-loose);
+  text-align: center;
+}
+.cm-tile-title--no-avatar + .cm-tile-detail { text-align: left; }
+.cm-tile-foot {
+  margin-top: auto;
+  text-align: center;
+  font-size: 11px;
+  color: var(--color-content-tertiary);
+}
+.cm-tile-foot strong { font-weight: var(--font-weight-medium); color: var(--color-content-primary); }
+.cm-tile-states { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-top: auto; }
+.cm-tile-state {
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-bg-tertiary);
+  color: var(--color-content-secondary);
+  font-size: 10px;
+  font-weight: var(--font-weight-medium);
+}
+.cm-tile-state.is-fed {
+  background: var(--color-azure-bg-tertiary);
+  color: var(--color-azure-content-secondary);
+}
+
+/* Starting-data import-method chooser (vertical list inside section) */
+.cm-import-list { display: flex; flex-direction: column; gap: var(--space-2); }
+.cm-import-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-md);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 120ms ease;
+}
+.cm-import-row:hover { border-color: var(--color-border-selected); }
+.cm-import-row.is-on { border-color: var(--color-content-primary); }
+.cm-import-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cm-import-title {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+}
+.cm-import-detail {
+  font-size: var(--text-xs);
+  color: var(--color-content-tertiary);
+  line-height: var(--line-height-loose);
+}

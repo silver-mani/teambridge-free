@@ -15,98 +15,44 @@ import {
  * agents". Total runtime ~14-18s depending on how many policies +
  * agents were selected. */
 
-function provisioningSteps(config, importMethod, policies, agents, outcomes) {
+function provisioningSteps(config, importMethod, policies, agents) {
   const headcount = config?.headcount?.toLocaleString() || ''
-  const company = config?.companyName ?? 'your account'
-  const roleCount = config?.roles?.length || 0
-  const locCount = config?.locations?.length || 0
-
-  const policyNames = (policies || [])
-    .map(id => POLICY_OPTIONS.find(o => o.id === id)?.label)
-    .filter(Boolean)
-  const agentNames = (agents || [])
-    .map(id => PAIN_TO_AGENT[id]?.name)
-    .filter(Boolean)
-
-  const steps = [
+  const policyCount = (policies || []).length
+  const agentCount = (agents || []).length
+  return [
     {
       id: 'workspace',
-      title: 'Provisioning workspace',
-      detail: `Spinning up ${company}'s isolated tenant on Teambridge.`,
-      delay: 1700,
-    },
-    {
-      id: 'analyze',
-      title: 'Analyzing your team shape',
-      detail: `Reading ${roleCount} role types across ${locCount} site${locCount === 1 ? '' : 's'} to set baselines.`,
-      delay: 1900,
+      title: 'Provisioning your workspace',
+      detail: `Standing up an isolated tenant for ${config?.companyName ?? 'your account'}.`,
+      delay: 1500,
     },
     {
       id: 'roster',
-      title: 'Loading roster',
-      detail: importMethod === 'csv'
-        ? `Importing ${headcount} employees from your CSV and mapping columns.`
-        : importMethod === 'api'
-        ? `Pulling ${headcount} employees from your HRIS and matching to roles.`
-        : `Seeding ${headcount} sample employees, distributed across roles.`,
-      delay: 2200,
+      title: 'Loading your team',
+      detail: importMethod === 'csv' ? `Importing ${headcount} employees from your CSV.`
+            : importMethod === 'api' ? `Pulling ${headcount} employees from your HRIS.`
+            :                          `Seeding ${headcount} sample employees across your roles.`,
+      delay: 1800,
     },
     {
-      id: 'sites',
-      title: 'Wiring up locations',
-      detail: `${locCount} site${locCount === 1 ? '' : 's'} added to the schedule grid with templates.`,
+      id: 'agents',
+      title: `Activating ${agentCount + policyCount} settings`,
+      detail: `${agentCount} agent${agentCount === 1 ? '' : 's'} and ${policyCount} polic${policyCount === 1 ? 'y' : 'ies'} configured.`,
       delay: 1600,
     },
+    {
+      id: 'schedule',
+      title: "Drafting your first schedule",
+      detail: 'AI-balanced for coverage across your sites and shift patterns.',
+      delay: 1600,
+    },
+    {
+      id: 'dashboard',
+      title: 'Opening your dashboard',
+      detail: 'Almost there — final handoff.',
+      delay: 1100,
+    },
   ]
-
-  if (policyNames.length) {
-    steps.push({
-      id: 'policies',
-      title: `Activating ${policyNames.length} labor polic${policyNames.length === 1 ? 'y' : 'ies'}`,
-      detail: policyNames.slice(0, 4).join(' · ') + (policyNames.length > 4 ? ` and ${policyNames.length - 4} more` : ''),
-      delay: 2400,
-    })
-  }
-
-  if (agentNames.length) {
-    steps.push({
-      id: 'agents',
-      title: `Standing up ${agentNames.length} agent${agentNames.length === 1 ? '' : 's'}`,
-      detail: agentNames.slice(0, 4).join(' · ') + (agentNames.length > 4 ? ` and ${agentNames.length - 4} more` : ''),
-      delay: 2500,
-    })
-  }
-
-  steps.push({
-    id: 'schedule',
-    title: "Drafting next week's schedule",
-    detail: `Templates seeded from your ${roleCount} roles; AI-balanced for coverage.`,
-    delay: 2100,
-  })
-
-  if (config?.suggestedConnectors?.length) {
-    steps.push({
-      id: 'connectors',
-      title: 'Connecting integrations',
-      detail: `Wiring ${config.suggestedConnectors.length} tool${config.suggestedConnectors.length === 1 ? '' : 's'} into payroll + HRIS sync.`,
-      delay: 1700,
-    })
-  }
-
-  steps.push({
-    id: 'compliance',
-    title: 'Running first compliance check',
-    detail: 'Validating no roster conflicts with the policies you turned on.',
-    delay: 1800,
-  })
-  steps.push({
-    id: 'dashboard',
-    title: 'Opening your dashboard',
-    detail: 'Final handoff — your team is live.',
-    delay: 1300,
-  })
-
-  return steps
 }
 
 export default function BuildProgressCard({

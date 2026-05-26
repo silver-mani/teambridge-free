@@ -3539,6 +3539,20 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
       sceneStartedRef.current = false
       return
     }
+    // Fresh-launch suppression. If the operator just came from the
+    // build flow, sessionStorage tb:fresh-launch is set — we skip
+    // the scripted cancellation scene so their first impression of
+    // "their" account is a calm populated dashboard, not Sandra Lee
+    // dropping a shift on them. The flag is consumed (cleared) on
+    // first read so subsequent visits / Clear-chat replays the scene
+    // normally.
+    try {
+      if (sessionStorage.getItem('tb:fresh-launch') === '1') {
+        sessionStorage.removeItem('tb:fresh-launch')
+        sceneStartedRef.current = true
+        return
+      }
+    } catch { /* ignore */ }
     const cfg = CANCEL_CONFIG_BY_INDUSTRY[industryId]
     const scene = CANCEL_SCENES_BY_INDUSTRY[industryId]
     if (!cfg || !scene) {
