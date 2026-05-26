@@ -25,6 +25,7 @@ import { SettingsGearIcon }    from '../../../src/components/icons/SettingsGearI
 import { ClockIcon }           from '../../../src/components/icons/ClockIcon.tsx'
 import { PuzzlePiece01Icon }   from '../../../src/components/icons/PuzzlePiece01Icon.tsx'
 import { getIndustryData }     from '../data/industryData.js'
+import { applyAccountOverride, getStoredBuildConfig } from './accountOverride.js'
 import { getAgent, AGENTS }   from '../data/agents.js'
 import { getCardDetail }       from '../data/cardDetails.js'
 import { getPeriodSummary, getUserPeriod, fmt } from '../data/payData.js'
@@ -3542,6 +3543,20 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
       sceneStartedRef.current = false
       return
     }
+    // Fresh-launch suppression. If the operator just came from the
+    // build flow, sessionStorage tb:fresh-launch is set — we skip
+    // the scripted cancellation scene so their first impression of
+    // "their" account is a calm populated dashboard, not Sandra Lee
+    // dropping a shift on them. The flag is consumed (cleared) on
+    // first read so subsequent visits / Clear-chat replays the scene
+    // normally.
+    try {
+      if (sessionStorage.getItem('tb:fresh-launch') === '1') {
+        sessionStorage.removeItem('tb:fresh-launch')
+        sceneStartedRef.current = true
+        return
+      }
+    } catch { /* ignore */ }
     const cfg = CANCEL_CONFIG_BY_INDUSTRY[industryId]
     const scene = CANCEL_SCENES_BY_INDUSTRY[industryId]
     if (!cfg || !scene) {
@@ -3842,7 +3857,14 @@ function PanelSwapGlyph({ open }) {
 }
 
 export default function Act1Dashboard({ industryId, view = 'overview', sageMode = false, otFixed = false, onApplyOTFix, onBackToIntacct, onBack, onExplore, onSelectView }) {
-  const data = useMemo(() => getIndustryData(industryId), [industryId])
+  // Apply any account override saved from the build flow — company
+  // name swaps into the brand label and venue strings throughout the
+  // data tree get replaced with the operator's actual locations.
+  const data = useMemo(() => {
+    const base = getIndustryData(industryId)
+    const buildConfig = getStoredBuildConfig(industryId)
+    return applyAccountOverride(base, buildConfig)
+  }, [industryId])
   // Pay sub-route lives here so the chat panel can observe drill-downs
   // (home → period → user) alongside top-level view changes.
   const [paySubRoute, setPaySubRoute] = useState({ screen: 'home' })

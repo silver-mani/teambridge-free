@@ -3,5 +3,10 @@
   "buildCommand": "cd preview && npm install && npm run build",
   "outputDirectory": "preview/dist",
   "installCommand": "echo skip",
-  "framework": null
+  "framework": null,
+  "functions": {
+    "api/derive-config.js": {
+      "maxDuration": 60
+    }
+  }
 }

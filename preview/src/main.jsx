@@ -2,11 +2,13 @@ import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Analytics } from '@vercel/analytics/react'
 import './index.css'
+import EntryChoice        from './screens/EntryChoice.jsx'
 import IndustrySelector   from './screens/IndustrySelector.jsx'
 import Act1Dashboard      from './screens/Act1Dashboard.jsx'
 import SageDashboard      from './screens/sage/SageDashboard.jsx'
 import SageWorkforceEmbed from './screens/sage/SageWorkforceEmbed.jsx'
 import LeadCaptureGate    from './screens/LeadCaptureGate.jsx'
+import OnboardingFlow     from './screens/onboarding/OnboardingFlow.jsx'
 import { getDemoSnapshot, initDemoBehaviorTracking, trackDemoEvent } from './lib/demoTracking.js'
 
 const VALID_INDUSTRIES = new Set([
@@ -18,6 +20,10 @@ function parseHash() {
   const raw = (window.location.hash || '').replace(/^#/, '').replace(/^\//, '').trim()
   if (!raw) return null
   const segs = raw.split('/')
+  // #/build → guided onboarding flow
+  if (segs[0] === 'build') return { kind: 'build' }
+  // #/demos → existing industry picker (entry choice routes here)
+  if (segs[0] === 'demos') return { kind: 'demos' }
   if (segs[0] === 'sage') {
     const sub = segs[1] || 'dashboard'
     const sageOk = new Set(['dashboard', 'workforce'])
@@ -140,18 +146,43 @@ function App() {
   useEffect(() => {
     const snapshot = getDemoSnapshot()
     trackDemoEvent('route_viewed', {
-      routeKind: route?.kind ?? 'industry_selector',
+      routeKind: route?.kind ?? 'entry_choice',
       industry: snapshot.industry,
       view: snapshot.view,
     })
   }, [route])
 
-  // The gate runs on every route except the industry picker itself.
-  const showGate = !!route && !leadCaptured
+  // The gate runs on every route except the front-of-funnel screens
+  // (entry choice, demo picker, build flow). The build flow has its
+  // own first-class signup capture in step 1.
+  const isFrontOfFunnel = !route || route.kind === 'demos' || route.kind === 'build'
+  const showGate = !!route && !isFrontOfFunnel && !leadCaptured
 
   let view
   if (!route) {
+    view = (
+      <EntryChoice
+        onBuild={() => setHash('/build')}
+        onExplore={() => setHash('/demos')}
+      />
+    )
+  } else if (route.kind === 'demos') {
     view = <IndustrySelector onSelect={id => { trackDemoEvent('industry_selected', { industry: id }); setHash(`/${id}`) }} />
+  } else if (route.kind === 'build') {
+    view = (
+      <OnboardingFlow
+        onExit={() => setHash('/demos')}
+        onComplete={(answers) => {
+          // Drop them into the dashboard for the industry they picked.
+          // If they didn't pick (unlikely), fall back to the demo picker.
+          if (answers.industry && VALID_INDUSTRIES.has(answers.industry)) {
+            setHash(`/${answers.industry}`)
+          } else {
+            setHash('/demos')
+          }
+        }}
+      />
+    )
   } else if (route.kind === 'sage') {
     const sageNav = (v) => setHash(v === 'dashboard' ? '/sage' : `/sage/${v}`)
     if (route.view === 'workforce') {
@@ -176,7 +207,7 @@ function App() {
       <Act1Dashboard
         industryId={route.industry}
         view={route.view}
-        onBack={() => setHash('/')}
+        onBack={() => setHash('/demos')}
         onSelectView={(v) => setHash(v === 'overview' ? `/${route.industry}` : `/${route.industry}/${v}`)}
         onExplore={() => { /* Act 2 not built yet */ }}
       />
