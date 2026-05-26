@@ -100,69 +100,112 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     setMessages(prev => [...prev, { id: `m${prev.length}`, ...m }])
   }, [])
 
-  /* ── Intake submit (from the chat-side IntakeDrawer) ── */
-  const handleIntakeSubmit = useCallback((rawInput) => {
+  /* ── Intake submit (from the chat-side IntakeDrawer) ──
+   * Async: transitions to 'research' state immediately, posts a
+   * placeholder research bubble with step 0 ("Reading…") active,
+   * fires the Claude-backed /api/derive-config call in parallel, and
+   * cascades the remaining reveal steps once the config returns.
+   *
+   * urlMatcher.deriveConfig falls back to a heuristic if the API
+   * errors out, so this resolves with a usable config unless the
+   * input was empty. */
+  const handleIntakeSubmit = useCallback(async (rawInput) => {
     const text = rawInput.trim()
     if (!text) return
 
-    pushMessage({ from: 'user', text })
+    const isFreeText = intakeMode === 'free-text'
+    const placeholderUrl = isFreeText
+      ? 'your description'
+      : text.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '')
 
-    const derived = deriveConfig(text, { fromFreeText: intakeMode === 'free-text' })
+    pushMessage({ from: 'user', text })
+    setIntakeDraft('')
+    setRevealedFields(new Set(['summary']))
+
+    // Post the placeholder research bubble (step 0 active).
+    const bubbleId = `r-${Date.now()}`
+    setMessages(prev => [
+      ...prev,
+      { id: bubbleId, from: 'nova', kind: 'research',
+        headline: `Looking up ${placeholderUrl}…`,
+        steps: [
+          { text: `Reading ${placeholderUrl}…`,           status: 'active' },
+          { text: 'Identifying your industry…',           status: 'pending' },
+          { text: 'Estimating your team size…',           status: 'pending' },
+          { text: 'Mapping your locations…',              status: 'pending' },
+          { text: 'Drafting your role list…',             status: 'pending' },
+          { text: 'Recommending your first agents…',      status: 'pending' },
+        ] },
+    ])
+    setState('research')
+
+    // Hit /api/derive-config (or fall back to heuristic on error).
+    let derived = null
+    try {
+      derived = await deriveConfig(text, { fromFreeText: isFreeText })
+    } catch (err) {
+      console.error('[onboarding] deriveConfig threw:', err)
+    }
+
     if (!derived) {
+      // Empty input or hard failure — bail back to free-text intake.
+      setMessages(msgs => msgs.filter(m => m.id !== bubbleId))
       setIntakeMode('free-text')
-      setIntakeDraft('')
       pushMessage({ from: 'nova', text:
-        "We couldn't find that site. Tell us what your team does in a sentence or two below." })
+        "We couldn't read that. Tell us what your team does in a sentence or two." })
+      setState('intake')
       return
     }
 
     setConfig(derived)
-    setIntakeDraft('')
-    kickoffResearch(derived)
-    setState('research')
+    cascadeResearchSteps(derived, bubbleId)
   }, [intakeMode, pushMessage]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* Kick off the research animation. Posts a single Nova "research"
-   * bubble whose `steps` array updates in place as each delay fires.
-   * Right pane's ConfigCard reveals matching fields. */
-  function kickoffResearch(derived) {
-    const steps = RESEARCH_STEPS(derived)
-    const initialSteps = steps.map((s, i) => ({
-      text: s.text,
-      status: i === 0 ? 'active' : 'pending',
+  /* Once the API has responded, fast-forward step 0 (Reading…) to done
+   * and cascade through steps 1-5 with their delays. Right pane's
+   * ConfigCard reveals each field as its matching step completes. */
+  function cascadeResearchSteps(derived, bubbleId) {
+    const fullSteps = RESEARCH_STEPS(derived)
+    const finalHeadline = `Looking up ${derived.url || 'your description'}…`
+
+    // Mark step 0 done + step 1 active immediately (no delay — the API
+    // already took its time, no need to wait further).
+    setMessages(msgs => msgs.map(m => {
+      if (m.id !== bubbleId) return m
+      const nextSteps = fullSteps.map((s, idx) => ({
+        text: idx === 0 ? s.done : s.text,
+        status: idx === 0 ? 'done' : idx === 1 ? 'active' : 'pending',
+      }))
+      return { ...m, headline: finalHeadline, steps: nextSteps }
     }))
-    setRevealedFields(new Set(['summary']))
+    if (fullSteps[0].field) {
+      setRevealedFields(prev => new Set([...prev, fullSteps[0].field]))
+    }
 
-    const researchId = `r-${Date.now()}`
-    setMessages(prev => [
-      ...prev,
-      { id: researchId, from: 'nova', kind: 'research',
-        headline: `Looking up ${derived.url || 'your description'}…`,
-        steps: initialSteps },
-    ])
-
+    // Cascade steps 1..N with their delays.
     let cumulative = 0
-    researchTimersRef.current = steps.map((step, i) => {
-      cumulative += step.delay
-      return setTimeout(() => {
-        setRevealedFields(prev => {
-          const next = new Set(prev)
-          if (step.field) next.add(step.field)
-          return next
-        })
+    researchTimersRef.current = []
+    for (let i = 1; i < fullSteps.length; i++) {
+      cumulative += fullSteps[i].delay
+      const idx = i
+      const timer = setTimeout(() => {
+        const field = fullSteps[idx].field
+        if (field) setRevealedFields(prev => new Set([...prev, field]))
         setMessages(msgs => msgs.map(m => {
-          if (m.id !== researchId) return m
-          const nextSteps = m.steps.map((ps, idx) => {
-            if (idx < i)  return { ...ps, status: 'done' }
-            if (idx === i) return { ...ps, status: 'done', text: step.done }
-            if (idx === i + 1) return { ...ps, status: 'active' }
+          if (m.id !== bubbleId) return m
+          const next = m.steps.map((ps, k) => {
+            if (k < idx)  return { ...ps, status: 'done', text: fullSteps[k].done }
+            if (k === idx) return { ...ps, status: 'done', text: fullSteps[idx].done }
+            if (k === idx + 1) return { ...ps, status: 'active' }
             return ps
           })
-          return { ...m, steps: nextSteps }
+          return { ...m, steps: next }
         }))
       }, cumulative)
-    })
+      researchTimersRef.current.push(timer)
+    }
 
+    // After all reveals + a settling beat, transition to agent-pick.
     const finalTimer = setTimeout(() => {
       pushMessage({ from: 'nova', text:
         `Here's ${derived.companyName} on the right. Pick the agents to turn on below.` })

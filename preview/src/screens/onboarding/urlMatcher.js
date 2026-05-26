@@ -1,195 +1,25 @@
 /* URL → derived configuration matcher for the build flow.
  *
- * Three tiers:
- *   1. Curated map — recognizable demo URLs (hollywoodparkca.com,
- *      sofistadium.com, dignityhealth.com, etc.) each map to a specific
- *      industry template with rich, believable derivations (company
- *      name, locations, headcount, roles, agents).
- *   2. Keyword heuristics — for unrecognized URLs, infer from
- *      substrings (hospital → healthcare, stadium → events, etc.).
- *   3. Free-text fallback — Nova asks for a short description, parsed
- *      with the same keyword matcher.
+ * Primary path: POST /api/derive-config which calls Claude with the
+ * web_search tool to actually research the company. The model returns
+ * a structured JSON config (companyName / industry / headcount /
+ * locations / roles / agents / suggestedConnectors) which we hand off
+ * to the rest of the onboarding UI.
  *
- * Output is a `config` object: the shape the rest of the onboarding
- * UI consumes. Curated entries are richer; heuristic matches use the
- * vertical's default seed data from industryData.js.
+ * Fallback path: if the API errors (no key, timeout, parse failure),
+ * fall back to the lightweight keyword heuristic below so the demo
+ * always lands somewhere sensible.
  *
- * In a real product these signals come from crawling + LinkedIn + a
- * model. Here we fake the inference but keep the shape honest so the
- * UX is what would ship. */
+ * Output shape matches what ConfigCard + the rest of OnboardingFlow
+ * expect. */
 
 import { TEAM_SIZE_OPTIONS, PAIN_OPTIONS, CONNECTOR_OPTIONS } from './steps.js'
 
-const CONFIDENCE = {
-  high:   'high',
-  medium: 'medium',
-  low:    'low',
-}
+const CONFIDENCE = { high: 'high', medium: 'medium', low: 'low' }
 
-/* ── Curated demo entries. Pre-seeded richness so the demo lands. ── */
-const CURATED = {
-  'hollywoodparkca.com': {
-    companyName: 'Hollywood Park',
-    industry: 'events',
-    headcount: 420,
-    headcountRange: '101-500',
-    summary: 'Entertainment + sports venue district in Inglewood, CA. Anchor of the SoFi Stadium ecosystem.',
-    locations: [
-      { name: 'SoFi Stadium',          city: 'Inglewood, CA' },
-      { name: 'YouTube Theater',       city: 'Inglewood, CA' },
-      { name: 'Champions Plaza',       city: 'Inglewood, CA' },
-      { name: 'Hollywood Park Casino', city: 'Inglewood, CA' },
-    ],
-    roles: ['Event Staff', 'Security', 'F&B', 'Operations Lead', 'Box Office', 'Cleaning'],
-    agents: ['coverage', 'overtime', 'onboarding'],
-    suggestedConnectors: ['adp', 'slack', 'quickbooks'],
-    confidence: { industry: CONFIDENCE.high, headcount: CONFIDENCE.medium, locations: CONFIDENCE.high, roles: CONFIDENCE.medium },
-  },
-  'sofistadium.com': {
-    companyName: 'SoFi Stadium',
-    industry: 'events',
-    headcount: 380,
-    headcountRange: '101-500',
-    summary: 'NFL stadium and event venue in Inglewood. Home of the Rams and Chargers.',
-    locations: [
-      { name: 'SoFi Stadium',    city: 'Inglewood, CA' },
-      { name: 'YouTube Theater', city: 'Inglewood, CA' },
-    ],
-    roles: ['Event Staff', 'Security', 'F&B', 'Ushers', 'Operations'],
-    agents: ['coverage', 'overtime', 'comms'],
-    suggestedConnectors: ['adp', 'slack', 'quickbooks'],
-    confidence: { industry: CONFIDENCE.high, headcount: CONFIDENCE.medium, locations: CONFIDENCE.high, roles: CONFIDENCE.medium },
-  },
-  'levisstadium.com': {
-    companyName: "Levi's Stadium",
-    industry: 'events',
-    headcount: 340,
-    headcountRange: '101-500',
-    summary: 'NFL stadium in Santa Clara. Home of the 49ers and a year-round concert + corporate venue.',
-    locations: [
-      { name: "Levi's Stadium", city: 'Santa Clara, CA' },
-    ],
-    roles: ['Event Staff', 'Security', 'F&B', 'Premium Hospitality', 'Operations'],
-    agents: ['coverage', 'overtime', 'onboarding'],
-    suggestedConnectors: ['adp', 'slack', 'quickbooks'],
-    confidence: { industry: CONFIDENCE.high, headcount: CONFIDENCE.medium, locations: CONFIDENCE.high, roles: CONFIDENCE.medium },
-  },
-  'dignityhealth.org': {
-    companyName: 'Dignity Health',
-    industry: 'healthcare',
-    headcount: 720,
-    headcountRange: '500+',
-    summary: 'Multi-state non-profit health system. Acute care, outpatient, and specialty clinics.',
-    locations: [
-      { name: 'Memorial North',    city: 'Phoenix, AZ' },
-      { name: 'St. Joseph Campus', city: 'Stockton, CA' },
-      { name: 'Northridge Clinic', city: 'Los Angeles, CA' },
-    ],
-    roles: ['RN', 'LPN', 'CNA', 'Allied Health', 'Patient Care Tech', 'Charge Nurse'],
-    agents: ['coverage', 'overtime', 'compliance'],
-    suggestedConnectors: ['workday', 'rippling', 'msteams'],
-    confidence: { industry: CONFIDENCE.high, headcount: CONFIDENCE.medium, locations: CONFIDENCE.medium, roles: CONFIDENCE.high },
-  },
-  'brookdale.com': {
-    companyName: 'Brookdale Senior Living',
-    industry: 'long-term-care',
-    headcount: 680,
-    headcountRange: '500+',
-    summary: 'Independent + assisted living and memory care across 40+ states.',
-    locations: [
-      { name: 'Brookdale Westside',   city: 'Los Angeles, CA' },
-      { name: 'Brookdale Northgate',  city: 'San Antonio, TX' },
-      { name: 'Brookdale Lakeshore',  city: 'Chicago, IL' },
-    ],
-    roles: ['CNA', 'LPN', 'Med Tech', 'Caregiver', 'Activities Lead', 'Resident Services'],
-    agents: ['coverage', 'compliance', 'onboarding'],
-    suggestedConnectors: ['workday', 'rippling', 'msteams'],
-    confidence: { industry: CONFIDENCE.high, headcount: CONFIDENCE.medium, locations: CONFIDENCE.medium, roles: CONFIDENCE.high },
-  },
-  'marriott.com': {
-    companyName: 'Marriott International',
-    industry: 'hospitality',
-    headcount: 820,
-    headcountRange: '500+',
-    summary: 'Global hospitality group. Full-service, select-service, and luxury properties.',
-    locations: [
-      { name: 'Marriott Marquis',   city: 'San Francisco, CA' },
-      { name: 'Marriott Riverside', city: 'Houston, TX' },
-      { name: 'Marriott Lakeshore', city: 'Chicago, IL' },
-      { name: 'Marriott Bayview',   city: 'Seattle, WA' },
-    ],
-    roles: ['Front Desk', 'Housekeeping', 'F&B', 'Banquet Server', 'Bellhop', 'Operations'],
-    agents: ['coverage', 'overtime', 'compliance'],
-    suggestedConnectors: ['adp', 'slack', 'quickbooks'],
-    confidence: { industry: CONFIDENCE.high, headcount: CONFIDENCE.medium, locations: CONFIDENCE.medium, roles: CONFIDENCE.high },
-  },
-  'securitas.com': {
-    companyName: 'Securitas',
-    industry: 'security',
-    headcount: 540,
-    headcountRange: '500+',
-    summary: 'Contract guard services across commercial, healthcare, and event sites.',
-    locations: [
-      { name: 'Bay Area Region',    city: 'Oakland, CA' },
-      { name: 'SoCal Region',       city: 'Los Angeles, CA' },
-      { name: 'Pacific NW Region',  city: 'Seattle, WA' },
-    ],
-    roles: ['Officer', 'Supervisor', 'Armed Officer', 'Patrol', 'Account Manager'],
-    agents: ['coverage', 'compliance', 'comms'],
-    suggestedConnectors: ['adp', 'msteams'],
-    confidence: { industry: CONFIDENCE.high, headcount: CONFIDENCE.medium, locations: CONFIDENCE.medium, roles: CONFIDENCE.high },
-  },
-  'abm.com': {
-    companyName: 'ABM Industries',
-    industry: 'janitorial',
-    headcount: 760,
-    headcountRange: '500+',
-    summary: 'Facility services: janitorial, engineering, and parking across commercial properties.',
-    locations: [
-      { name: 'LAX Account',         city: 'Los Angeles, CA' },
-      { name: 'Downtown Tower Acct', city: 'Chicago, IL' },
-      { name: 'JFK Account',         city: 'New York, NY' },
-    ],
-    roles: ['Day Porter', 'Night Crew', 'Floor Tech', 'Restroom Tech', 'Account Lead'],
-    agents: ['coverage', 'overtime', 'comms'],
-    suggestedConnectors: ['adp', 'quickbooks'],
-    confidence: { industry: CONFIDENCE.high, headcount: CONFIDENCE.medium, locations: CONFIDENCE.medium, roles: CONFIDENCE.high },
-  },
-  'bechtel.com': {
-    companyName: 'Bechtel',
-    industry: 'construction',
-    headcount: 620,
-    headcountRange: '500+',
-    summary: 'Global infrastructure, oil & gas, mining, and nuclear engineering projects.',
-    locations: [
-      { name: 'Reston HQ Office',    city: 'Reston, VA' },
-      { name: 'Houston Project Yard', city: 'Houston, TX' },
-      { name: 'San Francisco Office', city: 'San Francisco, CA' },
-    ],
-    roles: ['Foreman', 'Carpenter', 'Electrician', 'Project Manager', 'Safety Lead'],
-    agents: ['coverage', 'compliance', 'onboarding'],
-    suggestedConnectors: ['sage-intacct', 'msteams'],
-    confidence: { industry: CONFIDENCE.high, headcount: CONFIDENCE.medium, locations: CONFIDENCE.medium, roles: CONFIDENCE.high },
-  },
-  'aerotek.com': {
-    companyName: 'Aerotek',
-    industry: 'staffing',
-    headcount: 480,
-    headcountRange: '101-500',
-    summary: 'Skilled trades + industrial staffing agency. Per-diem and contract placements.',
-    locations: [
-      { name: 'Hanover HQ',     city: 'Hanover, MD' },
-      { name: 'West Coast Hub', city: 'Phoenix, AZ' },
-      { name: 'Midwest Hub',    city: 'Chicago, IL' },
-    ],
-    roles: ['Recruiter', 'Account Manager', 'Field Tech', 'Onboarding Coordinator'],
-    agents: ['onboarding', 'compliance', 'comms'],
-    suggestedConnectors: ['workday', 'slack', 'sage-intacct'],
-    confidence: { industry: CONFIDENCE.high, headcount: CONFIDENCE.medium, locations: CONFIDENCE.medium, roles: CONFIDENCE.high },
-  },
-}
-
-/* ── Keyword heuristics for unrecognized URLs / free text. ── */
+/* ── Keyword heuristics — last-resort fallback when the API can't
+ *    produce a config. Same shape as a real derived config but with
+ *    generic defaults from the matched industry. ── */
 const KEYWORDS = [
   { match: /(hospital|clinic|health|medical|nurse|pediat|surger)/i, industry: 'healthcare',     headcount: 220, headcountRange: '101-500' },
   { match: /(stadium|arena|theater|theatre|venue|amphi|event|concert)/i, industry: 'events',     headcount: 180, headcountRange: '101-500' },
@@ -205,14 +35,14 @@ const KEYWORDS = [
 const INDUSTRY_DEFAULTS = {
   events: {
     summary: 'Live entertainment + sports venues.',
-    locations: [{ name: 'Main venue', city: '' }, { name: 'Secondary site', city: '' }],
+    locations: [{ name: 'Main venue', city: '' }],
     roles: ['Event Staff', 'Security', 'F&B', 'Operations'],
     agents: ['coverage', 'overtime'],
     suggestedConnectors: ['adp', 'slack'],
   },
   healthcare: {
     summary: 'Acute care + clinical operations.',
-    locations: [{ name: 'Main campus', city: '' }, { name: 'Satellite clinic', city: '' }],
+    locations: [{ name: 'Main campus', city: '' }],
     roles: ['RN', 'LPN', 'CNA', 'Allied Health'],
     agents: ['coverage', 'overtime', 'compliance'],
     suggestedConnectors: ['workday', 'msteams'],
@@ -268,8 +98,6 @@ const INDUSTRY_DEFAULTS = {
   },
 }
 
-/* Strip protocol, www, trailing slash from input — accept "foo.com",
- * "https://www.foo.com/", "FOO.com", etc. as the same key. */
 function normalizeUrl(input) {
   if (!input) return ''
   return String(input)
@@ -280,37 +108,20 @@ function normalizeUrl(input) {
     .replace(/\/.*$/, '')
 }
 
-/* Derive a company name from a URL when we don't have a curated entry.
- * "hollywoodparkca.com" → "Hollywoodparkca", "acme-staffing.com" →
- * "Acme Staffing". Heuristic; the operator can correct it in review. */
 function nameFromUrl(url) {
   const stem = url.replace(/\.(com|org|net|io|co|us|biz|info)$/, '').replace(/-/g, ' ')
   return stem.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 }
 
-/* Main entry. Returns a `config` (see ConfigCard.jsx) plus an
- * `origin` flag for telemetry / UI ("curated" | "heuristic" | "fallback"). */
-export function deriveConfig(rawInput, opts = {}) {
-  const { fromFreeText = false } = opts
+function heuristicConfig(rawInput, fromFreeText) {
   const url = fromFreeText ? '' : normalizeUrl(rawInput)
-  const text = String(rawInput || '').toLowerCase()
+  const haystack = url || String(rawInput || '').toLowerCase()
 
-  // Tier 1: curated.
-  if (url && CURATED[url]) {
-    return {
-      origin: 'curated',
-      url,
-      ...structuredClone(CURATED[url]),
-    }
-  }
-
-  // Tier 2: keyword heuristics on URL or free text.
-  const haystack = url || text
   for (const k of KEYWORDS) {
     if (k.match.test(haystack)) {
       const defaults = INDUSTRY_DEFAULTS[k.industry]
       return {
-        origin: fromFreeText ? 'fallback' : 'heuristic',
+        origin: 'fallback',
         url,
         companyName: url ? nameFromUrl(url) : 'Your company',
         industry: k.industry,
@@ -321,17 +132,65 @@ export function deriveConfig(rawInput, opts = {}) {
         roles: [...defaults.roles],
         agents: [...defaults.agents],
         suggestedConnectors: [...defaults.suggestedConnectors],
-        confidence: { industry: CONFIDENCE.medium, headcount: CONFIDENCE.low, locations: CONFIDENCE.low, roles: CONFIDENCE.medium },
+        confidence: {
+          industry: CONFIDENCE.medium, headcount: CONFIDENCE.low,
+          locations: CONFIDENCE.low, roles: CONFIDENCE.medium,
+        },
       }
     }
   }
-
-  // No match — signal the caller to ask for free text.
-  return null
+  // Truly unmatched — last resort, generic staffing config.
+  const defaults = INDUSTRY_DEFAULTS.staffing
+  return {
+    origin: 'fallback',
+    url,
+    companyName: url ? nameFromUrl(url) : 'Your company',
+    industry: 'staffing',
+    headcount: 120,
+    headcountRange: '101-500',
+    summary: defaults.summary,
+    locations: structuredClone(defaults.locations),
+    roles: [...defaults.roles],
+    agents: [...defaults.agents],
+    suggestedConnectors: [...defaults.suggestedConnectors],
+    confidence: {
+      industry: CONFIDENCE.low, headcount: CONFIDENCE.low,
+      locations: CONFIDENCE.low, roles: CONFIDENCE.low,
+    },
+  }
 }
 
-/* Map a derived headcount to a TEAM_SIZE_OPTIONS id, for downstream
- * components that take a `teamSize` answer key. */
+/* ── Primary entry. Async — calls /api/derive-config first; falls
+ *    back to heuristics on any failure so the demo always lands. ── */
+export async function deriveConfig(rawInput, opts = {}) {
+  const { fromFreeText = false } = opts
+  const input = String(rawInput || '').trim()
+  if (!input) return null
+
+  try {
+    const r = await fetch('/api/derive-config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ input, fromFreeText }),
+    })
+    if (!r.ok) {
+      console.warn('[derive-config] api non-2xx, falling back to heuristic:', r.status)
+      return heuristicConfig(input, fromFreeText)
+    }
+    const body = await r.json()
+    if (!body?.config) {
+      console.warn('[derive-config] api returned no config, falling back')
+      return heuristicConfig(input, fromFreeText)
+    }
+    return body.config
+  } catch (err) {
+    console.warn('[derive-config] api threw, falling back to heuristic:', err)
+    return heuristicConfig(input, fromFreeText)
+  }
+}
+
+/* Map an arbitrary headcount to a TEAM_SIZE_OPTIONS id. Used by the
+ * confirmed-config → answers shape adapter in OnboardingFlow. */
 export function headcountRangeFor(headcount) {
   if (headcount <= 25)  return '1-25'
   if (headcount <= 100) return '26-100'
@@ -339,8 +198,6 @@ export function headcountRangeFor(headcount) {
   return '500+'
 }
 
-/* Pretty labels for the review card. Pulls from steps.js so the
- * vocabulary stays consistent with the rest of the flow. */
 export function agentLabel(id) {
   return PAIN_OPTIONS.find(p => p.id === id)?.label ?? id
 }
