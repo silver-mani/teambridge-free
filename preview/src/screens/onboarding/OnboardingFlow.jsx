@@ -291,7 +291,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     content = (
       <div className="ob-right ob-right--intake">
         <header className="ob-right-head">
-          <h1 className="ob-right-title">Your Teambridge</h1>
+          <h1 className="ob-right-title">Your Account</h1>
           <p className="ob-right-sub">
             Your dashboard will appear here as we learn about you.
           </p>
@@ -635,7 +635,7 @@ function WireframeLoop() {
           </div>
         </div>
       </div>
-      <p className="ob-wf-caption">Your Teambridge will materialize here.</p>
+      <p className="ob-wf-caption">Your account will materialize here.</p>
     </div>
   )
 }
