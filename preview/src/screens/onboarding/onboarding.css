@@ -639,10 +639,20 @@
 }
 
 .ob-right-body {
-  /* 1fr row of .ob-right grid. min-height: 0 + overflow-y: auto =
-   * scrolls when content exceeds row height. */
+  /* Brute-force fix — explicit max-height based on viewport minus
+   * the approximate head height (.ob-right-head ~100px). The
+   * grid/flex chain SHOULD have constrained this implicitly but
+   * couldn't reliably across the act1.css inheritance + grid-cell
+   * + flex-shrink stack. This guarantees the body has a bounded
+   * height so overflow-y: auto actually engages.
+   *
+   * Also forcing overflow-y: scroll (not auto) so the scrollbar
+   * gutter is always present and the user can see scroll is wired
+   * even when content fits. */
+  height: calc(100vh - 100px);
+  max-height: calc(100vh - 100px);
   min-height: 0;
-  overflow-y: auto;
+  overflow-y: scroll;
   padding: var(--space-5) var(--space-6) var(--space-6);
   display: flex;
   flex-direction: column;
