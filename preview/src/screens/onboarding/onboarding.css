@@ -1,17 +1,18 @@
 /* ──────────────────────────────────────────────────────────────────────
  * Onboarding flow styles — #/build route.
  *
- * Four-state machine:
- *   intake    UrlIntake.jsx   — single URL input
- *   research  ResearchNarrative.jsx — Nova narrates discoveries, right
- *             pane fills with the live ConfigCard preview
- *   review    ConfigReview.jsx — fully editable ConfigCard
- *   live      DashboardShell — full product chrome populated from the
- *             confirmed config
+ * One consistent layout from frame 1: DashboardShell with LeftNav
+ * (left) · Nova chat (middle, .prompt-panel + .ob-chat-*) · right pane
+ * content (.ob-right + .cc-* during onboarding, .bc-* once live) ·
+ * activity feed drawer overlay (right edge, collapsed during
+ * onboarding, accessible via the .ob-activity-toggle in the topbar).
  *
- * Shared visual: ConfigCard (.cc-*) renders in both research (read-only,
- * with skeleton placeholders for unrevealed fields) and review (every
- * field inline-editable).
+ * State machine only changes what fills the chat history and right
+ * pane — the shell itself never moves.
+ *
+ * Shared visual: ConfigCard (.cc-*) is rendered in both research
+ * (read-only, with skeleton placeholders for unrevealed fields) and
+ * review (every field inline-editable).
  *
  * All colors pull from Alloy semantic tokens. No raw hex.
  * ────────────────────────────────────────────────────────────────────── */
@@ -100,66 +101,165 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ─────────────────────── UrlIntake (intake) ──────────────────────── */
-
-.ui-intake {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-8) var(--space-6);
-  background: var(--color-bg-primary);
+/* ─────────────────────── Activity toggle in topbar ──────────────── */
+.ob-activity-toggle {
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-md);
+  color: var(--color-content-secondary);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+.ob-activity-toggle:hover { background: var(--color-bg-secondary); color: var(--color-content-primary); }
+.ob-activity-toggle.is-open {
+  background: var(--color-bg-inverse-primary);
+  color: var(--color-content-inverse-primary);
+  border-color: var(--color-bg-inverse-primary);
 }
 
-.ui-intake-inner {
-  width: 100%;
-  max-width: 620px;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-3);
-  animation: ob-fade-in 360ms ease;
+/* ─────────────────────── Chat (Nova) ────────────────────────────── */
+/* Renders inside .prompt-panel — adds the locked-bottom compose +
+ * research-bubble checklist styling on top of Act1's prompt-panel
+ * chrome. */
+
+.ob-chat .prompt-panel-inner {
+  /* Make room for the compose footer at the bottom */
+  padding-bottom: 0;
 }
 
-.ui-intake-mark {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 64px; height: 64px;
-  border-radius: var(--radius-full);
-  background: linear-gradient(135deg, var(--ai-grad-start, #8C4FE2) 0%, var(--ai-grad-mid, #446CFF) 55%, var(--ai-grad-end, #1EDFDE) 100%);
-  color: #fff;
-  margin-bottom: var(--space-3);
-}
-
-.ui-intake-title {
-  margin: 0;
-  font-size: var(--text-4xl);
+.ob-chat-sub {
+  margin-left: var(--space-1);
+  font-size: var(--text-xs);
   font-weight: var(--font-weight-regular);
-  letter-spacing: -0.02em;
-  line-height: var(--line-height-snug);
-  color: var(--color-content-primary);
-}
-
-.ui-intake-sub {
-  margin: 0 auto;
-  max-width: 520px;
-  font-size: var(--text-base);
-  line-height: var(--line-height-loose);
   color: var(--color-content-tertiary);
 }
 
-.ui-intake-form {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-3);
-  margin-top: var(--space-5);
+.ob-chat-scroll { /* same shape as .prompt-scroll, keep loose */
+  padding-bottom: var(--space-4);
 }
 
-.ui-intake-field {
-  position: relative;
-  width: 100%;
+.ob-chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* Bubble rows */
+.ob-bubble-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  animation: ob-fade-in 240ms ease;
+}
+.ob-bubble-row--user { justify-content: flex-end; }
+
+.ob-avatar {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+.ob-avatar--nova {
+  background: linear-gradient(135deg, var(--ai-grad-start, #8C4FE2) 0%, var(--ai-grad-mid, #446CFF) 55%, var(--ai-grad-end, #1EDFDE) 100%);
+  color: #fff;
+}
+
+.ob-bubble {
+  max-width: 85%;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  line-height: var(--line-height-loose);
+}
+.ob-bubble--nova {
+  background: var(--color-bg-tertiary);
+  color: var(--color-content-primary);
+  border-bottom-left-radius: var(--radius-xs);
+}
+.ob-bubble--user {
+  background: var(--color-bg-inverse-primary);
+  color: var(--color-content-inverse-primary);
+  border-bottom-right-radius: var(--radius-xs);
+}
+
+/* Research bubble — Nova's live-updating checklist */
+.ob-research-headline {
+  margin-bottom: var(--space-2);
+  font-weight: var(--font-weight-medium);
+}
+
+.ob-research-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.ob-research-step {
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-content-secondary);
+}
+.ob-research-step--pending { opacity: 0.4; }
+.ob-research-step--done    { color: var(--color-content-primary); }
+
+.ob-research-mark {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px;
+  color: var(--color-matcha-content-secondary);
+}
+.ob-research-step--active .ob-research-mark { color: var(--color-content-tertiary); }
+.ob-research-step--pending .ob-research-mark { color: var(--color-content-tertiary); opacity: 0.6; }
+
+.ob-research-spin {
+  width: 10px; height: 10px;
+  border: 1.5px solid var(--color-border-opaque);
+  border-top-color: var(--color-content-primary);
+  border-radius: var(--radius-full);
+  animation: ob-spin 700ms linear infinite;
+}
+@keyframes ob-spin { to { transform: rotate(360deg); } }
+
+/* Quick replies sit above the compose bar — chip-style suggested
+ * answers Nova surfaces (e.g. "Looks right" / "Start over"). */
+.ob-quick-replies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--color-border-opaque);
+}
+.ob-quick-reply {
+  padding: var(--space-1) var(--space-3);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-full);
+  color: var(--color-content-primary);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.ob-quick-reply:hover { border-color: var(--color-border-selected); background: var(--color-bg-primary); }
+
+/* Compose footer — locked to the bottom of the chat column */
+.ob-compose {
+  padding: var(--space-3) 0 var(--space-5);
+  border-top: 1px solid var(--color-border-opaque);
+  background: var(--color-bg-primary);
+  flex-shrink: 0;
+}
+.ob-compose-row {
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -170,35 +270,27 @@
   padding-left: var(--space-3);
   transition: border-color 120ms ease, box-shadow 120ms ease;
 }
-.ui-intake-field:focus-within {
+.ob-compose-row:focus-within {
   border-color: var(--color-border-selected);
   box-shadow: 0 0 0 3px var(--color-border-opaque);
 }
-
-.ui-intake-prefix {
-  font-size: var(--text-sm);
-  color: var(--color-content-tertiary);
-  font-family: var(--font-mono, monospace);
-  flex-shrink: 0;
-}
-
-.ui-intake-input {
+.ob-compose-input {
   flex: 1;
   background: transparent;
   border: 0;
   outline: none;
   font: inherit;
-  font-size: var(--text-base);
+  font-size: var(--text-sm);
   color: var(--color-content-primary);
   padding: var(--space-2) 0;
   min-width: 0;
 }
-.ui-intake-input::placeholder { color: var(--color-content-tertiary); }
-.ui-intake-input.is-invalid { color: var(--color-red-content-secondary); }
+.ob-compose-input::placeholder { color: var(--color-content-tertiary); }
+.ob-compose-input:disabled { opacity: 0.6; cursor: not-allowed; }
 
-.ui-intake-submit {
+.ob-compose-send {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 36px; height: 36px;
+  width: 32px; height: 32px;
   border: 0;
   border-radius: var(--radius-md);
   background: var(--color-bg-inverse-primary);
@@ -207,159 +299,151 @@
   flex-shrink: 0;
   transition: opacity 120ms ease;
 }
-.ui-intake-submit:disabled { opacity: 0.3; cursor: not-allowed; }
+.ob-compose-send:disabled { opacity: 0.3; cursor: not-allowed; }
 
-.ui-intake-error {
-  font-size: var(--text-xs);
-  color: var(--color-red-content-secondary);
-}
+/* ─────────────────────── Right pane (content slot) ──────────────── */
+/* The content slot of the DashboardShell — frames whatever surface
+ * is active for the current onboarding state (intake hero / ConfigCard
+ * reveal / ConfigCard editable / BuildContent surfaces in live). */
 
-.ui-intake-hint {
-  margin: var(--space-2) 0 0;
-  font-size: var(--text-xs);
-  color: var(--color-content-tertiary);
-}
-.ui-intake-example {
-  background: transparent;
-  border: 0;
-  padding: 0;
-  color: var(--color-content-secondary);
-  text-decoration: underline;
-  text-decoration-color: var(--color-border-opaque);
-  font: inherit;
-  font-size: var(--text-xs);
-  cursor: pointer;
-}
-.ui-intake-example:hover { color: var(--color-content-primary); }
-
-/* ─────────────────────── ResearchNarrative ───────────────────────── */
-
-.rn {
-  flex: 1;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
-  min-height: 0;
-  background: var(--color-bg-primary);
-}
-
-.rn-chat {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-8) var(--space-6);
-  border-right: 1px solid var(--color-border-opaque);
-}
-.rn-chat-inner {
-  width: 100%;
-  max-width: 460px;
+.ob-right {
+  height: 100%;
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  overflow-y: auto;
+  background: var(--color-bg-secondary);
 }
 
-.rn-nova {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--text-sm);
+.ob-right-head {
+  padding: var(--space-6) var(--space-6) var(--space-4);
+  border-bottom: 1px solid var(--color-border-opaque);
+  background: var(--color-bg-primary);
+}
+.ob-right-title {
+  margin: 0;
+  font-size: var(--text-xl);
   font-weight: var(--font-weight-medium);
+  letter-spacing: -0.01em;
   color: var(--color-content-primary);
 }
-.rn-nova-mark,
-.cr-nova-mark {
+.ob-right-sub {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-content-tertiary);
+  line-height: var(--line-height-loose);
+}
+
+.ob-right-body {
+  padding: var(--space-5) var(--space-6) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* Intake hero — what's shown in the right pane before any URL is given. */
+.ob-right--intake {
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8);
+  background: var(--color-bg-primary);
+}
+.ob-intake-hero {
+  max-width: 480px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  animation: ob-fade-in 360ms ease;
+}
+.ob-intake-hero-mark {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 18px; height: 18px;
+  width: 72px; height: 72px;
   border-radius: var(--radius-full);
   background: linear-gradient(135deg, var(--ai-grad-start, #8C4FE2) 0%, var(--ai-grad-mid, #446CFF) 55%, var(--ai-grad-end, #1EDFDE) 100%);
   color: #fff;
+  margin-bottom: var(--space-3);
 }
-
-.rn-headline {
+.ob-intake-hero-title {
   margin: 0;
-  font-size: var(--text-2xl);
+  font-size: var(--text-3xl);
   font-weight: var(--font-weight-regular);
   letter-spacing: -0.02em;
   line-height: var(--line-height-snug);
   color: var(--color-content-primary);
 }
-.rn-headline strong {
-  font-weight: var(--font-weight-medium);
-  color: var(--color-content-primary);
-}
-
-.rn-steps {
-  list-style: none;
-  margin: var(--space-2) 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-.rn-step {
-  display: grid;
-  grid-template-columns: 18px 1fr;
-  align-items: center;
-  gap: var(--space-3);
-  font-size: var(--text-sm);
-  color: var(--color-content-primary);
-  animation: ob-fade-in 240ms ease;
-}
-.rn-step--done { color: var(--color-content-secondary); }
-.rn-step-mark {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 18px; height: 18px;
-  border-radius: var(--radius-full);
-}
-.rn-step-mark--done {
-  background: var(--color-matcha-bg-tertiary);
-  color: var(--color-matcha-content-secondary);
-}
-.rn-step-mark--active {
-  background: var(--color-bg-tertiary);
+.ob-intake-hero-sub {
+  margin: 0;
+  font-size: var(--text-base);
+  line-height: var(--line-height-loose);
   color: var(--color-content-tertiary);
 }
-.rn-spinner {
-  width: 10px; height: 10px;
-  border: 2px solid var(--color-border-opaque);
-  border-top-color: var(--color-content-primary);
-  border-radius: var(--radius-full);
-  animation: rn-spin 700ms linear infinite;
-}
-.rn-spinner--small { width: 8px; height: 8px; border-width: 1.5px; }
-@keyframes rn-spin { to { transform: rotate(360deg); } }
-
-.rn-preview {
+.ob-intake-examples {
+  margin-top: var(--space-4);
   display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-6);
-  overflow-y: auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+.ob-intake-examples-label {
+  font-size: var(--text-xs);
+  color: var(--color-content-tertiary);
+}
+.ob-intake-example-chip {
+  padding: 4px var(--space-2);
   background: var(--color-bg-secondary);
-  border-left: 1px solid var(--color-border-opaque);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  color: var(--color-content-secondary);
+  font-family: var(--font-mono, monospace);
 }
 
-.rn-preview-head {
+/* Review-pane actions — sit below the editable ConfigCard. */
+.rp-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--space-1);
+  gap: var(--space-3);
+  padding-top: var(--space-2);
 }
-.rn-preview-eyebrow {
-  font-size: 11px;
-  font-weight: var(--font-weight-medium);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--color-content-tertiary);
-}
-.rn-preview-flag {
+.rp-back {
   display: inline-flex; align-items: center; gap: var(--space-1);
-  padding: 2px var(--space-2);
-  border-radius: var(--radius-full);
-  background: var(--color-bg-tertiary);
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
   color: var(--color-content-secondary);
-  font-size: 11px;
-  font-weight: var(--font-weight-medium);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
 }
+.rp-back:hover { color: var(--color-content-primary); background: var(--color-bg-primary); }
+.rp-cta {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  padding: var(--space-3) var(--space-5);
+  background: var(--color-bg-inverse-primary);
+  color: var(--color-content-inverse-primary);
+  border: 0;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+.rp-cta:hover { opacity: 0.92; transform: translateY(-1px); }
+
+/* Live state — wraps BuildContent so it fills the right column */
+.ob-live-content {
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.ob-live-content > .bc-canvas { flex: 1; }
+
 
 /* ─────────────────────── ConfigCard (shared) ─────────────────────── */
 
@@ -773,100 +857,6 @@
   border-color: var(--color-content-primary);
 }
 
-/* ─────────────────────── ConfigReview ────────────────────────────── */
-
-.cr {
-  flex: 1;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: var(--space-8) var(--space-6);
-  background: var(--color-bg-primary);
-  overflow-y: auto;
-}
-
-.cr-inner {
-  width: 100%;
-  max-width: 720px;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
-  animation: ob-fade-in 320ms ease;
-}
-
-.cr-head {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.cr-nova {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--text-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-content-primary);
-}
-
-.cr-title {
-  margin: 0;
-  font-size: var(--text-3xl);
-  font-weight: var(--font-weight-regular);
-  letter-spacing: -0.02em;
-  line-height: var(--line-height-snug);
-  color: var(--color-content-primary);
-}
-
-.cr-sub {
-  margin: 0;
-  font-size: var(--text-base);
-  line-height: var(--line-height-loose);
-  color: var(--color-content-tertiary);
-}
-.cr-sub strong {
-  color: var(--color-content-primary);
-  font-weight: var(--font-weight-medium);
-  font-family: var(--font-mono, monospace);
-  font-size: 0.95em;
-}
-
-.cr-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding-top: var(--space-3);
-}
-.cr-back {
-  display: inline-flex; align-items: center; gap: var(--space-1);
-  padding: var(--space-2) var(--space-3);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
-  color: var(--color-content-secondary);
-  font: inherit;
-  font-size: var(--text-sm);
-  cursor: pointer;
-}
-.cr-back:hover { color: var(--color-content-primary); background: var(--color-bg-secondary); }
-.cr-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-5);
-  background: var(--color-bg-inverse-primary);
-  color: var(--color-content-inverse-primary);
-  border: 0;
-  border-radius: var(--radius-md);
-  font: inherit;
-  font-size: var(--text-base);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: opacity 120ms ease, transform 120ms ease;
-}
-.cr-cta:hover { opacity: 0.92; transform: translateY(-1px); }
-
 /* ─────────────────────── Live (DashboardShell host) ──────────────── */
 
 .ob-root .act1-root {
@@ -880,62 +870,6 @@
   opacity: 0.4;
   cursor: not-allowed;
   pointer-events: none;
-}
-
-/* The 'live' state's chat (LiveChatStub) reuses these bubble + input
- * styles. Same look as Act1's prompt panel, just simpler content. */
-.ob-turn { display: flex; flex-direction: column; gap: var(--space-2); }
-
-.ob-bubble-row {
-  display: flex;
-  align-items: flex-end;
-  gap: var(--space-2);
-}
-.ob-bubble-row--user { justify-content: flex-end; }
-
-.ob-avatar {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 24px; height: 24px;
-  border-radius: var(--radius-full);
-  flex-shrink: 0;
-}
-.ob-avatar--nova {
-  background: var(--color-bg-inverse-primary);
-  color: var(--color-content-inverse-primary);
-}
-
-.ob-bubble {
-  max-width: 80%;
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-lg);
-  font-size: var(--text-sm);
-  line-height: var(--line-height-loose);
-}
-.ob-bubble--nova {
-  background: var(--color-bg-tertiary);
-  color: var(--color-content-primary);
-  border-bottom-left-radius: var(--radius-xs);
-}
-.ob-bubble--user {
-  background: var(--color-bg-inverse-primary);
-  color: var(--color-content-inverse-primary);
-  border-bottom-right-radius: var(--radius-xs);
-}
-
-.ob-chat-input {
-  border-top: 1px solid var(--color-border-opaque);
-  padding: var(--space-4) var(--space-5);
-  background: var(--color-bg-primary);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.ob-done-foot {
-  margin: 0;
-  font-size: var(--text-xs);
-  color: var(--color-content-tertiary);
-  line-height: var(--line-height-loose);
 }
 
 /* ─────────────────────── BuildContent surfaces ───────────────────── */

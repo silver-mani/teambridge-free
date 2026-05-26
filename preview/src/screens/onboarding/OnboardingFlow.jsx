@@ -1,11 +1,13 @@
-import { useState, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { TeambridgeAIIcon } from '../../../../src/components/icons/TeambridgeAIIcon.tsx'
 import { ChevronLeftIcon } from '../../../../src/components/icons/ChevronLeftIcon.tsx'
+import { Bell01Icon } from '../../../../src/components/icons/Bell01Icon.tsx'
+import { ArrowNarrowRightIcon } from '../../../../src/components/icons/ArrowNarrowRightIcon.tsx'
+import { CheckCircleIcon } from '../../../../src/components/icons/CheckCircleIcon.tsx'
 import { INDUSTRIES } from '../IndustrySelector.jsx'
 import DashboardShell, { DEFAULT_NAV_GROUPS, DEFAULT_NAV_BOTTOM } from '../shell/DashboardShell.jsx'
-import UrlIntake from './UrlIntake.jsx'
-import ResearchNarrative from './ResearchNarrative.jsx'
-import ConfigReview from './ConfigReview.jsx'
+import OnboardingChat from './OnboardingChat.jsx'
+import ConfigCard, { ALL_FIELDS } from './ConfigCard.jsx'
 import BuildContent from './BuildContent.jsx'
 import BuildActivityFeed from './BuildActivityFeed.jsx'
 import { deriveConfig, headcountRangeFor } from './urlMatcher.js'
@@ -15,21 +17,48 @@ import './onboarding.css'
 /* ──────────────────────────────────────────────────────────────────────
  * OnboardingFlow — `#/build` route.
  *
- * Four-state machine, Context → Configuration → Confirm:
+ * One consistent layout throughout: DashboardShell with LeftNav (left)
+ * · Nova chat (middle) · Right pane content · Activity feed dock
+ * (right, collapsed during onboarding).
  *
- *   intake    URL input (single field). Free-text fallback on unmatched.
- *   research  Nova narrates discoveries while ConfigCard fills in on
- *             the right (~5s, time-paced).
- *   review    Fully editable ConfigCard. Confirm or start over.
- *   live      Full DashboardShell, populated from the confirmed config.
+ * State machine — only changes WHAT renders in the chat history and
+ * right pane, not where things live:
  *
- * The flow does the work; the operator confirms. One real input, one
- * review, one click to land in the dashboard.
+ *   intake    Nova asks for the URL via the chat compose bar; right
+ *             pane shows an Intake hero.
+ *   research  Nova posts a self-updating research bubble (checklist
+ *             that fills in over ~5s); right pane's ConfigCard reveals
+ *             one field at a time as Nova "discovers" it.
+ *   review    Nova asks the operator to confirm; right pane's
+ *             ConfigCard becomes fully editable with a Confirm CTA.
+ *   live      Nova's chat is open-ended; right pane shows BuildContent
+ *             surfaces (Overview/Schedule/People/...); LeftNav unlocks;
+ *             activity feed populates.
  * ────────────────────────────────────────────────────────────────────── */
 
-/* Convert a confirmed config into the `answers` shape the existing
- * BuildContent + BuildActivityFeed expect. Keeps those components
- * unchanged across the rewrite. */
+const RESEARCH_STEPS = (config) => [
+  { id: 's1', text: `Reading ${config.url || 'your description'}…`,
+    done: `Read ${config.url || 'your description'}.`,
+    field: null, delay: 600 },
+  { id: 's2', text: 'Identifying your industry…',
+    done: `Industry: ${(INDUSTRIES.find(i => i.id === config.industry)?.name) || config.industry}.`,
+    field: 'industry', delay: 800 },
+  { id: 's3', text: 'Estimating your team size…',
+    done: `Team: ~${config.headcount?.toLocaleString()} people.`,
+    field: 'headcount', delay: 700 },
+  { id: 's4', text: 'Mapping your locations…',
+    done: `Found ${config.locations?.length ?? 0} site${(config.locations?.length ?? 0) === 1 ? '' : 's'}.`,
+    field: 'locations', delay: 900 },
+  { id: 's5', text: 'Drafting your role list…',
+    done: `${config.roles?.length ?? 0} role types identified.`,
+    field: 'roles', delay: 700 },
+  { id: 's6', text: 'Recommending your first agents…',
+    done: `${config.agents?.length ?? 0} agents ready to activate.`,
+    field: 'agents', delay: 800 },
+]
+
+/* Convert a confirmed config into the answers shape that BuildContent
+ * + BuildActivityFeed already understand. */
 function configToAnswers(config) {
   return {
     firstName:     '',
@@ -43,7 +72,6 @@ function configToAnswers(config) {
     roles:         config.roles || [],
   }
 }
-
 function locationModelFor(locations = []) {
   if (locations.length <= 1) return 'single'
   if (locations.length <= 3) return 'multi-local'
@@ -55,191 +83,366 @@ const FOCUS_TO_VIEW = {
   agents: 'workflows', integrations: 'settings',
 }
 
-function buildNavGroups(answers) {
-  // Once we're live, all the nav is unlocked — the config has populated
-  // everything. (Pre-confirm we don't even render the nav.) But we keep
-  // the helper around so this is symmetric with the run-mode case
-  // when we migrate Act1 onto the shared shell.
-  const apply = group => ({ ...group, items: group.items.map(it => ({ ...it })) })
+/* Lock every nav item during onboarding — the operator can't
+ * meaningfully click into them until the dashboard is live. */
+function buildLockedNav() {
+  const apply = group => ({
+    ...group,
+    items: group.items.map(it => ({ ...it, locked: true })),
+  })
   return {
     navGroups: DEFAULT_NAV_GROUPS.map(apply),
     navBottom: apply(DEFAULT_NAV_BOTTOM),
   }
 }
 
-export default function OnboardingFlow({ onExit, onComplete }) {
-  const [state, setState]   = useState('intake')        // 'intake' | 'research' | 'review' | 'live'
-  const [intakeMode, setIntakeMode] = useState('url')   // 'url' | 'free-text'
-  const [intakeError, setIntakeError] = useState(null)
-  const [config, setConfig] = useState(null)
-  const [view, setView]     = useState('overview')
-  const [viewPinned, setViewPinned] = useState(false)
+function buildLiveNav() {
+  const clone = group => ({ ...group, items: group.items.map(it => ({ ...it })) })
+  return {
+    navGroups: DEFAULT_NAV_GROUPS.map(clone),
+    navBottom: clone(DEFAULT_NAV_BOTTOM),
+  }
+}
 
-  const handleIntakeSubmit = useCallback((input) => {
-    const derived = deriveConfig(input, { fromFreeText: intakeMode === 'free-text' })
-    if (!derived) {
-      // No curated or heuristic match — fall back to free-text input.
-      setIntakeMode('free-text')
-      setIntakeError(null)
+export default function OnboardingFlow({ onExit, onComplete }) {
+  // State machine
+  const [state, setState] = useState('intake')            // 'intake' | 'research' | 'review' | 'live'
+  const [intakeMode, setIntakeMode] = useState('url')     // 'url' | 'free-text'
+  const [config, setConfig] = useState(null)
+  const [revealedFields, setRevealedFields] = useState(new Set(['summary']))
+  const [researchSteps, setResearchSteps] = useState([])  // for the live-updating Nova bubble
+  const [composerDisabled, setComposerDisabled] = useState(false)
+
+  // Chat message history. Nova's research bubble is identified by id
+  // so we can update it in place as the checklist progresses.
+  const [messages, setMessages] = useState(() => [
+    { id: 'm0', from: 'nova', text:
+      "Hi! I'm Nova, your Teambridge AI. Drop in your company website below and I'll set up your account from what I learn about you — industry, headcount, locations, agents." },
+  ])
+
+  const researchTimersRef = useRef([])
+
+  // Dashboard view + activity drawer
+  const [view, setView] = useState('overview')
+  const [viewPinned, setViewPinned] = useState(false)
+  const [activityOpen, setActivityOpen] = useState(false)
+
+  const pushMessage = useCallback((m) => {
+    setMessages(prev => [...prev, { id: `m${prev.length}`, ...m }])
+  }, [])
+
+  /* ── Intake ── */
+  const handleUserMessage = useCallback((text) => {
+    // Push the user's message immediately.
+    pushMessage({ from: 'user', text })
+
+    if (state === 'intake') {
+      const derived = deriveConfig(text, { fromFreeText: intakeMode === 'free-text' })
+      if (!derived) {
+        // No match — switch to free-text and ask for a description.
+        setIntakeMode('free-text')
+        pushMessage({ from: 'nova', text:
+          "I couldn't quite place that site. Mind giving me a two-line description of what your team does? I'll take it from there." })
+        return
+      }
+
+      setConfig(derived)
+      // Disable composer during the research animation.
+      setComposerDisabled(true)
+      kickoffResearch(derived)
+      setState('research')
       return
     }
-    setIntakeError(null)
-    setConfig(derived)
-    setState('research')
-  }, [intakeMode])
 
-  const handleResearchComplete = useCallback(() => {
-    setState('review')
+    if (state === 'review' || state === 'live') {
+      // For now we just acknowledge — production wires this into a real
+      // Nova model. Free-form chat doesn't change the config.
+      pushMessage({ from: 'nova', text:
+        state === 'review'
+          ? "Thanks for the note — for this demo, tap the field on the right to edit, or hit Confirm when you're happy."
+          : "Got it. (Free-form Nova chat is wired up in the real product — for the demo, take a look around the dashboard!)" })
+      return
+    }
+  }, [state, intakeMode, pushMessage]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Kick off the time-paced research animation. Posts a single Nova
+   * "research" bubble whose `steps` array updates in place as each
+   * delay fires. Right pane's ConfigCard reveals matching fields. */
+  function kickoffResearch(derived) {
+    const steps = RESEARCH_STEPS(derived)
+
+    // Initial bubble — first step active, rest pending.
+    const initialSteps = steps.map((s, i) => ({
+      text: s.text,
+      status: i === 0 ? 'active' : 'pending',
+    }))
+    setResearchSteps(initialSteps)
+    setRevealedFields(new Set(['summary']))
+
+    // Insert a placeholder research bubble.
+    const researchId = `r-${Date.now()}`
+    setMessages(prev => [
+      ...prev,
+      { id: researchId, from: 'nova', kind: 'research',
+        headline: `Looking up ${derived.url || 'your description'}…`,
+        steps: initialSteps },
+    ])
+
+    let cumulative = 0
+    researchTimersRef.current = steps.map((step, i) => {
+      cumulative += step.delay
+      return setTimeout(() => {
+        setRevealedFields(prev => {
+          const next = new Set(prev)
+          if (step.field) next.add(step.field)
+          return next
+        })
+        setResearchSteps(prevSteps => {
+          const next = prevSteps.map((ps, idx) => {
+            if (idx < i)  return { ...ps, status: 'done' }
+            if (idx === i) return { ...ps, status: 'done', text: step.done }
+            if (idx === i + 1) return { ...ps, status: 'active' }
+            return ps
+          })
+          // Sync the research bubble in messages with the new steps.
+          setMessages(msgs => msgs.map(m => m.id === researchId ? { ...m, steps: next } : m))
+          return next
+        })
+      }, cumulative)
+    })
+
+    // After all steps + a beat, post the "review" message and enable
+    // the composer with a review-mode placeholder.
+    const finalTimer = setTimeout(() => {
+      pushMessage({ from: 'nova', text:
+        `Here's what I set up for ${derived.companyName}. Take a look on the right — tap any field to edit, then hit Confirm when it looks right.` })
+      setComposerDisabled(false)
+      setState('review')
+    }, cumulative + 700)
+    researchTimersRef.current.push(finalTimer)
+  }
+
+  useEffect(() => {
+    return () => {
+      researchTimersRef.current.forEach(clearTimeout)
+      researchTimersRef.current = []
+    }
   }, [])
 
+  /* ── Review actions ── */
   const handleConfirm = useCallback(() => {
     setState('live')
+    pushMessage({ from: 'nova', text:
+      `All set, ${config?.companyName}. Your Teambridge is live — take a look around. I'll keep working in the background, and I'm here whenever you need me.` })
     try { sessionStorage.setItem('tb:build-config', JSON.stringify(config)) } catch { /* ignore */ }
-  }, [config])
+  }, [config, pushMessage])
 
   const handleStartOver = useCallback(() => {
+    researchTimersRef.current.forEach(clearTimeout)
+    researchTimersRef.current = []
     setConfig(null)
+    setRevealedFields(new Set(['summary']))
+    setResearchSteps([])
     setIntakeMode('url')
-    setIntakeError(null)
+    setComposerDisabled(false)
     setState('intake')
+    setMessages([
+      { id: 'm0', from: 'nova', text:
+        "Let's try again — drop in a different website (or description) below." },
+    ])
   }, [])
 
-  const handleSelectView = useCallback((v) => {
-    setView(v)
-    setViewPinned(true)
-  }, [])
-
+  /* ── Live actions ── */
+  const handleSelectView = (v) => {
+    setView(v); setViewPinned(true)
+  }
   const handleOpenDashboard = useCallback(() => {
     onComplete?.(config)
   }, [config, onComplete])
 
-  const topBar = (
-    <header className="ob-topbar">
-      <button type="button" className="ob-back" onClick={() => {
-        if (state === 'intake') onExit?.()
-        else if (state === 'review') handleStartOver()
-        else onExit?.()
-      }}>
-        <ChevronLeftIcon size={14} />
-        {state === 'intake' ? 'Back' : state === 'review' ? 'Start over' : 'Exit'}
-      </button>
-      <div className="ob-topbar-brand">
-        <span className="ob-brand-mark" aria-hidden="true">
-          <TeambridgeAIIcon size={14} />
-        </span>
-        <span className="ob-brand-text">Teambridge setup</span>
-      </div>
-      <button type="button" className="ob-back ob-back--right" onClick={onExit}>
-        Skip to demo
-      </button>
-    </header>
-  )
-
-  if (state === 'intake') {
-    return (
-      <div className="ob-root ob-root--intake">
-        {topBar}
-        <UrlIntake mode={intakeMode} onSubmit={handleIntakeSubmit} error={intakeError} />
-      </div>
-    )
-  }
-
-  if (state === 'research') {
-    return (
-      <div className="ob-root ob-root--research">
-        {topBar}
-        <ResearchNarrative config={config} onComplete={handleResearchComplete} />
-      </div>
-    )
-  }
-
-  if (state === 'review') {
-    return (
-      <div className="ob-root ob-root--review">
-        {topBar}
-        <ConfigReview
-          config={config}
-          onChange={setConfig}
-          onConfirm={handleConfirm}
-          onStartOver={handleStartOver}
-        />
-      </div>
-    )
-  }
-
-  // state === 'live'
-  const answers = configToAnswers(config)
-  const industry = INDUSTRIES.find(i => i.id === answers.industry)
-  const { navGroups, navBottom } = buildNavGroups(answers)
+  /* ── Render pieces ── */
+  const industry = state === 'intake' ? null : (config ? INDUSTRIES.find(i => i.id === config.industry) : null)
+  const { navGroups, navBottom } = state === 'live' ? buildLiveNav() : buildLockedNav()
   const liveView = viewPinned ? view : (FOCUS_TO_VIEW[view] || view || 'overview')
 
+  const composerPlaceholder = (() => {
+    if (state === 'intake' && intakeMode === 'url')       return 'yourcompany.com'
+    if (state === 'intake' && intakeMode === 'free-text') return 'e.g. We run 3 senior-living communities across LA.'
+    if (state === 'research') return 'Nova is working…'
+    if (state === 'review')   return 'Add a note, or tap fields on the right to edit'
+    return 'Ask Nova anything…'
+  })()
+
+  const chat = (
+    <OnboardingChat
+      messages={messages}
+      composerPlaceholder={composerPlaceholder}
+      composerDisabled={composerDisabled}
+      onSend={handleUserMessage}
+    />
+  )
+
+  let content
+  if (state === 'intake') {
+    content = <IntakeHero />
+  } else if (state === 'research') {
+    content = (
+      <RightPaneFrame title="Workspace forming" subtitle="Watch your account come together as Nova works.">
+        <ConfigCard
+          config={config}
+          editable={false}
+          visibleFields={ALL_FIELDS.filter(f => revealedFields.has(f))}
+        />
+      </RightPaneFrame>
+    )
+  } else if (state === 'review') {
+    content = (
+      <RightPaneFrame
+        title="Your account"
+        subtitle={config?.url ? `Derived from ${config.url}. Tap any field to edit.` : 'Tap any field to edit.'}
+      >
+        <ConfigCard
+          config={config}
+          editable={true}
+          onChange={setConfig}
+          visibleFields={ALL_FIELDS}
+        />
+        <div className="rp-actions">
+          <button type="button" className="rp-back" onClick={handleStartOver}>
+            <ChevronLeftIcon size={14} /> Start over
+          </button>
+          <button type="button" className="rp-cta" onClick={handleConfirm}>
+            Looks right — open my Teambridge
+            <ArrowNarrowRightIcon size={14} />
+          </button>
+        </div>
+      </RightPaneFrame>
+    )
+  } else {
+    // live
+    const answers = configToAnswers(config)
+    content = (
+      <div className="ob-live-content">
+        <BuildContent view={liveView} answers={answers} mode="full" />
+      </div>
+    )
+  }
+
+  // Live activity feed gets the BuildActivityFeed contents; onboarding
+  // states get an empty placeholder so the dock has something to slide
+  // into when the operator clicks the bell.
+  const activityFeed = state === 'live'
+    ? <BuildActivityFeed answers={configToAnswers(config)} />
+    : <OnboardingActivityPlaceholder />
+
   return (
-    <div className="ob-root ob-root--live">
-      {topBar}
+    <div className="ob-root">
+      <header className="ob-topbar">
+        <button type="button" className="ob-back" onClick={onExit}>
+          <ChevronLeftIcon size={14} /> Back
+        </button>
+        <div className="ob-topbar-brand">
+          <span className="ob-brand-mark" aria-hidden="true">
+            <TeambridgeAIIcon size={14} />
+          </span>
+          <span className="ob-brand-text">Teambridge</span>
+        </div>
+        <button
+          type="button"
+          className={`ob-activity-toggle ${activityOpen ? 'is-open' : ''}`}
+          onClick={() => setActivityOpen(o => !o)}
+          aria-label="Toggle activity feed"
+        >
+          <Bell01Icon size={14} />
+          <span>Activity</span>
+        </button>
+      </header>
+
       <DashboardShell
         mode="full"
-        view={liveView}
+        view={state === 'live' ? liveView : 'overview'}
         industryLabel={industry?.name ?? 'Workspace'}
         navGroups={navGroups}
         navBottom={navBottom}
         onBrand={onExit}
         onSelectView={handleSelectView}
-        chat={
-          <LiveChatStub
-            config={config}
-            onOpenDashboard={handleOpenDashboard}
-          />
-        }
-        content={<BuildContent view={liveView} answers={answers} mode="full" />}
-        activityFeed={<BuildActivityFeed answers={answers} />}
+        chat={chat}
+        content={content}
+        showActivityFeed={false}  /* feed lives in the drawer overlay only */
       />
+
+      {/* Activity feed drawer — slides in from the right when opened. */}
+      <div
+        className={`activity-drawer-scrim ${activityOpen ? 'is-open' : ''}`}
+        aria-hidden="true"
+        onClick={() => setActivityOpen(false)}
+      />
+      <aside
+        className={`activity-drawer-overlay ${activityOpen ? 'is-open' : ''}`}
+        aria-hidden={!activityOpen}
+      >
+        {activityFeed}
+      </aside>
     </div>
   )
 }
 
-/* In the 'live' state the chat is no longer asking onboarding questions
- * — Nova has done her work. This small stub renders Nova's closing
- * message and a primary CTA to "open" the dashboard (which routes the
- * operator into the real industry demo with their config). */
-function LiveChatStub({ config, onOpenDashboard }) {
+/* ─── Right-pane chrome shared across phases ─────────────────────── */
+
+function RightPaneFrame({ title, subtitle, children }) {
   return (
-    <section className="prompt-panel" aria-label="Teambridge AI">
-      <div className="prompt-panel-inner">
-        <div className="prompt-panel-head">
-          <div className="prompt-panel-title">
-            <span className="prompt-panel-mark" aria-hidden="true">
-              <TeambridgeAIIcon size={10} />
-            </span>
-            <span>Nova</span>
-          </div>
-        </div>
+    <div className="ob-right">
+      <header className="ob-right-head">
+        <h1 className="ob-right-title">{title}</h1>
+        {subtitle && <p className="ob-right-sub">{subtitle}</p>}
+      </header>
+      <div className="ob-right-body">{children}</div>
+    </div>
+  )
+}
 
-        <div className="prompt-scroll">
-          <div className="prompt-messages">
-            <div className="ob-turn">
-              <div className="ob-bubble-row ob-bubble-row--nova">
-                <span className="ob-avatar ob-avatar--nova" aria-hidden="true">
-                  <TeambridgeAIIcon size={14} />
-                </span>
-                <div className="ob-bubble ob-bubble--nova">
-                  Your Teambridge is live, {config.companyName}. Take a look around —
-                  I've set up your roster, locations, and the agents most teams in
-                  your space run from day one. I'll be here whenever you need me.
-                </div>
-              </div>
-            </div>
-          </div>
+function IntakeHero() {
+  return (
+    <div className="ob-right ob-right--intake">
+      <div className="ob-intake-hero">
+        <span className="ob-intake-hero-mark" aria-hidden="true">
+          <TeambridgeAIIcon size={32} />
+        </span>
+        <h1 className="ob-intake-hero-title">
+          Your Teambridge will appear here.
+        </h1>
+        <p className="ob-intake-hero-sub">
+          Drop your company website into the chat on the left. Nova will derive your industry,
+          headcount, locations, and agents — and have your dashboard built before you finish your coffee.
+        </p>
+        <div className="ob-intake-examples">
+          <span className="ob-intake-examples-label">Try one:</span>
+          {['hollywoodparkca.com', 'dignityhealth.org', 'marriott.com'].map(url => (
+            <code key={url} className="ob-intake-example-chip">{url}</code>
+          ))}
         </div>
-
-        <footer className="ob-chat-input">
-          <button type="button" className="ob-cta ob-cta--primary" onClick={onOpenDashboard}>
-            Open the full demo
-          </button>
-          <p className="ob-done-foot">
-            Or poke around right here — every section on the right is real.
-          </p>
-        </footer>
       </div>
-    </section>
+    </div>
+  )
+}
+
+function OnboardingActivityPlaceholder() {
+  return (
+    <aside className="activity-feed bc-activity" aria-label="Activity feed (empty)">
+      <div className="activity-feed-inner">
+        <div className="activity-feed-header">
+          <h2 className="activity-feed-title">Activity</h2>
+        </div>
+        <div className="bc-activity-empty">
+          <span className="bc-activity-empty-mark" aria-hidden="true">
+            <CheckCircleIcon size={14} />
+          </span>
+          <span>
+            Once your workspace is live, Nova posts every action she takes here —
+            shift coverage, OT swaps, agent runs, the lot.
+          </span>
+        </div>
+      </div>
+    </aside>
   )
 }
