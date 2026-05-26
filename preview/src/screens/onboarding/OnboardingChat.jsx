@@ -57,9 +57,8 @@ export default function OnboardingChat({
   messages,
   composerPlaceholder = 'Type a message…',
   composerDisabled = false,
-  quickReplies = [],
+  drawer = null,
   onSend,
-  onQuickReply,
 }) {
   const [draft, setDraft] = useState('')
   const inputRef = useRef(null)
@@ -72,7 +71,7 @@ export default function OnboardingChat({
     const el = scrollRef.current
     if (!el) return
     requestAnimationFrame(() => { el.scrollTop = el.scrollHeight })
-  }, [messages, composerDisabled])
+  }, [messages, composerDisabled, drawer])
 
   // Re-focus the input when it becomes available again.
   useEffect(() => {
@@ -89,8 +88,8 @@ export default function OnboardingChat({
 
   return (
     <section className="prompt-panel ob-chat" aria-label="Teambridge AI">
-      <div className="prompt-panel-inner">
-        <header className="prompt-panel-head">
+      <div className="prompt-panel-inner ob-chat-inner">
+        <header className="prompt-panel-head ob-chat-head">
           <div className="prompt-panel-title">
             <span className="prompt-panel-mark" aria-hidden="true">
               <TeambridgeAIIcon size={10} />
@@ -115,20 +114,7 @@ export default function OnboardingChat({
           </div>
         </div>
 
-        {quickReplies.length > 0 && (
-          <div className="ob-quick-replies">
-            {quickReplies.map(qr => (
-              <button
-                key={qr.id}
-                type="button"
-                className="ob-quick-reply"
-                onClick={() => onQuickReply?.(qr)}
-              >
-                {qr.label}
-              </button>
-            ))}
-          </div>
-        )}
+        {drawer && <div className="ob-drawer-slot">{drawer}</div>}
 
         <footer className="ob-compose">
           <form className="ob-compose-row" onSubmit={submit}>

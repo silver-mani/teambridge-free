@@ -104,6 +104,17 @@ function buildLiveNav() {
   }
 }
 
+const PERSONAL_EMAIL_DOMAINS = new Set([
+  'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com',
+  'aol.com', 'msn.com', 'live.com', 'me.com', 'mac.com', 'proton.me', 'protonmail.com',
+])
+function isWorkEmail(email) {
+  const trimmed = String(email || '').trim().toLowerCase()
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return false
+  const domain = trimmed.split('@')[1]
+  return !PERSONAL_EMAIL_DOMAINS.has(domain)
+}
+
 export default function OnboardingFlow({ onExit, onComplete }) {
   // State machine
   const [state, setState] = useState('intake')            // 'intake' | 'research' | 'review' | 'live'
@@ -112,6 +123,10 @@ export default function OnboardingFlow({ onExit, onComplete }) {
   const [revealedFields, setRevealedFields] = useState(new Set(['summary']))
   const [researchSteps, setResearchSteps] = useState([])  // for the live-updating Nova bubble
   const [composerDisabled, setComposerDisabled] = useState(false)
+
+  // Review-state confirm drawer
+  const [confirmEmail, setConfirmEmail] = useState('')
+  const [confirmTouched, setConfirmTouched] = useState(false)
 
   // Chat message history. Nova's research bubble is identified by id
   // so we can update it in place as the checklist progresses.
@@ -231,11 +246,49 @@ export default function OnboardingFlow({ onExit, onComplete }) {
 
   /* ── Review actions ── */
   const handleConfirm = useCallback(() => {
+    if (!isWorkEmail(confirmEmail)) {
+      setConfirmTouched(true)
+      return
+    }
+    // Mirror to the existing capture-lead API (Convex + HubSpot) so this
+    // signup lands in the CRM same as the old lead gate.
+    try {
+      fetch('/api/capture-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: '',
+          company: config?.companyName,
+          email: confirmEmail.trim().toLowerCase(),
+          pageUrl: window.location.href,
+          referrer: document.referrer || undefined,
+        }),
+        keepalive: true,
+      })
+        .then(async (r) => {
+          let body = null
+          try { body = await r.json() } catch { /* tolerated */ }
+          if (!r.ok) { console.error('[capture-lead] non-2xx', r.status, body); return }
+          if (body && Array.isArray(body.errors) && body.errors.length) {
+            console.error('[capture-lead] upstream errors', body.errors); return
+          }
+          console.info('[capture-lead] ok', body ?? {})
+        })
+        .catch((err) => { console.error('[capture-lead] request failed', err) })
+    } catch (err) { console.error('[capture-lead] threw before fetch', err) }
+
+    try {
+      sessionStorage.setItem('tb:lead', '1')
+      sessionStorage.setItem('tb:lead-data', JSON.stringify({
+        company: config?.companyName, email: confirmEmail.trim().toLowerCase(),
+      }))
+      sessionStorage.setItem('tb:build-config', JSON.stringify(config))
+    } catch { /* ignore */ }
+
     setState('live')
     pushMessage({ from: 'nova', text:
-      `All set, ${config?.companyName}. Your Teambridge is live — take a look around. I'll keep working in the background, and I'm here whenever you need me.` })
-    try { sessionStorage.setItem('tb:build-config', JSON.stringify(config)) } catch { /* ignore */ }
-  }, [config, pushMessage])
+      `All set. Your Teambridge for ${config?.companyName} is live — take a look around. I'll keep working in the background, and I'm here whenever you need me.` })
+  }, [config, confirmEmail, pushMessage])
 
   const handleStartOver = useCallback(() => {
     researchTimersRef.current.forEach(clearTimeout)
@@ -273,11 +326,23 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     return 'Ask Nova anything…'
   })()
 
+  const drawer = state === 'review' ? (
+    <ConfirmDrawer
+      companyName={config?.companyName}
+      email={confirmEmail}
+      onEmailChange={setConfirmEmail}
+      touched={confirmTouched}
+      onSubmit={handleConfirm}
+      onStartOver={handleStartOver}
+    />
+  ) : null
+
   const chat = (
     <OnboardingChat
       messages={messages}
       composerPlaceholder={composerPlaceholder}
       composerDisabled={composerDisabled}
+      drawer={drawer}
       onSend={handleUserMessage}
     />
   )
@@ -307,15 +372,6 @@ export default function OnboardingFlow({ onExit, onComplete }) {
           onChange={setConfig}
           visibleFields={ALL_FIELDS}
         />
-        <div className="rp-actions">
-          <button type="button" className="rp-back" onClick={handleStartOver}>
-            <ChevronLeftIcon size={14} /> Start over
-          </button>
-          <button type="button" className="rp-cta" onClick={handleConfirm}>
-            Looks right — open my Teambridge
-            <ArrowNarrowRightIcon size={14} />
-          </button>
-        </div>
       </RightPaneFrame>
     )
   } else {
@@ -421,6 +477,63 @@ function IntakeHero() {
             <code key={url} className="ob-intake-example-chip">{url}</code>
           ))}
         </div>
+      </div>
+    </div>
+  )
+}
+
+/* Bottom drawer in the chat — surfaced during the review state.
+ * Nova asks one last thing (work email) before building, with a
+ * primary "Build my Teambridge" action. No buttons live in the right
+ * pane — all progression happens here. */
+function ConfirmDrawer({ companyName, email, onEmailChange, touched, onSubmit, onStartOver }) {
+  const valid = isWorkEmail(email)
+  const showError = touched && !valid && email.trim().length > 0
+  return (
+    <div className="ob-drawer" role="group" aria-label="Confirm and build">
+      <div className="ob-drawer-head">
+        <span className="ob-drawer-mark" aria-hidden="true">
+          <CheckCircleIcon size={14} />
+        </span>
+        <div className="ob-drawer-text">
+          <div className="ob-drawer-title">
+            One last thing before I build {companyName || 'your Teambridge'}.
+          </div>
+          <div className="ob-drawer-sub">
+            What's your work email? I'll send your setup details there.
+          </div>
+        </div>
+      </div>
+
+      <label className="ob-drawer-field">
+        <input
+          type="email"
+          className={`ob-drawer-input ${showError ? 'is-invalid' : ''}`}
+          value={email}
+          onChange={e => onEmailChange(e.target.value)}
+          placeholder="alex@yourcompany.com"
+          autoComplete="email"
+        />
+      </label>
+      {showError && (
+        <span className="ob-drawer-error">
+          Use your work email — I can't verify personal addresses.
+        </span>
+      )}
+
+      <div className="ob-drawer-foot">
+        <button type="button" className="ob-drawer-back" onClick={onStartOver}>
+          Start over
+        </button>
+        <button
+          type="button"
+          className="ob-drawer-cta"
+          onClick={onSubmit}
+          disabled={!valid}
+        >
+          Build my Teambridge
+          <ArrowNarrowRightIcon size={14} />
+        </button>
       </div>
     </div>
   )

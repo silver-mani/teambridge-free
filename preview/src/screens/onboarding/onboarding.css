@@ -18,7 +18,10 @@
  * ────────────────────────────────────────────────────────────────────── */
 
 .ob-root {
-  min-height: 100vh;
+  /* Pin to viewport — each pane below scrolls internally so the
+   * whole page never scrolls. */
+  height: 100vh;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   background: var(--color-bg-secondary);
@@ -127,9 +130,24 @@
  * research-bubble checklist styling on top of Act1's prompt-panel
  * chrome. */
 
-.ob-chat .prompt-panel-inner {
-  /* Make room for the compose footer at the bottom */
-  padding-bottom: 0;
+.ob-chat-inner {
+  /* Override Act1's .prompt-panel-inner padding so the compose footer
+   * sits flush against the bottom of the column. The head + scroll
+   * + drawer + compose stack as a contained flex column. */
+  height: 100%;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ob-chat-head {
+  flex-shrink: 0;
+  padding: var(--space-4) var(--space-6) var(--space-2);
+}
+.ob-chat-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-2) var(--space-6) var(--space-4);
 }
 
 .ob-chat-sub {
@@ -254,10 +272,10 @@
 
 /* Compose footer — locked to the bottom of the chat column */
 .ob-compose {
-  padding: var(--space-3) 0 var(--space-5);
+  flex-shrink: 0;
+  padding: var(--space-3) var(--space-6) var(--space-5);
   border-top: 1px solid var(--color-border-opaque);
   background: var(--color-bg-primary);
-  flex-shrink: 0;
 }
 .ob-compose-row {
   display: flex;
@@ -310,12 +328,13 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: hidden;
   background: var(--color-bg-secondary);
 }
 
 .ob-right-head {
-  padding: var(--space-6) var(--space-6) var(--space-4);
+  flex-shrink: 0;
+  padding: var(--space-5) var(--space-6) var(--space-4);
   border-bottom: 1px solid var(--color-border-opaque);
   background: var(--color-bg-primary);
 }
@@ -334,6 +353,9 @@
 }
 
 .ob-right-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   padding: var(--space-5) var(--space-6) var(--space-6);
   display: flex;
   flex-direction: column;
@@ -400,40 +422,110 @@
   font-family: var(--font-mono, monospace);
 }
 
-/* Review-pane actions — sit below the editable ConfigCard. */
-.rp-actions {
+/* ─────────────────────── Chat bottom drawer (Claude-style) ─────── */
+/* Sits inside the chat column between .ob-chat-scroll and .ob-compose.
+ * Appears during the review state to ask one final follow-up (work
+ * email) and offer the "Build" CTA. No buttons live in the right pane;
+ * all progression happens here. */
+
+.ob-drawer-slot {
+  flex-shrink: 0;
+  padding: 0 var(--space-6);
+  background: var(--color-bg-primary);
+}
+
+.ob-drawer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-secondary);
+  animation: ob-fade-in 280ms ease;
+}
+
+.ob-drawer-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+.ob-drawer-mark {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--ai-grad-start, #8C4FE2) 0%, var(--ai-grad-mid, #446CFF) 55%, var(--ai-grad-end, #1EDFDE) 100%);
+  color: #fff;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.ob-drawer-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ob-drawer-title {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+}
+.ob-drawer-sub {
+  font-size: var(--text-xs);
+  color: var(--color-content-tertiary);
+  line-height: var(--line-height-loose);
+}
+
+.ob-drawer-field { display: block; }
+.ob-drawer-input {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--color-content-primary);
+  outline: none;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+.ob-drawer-input:focus {
+  border-color: var(--color-border-selected);
+  box-shadow: 0 0 0 3px var(--color-border-opaque);
+}
+.ob-drawer-input.is-invalid { border-color: var(--color-red-content-secondary); }
+.ob-drawer-error {
+  font-size: var(--text-xs);
+  color: var(--color-red-content-secondary);
+}
+
+.ob-drawer-foot {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
-  padding-top: var(--space-2);
+  gap: var(--space-2);
+  margin-top: var(--space-1);
 }
-.rp-back {
-  display: inline-flex; align-items: center; gap: var(--space-1);
+.ob-drawer-back {
   padding: var(--space-2) var(--space-3);
   background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
-  color: var(--color-content-secondary);
+  border: 0;
   font: inherit;
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
+  color: var(--color-content-tertiary);
   cursor: pointer;
 }
-.rp-back:hover { color: var(--color-content-primary); background: var(--color-bg-primary); }
-.rp-cta {
-  display: inline-flex; align-items: center; gap: var(--space-2);
-  padding: var(--space-3) var(--space-5);
+.ob-drawer-back:hover { color: var(--color-content-primary); }
+.ob-drawer-cta {
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  padding: var(--space-2) var(--space-4);
   background: var(--color-bg-inverse-primary);
   color: var(--color-content-inverse-primary);
   border: 0;
   border-radius: var(--radius-md);
   font: inherit;
-  font-size: var(--text-base);
+  font-size: var(--text-sm);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
   transition: opacity 120ms ease, transform 120ms ease;
 }
-.rp-cta:hover { opacity: 0.92; transform: translateY(-1px); }
+.ob-drawer-cta:hover { opacity: 0.92; transform: translateY(-1px); }
+.ob-drawer-cta:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
 /* Live state — wraps BuildContent so it fills the right column */
 .ob-live-content {
@@ -442,7 +534,7 @@
   display: flex;
   flex-direction: column;
 }
-.ob-live-content > .bc-canvas { flex: 1; }
+.ob-live-content > .bc-canvas { flex: 1; min-height: 0; }
 
 
 /* ─────────────────────── ConfigCard (shared) ─────────────────────── */
@@ -857,12 +949,39 @@
   border-color: var(--color-content-primary);
 }
 
-/* ─────────────────────── Live (DashboardShell host) ──────────────── */
+/* ─────────────────────── DashboardShell host (viewport-locked) ───── */
+/* Override Act1's grid + column heights so:
+ *   - .act1-root fills the available space below the topbar
+ *   - each grid column scrolls internally, not the whole page */
 
 .ob-root .act1-root {
-  min-height: 0;
   flex: 1;
-  height: auto;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* LeftNav — fixed column, internal nav-list scrolls if it overflows. */
+.ob-root .act1-nav {
+  position: static;     /* not sticky inside a contained shell */
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.ob-root .act1-nav-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+.ob-root .act1-nav-brand,
+.ob-root .act1-nav-foot {
+  flex-shrink: 0;
+}
+
+/* Chat column — fixed height; messages scroll internally; compose pinned. */
+.ob-root .prompt-panel {
+  height: 100%;
   overflow: hidden;
 }
 
