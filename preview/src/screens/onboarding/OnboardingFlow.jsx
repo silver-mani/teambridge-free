@@ -10,6 +10,7 @@ import DashboardShell, { DEFAULT_NAV_GROUPS, DEFAULT_NAV_BOTTOM } from '../shell
 import OnboardingChat from './OnboardingChat.jsx'
 import ConfigCard, { ALL_FIELDS } from './ConfigCard.jsx'
 import { deriveConfig } from './urlMatcher.js'
+import { PAIN_OPTIONS, PAIN_TO_AGENT } from './steps.js'
 import '../act1.css'
 import './onboarding.css'
 
@@ -35,17 +36,6 @@ import './onboarding.css'
  * routes to `#/<industry>` for the existing Act1 demo experience.
  * The full live dashboard lives there, not inside the build flow.
  * ────────────────────────────────────────────────────────────────────── */
-
-const PERSONAL_EMAIL_DOMAINS = new Set([
-  'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com',
-  'aol.com', 'msn.com', 'live.com', 'me.com', 'mac.com', 'proton.me', 'protonmail.com',
-])
-function isWorkEmail(email) {
-  const trimmed = String(email || '').trim().toLowerCase()
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return false
-  const domain = trimmed.split('@')[1]
-  return !PERSONAL_EMAIL_DOMAINS.has(domain)
-}
 
 const RESEARCH_STEPS = (config) => [
   { text: `Reading ${config.url || 'your description'}…`,
@@ -88,9 +78,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
   const [config, setConfig] = useState(null)
   const [revealedFields, setRevealedFields] = useState(new Set(['summary']))
 
-  // Review drawer
-  const [confirmEmail, setConfirmEmail] = useState('')
-  const [confirmTouched, setConfirmTouched] = useState(false)
+  // Review drawer — agents picker is bound directly to config.agents
 
   // Activity drawer
   const [activityOpen, setActivityOpen] = useState(false)
@@ -186,49 +174,15 @@ export default function OnboardingFlow({ onExit, onComplete }) {
 
   /* ── Review actions ── */
   const handleConfirm = useCallback(() => {
-    if (!isWorkEmail(confirmEmail)) {
-      setConfirmTouched(true)
-      return
-    }
-    // Mirror to capture-lead so the signup lands in Convex + HubSpot.
-    try {
-      fetch('/api/capture-lead', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: '',
-          company: config?.companyName,
-          email: confirmEmail.trim().toLowerCase(),
-          pageUrl: window.location.href,
-          referrer: document.referrer || undefined,
-        }),
-        keepalive: true,
-      })
-        .then(async (r) => {
-          let body = null
-          try { body = await r.json() } catch { /* tolerated */ }
-          if (!r.ok) { console.error('[capture-lead] non-2xx', r.status, body); return }
-          if (body && Array.isArray(body.errors) && body.errors.length) {
-            console.error('[capture-lead] upstream errors', body.errors); return
-          }
-          console.info('[capture-lead] ok', body ?? {})
-        })
-        .catch((err) => { console.error('[capture-lead] request failed', err) })
-    } catch (err) { console.error('[capture-lead] threw before fetch', err) }
-
-    try {
-      sessionStorage.setItem('tb:lead', '1')
-      sessionStorage.setItem('tb:lead-data', JSON.stringify({
-        company: config?.companyName, email: confirmEmail.trim().toLowerCase(),
-      }))
-      sessionStorage.setItem('tb:build-config', JSON.stringify(config))
-    } catch { /* ignore */ }
+    if (!config?.agents || config.agents.length === 0) return
+    try { sessionStorage.setItem('tb:build-config', JSON.stringify(config)) } catch { /* ignore */ }
 
     // Hand off to main.jsx which routes to `#/<industry>` for the
-    // existing demo experience. No "live" state here — the full
-    // dashboard lives in the industry route.
+    // existing demo experience. The LeadCaptureGate on the industry
+    // route will collect name/company/email there — we kept the
+    // build flow focused on the product (agents/config) by design.
     onComplete?.(config)
-  }, [config, confirmEmail, onComplete])
+  }, [config, onComplete])
 
   const handleStartOver = useCallback(() => {
     researchTimersRef.current.forEach(clearTimeout)
@@ -237,8 +191,6 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     setRevealedFields(new Set(['summary']))
     setIntakeMode('url')
     setIntakeDraft('')
-    setConfirmEmail('')
-    setConfirmTouched(false)
     setState('intake')
     setMessages([
       { id: 'm0', from: 'nova', text:
@@ -273,9 +225,8 @@ export default function OnboardingFlow({ onExit, onComplete }) {
       return (
         <ConfirmDrawer
           companyName={config?.companyName}
-          email={confirmEmail}
-          onEmailChange={setConfirmEmail}
-          touched={confirmTouched}
+          agents={config?.agents || []}
+          onAgentsChange={(next) => setConfig(c => ({ ...c, agents: next }))}
           onSubmit={handleConfirm}
           onStartOver={handleStartOver}
         />
@@ -475,41 +426,63 @@ function IntakeDrawer({ mode, value, onChange, onSubmit }) {
   )
 }
 
-/* ─── Confirm drawer — review-state bottom drawer for the build CTA ─ */
-function ConfirmDrawer({ companyName, email, onEmailChange, touched, onSubmit, onStartOver }) {
-  const valid = isWorkEmail(email)
-  const showError = touched && !valid && email.trim().length > 0
+/* ─── Confirm drawer — review-state bottom drawer for agent activation
+ *     + build CTA. No more email collection here; the LeadCaptureGate on
+ *     the industry demo handles that after handoff. */
+function ConfirmDrawer({ companyName, agents, onAgentsChange, onSubmit, onStartOver }) {
+  const set = new Set(agents || [])
+  const toggle = (id) => {
+    const next = new Set(set)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    onAgentsChange(Array.from(next))
+  }
+  const count = set.size
+
   return (
-    <div className="ob-drawer" role="group" aria-label="Confirm and build">
+    <div className="ob-drawer" role="group" aria-label="Activate agents and build">
       <div className="ob-drawer-head">
         <span className="ob-drawer-mark" aria-hidden="true">
-          <CheckCircleIcon size={14} />
+          <TeambridgeAIIcon size={14} />
         </span>
         <div className="ob-drawer-text">
           <div className="ob-drawer-title">
-            One last thing before I build {companyName || 'your Teambridge'}.
+            Which agents should I activate for {companyName || 'your Teambridge'}?
           </div>
           <div className="ob-drawer-sub">
-            What's your work email? I'll send your setup details there.
+            I'll run these from day one. You can switch any of them on or off later.
           </div>
         </div>
       </div>
 
-      <label className="ob-drawer-field">
-        <input
-          type="email"
-          className={`ob-drawer-input ${showError ? 'is-invalid' : ''}`}
-          value={email}
-          onChange={e => onEmailChange(e.target.value)}
-          placeholder="alex@yourcompany.com"
-          autoComplete="email"
-        />
-      </label>
-      {showError && (
-        <span className="ob-drawer-error">
-          Use your work email — I can't verify personal addresses.
-        </span>
-      )}
+      <ul className="ob-drawer-agents">
+        {PAIN_OPTIONS.map(p => {
+          const agent = PAIN_TO_AGENT[p.id]
+          if (!agent) return null
+          const on = set.has(p.id)
+          return (
+            <li key={p.id}>
+              <button
+                type="button"
+                className={`ob-drawer-agent ${on ? 'is-on' : ''}`}
+                onClick={() => toggle(p.id)}
+                aria-pressed={on}
+              >
+                <span className="ob-drawer-agent-mark" aria-hidden="true">
+                  <TeambridgeAIIcon size={11} />
+                </span>
+                <span className="ob-drawer-agent-text">
+                  <span className="ob-drawer-agent-name">{agent.name}</span>
+                  <span className="ob-drawer-agent-detail">{agent.detail}</span>
+                </span>
+                <span className={`ob-drawer-agent-toggle ${on ? 'is-on' : ''}`} aria-hidden="true">
+                  {on && <CheckCircleIcon size={14} />}
+                </span>
+              </button>
+            </li>
+          )
+        })}
+      </ul>
 
       <div className="ob-drawer-foot">
         <button type="button" className="ob-drawer-back" onClick={onStartOver}>
@@ -519,9 +492,9 @@ function ConfirmDrawer({ companyName, email, onEmailChange, touched, onSubmit, o
           type="button"
           className="ob-drawer-cta"
           onClick={onSubmit}
-          disabled={!valid}
+          disabled={count === 0}
         >
-          Build my Teambridge
+          Build my Teambridge{count > 0 ? ` (${count} agent${count === 1 ? '' : 's'})` : ''}
           <ArrowNarrowRightIcon size={14} />
         </button>
       </div>
