@@ -328,10 +328,24 @@
 
 .ob-right {
   height: 100%;
+  min-height: 0;       /* allow shrinking inside the grid cell */
   display: flex;
   flex-direction: column;
   overflow: hidden;
   background: var(--color-bg-secondary);
+}
+
+/* Animated agent avatar — renders a Teambridge persona's GIF as a
+ * circular tile. Used in the ConfigCard's agents section and inside
+ * the chat's ConfirmDrawer agent picker. */
+.ob-agent-avatar {
+  display: inline-block;
+  border-radius: var(--radius-full);
+  background-color: var(--color-bg-tertiary);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  flex-shrink: 0;
 }
 
 .ob-right-head {
@@ -525,7 +539,7 @@
 .ob-drawer-agent {
   width: 100%;
   display: grid;
-  grid-template-columns: 22px 1fr 18px;
+  grid-template-columns: 24px 1fr 18px;
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
@@ -1067,7 +1081,7 @@
 .cc-agent-row {
   width: 100%;
   display: grid;
-  grid-template-columns: 24px 1fr auto;
+  grid-template-columns: 28px 1fr auto;
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
@@ -1149,6 +1163,10 @@
   height: 100%;
   overflow: hidden;
   grid-template-columns: 240px 360px minmax(0, 1fr);  /* chat narrower than content */
+  /* Force the implicit row to fill the grid container instead of
+   * sizing to content (which would let the right pane expand past
+   * the viewport and prevent internal scroll). */
+  grid-template-rows: minmax(0, 1fr);
 }
 
 /* LeftNav — fixed column, internal nav-list scrolls if it overflows. */

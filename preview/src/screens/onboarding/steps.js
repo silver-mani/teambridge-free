@@ -42,6 +42,24 @@ export const PAIN_TO_AGENT = {
   scheduling: { name: 'Schedule Builder',         detail: 'Drafts the week from last week.'     },
 }
 
+/* Map a pain to a Teambridge AI persona (Nova, Atlas, Iris, Leo, Sofia).
+ * These personas have animated avatar GIFs in /public/agents/ — used
+ * across the build flow's agent rows to give each one a face.
+ *   - Nova   = Schedule Coordinator     (covers schedule + scheduling)
+ *   - Atlas  = Workforce Forecaster     (covers OT)
+ *   - Sofia  = People Ops Agent         (covers onboarding)
+ *   - Iris   = Credentialing Agent      (covers compliance)
+ *   - Leo    = Comms / Notify Agent     (covers comms)
+ */
+export const PAIN_TO_PERSONA = {
+  coverage:   'nova',
+  overtime:   'atlas',
+  onboarding: 'sofia',
+  compliance: 'iris',
+  comms:      'leo',
+  scheduling: 'nova',
+}
+
 export const CONNECTOR_OPTIONS = [
   { id: 'gusto',       label: 'Gusto',           category: 'Payroll',     accent: 'orange' },
   { id: 'adp',         label: 'ADP',             category: 'Payroll',     accent: 'matcha' },

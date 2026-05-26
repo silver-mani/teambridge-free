@@ -11,6 +11,7 @@ import OnboardingChat from './OnboardingChat.jsx'
 import ConfigCard, { ALL_FIELDS } from './ConfigCard.jsx'
 import { deriveConfig } from './urlMatcher.js'
 import { PAIN_OPTIONS, PAIN_TO_AGENT } from './steps.js'
+import AgentAvatar from './AgentAvatar.jsx'
 import '../act1.css'
 import './onboarding.css'
 
@@ -468,9 +469,7 @@ function ConfirmDrawer({ companyName, agents, onAgentsChange, onSubmit, onStartO
                 onClick={() => toggle(p.id)}
                 aria-pressed={on}
               >
-                <span className="ob-drawer-agent-mark" aria-hidden="true">
-                  <TeambridgeAIIcon size={11} />
-                </span>
+                <AgentAvatar painId={p.id} size={24} />
                 <span className="ob-drawer-agent-text">
                   <span className="ob-drawer-agent-name">{agent.name}</span>
                   <span className="ob-drawer-agent-detail">{agent.detail}</span>

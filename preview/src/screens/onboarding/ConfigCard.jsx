@@ -6,6 +6,7 @@ import { PlusIcon } from '../../../../src/components/icons/PlusIcon.tsx'
 import { XIcon } from '../../../../src/components/icons/XIcon.tsx'
 import { Edit03Icon } from '../../../../src/components/icons/Edit03Icon.tsx'
 import { PAIN_OPTIONS, PAIN_TO_AGENT } from './steps.js'
+import AgentAvatar from './AgentAvatar.jsx'
 
 /* ──────────────────────────────────────────────────────────────────────
  * ConfigCard — the visual representation of the derived configuration.
@@ -309,9 +310,7 @@ function AgentsEdit({ ids, onChange }) {
               className={`cc-agent-row ${on ? 'is-on' : 'is-off'}`}
               onClick={() => toggle(p.id)}
             >
-              <span className="cc-agent-mark" aria-hidden="true">
-                <TeambridgeAIIcon size={11} />
-              </span>
+              <AgentAvatar painId={p.id} size={28} />
               <span className="cc-agent-text">
                 <span className="cc-agent-name">{agent.name}</span>
                 <span className="cc-agent-detail">{agent.detail}</span>
@@ -446,9 +445,7 @@ export default function ConfigCard({
               if (!agent) return null
               return (
                 <li key={id} className="cc-agent-row cc-agent-row--readonly">
-                  <span className="cc-agent-mark" aria-hidden="true">
-                    <TeambridgeAIIcon size={11} />
-                  </span>
+                  <AgentAvatar painId={id} size={28} />
                   <span className="cc-agent-text">
                     <span className="cc-agent-name">{agent.name}</span>
                     <span className="cc-agent-detail">{agent.detail}</span>
