@@ -263,9 +263,42 @@ export default function OnboardingFlow({ onExit, onComplete }) {
       .filter(Boolean)
     pushMessage({ from: 'user', text:
       labels.length === 1 ? labels[0] : `${labels.length} goals` })
-    pushMessage({ from: 'nova', text:
-      "Got it. Next — how should I bring your team's data in?" })
-    setState('import')
+
+    // Smart-thinking sequence — Nova reflects on the goals and shows
+    // how they translate into agent + policy choices. Spaced ~2s
+    // apart so the typing indicator can finish on each before the
+    // next one starts. Reads as deliberate reasoning.
+    const sequence = ['Got it. Thinking through what this means for your setup…']
+
+    // For each outcome that maps to specific agents, surface one
+    // "smart thinking" line connecting goal → agent.
+    const seenAgents = new Set()
+    for (const outId of outcomes) {
+      const agentIds = (OUTCOME_TO_AGENTS[outId] || []).filter(a => !seenAgents.has(a))
+      if (agentIds.length === 0) continue
+      agentIds.forEach(a => seenAgents.add(a))
+      const agentNames = agentIds.map(a => PAIN_TO_AGENT[a]?.name).filter(Boolean)
+      const outcomeLabel = OUTCOME_OPTIONS.find(o => o.id === outId)?.label.toLowerCase()
+      if (!outcomeLabel || agentNames.length === 0) continue
+      const list = agentNames.length === 1
+        ? agentNames[0]
+        : `${agentNames.slice(0, -1).join(', ')} and ${agentNames[agentNames.length - 1]}`
+      sequence.push(`For "${outcomeLabel}", I'll line up ${list}.`)
+    }
+
+    sequence.push("Now — how should I bring your team's data in?")
+
+    // Schedule the chat messages and the state transition.
+    const interval = 2200  // typing (1.3s) + small gap (0.9s)
+    sequence.forEach((text, i) => {
+      const t = setTimeout(() => pushMessage({ from: 'nova', text }), i * interval)
+      typingTimersRef.current.push(t)
+    })
+    const stateTimer = setTimeout(
+      () => setState('import'),
+      sequence.length * interval + 200,
+    )
+    typingTimersRef.current.push(stateTimer)
   }, [outcomes, pushMessage])
 
   /* ── Import → Mapping ── */

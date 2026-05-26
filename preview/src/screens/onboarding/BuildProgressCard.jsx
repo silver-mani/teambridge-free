@@ -20,129 +20,93 @@ function provisioningSteps(config, importMethod, policies, agents, outcomes) {
   const company = config?.companyName ?? 'your account'
   const roleCount = config?.roles?.length || 0
   const locCount = config?.locations?.length || 0
-  const out = []
 
-  out.push({
-    id: 'workspace',
-    title: 'Provisioning workspace',
-    detail: `Spinning up ${company}'s isolated tenant on Teambridge's infrastructure.`,
-    delay: 1600,
-  })
-  out.push({
-    id: 'analyze',
-    title: 'Analyzing your team shape',
-    detail: `Reading ${roleCount} role types across ${locCount} site${locCount === 1 ? '' : 's'} to set baselines.`,
-    delay: 1800,
-  })
-  out.push({
-    id: 'roster',
-    title: 'Loading roster',
-    detail: importMethod === 'csv'
-      ? `Importing ${headcount} employees from your CSV and auto-mapping columns.`
-      : importMethod === 'api'
-      ? `Pulling ${headcount} employees from your HRIS and matching to roles.`
-      : `Seeding ${headcount} sample employees, distributed across roles realistically.`,
-    delay: 2200,
-  })
-  out.push({
-    id: 'sites',
-    title: 'Wiring up locations',
-    detail: `${locCount} site${locCount === 1 ? '' : 's'} added to the schedule grid with shift templates.`,
-    delay: 1500,
-  })
-  out.push({
-    id: 'shifts',
-    title: 'Inferring your shift patterns',
-    detail: 'Cross-referencing industry norms with your role types to seed defaults.',
-    delay: 1800,
-  })
+  const policyNames = (policies || [])
+    .map(id => POLICY_OPTIONS.find(o => o.id === id)?.label)
+    .filter(Boolean)
+  const agentNames = (agents || [])
+    .map(id => PAIN_TO_AGENT[id]?.name)
+    .filter(Boolean)
 
-  // One step per policy picked
-  ;(policies || []).slice(0, 6).forEach(id => {
-    const p = POLICY_OPTIONS.find(o => o.id === id)
-    if (!p) return
-    out.push({
-      id: `policy-${id}`,
-      title: `Activating ${p.label.toLowerCase()}`,
-      detail: p.detail,
-      delay: 1400,
-    })
-  })
+  const steps = [
+    {
+      id: 'workspace',
+      title: 'Provisioning workspace',
+      detail: `Spinning up ${company}'s isolated tenant on Teambridge.`,
+      delay: 1700,
+    },
+    {
+      id: 'analyze',
+      title: 'Analyzing your team shape',
+      detail: `Reading ${roleCount} role types across ${locCount} site${locCount === 1 ? '' : 's'} to set baselines.`,
+      delay: 1900,
+    },
+    {
+      id: 'roster',
+      title: 'Loading roster',
+      detail: importMethod === 'csv'
+        ? `Importing ${headcount} employees from your CSV and mapping columns.`
+        : importMethod === 'api'
+        ? `Pulling ${headcount} employees from your HRIS and matching to roles.`
+        : `Seeding ${headcount} sample employees, distributed across roles.`,
+      delay: 2200,
+    },
+    {
+      id: 'sites',
+      title: 'Wiring up locations',
+      detail: `${locCount} site${locCount === 1 ? '' : 's'} added to the schedule grid with templates.`,
+      delay: 1600,
+    },
+  ]
 
-  out.push({
-    id: 'thresholds',
-    title: 'Calibrating overtime + break thresholds',
-    detail: 'Aligning daily and weekly cutoffs with the policies you enabled.',
-    delay: 1500,
-  })
-
-  // One step per agent toggled on
-  ;(agents || []).slice(0, 6).forEach(id => {
-    const a = PAIN_TO_AGENT[id]
-    if (!a) return
-    out.push({
-      id: `agent-${id}`,
-      title: `Standing up ${a.name}`,
-      detail: a.detail,
-      delay: 1500,
-    })
-  })
-
-  out.push({
-    id: 'agent-train',
-    title: 'Pre-training agents on your data',
-    detail: 'Feeding each agent context about your roles, sites, and policies.',
-    delay: 2000,
-  })
-
-  out.push({
-    id: 'modules',
-    title: 'Enabling modules',
-    detail: 'Time tracking, payroll, shift requests, engage — all switched on.',
-    delay: 1400,
-  })
-  out.push({
-    id: 'schedule',
-    title: "Drafting next week's schedule",
-    detail: `Templates seeded from your ${roleCount} roles; AI-balanced for coverage.`,
-    delay: 2000,
-  })
-
-  if (config?.suggestedConnectors?.length) {
-    out.push({
-      id: 'connectors',
-      title: 'Connecting integrations',
-      detail: `Wiring ${config.suggestedConnectors.length} tool${config.suggestedConnectors.length === 1 ? '' : 's'} into payroll + HRIS sync.`,
-      delay: 1500,
+  if (policyNames.length) {
+    steps.push({
+      id: 'policies',
+      title: `Activating ${policyNames.length} labor polic${policyNames.length === 1 ? 'y' : 'ies'}`,
+      detail: policyNames.slice(0, 4).join(' · ') + (policyNames.length > 4 ? ` and ${policyNames.length - 4} more` : ''),
+      delay: 2400,
     })
   }
 
-  out.push({
-    id: 'notifications',
-    title: 'Setting up notifications',
-    detail: 'Routing by role + shift, with mobile and Slack delivery configured.',
-    delay: 1300,
+  if (agentNames.length) {
+    steps.push({
+      id: 'agents',
+      title: `Standing up ${agentNames.length} agent${agentNames.length === 1 ? '' : 's'}`,
+      detail: agentNames.slice(0, 4).join(' · ') + (agentNames.length > 4 ? ` and ${agentNames.length - 4} more` : ''),
+      delay: 2500,
+    })
+  }
+
+  steps.push({
+    id: 'schedule',
+    title: "Drafting next week's schedule",
+    detail: `Templates seeded from your ${roleCount} roles; AI-balanced for coverage.`,
+    delay: 2100,
   })
-  out.push({
+
+  if (config?.suggestedConnectors?.length) {
+    steps.push({
+      id: 'connectors',
+      title: 'Connecting integrations',
+      detail: `Wiring ${config.suggestedConnectors.length} tool${config.suggestedConnectors.length === 1 ? '' : 's'} into payroll + HRIS sync.`,
+      delay: 1700,
+    })
+  }
+
+  steps.push({
     id: 'compliance',
     title: 'Running first compliance check',
     detail: 'Validating no roster conflicts with the policies you turned on.',
-    delay: 1700,
+    delay: 1800,
   })
-  out.push({
-    id: 'integrity',
-    title: 'Validating data integrity',
-    detail: 'Every record mapped, every reference resolved, every agent ready.',
-    delay: 1400,
-  })
-  out.push({
+  steps.push({
     id: 'dashboard',
     title: 'Opening your dashboard',
     detail: 'Final handoff — your team is live.',
-    delay: 1200,
+    delay: 1300,
   })
 
-  return out
+  return steps
 }
 
 export default function BuildProgressCard({
