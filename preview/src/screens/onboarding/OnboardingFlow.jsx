@@ -5,7 +5,7 @@ import { INDUSTRIES } from '../IndustrySelector.jsx'
 import DashboardShell, { DEFAULT_NAV_GROUPS, DEFAULT_NAV_BOTTOM } from '../shell/DashboardShell.jsx'
 import OnboardingChat from './OnboardingChat.jsx'
 import ConfigCard, { ALL_FIELDS } from './ConfigCard.jsx'
-import { InsightsStep, AgentsStep, PoliciesStep, DataStep } from './ReviewSteps.jsx'
+import { InsightsStep, GoalsStep, AgentsStep, PoliciesStep, DataStep } from './ReviewSteps.jsx'
 import BuildProgressCard from './BuildProgressCard.jsx'
 import { deriveConfig } from './urlMatcher.js'
 import '../act1.css'
@@ -110,7 +110,8 @@ function buildLockedNav() {
 }
 
 export default function OnboardingFlow({ onExit, onComplete }) {
-  const [state, setState] = useState('intake')              // 'intake' | 'research' | 'insights' | 'agents' | 'policies' | 'data' | 'launching'
+  const [state, setState] = useState('intake')              // 'intake' | 'research' | 'insights' | 'goals' | 'agents' | 'policies' | 'data' | 'launching'
+  const [pickedGoals, setPickedGoals] = useState([])
   const [intakeMode, setIntakeMode] = useState('url')       // 'url' | 'free-text'
   const [intakeDraft, setIntakeDraft] = useState('')
   const [config, setConfig] = useState(null)
@@ -265,7 +266,12 @@ export default function OnboardingFlow({ onExit, onComplete }) {
    * Final step (DataStep) calls onLaunch which transitions to
    * 'launching' (the BuildProgressCard animation). */
   const handleInsightsContinue = useCallback(() => {
-    pushMessage({ from: 'nova', text: "Here are the agents I'm activating — toggle any on or off.", instant: true })
+    pushMessage({ from: 'nova', text: "What are you looking to do with Teambridge?", instant: true })
+    setState('goals')
+  }, [pushMessage])
+  const handleGoalsContinue = useCallback((picked) => {
+    setPickedGoals(picked || [])
+    pushMessage({ from: 'nova', text: "Got it. Here are the agents I'd activate to match — toggle any on or off.", instant: true })
     setState('agents')
   }, [pushMessage])
   const handleAgentsContinue = useCallback(() => {
@@ -299,7 +305,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
   const composerPlaceholder = (() => {
     if (state === 'intake')    return 'Use the form below'
     if (state === 'research')  return 'Setting up…'
-    if (state === 'insights' || state === 'agents' || state === 'policies' || state === 'data')
+    if (state === 'insights' || state === 'goals' || state === 'agents' || state === 'policies' || state === 'data')
                                 return 'Continue on the right →'
     if (state === 'launching') return 'Launching…'
     return 'Type a message…'
@@ -387,16 +393,24 @@ export default function OnboardingFlow({ onExit, onComplete }) {
       </div>
     )
   } else {
-    // insights / agents / policies / data — each is its own focused card
+    // insights / goals / agents / policies / data — each is its own focused card
     let stepCard = null
     if (state === 'insights') {
       stepCard = <InsightsStep config={config} onChange={setConfig} onContinue={handleInsightsContinue} />
+    } else if (state === 'goals') {
+      stepCard = (
+        <GoalsStep
+          config={config}
+          onBack={() => setState('insights')}
+          onContinue={handleGoalsContinue}
+        />
+      )
     } else if (state === 'agents') {
       stepCard = (
         <AgentsStep
           config={config}
           onChange={setConfig}
-          onBack={() => setState('insights')}
+          onBack={() => setState('goals')}
           onContinue={handleAgentsContinue}
         />
       )
@@ -418,15 +432,20 @@ export default function OnboardingFlow({ onExit, onComplete }) {
       )
     }
     const headTitle = state === 'insights' ? 'Review your account'
+                    : state === 'goals'    ? 'Your goals'
                     : state === 'agents'   ? 'Agents'
                     : state === 'policies' ? 'Labor policies'
                     :                        'Starting data'
-    const stepNum = state === 'insights' ? 1 : state === 'agents' ? 2 : state === 'policies' ? 3 : 4
+    const stepNum = state === 'insights' ? 1
+                  : state === 'goals'    ? 2
+                  : state === 'agents'   ? 3
+                  : state === 'policies' ? 4
+                  :                        5
     content = (
       <div className="ob-right">
         <header className="ob-right-head">
           <h1 className="ob-right-title">{headTitle}</h1>
-          <p className="ob-right-sub">Step {stepNum} of 4 · Continue when ready.</p>
+          <p className="ob-right-sub">Step {stepNum} of 5 · Continue when ready.</p>
         </header>
         <div className="ob-right-body">{stepCard}</div>
       </div>

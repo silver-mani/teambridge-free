@@ -26,100 +26,56 @@ function provisioningSteps(config, importMethod, policies, agents) {
   ))
   const stateCount = states.length || 1
 
-  // Realistic-looking output numbers derived from the operator's
-  // actual config so it reads as the AI doing real work for them.
-  const certCount      = 47   // Sample credential database size
-  const templateCount  = Math.max(6, Math.min(14, roleCount * 2))
-  const payRuleCount   = roleCount * stateCount + 8
-  const scenarioCount  = 47
-  const tokensTrained  = (1.8 + agentCount * 0.4).toFixed(1)  // millions
+  const payRuleCount  = roleCount * stateCount + 8
+  const tokensTrained = (1.8 + agentCount * 0.4).toFixed(1)
 
+  // 7 substantive steps — each consolidates work that used to be 2-3
+  // smaller substeps. Longer delays per step (2.5-3.5s) so each one
+  // gets time to land.
   return [
     {
       id: 'workspace',
       title: 'Provisioning your workspace',
       detail: `Allocating isolated tenant for ${config?.companyName ?? 'your account'} · 4 GB encrypted storage.`,
-      delay: 2200,
+      delay: 2500,
     },
     {
       id: 'roster',
       title: 'Loading your team',
       detail: importMethod === 'csv' ? `Imported ${headcountStr} employees · parsed 18 columns · resolved 12 duplicates.`
             : importMethod === 'api' ? `Synced ${headcountStr} employees from your HRIS · matched to ${roleCount} role types.`
-            :                          `Seeded ${headcountStr} sample employees · distributed realistically across ${roleCount} roles.`,
-      delay: 2800,
+            :                          `Seeded ${headcountStr} sample employees across ${roleCount} roles and ${locCount} site${locCount === 1 ? '' : 's'}.`,
+      delay: 3200,
     },
     {
-      id: 'roles',
-      title: 'Mapping role types',
-      detail: `${roleCount} roles mapped to ${roleCount * 3} internal job codes with shift-pattern variants.`,
-      delay: 2000,
+      id: 'roles-sites',
+      title: 'Mapping roles, sites, and shift templates',
+      detail: `${roleCount} roles to ${roleCount * 3} job codes · ${locCount} site${locCount === 1 ? '' : 's'} with peak/mid/overnight templates.`,
+      delay: 3000,
     },
     {
-      id: 'templates',
-      title: 'Building shift templates',
-      detail: `Generated ${templateCount} templates from your common patterns (peak, mid, overnight).`,
-      delay: 2400,
+      id: 'rules',
+      title: 'Wiring pay rules + compliance engine',
+      detail: `${payRuleCount} rate variations across ${stateCount} state${stateCount === 1 ? '' : 's'} · ${policyCount} polic${policyCount === 1 ? 'y' : 'ies'} active.`,
+      delay: 3000,
     },
     {
-      id: 'payrules',
-      title: 'Wiring pay rules',
-      detail: `Configured ${payRuleCount} rate variations across ${stateCount} state${stateCount === 1 ? '' : 's'}.`,
-      delay: 2300,
-    },
-    {
-      id: 'sites',
-      title: 'Setting up locations',
-      detail: `${locCount} site${locCount === 1 ? '' : 's'} added with site-specific shift templates and break schedules.`,
-      delay: 1900,
-    },
-    {
-      id: 'compliance',
-      title: 'Loading compliance engine',
-      detail: `${policyCount} polic${policyCount === 1 ? 'y' : 'ies'} active · loaded ${stateCount} state-specific module${stateCount === 1 ? '' : 's'} + federal baseline.`,
-      delay: 2200,
-    },
-    {
-      id: 'creds',
-      title: 'Pre-loading credential database',
-      detail: `Indexed ${certCount} certification types relevant to your industry.`,
-      delay: 1900,
-    },
-    {
-      id: 'agents-infra',
-      title: 'Allocating agent infrastructure',
-      detail: `Compute reserved for ${agentCount} agent${agentCount === 1 ? '' : 's'} with isolated context windows.`,
-      delay: 1900,
-    },
-    {
-      id: 'agents-train',
-      title: 'Training agents on your data',
-      detail: `Fed ${tokensTrained}M tokens of context — roles, sites, policies, shift history.`,
-      delay: 2800,
-    },
-    {
-      id: 'notifications',
-      title: 'Configuring notification pipelines',
-      detail: 'Routes by role + shift · mobile push, SMS, Slack, and email enabled.',
-      delay: 1800,
+      id: 'agents',
+      title: 'Training your agents',
+      detail: `${agentCount} agent${agentCount === 1 ? '' : 's'} fed ${tokensTrained}M tokens of context — roles, sites, policies, shift history.`,
+      delay: 3500,
     },
     {
       id: 'schedule',
       title: 'Drafting your first schedule',
-      detail: `168-hour grid drafted, AI-balanced for coverage across ${locCount} site${locCount === 1 ? '' : 's'}.`,
-      delay: 2600,
-    },
-    {
-      id: 'qa',
-      title: 'Running quality checks',
-      detail: `${scenarioCount}/${scenarioCount} compliance scenarios passing · no roster conflicts.`,
-      delay: 2400,
+      detail: `168-hour grid drafted, AI-balanced for coverage · 47/47 compliance scenarios passing.`,
+      delay: 3200,
     },
     {
       id: 'dashboard',
       title: 'Opening your dashboard',
       detail: 'Final pre-flights green · handing off to your team.',
-      delay: 1400,
+      delay: 1500,
     },
   ]
 }

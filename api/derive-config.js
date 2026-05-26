@@ -50,6 +50,11 @@ Return ONLY a single JSON object — no markdown, no commentary, no code fences.
     "Specific observation 2",
     "Specific observation 3"
   ],
+  "goals": [
+    "WFM-focused goal 1 specific to this company",
+    "WFM-focused goal 2 specific to this company",
+    ...
+  ],
   "confidence": {
     "industry": "high|medium|low",
     "headcount": "high|medium|low",
@@ -72,6 +77,19 @@ Guidance:
   - comms       = smart notify / role-routing (high for multi-site, distributed teams)
   - scheduling  = schedule auto-draft (high for stable rotating teams)
 - CONNECTORS: 2-4 integration IDs the company most likely uses. Pick from the enum based on industry norms (e.g. Workday for large enterprises, BambooHR for mid-market, Gusto/Rippling for small/medium, Sage Intacct for construction, ADP very common across).
+- GOALS: 5-7 SPECIFIC workforce management goals this company would want from Teambridge. Each goal must:
+    * Name something specific to THIS company — a venue ("SoFi Stadium"), a role ("ICU RNs", "banquet servers"), a known operational pattern ("event-day spikes", "holiday surge", "swing shift handoffs"), or a metric tied to their reality.
+    * Be action-oriented — start with a verb (Cover, Reduce, Streamline, Forecast, Auto-route, Cross-train, Pre-clear).
+    * Target a workforce-management outcome ONLY: scheduling efficiency, coverage speed, overtime control, compliance/credentials, onboarding throughput, communications, forecasting/labor planning, retention.
+    * Read like a top-of-mind operator pain the COO would write on a whiteboard.
+  Bad: "Improve scheduling." (generic)
+  Bad: "Increase employee satisfaction." (not WFM-specific)
+  Bad: "Use AI to automate things." (vague)
+  Good for stadium: "Cover event-day staffing gaps at SoFi Stadium in under 2 hours when ushers no-show."
+  Good for healthcare: "Reduce ICU RN callouts at Memorial North by surfacing replacement candidates instantly."
+  Good for hospitality: "Smooth peak/off-peak banquet headcount between Marriott Marquis SF and Riverside properties."
+  Good for security: "Pre-clear armed-post certifications 30 days before expiry across the SoCal region."
+  Each goal: ONE sentence, ≤ 22 words, end with a period. No markdown.
 - INSIGHTS: this is the most important field. Three SPECIFIC observations about this company's workforce that demonstrate you actually researched them — not generic industry truisms. Each insight should:
     * Reference something verifiable: a specific event, a public stat, a known fact about the company, a quirk of their operating model, a regulatory exposure their state creates, a competitor benchmark, a recent news item, a known shift pattern.
     * Connect to a Teambridge capability they'd activate: an agent that addresses it, a policy that matters because of it, a workflow that fits their shape.
@@ -182,6 +200,9 @@ export default async function handler(req, res) {
     config.roles = Array.isArray(config.roles) ? config.roles.slice(0, 8) : []
     config.insights = Array.isArray(config.insights)
       ? config.insights.filter(s => typeof s === 'string' && s.trim()).slice(0, 3)
+      : []
+    config.goals = Array.isArray(config.goals)
+      ? config.goals.filter(s => typeof s === 'string' && s.trim()).slice(0, 7)
       : []
     config.url = fromFreeText ? '' : input
     config.origin = fromFreeText ? 'ai-text' : 'ai-url'

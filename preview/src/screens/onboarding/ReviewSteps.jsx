@@ -132,7 +132,77 @@ export function InsightsStep({ config, onChange, onContinue }) {
   )
 }
 
-/* ─── Step 2: Agents ─────────────────────────────────────────────── */
+/* ─── Step 2: Goals — Claude-generated WFM goals for THIS company ─ */
+export function GoalsStep({ config, onBack, onContinue }) {
+  // Goals come from /api/derive-config (Claude-generated, specific
+  // to this company's industry/size/locations). Heuristic fallback
+  // returns industry-default goals. Either way, render as a multi-
+  // select list with all pre-toggled — the operator can untoggle any
+  // that don't apply.
+  const goals = config?.goals || []
+  const [selected, setSelected] = useState(() => new Set(goals.map((_, i) => i)))
+  const toggle = (i) => {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(i)) next.delete(i)
+      else next.add(i)
+      return next
+    })
+  }
+  const count = selected.size
+  return (
+    <div className="cc cc--confirm">
+      <header className="cc-head">
+        <div className="cc-head-left">
+          <div className="cc-head-text">
+            <span className="cc-head-name">
+              What are you looking to do with Teambridge?
+            </span>
+            <span className="cc-head-sub">
+              Tailored to {config?.companyName ?? 'your company'}. Untoggle any that don't fit.
+            </span>
+          </div>
+        </div>
+      </header>
+
+      <div className="cm-step-body">
+        <ul className="cm-goal-list">
+          {goals.map((text, i) => {
+            const on = selected.has(i)
+            return (
+              <li key={i}>
+                <button
+                  type="button"
+                  className={`cm-goal-row ${on ? 'is-on' : ''}`}
+                  onClick={() => toggle(i)}
+                  aria-pressed={on}
+                >
+                  <span className={`cm-tile-toggle ${on ? 'is-on' : ''}`} aria-hidden="true">
+                    {on && <CheckCircleIcon size={12} />}
+                  </span>
+                  <span className="cm-goal-text">{text}</span>
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+        {goals.length === 0 && (
+          <div className="cm-goal-empty">
+            We'll set things up based on your industry defaults.
+          </div>
+        )}
+      </div>
+
+      <StepFoot
+        onBack={onBack}
+        onForward={() => onContinue(Array.from(selected).map(i => goals[i]))}
+        forwardDisabled={goals.length > 0 && count === 0}
+      />
+    </div>
+  )
+}
+
+/* ─── Step 3: Agents ─────────────────────────────────────────────── */
 export function AgentsStep({ config, onChange, onBack, onContinue }) {
   const agentsSet = new Set(config?.agents || [])
   const toggle = (id) => {

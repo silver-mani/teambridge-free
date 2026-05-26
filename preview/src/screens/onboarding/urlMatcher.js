@@ -39,6 +39,13 @@ const INDUSTRY_DEFAULTS = {
     roles: ['Event Staff', 'Security', 'F&B', 'Operations'],
     agents: ['coverage', 'overtime'],
     suggestedConnectors: ['adp', 'slack'],
+    goals: [
+      'Cover event-day staffing gaps in under 2 hours when ushers no-show.',
+      'Reduce overtime during sold-out and back-to-back-event weeks.',
+      'Cross-train event staff across venues to flex during peaks.',
+      'Streamline TABC and SafeServ credential renewals for F&B staff.',
+      'Forecast peak headcount 2 weeks ahead of major events.',
+    ],
   },
   healthcare: {
     summary: 'Acute care + clinical operations.',
@@ -46,6 +53,13 @@ const INDUSTRY_DEFAULTS = {
     roles: ['RN', 'LPN', 'CNA', 'Allied Health'],
     agents: ['coverage', 'overtime', 'compliance'],
     suggestedConnectors: ['workday', 'msteams'],
+    goals: [
+      'Reduce ICU and ED RN callouts by surfacing replacement candidates instantly.',
+      'Streamline nursing license and BLS renewals across campuses.',
+      'Cover float-pool gaps in under 4 hours during census spikes.',
+      'Cut mandatory overtime by 30% on overnight shifts.',
+      'Auto-route patient acuity changes to clinical scheduling.',
+    ],
   },
   hospitality: {
     summary: 'Hotels + guest services operations.',
@@ -53,6 +67,13 @@ const INDUSTRY_DEFAULTS = {
     roles: ['Front Desk', 'Housekeeping', 'F&B', 'Banquet'],
     agents: ['coverage', 'overtime'],
     suggestedConnectors: ['adp', 'quickbooks'],
+    goals: [
+      'Smooth peak/off-peak banquet headcount across properties.',
+      'Reduce front-desk overtime during high-occupancy weeks.',
+      'Pre-clear food-handler certifications 30 days before expiry.',
+      'Cross-train staff between F&B and banquet for event surges.',
+      'Cover housekeeping gaps within 4 hours of a callout.',
+    ],
   },
   'long-term-care': {
     summary: 'Assisted living + skilled nursing communities.',
@@ -60,6 +81,13 @@ const INDUSTRY_DEFAULTS = {
     roles: ['CNA', 'LPN', 'Med Tech', 'Caregiver'],
     agents: ['coverage', 'compliance', 'onboarding'],
     suggestedConnectors: ['workday', 'msteams'],
+    goals: [
+      'Reduce CNA callouts on weekend overnights.',
+      'Pre-clear caregiver credential renewals 60 days out.',
+      'Cover NOC shifts in under 3 hours when a caregiver drops.',
+      'Onboard new med-techs through state requirements in 14 days.',
+      'Auto-route resident acuity changes to the right care team.',
+    ],
   },
   security: {
     summary: 'Contract guard + patrol services.',
@@ -67,6 +95,13 @@ const INDUSTRY_DEFAULTS = {
     roles: ['Officer', 'Supervisor', 'Account Manager'],
     agents: ['coverage', 'compliance'],
     suggestedConnectors: ['adp', 'msteams'],
+    goals: [
+      'Pre-clear armed-post certifications 30 days before expiry.',
+      'Cover post callouts within 2 hours across the region.',
+      'Reduce overtime on overnight patrol shifts.',
+      'Track post-specific training (CPR, de-escalation) per officer.',
+      'Onboard contract officers to client sites in under a week.',
+    ],
   },
   janitorial: {
     summary: 'Facility services and building maintenance.',
@@ -74,6 +109,13 @@ const INDUSTRY_DEFAULTS = {
     roles: ['Day Porter', 'Night Crew', 'Floor Tech', 'Account Lead'],
     agents: ['coverage', 'overtime'],
     suggestedConnectors: ['adp', 'quickbooks'],
+    goals: [
+      'Cover night-crew gaps without escalating to account managers.',
+      'Reduce overtime on multi-shift accounts.',
+      'Cross-train day porters and floor techs for surge coverage.',
+      'Onboard new crew to account-specific protocols in 3 days.',
+      'Auto-route schedule changes by account + shift type.',
+    ],
   },
   staffing: {
     summary: 'Staffing agency + contract placements.',
@@ -81,6 +123,13 @@ const INDUSTRY_DEFAULTS = {
     roles: ['Recruiter', 'Account Manager', 'Onboarding Coordinator'],
     agents: ['onboarding', 'compliance'],
     suggestedConnectors: ['workday', 'slack'],
+    goals: [
+      'Onboard placement candidates through compliance in 48 hours.',
+      'Pre-clear credentials for repeat clients automatically.',
+      'Route open requisitions to ready candidates in real time.',
+      'Cover same-day cancellations across the active bench.',
+      'Forecast bench needs against client demand patterns.',
+    ],
   },
   construction: {
     summary: 'Project crews + trades operations.',
@@ -88,6 +137,13 @@ const INDUSTRY_DEFAULTS = {
     roles: ['Foreman', 'Carpenter', 'Electrician', 'Safety Lead'],
     agents: ['coverage', 'compliance', 'onboarding'],
     suggestedConnectors: ['sage-intacct', 'msteams'],
+    goals: [
+      'Pre-clear OSHA-10/30 and trade certs before site assignment.',
+      'Move crews between project sites without scheduling conflicts.',
+      'Onboard subcontractors to safety + site protocols in a day.',
+      'Reduce overtime on accelerated-schedule projects.',
+      'Auto-route weather-driven schedule changes to affected crews.',
+    ],
   },
   'light-industrial': {
     summary: 'Warehousing + logistics + manufacturing crews.',
@@ -95,6 +151,13 @@ const INDUSTRY_DEFAULTS = {
     roles: ['Picker', 'Forklift Op', 'Shift Lead', 'Quality'],
     agents: ['coverage', 'overtime'],
     suggestedConnectors: ['adp', 'quickbooks'],
+    goals: [
+      'Forecast peak-season headcount 4 weeks ahead.',
+      'Cover line-out callouts in under 90 minutes.',
+      'Track forklift and OSHA certifications across the workforce.',
+      'Reduce overtime on Q4 surge shifts.',
+      'Cross-train pickers and forklift ops for flex coverage.',
+    ],
   },
 }
 
@@ -132,6 +195,8 @@ function heuristicConfig(rawInput, fromFreeText) {
         roles: [...defaults.roles],
         agents: [...defaults.agents],
         suggestedConnectors: [...defaults.suggestedConnectors],
+        goals: [...(defaults.goals || [])],
+        insights: [],
         confidence: {
           industry: CONFIDENCE.medium, headcount: CONFIDENCE.low,
           locations: CONFIDENCE.low, roles: CONFIDENCE.medium,

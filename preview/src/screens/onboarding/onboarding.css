@@ -2610,6 +2610,38 @@
   line-height: var(--line-height-loose);
 }
 
+/* Goals step — Claude-generated WFM goal list. Multi-select rows that
+ * read as substantive operator goals, all pre-toggled. */
+.cm-goal-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.cm-goal-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-md);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.cm-goal-row:hover { border-color: var(--color-border-selected); }
+.cm-goal-row.is-on { border-color: var(--color-content-primary); }
+.cm-goal-row .cm-tile-toggle { margin-top: 2px; }
+.cm-goal-text {
+  font-size: var(--text-sm);
+  color: var(--color-content-primary);
+  line-height: var(--line-height-loose);
+}
+.cm-goal-empty {
+  font-size: var(--text-sm);
+  color: var(--color-content-tertiary);
+  padding: var(--space-3) var(--space-4);
+}
+
 /* Review step body — used by InsightsStep/AgentsStep/PoliciesStep/
  * DataStep cards. Slightly more padding than the ConfirmCard sections
  * since these are full-screen focused steps. */
