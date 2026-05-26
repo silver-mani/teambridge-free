@@ -270,12 +270,14 @@
 }
 .ob-quick-reply:hover { border-color: var(--color-border-selected); background: var(--color-bg-primary); }
 
-/* Compose footer — locked to the bottom of the chat column */
+/* Compose footer — locked to the bottom of the chat column. Inherits
+ * the chat column's white background so there's no color band around
+ * it; just a top border for separation. */
 .ob-compose {
   flex-shrink: 0;
   padding: var(--space-3) var(--space-6) var(--space-5);
   border-top: 1px solid var(--color-border-opaque);
-  background: var(--color-bg-primary);
+  background: transparent;
 }
 .ob-compose-row {
   display: flex;
@@ -368,15 +370,16 @@
  * materialize. Pulses on loop with staggered cell delays. */
 
 .ob-wf {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-2);
+  gap: var(--space-3);
 }
 .ob-wf-app {
+  flex: 1;
+  min-height: 0;
   width: 100%;
-  max-width: 640px;
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
@@ -415,16 +418,25 @@
 .ob-wf-tile-value { width: 70%;  height: 14px; }
 .ob-wf-tile-sub   { width: 80%;  height: 6px; opacity: 0.6; }
 
-.ob-wf-section { display: flex; flex-direction: column; gap: var(--space-2); }
+.ob-wf-section {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
 .ob-wf-section-head { display: flex; align-items: center; }
 
 .ob-wf-grid {
+  flex: 1;
+  min-height: 0;
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
   gap: 6px;
 }
 .ob-wf-cell {
-  height: 20px;
+  min-height: 24px;
   border-radius: var(--radius-sm);
   background: var(--color-bg-tertiary);
   animation: ob-wf-pulse 2.4s ease-in-out infinite;
@@ -458,8 +470,8 @@
 
 .ob-drawer-slot {
   flex-shrink: 0;
-  padding: 0 var(--space-6);
-  background: var(--color-bg-primary);
+  padding: var(--space-2) var(--space-6) 0;
+  background: transparent;  /* inherits the chat column's white surface */
 }
 
 .ob-drawer {
@@ -1096,10 +1108,15 @@
   flex-shrink: 0;
 }
 
-/* Chat column — fixed height; messages scroll internally; compose pinned. */
+/* Chat column — explicit white surface separated from the right pane
+ * by a visible border. Locked-bottom compose + drawer-slot inherit
+ * this white background so the column reads as one continuous
+ * surface (no color bands around the drawer or compose). */
 .ob-root .prompt-panel {
   height: 100%;
   overflow: hidden;
+  background: var(--color-bg-primary);
+  border-right: 1px solid var(--color-border-opaque);
 }
 
 .act1-nav-item-locked {
