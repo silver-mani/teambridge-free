@@ -1,8 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { TeambridgeAIIcon } from '../../../../src/components/icons/TeambridgeAIIcon.tsx'
-import TeambridgeLogo from './TeambridgeLogo.jsx'
-import { ChevronLeftIcon } from '../../../../src/components/icons/ChevronLeftIcon.tsx'
-import { Bell01Icon } from '../../../../src/components/icons/Bell01Icon.tsx'
 import { ArrowNarrowRightIcon } from '../../../../src/components/icons/ArrowNarrowRightIcon.tsx'
 import { ArrowNarrowUpIcon } from '../../../../src/components/icons/ArrowNarrowUpIcon.tsx'
 import { CheckCircleIcon } from '../../../../src/components/icons/CheckCircleIcon.tsx'
@@ -91,9 +88,6 @@ export default function OnboardingFlow({ onExit, onComplete }) {
   const [config, setConfig] = useState(null)
   const [revealedFields, setRevealedFields] = useState(new Set(['summary']))
   const [importMethod, setImportMethod] = useState(null)  // 'csv' | 'api' | 'sample'
-
-  // Activity drawer
-  const [activityOpen, setActivityOpen] = useState(false)
 
   // Chat
   const [messages, setMessages] = useState(() => [
@@ -374,27 +368,6 @@ export default function OnboardingFlow({ onExit, onComplete }) {
 
   return (
     <div className="ob-root">
-      <header className="ob-topbar">
-        <button type="button" className="ob-back" onClick={onExit}>
-          <ChevronLeftIcon size={14} /> Back
-        </button>
-        <div className="ob-topbar-brand">
-          <span className="ob-brand-mark" aria-hidden="true">
-            <TeambridgeLogo size={24} />
-          </span>
-          <span className="ob-brand-text">Teambridge</span>
-        </div>
-        <button
-          type="button"
-          className={`ob-activity-toggle ${activityOpen ? 'is-open' : ''}`}
-          onClick={() => setActivityOpen(o => !o)}
-          aria-label="Toggle activity feed"
-        >
-          <Bell01Icon size={14} />
-          <span>Activity</span>
-        </button>
-      </header>
-
       <div className="ob-shell-frame">
         <DashboardShell
           mode="full"
@@ -408,19 +381,6 @@ export default function OnboardingFlow({ onExit, onComplete }) {
           content={content}
           showActivityFeed={false}
         />
-
-        {/* Activity drawer — overlays the shell. Hidden until toggled. */}
-        <div
-          className={`activity-drawer-scrim ${activityOpen ? 'is-open' : ''}`}
-          aria-hidden="true"
-          onClick={() => setActivityOpen(false)}
-        />
-        <aside
-          className={`activity-drawer-overlay ${activityOpen ? 'is-open' : ''}`}
-          aria-hidden={!activityOpen}
-        >
-          <OnboardingActivityPlaceholder />
-        </aside>
       </div>
     </div>
   )
@@ -680,23 +640,3 @@ function WireframeLoop() {
   )
 }
 
-function OnboardingActivityPlaceholder() {
-  return (
-    <aside className="activity-feed bc-activity" aria-label="Activity feed (empty)">
-      <div className="activity-feed-inner">
-        <div className="activity-feed-header">
-          <h2 className="activity-feed-title">Activity</h2>
-        </div>
-        <div className="bc-activity-empty">
-          <span className="bc-activity-empty-mark" aria-hidden="true">
-            <CheckCircleIcon size={14} />
-          </span>
-          <span>
-            Once your workspace is live, every agent action lands here —
-            shift coverage, OT swaps, agent runs, the lot.
-          </span>
-        </div>
-      </div>
-    </aside>
-  )
-}
