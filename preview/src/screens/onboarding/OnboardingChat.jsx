@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { TeambridgeAIIcon } from '../../../../src/components/icons/TeambridgeAIIcon.tsx'
 import { ArrowNarrowUpIcon } from '../../../../src/components/icons/ArrowNarrowUpIcon.tsx'
 import { CheckCircleIcon } from '../../../../src/components/icons/CheckCircleIcon.tsx'
+import TeambridgeLogo from './TeambridgeLogo.jsx'
 
 /* ──────────────────────────────────────────────────────────────────────
  * OnboardingChat — Nova's chat panel. Lives in the shell's chat column
@@ -95,7 +95,7 @@ export default function OnboardingChat({
         <header className="prompt-panel-head ob-chat-head">
           <div className="prompt-panel-title">
             <span className="prompt-panel-mark" aria-hidden="true">
-              <TeambridgeAIIcon size={10} />
+              <TeambridgeLogo size={16} />
             </span>
             <span>Teambridge AI</span>
           </div>

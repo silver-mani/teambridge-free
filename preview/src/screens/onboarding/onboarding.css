@@ -49,9 +49,8 @@
 .ob-brand-mark {
   display: inline-flex; align-items: center; justify-content: center;
   width: 24px; height: 24px;
-  border-radius: var(--radius-sm);
-  background: var(--color-bg-inverse-primary);
-  color: var(--color-content-inverse-primary);
+  /* No bg / border-radius here — TeambridgeLogo PNG brings its own
+   * dark rounded square. */
 }
 
 .ob-brand-text {
@@ -1430,6 +1429,20 @@
   overflow: hidden;
   background: var(--color-bg-primary);
   border-right: 1px solid var(--color-border-opaque);
+}
+
+/* Brand mark overrides (only inside .ob-root) — the Teambridge logo
+ * PNG brings its own dark rounded background, so we drop Act1's
+ * inverse-bg + gradient backgrounds on those mark wrappers. */
+.ob-root .act1-nav-brandmark {
+  background: transparent;
+  color: inherit;
+}
+.ob-root .prompt-panel-mark {
+  background: transparent;
+  color: inherit;
+  width: 16px;
+  height: 16px;
 }
 
 .act1-nav-item-locked {

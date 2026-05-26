@@ -1,4 +1,4 @@
-import { TeambridgeAIIcon } from '../../../../src/components/icons/TeambridgeAIIcon.tsx'
+import TeambridgeLogo from '../onboarding/TeambridgeLogo.jsx'
 import { Home02Icon } from '../../../../src/components/icons/Home02Icon.tsx'
 import { Users03Icon } from '../../../../src/components/icons/Users03Icon.tsx'
 import { PuzzlePiece01Icon } from '../../../../src/components/icons/PuzzlePiece01Icon.tsx'
@@ -129,7 +129,7 @@ export default function DashboardLeftNav({
           aria-label="Change industry"
         >
           <span className="act1-nav-brandmark">
-            <TeambridgeAIIcon size={16} />
+            <TeambridgeLogo size={28} />
           </span>
           <span className="act1-nav-brandtext">
             <span className="act1-nav-brandname">Teambridge</span>

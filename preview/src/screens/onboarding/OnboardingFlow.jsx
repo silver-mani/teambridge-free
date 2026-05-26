@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { TeambridgeAIIcon } from '../../../../src/components/icons/TeambridgeAIIcon.tsx'
+import TeambridgeLogo from './TeambridgeLogo.jsx'
 import { ChevronLeftIcon } from '../../../../src/components/icons/ChevronLeftIcon.tsx'
 import { Bell01Icon } from '../../../../src/components/icons/Bell01Icon.tsx'
 import { ArrowNarrowRightIcon } from '../../../../src/components/icons/ArrowNarrowRightIcon.tsx'
@@ -379,7 +380,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
         </button>
         <div className="ob-topbar-brand">
           <span className="ob-brand-mark" aria-hidden="true">
-            <TeambridgeAIIcon size={14} />
+            <TeambridgeLogo size={24} />
           </span>
           <span className="ob-brand-text">Teambridge</span>
         </div>
