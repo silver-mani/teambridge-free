@@ -1,12 +1,14 @@
 import { ArrowNarrowRightIcon } from '../../../../src/components/icons/ArrowNarrowRightIcon.tsx'
 import { CheckCircleIcon } from '../../../../src/components/icons/CheckCircleIcon.tsx'
-import { PAIN_OPTIONS, PAIN_TO_AGENT } from './steps.js'
+import { PAIN_OPTIONS, PAIN_TO_AGENT, PAIN_TO_PERSONA } from './steps.js'
+import { AGENTS } from '../../data/agents.js'
 import AgentAvatar from './AgentAvatar.jsx'
 
-/* AgentsLaunchCard — final right-pane step. Lists all 6 Teambridge
- * agents with toggles. Pre-toggles those implied by the outcomes the
- * operator picked earlier. "Launch" CTA hands off to the industry
- * demo via onLaunch. */
+/* AgentsLaunchCard — final right-pane step. 2-column grid of agent
+ * cards (similar visual weight to policy cards). Each card has the
+ * persona's animated GIF avatar, agent name, description, and a
+ * "Powered by [persona]" attribution. Big toggle in the corner.
+ * Pre-toggled based on the operator's outcomes. */
 
 export default function AgentsLaunchCard({ agents = [], onAgentsChange, onLaunch, companyName }) {
   const set = new Set(agents)
@@ -15,6 +17,10 @@ export default function AgentsLaunchCard({ agents = [], onAgentsChange, onLaunch
     if (next.has(id)) next.delete(id)
     else next.add(id)
     onAgentsChange?.(Array.from(next))
+  }
+  const allOn  = set.size === PAIN_OPTIONS.length
+  const toggleAll = () => {
+    onAgentsChange?.(allOn ? [] : PAIN_OPTIONS.map(p => p.id))
   }
   const count = set.size
 
@@ -29,34 +35,45 @@ export default function AgentsLaunchCard({ agents = [], onAgentsChange, onLaunch
             </span>
           </div>
         </div>
+        <button type="button" className="pc-all" onClick={toggleAll}>
+          {allOn ? 'Clear all' : 'Select all'}
+        </button>
       </header>
 
-      <ul className="alc-list">
+      <div className="alc-grid">
         {PAIN_OPTIONS.map(p => {
           const agent = PAIN_TO_AGENT[p.id]
           if (!agent) return null
+          const personaId = PAIN_TO_PERSONA[p.id]
+          const persona = AGENTS[personaId]
           const on = set.has(p.id)
           return (
-            <li key={p.id}>
-              <button
-                type="button"
-                className={`alc-row ${on ? 'is-on' : ''}`}
-                onClick={() => toggle(p.id)}
-                aria-pressed={on}
-              >
-                <AgentAvatar painId={p.id} size={36} />
-                <div className="alc-text">
-                  <span className="alc-name">{agent.name}</span>
-                  <span className="alc-detail">{agent.detail}</span>
-                </div>
-                <span className={`alc-toggle ${on ? 'is-on' : ''}`} aria-hidden="true">
+            <button
+              key={p.id}
+              type="button"
+              className={`alc-card ${on ? 'is-on' : ''}`}
+              onClick={() => toggle(p.id)}
+              aria-pressed={on}
+            >
+              <div className="alc-card-top">
+                <AgentAvatar painId={p.id} size={48} />
+                <span className={`alc-card-toggle ${on ? 'is-on' : ''}`} aria-hidden="true">
                   {on && <CheckCircleIcon size={16} />}
                 </span>
-              </button>
-            </li>
+              </div>
+              <div className="alc-card-text">
+                <span className="alc-card-title">{agent.name}</span>
+                <span className="alc-card-detail">{agent.detail}</span>
+              </div>
+              {persona && (
+                <div className="alc-card-foot">
+                  Powered by <strong>{persona.name}</strong> · {persona.role}
+                </div>
+              )}
+            </button>
           )
         })}
-      </ul>
+      </div>
 
       <footer className="cc-foot">
         <span className="cc-foot-sub">

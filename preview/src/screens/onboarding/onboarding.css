@@ -2099,65 +2099,82 @@
 }
 .pc-all:hover { color: var(--color-content-primary); border-color: var(--color-border-selected); }
 
-.pc-list {
-  list-style: none;
-  margin: 0;
-  padding: var(--space-3) var(--space-4);
+/* Policy card grid — 2-column layout, each card a substantive tile
+ * (similar to teambridge.com/compliance/california). */
+.pc-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+.pc-card {
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-}
-.pc-row {
-  width: 100%;
-  display: grid;
-  grid-template-columns: 20px 1fr auto;
-  align-items: center;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-4);
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border-opaque);
   border-radius: var(--radius-md);
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: border-color 120ms ease, background 120ms ease;
+  transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+  min-height: 168px;
 }
-.pc-row:hover { border-color: var(--color-border-selected); }
-.pc-row.is-on {
+.pc-card:hover {
+  border-color: var(--color-border-selected);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-below-sm, 0 1px 2px rgba(0,0,0,0.04));
+}
+.pc-card.is-on {
   border-color: var(--color-content-primary);
   background: var(--color-bg-primary);
 }
-.pc-toggle {
+.pc-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.pc-card-mark {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 20px; height: 20px;
+  width: 40px; height: 40px;
+  border-radius: var(--radius-md);
+}
+.pc-card-toggle {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px;
   border-radius: var(--radius-full);
   border: 1px solid var(--color-border-opaque);
   color: var(--color-content-inverse-primary);
+  transition: background 120ms ease, border-color 120ms ease;
 }
-.pc-toggle.is-on {
+.pc-card-toggle.is-on {
   background: var(--color-content-primary);
   border-color: var(--color-content-primary);
 }
-.pc-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.pc-name {
-  font-size: var(--text-sm);
+.pc-card-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.pc-card-title {
+  font-size: var(--text-base);
   font-weight: var(--font-weight-medium);
+  letter-spacing: -0.005em;
   color: var(--color-content-primary);
+  line-height: var(--line-height-snug);
 }
-.pc-detail {
+.pc-card-detail {
   font-size: var(--text-xs);
   color: var(--color-content-tertiary);
   line-height: var(--line-height-loose);
 }
-.pc-states {
+.pc-card-states {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  margin-top: auto;
 }
-.pc-state {
-  padding: 1px var(--space-2);
+.pc-card-state {
+  padding: 2px var(--space-2);
   border-radius: var(--radius-full);
   background: var(--color-bg-tertiary);
   color: var(--color-content-secondary);
@@ -2165,62 +2182,91 @@
   font-weight: var(--font-weight-medium);
   letter-spacing: 0.04em;
 }
-.pc-state--fed {
+.pc-card-state--fed {
   background: var(--color-azure-bg-tertiary);
   color: var(--color-azure-content-secondary);
 }
 
 /* ─────────────────────── AgentsLaunchCard ────────────────────────── */
 .cc--agents-launch { animation: ob-fade-in 320ms ease; }
-.alc-list {
-  list-style: none;
-  margin: 0;
-  padding: var(--space-3) var(--space-4);
+/* Agent card grid — same 2-column visual weight as policies. Big
+ * persona avatar (animated GIF), agent name, description, and a
+ * "Powered by [persona]" attribution line at the bottom. */
+.alc-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+.alc-card {
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-}
-.alc-row {
-  width: 100%;
-  display: grid;
-  grid-template-columns: 36px 1fr 22px;
-  align-items: center;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-4);
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border-opaque);
   border-radius: var(--radius-md);
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: border-color 120ms ease, background 120ms ease;
+  transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+  min-height: 192px;
 }
-.alc-row:hover { border-color: var(--color-border-selected); }
-.alc-row.is-on {
+.alc-card:hover {
+  border-color: var(--color-border-selected);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-below-sm, 0 1px 2px rgba(0,0,0,0.04));
+}
+.alc-card.is-on {
   border-color: var(--color-content-primary);
   background: var(--color-bg-primary);
 }
-.alc-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.alc-name {
-  font-size: var(--text-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-content-primary);
+.alc-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
-.alc-detail {
+.alc-card-toggle {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border-opaque);
+  color: var(--color-content-inverse-primary);
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.alc-card-toggle.is-on {
+  background: var(--color-content-primary);
+  border-color: var(--color-content-primary);
+}
+.alc-card-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.alc-card-title {
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: -0.005em;
+  color: var(--color-content-primary);
+  line-height: var(--line-height-snug);
+}
+.alc-card-detail {
   font-size: var(--text-xs);
   color: var(--color-content-tertiary);
   line-height: var(--line-height-loose);
 }
-.alc-toggle {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 22px; height: 22px;
-  border-radius: var(--radius-full);
-  border: 1px solid var(--color-border-opaque);
-  color: var(--color-content-inverse-primary);
+.alc-card-foot {
+  margin-top: auto;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border-opaque);
+  font-size: 11px;
+  color: var(--color-content-tertiary);
 }
-.alc-toggle.is-on {
-  background: var(--color-content-primary);
-  border-color: var(--color-content-primary);
+.alc-card-foot strong {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+}
+
+/* Single-column at narrow widths */
+@media (max-width: 1100px) {
+  .pc-grid, .alc-grid { grid-template-columns: 1fr; }
 }
 
 /* ─────────────────────── Shared card footer (CTAs) ────────────────── */

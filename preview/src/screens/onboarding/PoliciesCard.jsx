@@ -1,12 +1,28 @@
 import { useMemo, useState } from 'react'
 import { CheckCircleIcon } from '../../../../src/components/icons/CheckCircleIcon.tsx'
 import { ArrowNarrowRightIcon } from '../../../../src/components/icons/ArrowNarrowRightIcon.tsx'
+import { ClockIcon } from '../../../../src/components/icons/ClockIcon.tsx'
+import { Coins04Icon } from '../../../../src/components/icons/Coins04Icon.tsx'
+import { Grid01Icon } from '../../../../src/components/icons/Grid01Icon.tsx'
+import { Users03Icon } from '../../../../src/components/icons/Users03Icon.tsx'
 import { POLICY_OPTIONS, POLICIES_BY_STATE } from './steps.js'
 
-/* PoliciesCard — surfaces labor policies that apply to the states
- * the company operates in. The operator multi-selects which to turn
- * on (or hits "Select all"); each policy shows the states it covers
- * as small chips. Federal baseline policies are always shown. */
+/* PoliciesCard — surfaces labor policies that apply to the operator's
+ * states. Renders as a 2-column grid of substantive cards (similar to
+ * teambridge.com/compliance/california): each card has a colored
+ * category icon, title, description, state badges, and a prominent
+ * toggle. Pre-selected by default — operator untoggles what they
+ * don't need. */
+
+/* Category → icon + accent color mapping. Drives the colored mark on
+ * each policy card. */
+const CATEGORY_META = {
+  overtime:   { Icon: ClockIcon,   accent: 'orange' },
+  breaks:     { Icon: ClockIcon,   accent: 'matcha' },
+  pay:        { Icon: Coins04Icon, accent: 'green'  },
+  scheduling: { Icon: Grid01Icon,  accent: 'azure'  },
+  workforce:  { Icon: Users03Icon, accent: 'purple' },
+}
 
 function statesFromLocations(locations = []) {
   const set = new Set()
@@ -19,7 +35,7 @@ function statesFromLocations(locations = []) {
 
 function policiesForStates(states) {
   const policySet = new Set(POLICIES_BY_STATE['*'] || [])
-  const stateMap = {}  // policyId → Set of states
+  const stateMap = {}
 
   for (const policyId of POLICIES_BY_STATE['*'] || []) {
     stateMap[policyId] = new Set(['Federal'])
@@ -32,17 +48,16 @@ function policiesForStates(states) {
       stateMap[id].add(st)
     }
   }
-  return Array.from(policySet).map(id => ({
-    ...POLICY_OPTIONS.find(p => p.id === id),
-    states: Array.from(stateMap[id] || []).sort(),
-  })).filter(p => p.label)
+  return Array.from(policySet).map(id => {
+    const base = POLICY_OPTIONS.find(p => p.id === id)
+    if (!base) return null
+    return { ...base, states: Array.from(stateMap[id] || []).sort() }
+  }).filter(Boolean)
 }
 
 export default function PoliciesCard({ config, onContinue }) {
   const states = useMemo(() => statesFromLocations(config?.locations), [config])
   const policies = useMemo(() => policiesForStates(states), [states])
-  // Pre-select all by default — the operator can untoggle, but most
-  // teams want compliance coverage on day one.
   const [selected, setSelected] = useState(() => new Set(policies.map(p => p.id)))
 
   const toggle = (id) => {
@@ -53,8 +68,7 @@ export default function PoliciesCard({ config, onContinue }) {
       return next
     })
   }
-  const allOn  = selected.size === policies.length && policies.length > 0
-  const allOff = selected.size === 0
+  const allOn = selected.size === policies.length && policies.length > 0
   const toggleAll = () => {
     setSelected(allOn ? new Set() : new Set(policies.map(p => p.id)))
   }
@@ -79,38 +93,51 @@ export default function PoliciesCard({ config, onContinue }) {
         </button>
       </header>
 
-      <ul className="pc-list">
+      <div className="pc-grid">
         {policies.map(p => {
           const on = selected.has(p.id)
+          const meta = CATEGORY_META[p.category] || CATEGORY_META.workforce
+          const { Icon, accent } = meta
           return (
-            <li key={p.id}>
-              <button
-                type="button"
-                className={`pc-row ${on ? 'is-on' : ''}`}
-                onClick={() => toggle(p.id)}
-                aria-pressed={on}
-              >
-                <span className={`pc-toggle ${on ? 'is-on' : ''}`} aria-hidden="true">
-                  {on && <CheckCircleIcon size={14} />}
+            <button
+              key={p.id}
+              type="button"
+              className={`pc-card ${on ? 'is-on' : ''}`}
+              onClick={() => toggle(p.id)}
+              aria-pressed={on}
+            >
+              <div className="pc-card-top">
+                <span
+                  className="pc-card-mark"
+                  style={{
+                    background: `var(--color-${accent}-bg-tertiary)`,
+                    color:      `var(--color-${accent}-content-secondary)`,
+                  }}
+                  aria-hidden="true"
+                >
+                  <Icon size={20} />
                 </span>
-                <div className="pc-text">
-                  <span className="pc-name">{p.label}</span>
-                  <span className="pc-detail">{p.detail}</span>
-                </div>
-                <div className="pc-states" aria-hidden="true">
-                  {p.states.map(s => (
-                    <span key={s} className={`pc-state ${s === 'Federal' ? 'pc-state--fed' : ''}`}>{s}</span>
-                  ))}
-                </div>
-              </button>
-            </li>
+                <span className={`pc-card-toggle ${on ? 'is-on' : ''}`} aria-hidden="true">
+                  {on && <CheckCircleIcon size={16} />}
+                </span>
+              </div>
+              <div className="pc-card-text">
+                <span className="pc-card-title">{p.label}</span>
+                <span className="pc-card-detail">{p.detail}</span>
+              </div>
+              <div className="pc-card-states" aria-hidden="true">
+                {p.states.map(s => (
+                  <span key={s} className={`pc-card-state ${s === 'Federal' ? 'pc-card-state--fed' : ''}`}>{s}</span>
+                ))}
+              </div>
+            </button>
           )
         })}
-      </ul>
+      </div>
 
       <footer className="cc-foot">
         <span className="cc-foot-sub">
-          {allOff ? 'No policies on' : `${selected.size} policy ${selected.size === 1 ? '' : 'set'} on`}
+          {selected.size === 0 ? 'No policies on' : `${selected.size} polic${selected.size === 1 ? 'y' : 'ies'} on`}
         </span>
         <button
           type="button"

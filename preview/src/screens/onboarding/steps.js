@@ -83,17 +83,18 @@ export const OUTCOME_TO_AGENTS = {
 
 /* Labor policies surfaced on the policies-pick step, keyed by state.
  * Distilled from teambridge.com/compliance — common state policies
- * across CA / NY / OR / WA / IL / etc., plus a federal baseline. */
+ * across CA / NY / OR / WA / IL / etc., plus a federal baseline.
+ * `category` drives the icon + accent color on the policy card. */
 export const POLICY_OPTIONS = [
-  { id: 'daily-ot',   label: 'Daily overtime after 8 hrs',           detail: 'Track and flag shifts hitting daily OT thresholds.' },
-  { id: 'weekly-ot',  label: 'Weekly overtime after 40 hrs',         detail: 'FLSA federal standard. Flag before week closes.' },
-  { id: 'meal-rest',  label: 'Meal & rest break enforcement',        detail: 'Auto-insert breaks based on shift length.' },
-  { id: 'sick-leave', label: 'Paid sick leave accrual',              detail: 'Accrue hours per worked hour, by state rate.' },
-  { id: 'predictive', label: 'Predictive (fair workweek) scheduling', detail: 'Post schedules 14 days ahead; pay premiums on changes.' },
-  { id: 'spread-hrs', label: 'Spread of hours premium',              detail: 'Pay extra hour at minimum wage when spread exceeds 10 hrs.' },
-  { id: 'day-rest',   label: 'One day of rest in seven',             detail: 'Block 7-day-on schedules without consent.' },
-  { id: 'final-pay',  label: 'Same-day final pay on termination',    detail: 'Auto-cut final paycheck on separation.' },
-  { id: 'minor-work', label: 'Minor work-hour limits',               detail: 'Cap hours for under-18 workers, school nights.' },
+  { id: 'daily-ot',   category: 'overtime',  label: 'Daily overtime after 8 hrs',           detail: 'Track and flag shifts hitting daily OT thresholds.' },
+  { id: 'weekly-ot',  category: 'overtime',  label: 'Weekly overtime after 40 hrs',         detail: 'FLSA federal standard. Flag before week closes.' },
+  { id: 'meal-rest',  category: 'breaks',    label: 'Meal & rest break enforcement',        detail: 'Auto-insert breaks based on shift length.' },
+  { id: 'sick-leave', category: 'pay',       label: 'Paid sick leave accrual',              detail: 'Accrue hours per worked hour, by state rate.' },
+  { id: 'predictive', category: 'scheduling', label: 'Predictive (fair workweek) scheduling', detail: 'Post schedules 14 days ahead; pay premiums on changes.' },
+  { id: 'spread-hrs', category: 'pay',       label: 'Spread of hours premium',              detail: 'Pay extra hour at minimum wage when spread exceeds 10 hrs.' },
+  { id: 'day-rest',   category: 'scheduling', label: 'One day of rest in seven',            detail: 'Block 7-day-on schedules without consent.' },
+  { id: 'final-pay',  category: 'pay',       label: 'Same-day final pay on termination',    detail: 'Auto-cut final paycheck on separation.' },
+  { id: 'minor-work', category: 'workforce', label: 'Minor work-hour limits',               detail: 'Cap hours for under-18 workers, school nights.' },
 ]
 
 /* Which policies typically apply per state. '*' is federal baseline. */
