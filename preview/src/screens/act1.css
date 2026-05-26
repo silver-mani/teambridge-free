@@ -5254,11 +5254,17 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   border: 1px solid var(--color-border-opaque);
   border-radius: 10px;
   overflow: hidden;
+  /* Parent owns the column tracks; head + each row inherit them via
+   * subgrid below so every cell column lines up regardless of the
+   * content widths in any one row. */
+  display: grid;
+  grid-template-columns: minmax(280px, 2fr) 1.2fr 1.5fr 1.2fr 0.9fr;
 }
 .wf-list-head,
 .wf-list-row {
   display: grid;
-  grid-template-columns: minmax(280px, 2fr) 1.2fr 1.5fr 1.2fr 0.9fr;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
   align-items: center;
   column-gap: var(--space-3);
 }
@@ -5269,6 +5275,7 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   font-size: 12px;
   font-weight: var(--font-weight-medium);
   color: var(--color-content-secondary);
+  text-align: left;
 }
 /* The first row cell has a 30px icon + 12px gap (42px) before its title.
  * The header has just plain text — without compensation it sits flush
