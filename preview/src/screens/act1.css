@@ -6347,6 +6347,210 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   .wf-browse-toolbar-right { flex: 1; flex-wrap: wrap; }
 }
 
+/* Template details modal — interstitial that the operator hits when
+ * they click any template card or tile. Shows agent identity, what
+ * the workflow does, the metrics it moves, and the two actions
+ * (Turn On / View workflow details). */
+.wf-modal-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(15, 17, 25, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+  animation: wf-modal-fade 160ms ease;
+}
+@keyframes wf-modal-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.wf-modal {
+  position: relative;
+  width: min(560px, 100%);
+  max-height: calc(100vh - var(--space-7));
+  overflow-y: auto;
+  background: var(--color-bg-primary);
+  border-radius: 16px;
+  box-shadow: 0 24px 64px -16px rgba(0, 0, 0, 0.32);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  animation: wf-modal-rise 200ms cubic-bezier(0.18, 0.89, 0.32, 1.1);
+}
+@keyframes wf-modal-rise {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+.wf-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-secondary);
+  border: none;
+  border-radius: var(--radius-full);
+  color: var(--color-content-secondary);
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.wf-modal-close:hover { background: var(--color-bg-tertiary); color: var(--color-content-primary); }
+
+.wf-modal-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-right: 36px;
+}
+.wf-modal-agent {
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-bg-secondary);
+  flex-shrink: 0;
+}
+.wf-modal-head-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.wf-modal-agent-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-content-tertiary);
+}
+.wf-modal-agent-name { font-weight: var(--font-weight-medium); color: var(--color-content-secondary); }
+.wf-modal-agent-sep  { color: var(--color-content-tertiary); }
+.wf-modal-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-content-primary);
+  letter-spacing: -0.01em;
+}
+
+.wf-modal-desc {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-content-secondary);
+}
+
+.wf-modal-trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 10px 14px;
+  background: var(--color-bg-secondary);
+  border-radius: 10px;
+}
+.wf-modal-trigger-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-content-tertiary);
+}
+.wf-modal-trigger-value {
+  font-size: 13px;
+  color: var(--color-content-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.wf-modal-section { display: flex; flex-direction: column; gap: var(--space-2); }
+.wf-modal-section-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-content-primary);
+}
+.wf-modal-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.wf-modal-list-item {
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-content-secondary);
+}
+.wf-modal-list-bullet {
+  margin-top: 3px;
+  color: var(--color-matcha-content-secondary, #16a34a);
+  display: inline-flex;
+}
+
+.wf-modal-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+.wf-modal-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  background: var(--color-bg-secondary);
+  border-radius: 10px;
+}
+.wf-modal-metric-value {
+  font-size: 18px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-content-primary);
+  letter-spacing: -0.01em;
+}
+.wf-modal-metric-label {
+  font-size: 11px;
+  color: var(--color-content-secondary);
+  font-weight: var(--font-weight-medium);
+}
+.wf-modal-metric-sub {
+  font-size: 10px;
+  color: var(--color-content-tertiary);
+  line-height: 1.35;
+}
+
+.wf-modal-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border-opaque);
+}
+.wf-modal-secondary { padding: 8px 14px; }
+.wf-modal-primary {
+  padding: 8px 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.wf-modal-primary.is-on {
+  background: var(--color-matcha-content-secondary, #16a34a);
+  border-color: var(--color-matcha-content-secondary, #16a34a);
+  color: #fff;
+  cursor: default;
+}
+.wf-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@media (max-width: 540px) {
+  .wf-modal-metrics { grid-template-columns: 1fr; }
+  .wf-modal-foot    { flex-direction: column-reverse; align-items: stretch; }
+}
+
 /* Place the toolbar relative to the detail body so it pins to the canvas
    bottom without fighting the grid. */
 .wf-detail-body { position: relative; }

@@ -702,6 +702,17 @@ export const WORKFLOW_TEMPLATES_FEATURED = [
     gradient: 'amber',
     triggerLabel: 'Shift cancelled within 6h',
     nodeCount: 14,
+    workflowId: 'last-min-replacement',
+    highlights: [
+      'Ranks 12 eligible workers in seconds — proximity, accept rate, hours fairness, 90-day performance.',
+      'Sends offers to the top 3 in parallel with a 90-second expiry; first accept wins, others rescind.',
+      'Hands off to Iris for shift publish + payroll touch-up, then logs the close-out in your coverage recap.',
+    ],
+    metrics: [
+      { label: 'Time to fill', value: '4 min',  sub: 'down from ~47 min manual' },
+      { label: 'Coverage rate', value: '94%',   sub: 'up from 71% on the same pool' },
+      { label: 'Manager touches', value: '0',   sub: '6–8 per gap before' },
+    ],
   },
   {
     id: 'tpl-ot-cap-autoreplace',
@@ -711,6 +722,17 @@ export const WORKFLOW_TEMPLATES_FEATURED = [
     gradient: 'indigo',
     triggerLabel: 'Worker hits 38h projected',
     nodeCount: 11,
+    workflowId: 'ot-cap-autoreplace',
+    highlights: [
+      'Projects each worker\'s pay-period hours daily and flags anyone trending past your OT cap.',
+      'Surfaces compliant swaps from workers below threshold with matching skills + availability.',
+      'Auto-publishes the rebalance after a manager 1-tap confirm, or runs lights-out under your policy.',
+    ],
+    metrics: [
+      { label: 'OT spend',        value: '−34%', sub: 'period-over-period' },
+      { label: 'Compliant swaps', value: '92%',  sub: 'auto-rebalanced without escalation' },
+      { label: 'Pay-period close', value: '2.1d', sub: 'down from 4.8d on average' },
+    ],
   },
   {
     id: 'tpl-credential-watch',
@@ -720,42 +742,300 @@ export const WORKFLOW_TEMPLATES_FEATURED = [
     gradient: 'matcha',
     triggerLabel: 'Cert expires in ≤ 30 days',
     nodeCount: 9,
+    highlights: [
+      'Indexes every credential — state license, BLS, OSHA, food-handler, TABC — in one workforce graph.',
+      'DMs each worker at 60 / 30 / 7 days with the exact renewal link for their role and state.',
+      'Blocks scheduling against any role whose credential lapses, with an instant supervisor escalation.',
+    ],
+    metrics: [
+      { label: 'Lapsed-credential shifts', value: '0',   sub: '14 last quarter' },
+      { label: 'Renewal compliance',        value: '99%', sub: 'up from 84%' },
+      { label: 'HR follow-up hours',        value: '−18h', sub: 'reclaimed per week' },
+    ],
   },
 ]
 
 export const WORKFLOW_TEMPLATES = [
   /* Coverage */
-  { id: 'tpl-callout-cascade',  title: 'Callout Cascade',          description: 'Tiered offers to A→B→C candidates with 90s expiry per tier.', agentId: 'nova',  category: 'coverage' },
-  { id: 'tpl-no-show-recovery', title: 'No-Show Recovery',         description: 'Detect missed clock-in, ping the worker, escalate to manager at 15 min.', agentId: 'nova',  category: 'coverage' },
-  { id: 'tpl-event-day-surge',  title: 'Event-Day Surge Coverage', description: 'Pre-stage standby pool the morning of a peak event; auto-offer if any role unders.', agentId: 'atlas', category: 'coverage' },
-  { id: 'tpl-float-pool-route', title: 'Float Pool Routing',       description: 'Send float-eligible workers to units with the deepest gap first, by acuity.', agentId: 'nova',  category: 'coverage' },
+  { id: 'tpl-callout-cascade',  title: 'Callout Cascade',          description: 'Tiered offers to A→B→C candidates with 90s expiry per tier.', agentId: 'nova',  category: 'coverage',
+    triggerLabel: 'Shift cancelled, no backup',
+    highlights: [
+      'Builds 3 tiers of candidates by performance + proximity; each tier gets 90s to accept.',
+      'Cascades automatically — no manager hand-off between tiers.',
+      'Logs which tier filled the shift so you can tune the ranking over time.',
+    ],
+    metrics: [
+      { label: 'Fill rate (Tier A)', value: '67%' },
+      { label: 'Avg time to fill',   value: '6 min', sub: 'across all tiers' },
+      { label: 'Cancellations to manager', value: '8%' },
+    ],
+  },
+  { id: 'tpl-no-show-recovery', title: 'No-Show Recovery',         description: 'Detect missed clock-in, ping the worker, escalate to manager at 15 min.', agentId: 'nova',  category: 'coverage',
+    triggerLabel: 'No clock-in 5 min after start',
+    highlights: [
+      'Pings the worker on the channel they prefer; reads geofence + last app open to gauge intent.',
+      'If no response in 10 min, opens a callout cascade in parallel with manager paging.',
+      'Closes the loop with payroll so missed start time is captured cleanly.',
+    ],
+    metrics: [
+      { label: 'No-show → coverage', value: '11 min', sub: 'median end-to-end' },
+      { label: 'Self-recovered',      value: '38%',    sub: 'worker arrives after first ping' },
+      { label: 'Manager escalations', value: '−62%' },
+    ],
+  },
+  { id: 'tpl-event-day-surge',  title: 'Event-Day Surge Coverage', description: 'Pre-stage standby pool the morning of a peak event; auto-offer if any role unders.', agentId: 'atlas', category: 'coverage',
+    triggerLabel: 'Peak-event day, 8am local',
+    highlights: [
+      'Pulls a standby pool sized to the historical no-show rate for events of this size.',
+      'Watches in-window staffing every 15 min; auto-offers to standby when any role unders.',
+      'Releases unused standby workers with a partial-shift credit at the cut-off you set.',
+    ],
+    metrics: [
+      { label: 'Day-of fill rate',  value: '98%' },
+      { label: 'Surge cost',        value: '−21%', sub: 'vs. on-demand premium pay' },
+      { label: 'Standby utilization', value: '74%' },
+    ],
+  },
+  { id: 'tpl-float-pool-route', title: 'Float Pool Routing',       description: 'Send float-eligible workers to units with the deepest gap first, by acuity.', agentId: 'nova',  category: 'coverage',
+    triggerLabel: 'Float worker clocks in',
+    highlights: [
+      'Ranks units by acuity-weighted gap; floats land where they\'ll move the needle first.',
+      'Honors skill + cert match before depth-of-gap so quality bar stays intact.',
+      'Re-routes mid-shift if a deeper gap opens elsewhere on campus.',
+    ],
+    metrics: [
+      { label: 'Acuity-weighted gap', value: '−44%' },
+      { label: 'Float reassignments', value: '1.3/shift', sub: 'down from 3.1' },
+      { label: 'Charge-nurse minutes', value: '−22 min/shift' },
+    ],
+  },
 
   /* Pay & OT */
-  { id: 'tpl-ot-projection',    title: 'OT Projection Alerts',     description: 'Flag workers projected to clear OT threshold 3 days before pay period close.', agentId: 'atlas', category: 'pay' },
-  { id: 'tpl-double-time',      title: 'Double-Time Guardrails',   description: 'Block shifts that would trigger double-time premium unless approved by a manager.', agentId: 'leo',   category: 'pay' },
-  { id: 'tpl-missed-punch',     title: 'Missed Punch Recovery',    description: 'Reconstruct missed clock events from schedule + door access, queue for approval.', agentId: 'sofia', category: 'pay' },
-  { id: 'tpl-premium-route',    title: 'Premium Pay Routing',      description: 'Route holiday and weekend differential shifts to opted-in workers first.', agentId: 'nova',  category: 'pay' },
+  { id: 'tpl-ot-projection',    title: 'OT Projection Alerts',     description: 'Flag workers projected to clear OT threshold 3 days before pay period close.', agentId: 'atlas', category: 'pay',
+    triggerLabel: 'Worker projected to clear OT cap',
+    highlights: [
+      'Re-projects every worker\'s period total each evening based on punches + published schedule.',
+      'Alerts the manager 3 days ahead with the specific shifts driving the overage.',
+      'One-click swap proposals — no spreadsheet wrangling.',
+    ],
+    metrics: [
+      { label: 'OT surprises', value: '−71%', sub: 'caught mid-period vs. at close' },
+      { label: 'Avg lead time', value: '3.2 days' },
+      { label: 'Action rate',   value: '88%', sub: 'managers act on the alert' },
+    ],
+  },
+  { id: 'tpl-double-time',      title: 'Double-Time Guardrails',   description: 'Block shifts that would trigger double-time premium unless approved by a manager.', agentId: 'leo',   category: 'pay',
+    triggerLabel: 'Shift edit would trigger 2x pay',
+    highlights: [
+      'Catches edits that would push a worker past your double-time threshold before publish.',
+      'Requires a manager confirm with the cost delta and approval reason logged.',
+      'Provides 1-click alternate-assignee suggestions that fit policy.',
+    ],
+    metrics: [
+      { label: 'Unintended 2x shifts', value: '0',   sub: '14 last quarter' },
+      { label: 'Approved 2x spend',    value: '−47%' },
+      { label: 'Compliance audit time', value: '−5h/wk' },
+    ],
+  },
+  { id: 'tpl-missed-punch',     title: 'Missed Punch Recovery',    description: 'Reconstruct missed clock events from schedule + door access, queue for approval.', agentId: 'sofia', category: 'pay',
+    triggerLabel: 'Punch missing at shift end',
+    highlights: [
+      'Reconstructs likely start/end from schedule, door access, and team chat presence.',
+      'Routes the reconstruction to the manager for a 1-tap approve.',
+      'Notifies the worker so they can confirm or correct from their phone.',
+    ],
+    metrics: [
+      { label: 'Time correction window', value: '< 24h', sub: 'down from 5–7 days' },
+      { label: 'Manager actions',         value: '−83%' },
+      { label: 'Pay-period adjustments',   value: '−12 per period' },
+    ],
+  },
+  { id: 'tpl-premium-route',    title: 'Premium Pay Routing',      description: 'Route holiday and weekend differential shifts to opted-in workers first.', agentId: 'nova',  category: 'pay',
+    triggerLabel: 'Premium-rate shift published',
+    highlights: [
+      'Maintains an opt-in list of workers who want premium shifts.',
+      'Offers premium-rate shifts to opted-in workers first, before broad publish.',
+      'Tracks fairness so the same names don\'t always get first crack.',
+    ],
+    metrics: [
+      { label: 'Premium-shift fill', value: '+22%' },
+      { label: 'Opt-in coverage',     value: '64%', sub: 'of premium shifts via opt-ins' },
+      { label: 'Holiday OT spend',    value: '−18%' },
+    ],
+  },
 
   /* Compliance */
-  { id: 'tpl-license-renew',    title: 'License Renewal Reminders', description: 'DM workers 60/30/7 days before expiry with the exact renewal link.', agentId: 'iris',  category: 'compliance' },
-  { id: 'tpl-training-due',     title: 'Training Due Watch',        description: 'Pull due dates from the LMS and block scheduling when training lapses.', agentId: 'iris',  category: 'compliance' },
-  { id: 'tpl-predictive-sched', title: 'Predictive Scheduling',     description: 'Hold schedules to your state\'s 14-day notice rule; flag any inside-window edits.', agentId: 'leo',   category: 'compliance' },
+  { id: 'tpl-license-renew',    title: 'License Renewal Reminders', description: 'DM workers 60/30/7 days before expiry with the exact renewal link.', agentId: 'iris',  category: 'compliance',
+    triggerLabel: 'License expires in 60 days',
+    highlights: [
+      'Surfaces upcoming renewals across every state + license type your workforce holds.',
+      'Sends the right link for the right state at 60 / 30 / 7-day cadence.',
+      'Auto-blocks the worker from new scheduled hours if the renewal slips past expiry.',
+    ],
+    metrics: [
+      { label: 'On-time renewals', value: '98%' },
+      { label: 'Lapsed-scheduled', value: '0' },
+      { label: 'HR reminder hours', value: '−9h/wk' },
+    ],
+  },
+  { id: 'tpl-training-due',     title: 'Training Due Watch',        description: 'Pull due dates from the LMS and block scheduling when training lapses.', agentId: 'iris',  category: 'compliance',
+    triggerLabel: 'LMS due date within 14 days',
+    highlights: [
+      'Reads each worker\'s upcoming training due dates from your LMS.',
+      'Nudges with role-specific context — what the training unlocks for them.',
+      'Holds scheduling against the impacted role if training lapses.',
+    ],
+    metrics: [
+      { label: 'On-time completions', value: '+18%' },
+      { label: 'Stale credentials',    value: '−71%' },
+      { label: 'LMS reminder loops',   value: 'eliminated' },
+    ],
+  },
+  { id: 'tpl-predictive-sched', title: 'Predictive Scheduling',     description: 'Hold schedules to your state\'s 14-day notice rule; flag any inside-window edits.', agentId: 'leo',   category: 'compliance',
+    triggerLabel: 'Schedule edit inside 14d window',
+    highlights: [
+      'Tracks your state\'s predictive-scheduling rule per worker, location, and role.',
+      'Flags any inside-window edit with the legal premium the edit would trigger.',
+      'Logs the audit trail you\'d need if a regulator ever asked.',
+    ],
+    metrics: [
+      { label: 'Predictability premium', value: '−54%' },
+      { label: 'Audit-ready records',     value: '100%' },
+      { label: 'Notice-rule complaints',  value: '0', sub: '3 last year' },
+    ],
+  },
 
   /* Onboarding */
-  { id: 'tpl-onb-advance',      title: 'Onboarding Auto-Advance',   description: 'Move new hires through I-9, badge, role training without operator nudges.', agentId: 'sofia', category: 'onboarding' },
-  { id: 'tpl-doc-collect',      title: 'Document Collection',       description: 'Chase missing W-4 / direct deposit / cert uploads on a polite cadence.', agentId: 'sofia', category: 'onboarding' },
-  { id: 'tpl-badge-issue',      title: 'Badge & Access Issuance',   description: 'Open badge request in security system the moment day-1 confirms; close ticket when picked up.', agentId: 'iris',  category: 'onboarding' },
+  { id: 'tpl-onb-advance',      title: 'Onboarding Auto-Advance',   description: 'Move new hires through I-9, badge, role training without operator nudges.', agentId: 'sofia', category: 'onboarding',
+    triggerLabel: 'Offer accepted',
+    highlights: [
+      'Threads each new hire through I-9, payroll, badge, and role training automatically.',
+      'Surfaces blockers (waiting on docs, missing approver) before they become escalations.',
+      'Hands off the moment the hire is shift-ready.',
+    ],
+    metrics: [
+      { label: 'Time to shift-ready', value: '5.4 days', sub: 'down from 14' },
+      { label: 'Onboarding touches',  value: '−74%' },
+      { label: 'Day-1 readiness',      value: '96%' },
+    ],
+  },
+  { id: 'tpl-doc-collect',      title: 'Document Collection',       description: 'Chase missing W-4 / direct deposit / cert uploads on a polite cadence.', agentId: 'sofia', category: 'onboarding',
+    triggerLabel: 'Required doc missing 24h+',
+    highlights: [
+      'Auto-chases missing W-4, direct deposit, and credential uploads.',
+      'Switches channel after 24h — SMS → email → manager.',
+      'Recognizes "looks like" uploads (HR vs. tax forms) so you don\'t mis-route.',
+    ],
+    metrics: [
+      { label: 'Docs complete by day 3', value: '94%' },
+      { label: 'HR nudge minutes',         value: '−42 min/hire' },
+      { label: 'Mis-filed documents',      value: '−68%' },
+    ],
+  },
+  { id: 'tpl-badge-issue',      title: 'Badge & Access Issuance',   description: 'Open badge request in security system the moment day-1 confirms; close ticket when picked up.', agentId: 'iris',  category: 'onboarding',
+    triggerLabel: 'Day 1 confirmed',
+    highlights: [
+      'Opens the badge ticket in your access system the moment day-1 confirms.',
+      'Closes the loop when the badge is picked up — no double entry.',
+      'Catches dormant requests before they delay the worker\'s first shift.',
+    ],
+    metrics: [
+      { label: 'Day-1 badge ready',  value: '99%' },
+      { label: 'Avg badge SLA',       value: '< 24h' },
+      { label: 'Manual security tickets', value: '−91%' },
+    ],
+  },
 
   /* Communications */
-  { id: 'tpl-shift-confirm',    title: 'Shift Confirmations',       description: 'Confirm next-day shifts 18h ahead; route non-confirms straight to the callout cascade.', agentId: 'nova',  category: 'comms' },
-  { id: 'tpl-broadcast-route',  title: 'Smart Broadcast Routing',   description: 'Send announcements only to the roles/sites that need them — no full-org noise.', agentId: 'sofia', category: 'comms' },
-  { id: 'tpl-manager-escalate', title: 'Manager Escalation',        description: 'Escalate stuck workflows to the right manager based on site, role, and time of day.', agentId: 'leo',   category: 'comms' },
+  { id: 'tpl-shift-confirm',    title: 'Shift Confirmations',       description: 'Confirm next-day shifts 18h ahead; route non-confirms straight to the callout cascade.', agentId: 'nova',  category: 'comms',
+    triggerLabel: '18h before shift start',
+    highlights: [
+      'Pings each worker 18h before the shift to confirm.',
+      'Routes non-confirms directly into the callout cascade — no manager middle-step.',
+      'Tracks confirm rate per worker for future ranking weight.',
+    ],
+    metrics: [
+      { label: 'Confirm rate',  value: '92%' },
+      { label: 'Same-day surprises', value: '−61%' },
+      { label: 'Manager comms', value: '−14 msgs/day' },
+    ],
+  },
+  { id: 'tpl-broadcast-route',  title: 'Smart Broadcast Routing',   description: 'Send announcements only to the roles/sites that need them — no full-org noise.', agentId: 'sofia', category: 'comms',
+    triggerLabel: 'New broadcast posted',
+    highlights: [
+      'Routes broadcasts only to the roles + sites the content applies to.',
+      'Suggests improvements when language is too generic to land.',
+      'Tracks open + acknowledge rates per role.',
+    ],
+    metrics: [
+      { label: 'Open rate',       value: '+38%' },
+      { label: 'Acknowledgement', value: '78%', sub: 'up from 31%' },
+      { label: 'Mistargeted broadcasts', value: '−84%' },
+    ],
+  },
+  { id: 'tpl-manager-escalate', title: 'Manager Escalation',        description: 'Escalate stuck workflows to the right manager based on site, role, and time of day.', agentId: 'leo',   category: 'comms',
+    triggerLabel: 'Workflow stuck > policy SLA',
+    highlights: [
+      'Routes escalations to the on-call manager for that site + time-of-day.',
+      'Includes the workflow\'s full context so the manager doesn\'t have to dig.',
+      'Closes the loop back to the originating workflow on resolution.',
+    ],
+    metrics: [
+      { label: 'Escalation time-to-touch', value: '< 4 min' },
+      { label: 'Wrong-manager pages',       value: '−89%' },
+      { label: 'Stuck workflows aging > 1h', value: '−72%' },
+    ],
+  },
 
   /* Scheduling */
-  { id: 'tpl-auto-draft',       title: 'Schedule Auto-Draft',       description: 'Draft next week\'s schedule from demand forecast, availability, and fairness rules.', agentId: 'atlas', category: 'scheduling' },
-  { id: 'tpl-peak-forecast',    title: 'Peak Headcount Forecast',   description: 'Forecast peak demand 4 weeks out so you can pre-publish the matching skeleton.', agentId: 'atlas', category: 'scheduling' },
-  { id: 'tpl-hours-balance',    title: 'Hours Fairness Rebalance',  description: 'Spread shift offers across the team to keep no one chronically under- or over-hours.', agentId: 'nova',  category: 'scheduling' },
+  { id: 'tpl-auto-draft',       title: 'Schedule Auto-Draft',       description: 'Draft next week\'s schedule from demand forecast, availability, and fairness rules.', agentId: 'atlas', category: 'scheduling',
+    triggerLabel: 'Weekly draft window opens',
+    highlights: [
+      'Drafts the schedule from forecasted demand, availability, and fairness constraints.',
+      'Pre-explains every choice so you can sanity-check the AI\'s reasoning.',
+      'Re-runs in seconds when you tweak a constraint — no copy-paste.',
+    ],
+    metrics: [
+      { label: 'Draft time',        value: '12 min', sub: 'down from 4–6h' },
+      { label: 'Edits post-draft',  value: '−68%' },
+      { label: 'Coverage at publish', value: '99%' },
+    ],
+  },
+  { id: 'tpl-peak-forecast',    title: 'Peak Headcount Forecast',   description: 'Forecast peak demand 4 weeks out so you can pre-publish the matching skeleton.', agentId: 'atlas', category: 'scheduling',
+    triggerLabel: 'New forecast generated',
+    highlights: [
+      'Models peak demand 4 weeks ahead using your seasonal + event calendar.',
+      'Pre-publishes the skeleton so you can lock in early without surprise.',
+      'Highlights weeks where your skeleton is below the forecast plus buffer.',
+    ],
+    metrics: [
+      { label: 'Forecast accuracy', value: '94%', sub: 'within ±5% on peak weeks' },
+      { label: 'Last-min hire spend', value: '−29%' },
+      { label: 'Pre-published weeks', value: '4', sub: 'standard, up from 1' },
+    ],
+  },
+  { id: 'tpl-hours-balance',    title: 'Hours Fairness Rebalance',  description: 'Spread shift offers across the team to keep no one chronically under- or over-hours.', agentId: 'nova',  category: 'scheduling',
+    triggerLabel: 'Weekly fairness check',
+    highlights: [
+      'Tracks a rolling 8-week hours-distribution per worker.',
+      'Rebalances shift offers toward workers who\'ve been chronically under.',
+      'Flags when ranking would over-concentrate hours on the same people.',
+    ],
+    metrics: [
+      { label: 'Hours variance (8-wk)', value: '−42%' },
+      { label: 'Worker-reported fairness', value: '+1.6 pts', sub: 'on engagement pulse' },
+      { label: 'Burnout flags', value: '−24%' },
+    ],
+  },
 ]
+
+export function getTemplate(id) {
+  return (
+    WORKFLOW_TEMPLATES_FEATURED.find(t => t.id === id) ??
+    WORKFLOW_TEMPLATES.find(t => t.id === id) ??
+    null
+  )
+}
 
 export function templatesByCategory() {
   return WORKFLOW_TEMPLATE_CATEGORIES.map(cat => ({
