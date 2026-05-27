@@ -20,7 +20,7 @@ import AgentAvatar from './AgentAvatar.jsx'
  * are visually identical — just one is mid-reveal and one is editable.
  * ────────────────────────────────────────────────────────────────────── */
 
-export const ALL_FIELDS = ['summary', 'industry', 'headcount', 'locations', 'roles', 'agents']
+export const ALL_FIELDS = ['summary', 'industry', 'headcount', 'locations', 'roles']
 
 function ConfidenceBadge({ level }) {
   if (!level) return null
@@ -435,27 +435,6 @@ export default function ConfigCard({
         )}
       </FieldRow>
 
-      <FieldRow label="Active agents" visible={visible.has('agents')} status={!editable}>
-        {editable ? (
-          <AgentsEdit ids={config.agents || []} onChange={v => update('agents', v)} />
-        ) : (
-          <ul className="cc-agent-list cc-agent-list--readonly">
-            {(config.agents || []).map(id => {
-              const agent = PAIN_TO_AGENT[id]
-              if (!agent) return null
-              return (
-                <li key={id} className="cc-agent-row cc-agent-row--readonly">
-                  <AgentAvatar painId={id} size={28} />
-                  <span className="cc-agent-text">
-                    <span className="cc-agent-name">{agent.name}</span>
-                    <span className="cc-agent-detail">{agent.detail}</span>
-                  </span>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-      </FieldRow>
     </div>
   )
 }

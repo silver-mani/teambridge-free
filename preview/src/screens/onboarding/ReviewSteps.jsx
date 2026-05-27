@@ -523,11 +523,9 @@ export function AgentsStep({ config, onChange, onBack, onContinue }) {
     else next.add(id)
     onChange({ ...config, agents: Array.from(next) })
   }
-  // Order by what's pre-recommended for this industry first.
-  const ordered = [
-    ...PAIN_OPTIONS.filter(p => agentsSet.has(p.id) && AGENT_HERO[p.id]),
-    ...PAIN_OPTIONS.filter(p => !agentsSet.has(p.id) && AGENT_HERO[p.id]),
-  ]
+  // Fixed declared order — never reorder on toggle, otherwise tiles
+  // jump around as the operator turns agents on/off.
+  const ordered = PAIN_OPTIONS.filter(p => AGENT_HERO[p.id])
 
   // Carousel paging — scroll the strip left/right by one card width.
   const scrollRef = useRef(null)
