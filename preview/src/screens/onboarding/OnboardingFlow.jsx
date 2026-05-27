@@ -5,9 +5,10 @@ import { INDUSTRIES } from '../IndustrySelector.jsx'
 import DashboardShell, { DEFAULT_NAV_GROUPS, DEFAULT_NAV_BOTTOM } from '../shell/DashboardShell.jsx'
 import OnboardingChat from './OnboardingChat.jsx'
 import ConfigCard, { ALL_FIELDS } from './ConfigCard.jsx'
-import { InsightsStep, GoalsStep, ReviewStep, AgentsStep, PoliciesStep, DataStep } from './ReviewSteps.jsx'
+import { InsightsStep, GoalsStep, ReviewStep, AgentsStep, DataStep } from './ReviewSteps.jsx'
 import BuildProgressCard from './BuildProgressCard.jsx'
 import { deriveConfig } from './urlMatcher.js'
+import { POLICIES_BY_STATE } from './steps.js'
 import '../act1.css'
 import './onboarding.css'
 
@@ -110,14 +111,27 @@ function buildLockedNav() {
 }
 
 export default function OnboardingFlow({ onExit, onComplete }) {
-  const [state, setState] = useState('intake')              // 'intake' | 'research' | 'insights' | 'goals' | 'review' | 'agents' | 'policies' | 'data' | 'launching'
+  const [state, setState] = useState('intake')              // 'intake' | 'research' | 'insights' | 'goals' | 'review' | 'agents' | 'data' | 'launching'
   const [pickedGoals, setPickedGoals] = useState([])
   const [intakeMode, setIntakeMode] = useState('url')       // 'url' | 'free-text'
   const [intakeDraft, setIntakeDraft] = useState('')
   const [config, setConfig] = useState(null)
   const [revealedFields, setRevealedFields] = useState(new Set(['summary']))
   const [importMethod, setImportMethod] = useState('sample')
-  const [policies, setPolicies] = useState([])
+
+  // Policies are auto-derived from the locations / states the operator
+  // confirmed in the Account Setup review — there's no longer a
+  // separate policies-pick step, so we just count what would apply.
+  const derivedPolicies = (() => {
+    const states = new Set()
+    for (const loc of config?.locations ?? []) {
+      const m = String(loc.city || '').match(/\b([A-Z]{2})\b\s*$/)
+      if (m) states.add(m[1])
+    }
+    const policySet = new Set(POLICIES_BY_STATE['*'] || [])
+    for (const st of states) (POLICIES_BY_STATE[st] || []).forEach(id => policySet.add(id))
+    return Array.from(policySet).map(id => ({ id }))
+  })()
 
   const [messages, setMessages] = useState(() => [
     { id: 'm0', from: 'nova', text:
@@ -279,11 +293,6 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     setState('agents')
   }, [pushMessage])
   const handleAgentsContinue = useCallback(() => {
-    pushMessage({ from: 'nova', text: "And here are the labor policies I'd apply — based on your states.", instant: true })
-    setState('policies')
-  }, [pushMessage])
-  const handlePoliciesContinue = useCallback((picked) => {
-    setPolicies(picked || [])
     pushMessage({ from: 'nova', text: "Last step — how should I bring your team's data in?", instant: true })
     setState('data')
   }, [pushMessage])
@@ -309,7 +318,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
   const composerPlaceholder = (() => {
     if (state === 'intake')    return 'Use the form below'
     if (state === 'research')  return 'Setting up…'
-    if (state === 'insights' || state === 'goals' || state === 'review' || state === 'agents' || state === 'policies' || state === 'data')
+    if (state === 'insights' || state === 'goals' || state === 'review' || state === 'agents' || state === 'data')
                                 return 'Continue on the right →'
     if (state === 'launching') return 'Launching…'
     return 'Type a message…'
@@ -389,7 +398,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
           <BuildProgressCard
             config={config}
             importMethod={importMethod}
-            policies={policies}
+            policies={derivedPolicies}
             agents={config?.agents}
             onComplete={handleLaunchComplete}
           />
@@ -426,19 +435,11 @@ export default function OnboardingFlow({ onExit, onComplete }) {
           onContinue={handleAgentsContinue}
         />
       )
-    } else if (state === 'policies') {
-      stepCard = (
-        <PoliciesStep
-          config={config}
-          onBack={() => setState('agents')}
-          onContinue={handlePoliciesContinue}
-        />
-      )
     } else {
       stepCard = (
         <DataStep
           config={config}
-          onBack={() => setState('policies')}
+          onBack={() => setState('agents')}
           onLaunch={handleLaunch}
         />
       )
@@ -447,19 +448,17 @@ export default function OnboardingFlow({ onExit, onComplete }) {
                     : state === 'goals'    ? 'Your goals'
                     : state === 'review'   ? 'Account setup'
                     : state === 'agents'   ? 'Agents'
-                    : state === 'policies' ? 'Labor policies'
                     :                        'Starting data'
     const stepNum = state === 'insights' ? 1
                   : state === 'goals'    ? 2
                   : state === 'review'   ? 3
                   : state === 'agents'   ? 4
-                  : state === 'policies' ? 5
-                  :                        6
+                  :                        5
     content = (
       <div className="ob-right">
         <header className="ob-right-head">
           <h1 className="ob-right-title">{headTitle}</h1>
-          <p className="ob-right-sub">Step {stepNum} of 6 · Continue when ready.</p>
+          <p className="ob-right-sub">Step {stepNum} of 5 · Continue when ready.</p>
         </header>
         <div className="ob-right-body">{stepCard}</div>
       </div>

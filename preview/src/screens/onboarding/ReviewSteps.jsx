@@ -484,7 +484,13 @@ export function AgentsStep({ config, onChange, onBack, onContinue }) {
             const persona = AGENTS[personaId]
             const on = agentsSet.has(p.id)
             return (
-              <div key={p.id} className={`cm-agent-card ${on ? 'is-on' : ''}`}>
+              <button
+                key={p.id}
+                type="button"
+                className={`cm-agent-card ${on ? 'is-on' : ''}`}
+                onClick={() => toggle(p.id)}
+                aria-pressed={on}
+              >
                 <div className={`cm-agent-hero cm-agent-hero--${persona?.color ?? 'blue'}`}>
                   {persona && (
                     <img
@@ -492,6 +498,11 @@ export function AgentsStep({ config, onChange, onBack, onContinue }) {
                       src={persona.avatar}
                       alt={persona.name}
                     />
+                  )}
+                  {on && (
+                    <span className="cm-agent-on-dot" aria-hidden="true">
+                      <CheckCircleIcon size={14} />
+                    </span>
                   )}
                 </div>
                 <div className="cm-agent-body">
@@ -503,27 +514,8 @@ export function AgentsStep({ config, onChange, onBack, onContinue }) {
                       <span key={s} className="cm-agent-skill">{s}</span>
                     ))}
                   </div>
-                  {persona && (
-                    <div className="cm-agent-persona">
-                      Powered by <strong>{persona.name}</strong> · {persona.role}
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    className={`cm-agent-cta ${on ? 'is-on' : ''}`}
-                    onClick={() => toggle(p.id)}
-                    aria-pressed={on}
-                  >
-                    {on ? (
-                      <>
-                        <CheckCircleIcon size={14} /> Turned On
-                      </>
-                    ) : (
-                      'Turn On'
-                    )}
-                  </button>
                 </div>
-              </div>
+              </button>
             )
           })}
         </div>

@@ -2838,55 +2838,78 @@
   .cm-review-accordion-chips { display: none; }
 }
 
-/* Agents step — hero cards with big animated avatar, title, skills.
- * 2 across on desktop, 1 across at narrow widths. */
+/* Agents step — flat tiles. Big rounded square image on a soft tinted
+ * background, then plain text underneath: bold title, gray description,
+ * SKILLS label, pill chips. No card border around the whole tile — the
+ * image carries the visual weight. Click anywhere to toggle. */
 .cm-agent-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-3);
+  gap: var(--space-5) var(--space-4);
 }
 .cm-agent-card {
+  appearance: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
   display: flex;
   flex-direction: column;
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border-opaque);
-  border-radius: 14px;
-  overflow: hidden;
-  transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
-}
-.cm-agent-card.is-on { border-color: var(--color-content-primary); }
-.cm-agent-card:hover {
-  border-color: var(--color-border-selected);
-  box-shadow: 0 8px 24px -16px rgba(0, 0, 0, 0.18);
+  gap: 14px;
 }
 .cm-agent-hero {
   position: relative;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 1 / 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-bg-secondary);
+  border-radius: 18px;
+  overflow: hidden;
+  background: #ECECE8;
+  border: 1px solid var(--color-border-opaque);
+  transition: box-shadow 160ms ease, transform 160ms ease, border-color 160ms ease;
 }
-.cm-agent-hero--blue   { background: linear-gradient(135deg, #DCE7FF 0%, #A6C0FF 100%); }
-.cm-agent-hero--purple { background: linear-gradient(135deg, #E9DDFF 0%, #B79DFF 100%); }
-.cm-agent-hero--matcha { background: linear-gradient(135deg, #DDF7E6 0%, #94D9A7 100%); }
-.cm-agent-hero--orange { background: linear-gradient(135deg, #FFE2C6 0%, #FFB266 100%); }
-.cm-agent-hero--pink   { background: linear-gradient(135deg, #FFDDEC 0%, #F89BB6 100%); }
+.cm-agent-card:hover .cm-agent-hero {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -16px rgba(0, 0, 0, 0.22);
+}
+.cm-agent-card.is-on .cm-agent-hero {
+  box-shadow: 0 0 0 3px var(--color-content-primary), 0 12px 28px -16px rgba(0, 0, 0, 0.22);
+}
+.cm-agent-hero--blue   { background: #EAF0FF; }
+.cm-agent-hero--purple { background: #F1EAFE; }
+.cm-agent-hero--matcha { background: #E6F7EE; }
+.cm-agent-hero--orange { background: #FFEFE0; }
+.cm-agent-hero--pink   { background: #FCE7F0; }
 .cm-agent-hero-img {
-  width: 60%;
-  max-width: 180px;
+  width: 78%;
+  max-width: 260px;
   height: auto;
   object-fit: contain;
-  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.12));
+}
+.cm-agent-on-dot {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--color-content-primary);
+  color: var(--color-bg-primary);
 }
 .cm-agent-body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: var(--space-4);
+  gap: 10px;
+  padding: 0 2px;
 }
 .cm-agent-title {
-  font-size: var(--text-md);
+  font-size: 17px;
   font-weight: var(--font-weight-semibold);
   color: var(--color-content-primary);
   letter-spacing: -0.01em;
@@ -2894,66 +2917,34 @@
 .cm-agent-desc {
   margin: 0;
   font-size: var(--text-sm);
-  line-height: 1.5;
+  line-height: 1.55;
   color: var(--color-content-secondary);
 }
 .cm-agent-skills-label {
-  font-size: 10px;
+  margin-top: 6px;
+  font-size: 11px;
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--color-content-tertiary);
-  margin-top: 4px;
 }
 .cm-agent-skills {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
 .cm-agent-skill {
   display: inline-flex;
   align-items: center;
-  padding: 4px 10px;
-  background: var(--color-bg-secondary);
+  padding: 6px 12px;
+  background: transparent;
   border: 1px solid var(--color-border-opaque);
   border-radius: var(--radius-full);
   font-size: 11px;
   font-weight: var(--font-weight-medium);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-content-secondary);
-}
-.cm-agent-persona {
-  font-size: var(--text-xs);
-  color: var(--color-content-tertiary);
-}
-.cm-agent-persona strong {
-  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.06em;
   color: var(--color-content-primary);
-}
-.cm-agent-cta {
-  margin-top: var(--space-2);
-  appearance: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 10px 16px;
-  border: 1px solid var(--color-border-opaque);
-  border-radius: var(--radius-full);
-  background: var(--color-bg-primary);
-  font: inherit;
-  font-size: var(--text-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-content-primary);
-  cursor: pointer;
-  transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
-}
-.cm-agent-cta:hover { background: var(--color-bg-secondary); }
-.cm-agent-cta.is-on {
-  background: var(--color-matcha-content-secondary, #16a34a);
-  border-color: var(--color-matcha-content-secondary, #16a34a);
-  color: #fff;
 }
 @media (max-width: 1100px) {
   .cm-agent-grid { grid-template-columns: 1fr; }
