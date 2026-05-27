@@ -242,9 +242,44 @@ export function ReviewStep({ config, importMethod, onImportMethodChange, onBack,
     : states.length === 1 ? `${states[0]} + federal`
     : `${states.slice(0, -1).join(', ')} and ${states[states.length - 1]} + federal`
 
-  const modulesContext  = `For a ${industryLabel.toLowerCase()} workforce, these are the surfaces that pull their weight from day one. Untoggle anything you won't use.`
-  const dataContext     = `Pulled from researching ${companyName} — ${locations.length} location${locations.length === 1 ? '' : 's'} and ${roles.length} role${roles.length === 1 ? '' : 's'}. Edit any of it, or swap how I bring in your starting roster.`
-  const policiesContext = `Filtered to the labor rules that apply across ${stateLabel}. All from the Teambridge compliance library — each runs automatically once active.`
+  // Smart per-section reasoning — visible in the collapsed accordion
+  // head so the operator can see what Nova was thinking without
+  // expanding anything. Each line references the actual research:
+  // industry shape, location count, the specific states' policies.
+  const moduleNames = catalogModules.map(m => m.name)
+  const modulesReasoning = (() => {
+    const hasCreds = moduleNames.includes('Credentials')
+    const hasOnb   = moduleNames.includes('Onboarding')
+    if (hasCreds && hasOnb)  return `${industryLabel} runs on credentialed, high-throughput hiring — I added Credentialing + Onboarding on top of the core surfaces.`
+    if (hasCreds)            return `${industryLabel} roles need license + cert tracking, so Credentialing is on by default alongside the core surfaces.`
+    if (hasOnb)              return `${industryLabel} throughput is candidate placements — Onboarding leads the surfaces I turned on.`
+    return `${industryLabel} operations need the daily-driver surfaces; I held off on Credentialing and Onboarding since your roles don't typically need them.`
+  })()
+
+  const dataReasoning = (() => {
+    const sitesNoun = locations.length === 1 ? 'site' : 'sites'
+    const rolesNoun = roles.length === 1 ? 'role' : 'roles'
+    if (states.length >= 2) {
+      const shown = states.slice(0, 3).join(', ')
+      const extra = states.length > 3 ? ` +${states.length - 3} more` : ''
+      return `${locations.length} ${sitesNoun} across ${shown}${extra}, and ${roles.length} hourly ${rolesNoun} I inferred from ${companyName}'s site + job postings.`
+    }
+    if (states.length === 1) {
+      return `${locations.length} ${sitesNoun} in ${states[0]} and ${roles.length} hourly ${rolesNoun} pulled from ${companyName}'s job postings.`
+    }
+    return `${locations.length} ${sitesNoun} and ${roles.length} hourly ${rolesNoun} inferred from ${companyName}'s public footprint.`
+  })()
+
+  const policiesReasoning = (() => {
+    const headlines = states.map(s => POLICY_STATE_HEADLINE[s]).filter(Boolean)
+    if (states.length === 0) {
+      return `Federal baseline only — FLSA weekly overtime + minor-work limits. ${allPolicies.length} rule${allPolicies.length === 1 ? '' : 's'} active.`
+    }
+    if (headlines.length === 0) {
+      return `${allPolicies.length} rules across ${stateLabel}.`
+    }
+    return `${headlines.slice(0, 2).join(' · ')} — ${allPolicies.length} rules total across ${stateLabel}.`
+  })()
 
   return (
     <div className="cc cc--confirm">
@@ -268,8 +303,7 @@ export function ReviewStep({ config, importMethod, onImportMethodChange, onBack,
       <div className="cm-step-body cm-review-body">
         <ReviewAccordion
           title="Modules"
-          description="The product surfaces I'll turn on for your account."
-          context={modulesContext}
+          description={modulesReasoning}
           activeCount={activeModules.size}
           open={openSection === 'modules'}
           onToggle={() => toggleSection('modules')}
@@ -296,8 +330,7 @@ export function ReviewStep({ config, importMethod, onImportMethodChange, onBack,
 
         <ReviewAccordion
           title="Data"
-          description="Locations, roles, and how I'll bring in your starting roster."
-          context={dataContext}
+          description={dataReasoning}
           activeCount={locations.length + roles.length}
           open={openSection === 'data'}
           onToggle={() => toggleSection('data')}
@@ -376,8 +409,7 @@ export function ReviewStep({ config, importMethod, onImportMethodChange, onBack,
 
         <ReviewAccordion
           title="Policies"
-          description="Labor rules I'll enforce based on your states."
-          context={policiesContext}
+          description={policiesReasoning}
           activeCount={activePolicies.size}
           open={openSection === 'policies'}
           onToggle={() => toggleSection('policies')}
@@ -412,7 +444,7 @@ export function ReviewStep({ config, importMethod, onImportMethodChange, onBack,
   )
 }
 
-function ReviewAccordion({ title, description, context, activeCount, open, onToggle, children }) {
+function ReviewAccordion({ title, description, activeCount, open, onToggle, children }) {
   return (
     <section className={`cm-review-accordion ${open ? 'is-open' : ''}`}>
       <button
@@ -432,12 +464,7 @@ function ReviewAccordion({ title, description, context, activeCount, open, onTog
           <ChevronDownIcon size={14} />
         </span>
       </button>
-      {open && (
-        <div className="cm-review-accordion-body">
-          {context && <p className="cm-review-accordion-context">{context}</p>}
-          {children}
-        </div>
-      )}
+      {open && <div className="cm-review-accordion-body">{children}</div>}
     </section>
   )
 }
@@ -487,6 +514,29 @@ const POLICY_TONE = {
   pay:        'blue',
   scheduling: 'purple',
   workforce:  'pink',
+}
+
+/* Per-state headline that gets surfaced in the collapsed Policies
+ * section so the operator immediately sees which signature rules
+ * we're activating — not just a count. */
+const POLICY_STATE_HEADLINE = {
+  CA: "California's predictive-scheduling rule + daily OT after 8h",
+  NY: 'New York spread-of-hours premium + day-of-rest',
+  OR: 'Oregon predictive scheduling + meal/rest enforcement',
+  WA: 'Washington predictive scheduling + paid sick leave',
+  IL: 'Illinois one-day-of-rest-in-seven + predictive scheduling',
+  MA: 'Massachusetts day-of-rest + sick leave',
+  NJ: 'New Jersey predictive scheduling + sick leave',
+  CO: 'Colorado daily OT + meal/rest',
+  NV: 'Nevada daily OT after 8h',
+  CT: 'Connecticut predictive scheduling + sick leave',
+  AZ: 'Arizona paid sick leave',
+  MD: 'Maryland paid sick leave',
+  PA: 'Pennsylvania paid sick leave',
+  VA: 'Virginia paid sick leave',
+  TX: 'Texas weekly OT (FLSA baseline)',
+  GA: 'Georgia weekly OT (FLSA baseline)',
+  FL: 'Florida weekly OT (FLSA baseline)',
 }
 
 /* ─── Step 4: Agents — horizontal carousel of specialist agents ─────
@@ -544,6 +594,41 @@ export function AgentsStep({ config, onChange, onBack, onContinue }) {
     el.scrollBy({ left: dir * step, behavior: 'smooth' })
   }
 
+  // Smart reasoning for the agent picks — names the top 2 turned-on
+  // agents and ties them to a fact about this specific company
+  // (industry shape, multi-state, headcount). The operator should
+  // read this and feel that Nova actually thought about it.
+  const companyName = config?.companyName ?? 'your team'
+  const industryLabel = INDUSTRIES.find(i => i.id === config?.industry)?.name ?? 'your operation'
+  const stateCount = (() => {
+    const set = new Set()
+    for (const loc of config?.locations ?? []) {
+      const m = String(loc.city || '').match(/\b([A-Z]{2})\b\s*$/)
+      if (m) set.add(m[1])
+    }
+    return set.size
+  })()
+  const headcountStr = (config?.headcount ?? 0).toLocaleString()
+  const turnedOn = PAIN_OPTIONS.filter(p => agentsSet.has(p.id)).map(p => AGENT_HERO[p.id]?.title).filter(Boolean)
+  const agentsReasoning = (() => {
+    if (turnedOn.length === 0) {
+      return `Nothing pre-recommended yet — pick the agents that match your day-to-day.`
+    }
+    const lead = turnedOn.slice(0, 2).join(' + ')
+    const tailCount = turnedOn.length - 2
+    const tail = tailCount > 0 ? ` and ${tailCount} more` : ''
+    if (stateCount >= 2 && config?.headcount) {
+      return `For ${headcountStr} hourly workers across ${stateCount} states, ${lead}${tail} are the highest-leverage starts.`
+    }
+    if (stateCount >= 2) {
+      return `Multi-state ${industryLabel.toLowerCase()} ops live and die by ${lead.toLowerCase()} — that's why those are on first.`
+    }
+    if (config?.headcount) {
+      return `At ~${headcountStr} hourly workers, ${lead}${tail} pay back the fastest for ${industryLabel.toLowerCase()}.`
+    }
+    return `For ${industryLabel.toLowerCase()}, ${lead}${tail} are the highest-leverage starts.`
+  })()
+
   return (
     <div className="cc cc--confirm">
       <header className="cc-head">
@@ -551,11 +636,13 @@ export function AgentsStep({ config, onChange, onBack, onContinue }) {
           <div className="cc-head-text">
             <span className="cc-head-name">Want to automate any of this?</span>
             <span className="cc-head-sub">
-              I've pre-recommended {agentsSet.size} agent{agentsSet.size === 1 ? '' : 's'} for {config?.companyName ?? 'you'}. Tap to turn any on or off.
+              I've pre-recommended {agentsSet.size} agent{agentsSet.size === 1 ? '' : 's'} for {companyName}. Tap to turn any on or off.
             </span>
           </div>
         </div>
       </header>
+
+      <p className="cm-agents-reasoning">{agentsReasoning}</p>
 
       <div className="cm-step-body cm-agents-body">
         <div className="cm-agents-carousel">
