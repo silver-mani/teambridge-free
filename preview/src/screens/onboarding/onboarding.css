@@ -308,6 +308,44 @@
 }
 @keyframes ob-spin { to { transform: rotate(360deg); } }
 
+/* Insights bubble — Nova's "3 things I noticed" rendered inline in
+ * the chat. Soft purple chassis so it reads as a thinking artifact,
+ * not just another text reply. */
+.ob-msg--insights {
+  background: var(--color-purple-bg-tertiary);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  margin-top: var(--space-2);
+}
+.ob-insights-headline {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-content-primary);
+  margin-bottom: var(--space-2);
+}
+.ob-insights-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ob-insights-item {
+  display: grid;
+  grid-template-columns: 12px 1fr;
+  gap: 8px;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--color-content-primary);
+}
+.ob-insights-bullet {
+  color: var(--color-purple-content-secondary, #7c3aed);
+  font-weight: var(--font-weight-semibold);
+  font-size: 16px;
+  line-height: 1;
+}
+
 /* Quick replies sit above the compose bar — chip-style suggested
  * answers Nova surfaces (e.g. "Looks right" / "Start over"). */
 .ob-quick-replies {
@@ -2745,6 +2783,41 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+}
+
+/* Per-section context line — sits at the top of the expanded body and
+ * explains WHY this set of items was chosen for this account. */
+.cm-review-accordion-context {
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--color-content-secondary);
+}
+
+/* Top-of-step reassurance paragraph — sits below the card header and
+ * above the three accordions. Gives the operator confidence that
+ * everything below is editable. */
+.cm-review-intro {
+  margin: 0 var(--space-5) var(--space-3);
+  padding: 14px 16px;
+  background: var(--color-purple-bg-tertiary);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  color: var(--color-content-primary);
+}
+.cm-review-intro strong { font-weight: var(--font-weight-semibold); }
+.cm-review-intro em {
+  font-style: normal;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+  background: var(--color-bg-primary);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-opaque);
 }
 
 /* Detail row — now has a trailing toggle slot. */

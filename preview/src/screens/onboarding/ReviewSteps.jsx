@@ -21,6 +21,7 @@ import {
 import { AGENTS } from '../../data/agents.js'
 import AgentAvatar from './AgentAvatar.jsx'
 import ConfigCard, { ALL_FIELDS } from './ConfigCard.jsx'
+import { INDUSTRIES } from '../IndustrySelector.jsx'
 
 /* ReviewSteps — four right-pane cards that replaced the single
  * ConfirmCard, broken into focused steps:
@@ -93,7 +94,9 @@ function StepFoot({ onBack, onForward, forwardLabel = 'Continue', forwardDisable
 
 /* ─── Step 1: Insights + Company ─────────────────────────────────── */
 export function InsightsStep({ config, onChange, onContinue }) {
-  const insights = config?.insights || []
+  // The "things I noticed" insights are posted into the chat panel
+  // (left pane) so this card stays focused on the company-shape
+  // review the operator can edit. See OnboardingFlow.runResearch.
   const cardFields = ALL_FIELDS.filter(f => f !== 'agents')
   return (
     <div className="cc cc--confirm">
@@ -107,27 +110,6 @@ export function InsightsStep({ config, onChange, onContinue }) {
           </div>
         </div>
       </header>
-
-      {insights.length > 0 && (
-        <section className="cm-insights">
-          <div className="cm-insights-head">
-            <span className="cm-insights-mark" aria-hidden="true">
-              <TeambridgeAIIcon size={12} />
-            </span>
-            <span className="cm-insights-title">
-              {insights.length} thing{insights.length === 1 ? '' : 's'} I noticed about your team
-            </span>
-          </div>
-          <ul className="cm-insights-list">
-            {insights.map((text, i) => (
-              <li key={i} className="cm-insights-item">
-                <span className="cm-insights-bullet" aria-hidden="true">•</span>
-                <span>{text}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
 
       <div className="cm-step-body">
         <ConfigCard
@@ -253,6 +235,17 @@ export function ReviewStep({ config, importMethod, onImportMethodChange, onBack,
   })
   const removeAt = (setter) => (i) => setter(prev => prev.filter((_, j) => j !== i))
 
+  const companyName = config?.companyName ?? 'your company'
+  const industryLabel = INDUSTRIES.find(i => i.id === config?.industry)?.name ?? 'your industry'
+  const stateLabel = states.length === 0
+    ? 'federal baseline'
+    : states.length === 1 ? `${states[0]} + federal`
+    : `${states.slice(0, -1).join(', ')} and ${states[states.length - 1]} + federal`
+
+  const modulesContext  = `For a ${industryLabel.toLowerCase()} workforce, these are the surfaces that pull their weight from day one. Untoggle anything you won't use.`
+  const dataContext     = `Pulled from researching ${companyName} — ${locations.length} location${locations.length === 1 ? '' : 's'} and ${roles.length} role${roles.length === 1 ? '' : 's'}. Edit any of it, or swap how I bring in your starting roster.`
+  const policiesContext = `Filtered to the labor rules that apply across ${stateLabel}. All from the Teambridge compliance library — each runs automatically once active.`
+
   return (
     <div className="cc cc--confirm">
       <header className="cc-head">
@@ -260,16 +253,23 @@ export function ReviewStep({ config, importMethod, onImportMethodChange, onBack,
           <div className="cc-head-text">
             <span className="cc-head-name">Here's what I'm setting up</span>
             <span className="cc-head-sub">
-              For {config?.companyName ?? 'your company'}. Tap a section to inspect or edit.
+              For {companyName}. Tap a section to inspect or edit.
             </span>
           </div>
         </div>
       </header>
 
+      <div className="cm-review-intro">
+        Based on what I learned about <strong>{companyName}</strong>, I'm setting these defaults.
+        Don't worry — you can always tweak any of it later. Review the sections below and hit
+        <em> Looks good</em> when you're ready and I'll get it done.
+      </div>
+
       <div className="cm-step-body cm-review-body">
         <ReviewAccordion
           title="Modules"
           description="The product surfaces I'll turn on for your account."
+          context={modulesContext}
           activeCount={activeModules.size}
           open={openSection === 'modules'}
           onToggle={() => toggleSection('modules')}
@@ -297,6 +297,7 @@ export function ReviewStep({ config, importMethod, onImportMethodChange, onBack,
         <ReviewAccordion
           title="Data"
           description="Locations, roles, and how I'll bring in your starting roster."
+          context={dataContext}
           activeCount={locations.length + roles.length}
           open={openSection === 'data'}
           onToggle={() => toggleSection('data')}
@@ -376,6 +377,7 @@ export function ReviewStep({ config, importMethod, onImportMethodChange, onBack,
         <ReviewAccordion
           title="Policies"
           description="Labor rules I'll enforce based on your states."
+          context={policiesContext}
           activeCount={activePolicies.size}
           open={openSection === 'policies'}
           onToggle={() => toggleSection('policies')}
@@ -410,7 +412,7 @@ export function ReviewStep({ config, importMethod, onImportMethodChange, onBack,
   )
 }
 
-function ReviewAccordion({ title, description, activeCount, open, onToggle, children }) {
+function ReviewAccordion({ title, description, context, activeCount, open, onToggle, children }) {
   return (
     <section className={`cm-review-accordion ${open ? 'is-open' : ''}`}>
       <button
@@ -430,7 +432,12 @@ function ReviewAccordion({ title, description, activeCount, open, onToggle, chil
           <ChevronDownIcon size={14} />
         </span>
       </button>
-      {open && <div className="cm-review-accordion-body">{children}</div>}
+      {open && (
+        <div className="cm-review-accordion-body">
+          {context && <p className="cm-review-accordion-context">{context}</p>}
+          {children}
+        </div>
+      )}
     </section>
   )
 }
