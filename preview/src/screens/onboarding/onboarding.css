@@ -2662,36 +2662,88 @@
   padding: var(--space-3) var(--space-4);
 }
 
-/* Review step — four sections summarising what we're setting up. */
+/* Review step — three collapsible accordions (Modules / Data / Policies)
+ * collapsed by default; expanding any one reveals high-fidelity rows. */
 .cm-review-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.cm-review-accordion {
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: border-color 140ms ease;
+}
+.cm-review-accordion.is-open { border-color: var(--color-border-selected); }
+.cm-review-accordion-head {
+  appearance: none;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 18px;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 14px 18px;
+  background: transparent;
+  border: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+.cm-review-accordion-head:hover { background: var(--color-bg-secondary); }
+.cm-review-accordion.is-open .cm-review-accordion-head { background: var(--color-bg-secondary); }
+.cm-review-accordion-headtext {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.cm-review-accordion-title {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-content-primary);
+}
+.cm-review-accordion-summary {
+  font-size: var(--text-xs);
+  color: var(--color-content-tertiary);
+}
+.cm-review-accordion-chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+  max-width: 60%;
+}
+.cm-review-accordion-chev {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-content-tertiary);
+  transition: transform 160ms ease;
+}
+.cm-review-accordion-chev.is-open { transform: rotate(180deg); }
+.cm-review-accordion-body {
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  border-top: 1px solid var(--color-border-opaque);
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
 }
-.cm-review-section { display: flex; flex-direction: column; gap: 6px; }
-.cm-review-section-title {
-  margin: 0;
-  font-size: 11px;
-  font-weight: var(--font-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--color-content-tertiary);
-}
-.cm-review-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
+
+.cm-review-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .cm-review-chip {
   display: inline-flex;
   align-items: center;
-  padding: 5px 10px;
+  padding: 4px 10px;
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border-opaque);
   border-radius: var(--radius-full);
-  font-size: var(--text-xs);
+  font-size: 11px;
   font-weight: var(--font-weight-medium);
   color: var(--color-content-primary);
+  white-space: nowrap;
 }
 .cm-review-chip.is-on {
   background: var(--color-content-primary);
@@ -2701,6 +2753,89 @@
 .cm-review-empty {
   font-size: var(--text-xs);
   color: var(--color-content-tertiary);
+}
+
+.cm-review-detail-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.cm-review-detail-row {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-md);
+}
+.cm-review-detail-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.cm-review-detail-icon--blue   { background: color-mix(in srgb, #446CFF 12%, transparent); color: #2746B5; }
+.cm-review-detail-icon--purple { background: color-mix(in srgb, #8C4FE2 12%, transparent); color: #6B21A8; }
+.cm-review-detail-icon--matcha { background: color-mix(in srgb, #1EDFDE 14%, transparent); color: #0F766E; }
+.cm-review-detail-icon--orange { background: color-mix(in srgb, #F08A2E 14%, transparent); color: #C2410C; }
+.cm-review-detail-icon--pink   { background: color-mix(in srgb, #F89BB6 18%, transparent); color: #9D174D; }
+.cm-review-detail-icon--slate  { background: var(--color-bg-secondary); color: var(--color-content-secondary); }
+.cm-review-detail-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.cm-review-detail-name {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+}
+.cm-review-detail-desc {
+  font-size: var(--text-xs);
+  color: var(--color-content-tertiary);
+  line-height: 1.45;
+}
+.cm-review-detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.cm-review-detail-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-content-secondary);
+  letter-spacing: 0.04em;
+}
+.cm-review-detail-tag.is-fed {
+  background: color-mix(in srgb, #446CFF 12%, transparent);
+  color: #2746B5;
+}
+.cm-review-detail-group { display: flex; flex-direction: column; gap: 8px; }
+.cm-review-detail-grouptitle {
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-content-tertiary);
+}
+
+@media (max-width: 720px) {
+  .cm-review-accordion-chips { display: none; }
 }
 
 /* Agents step — hero cards with big animated avatar, title, skills.

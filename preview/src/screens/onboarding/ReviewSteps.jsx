@@ -3,6 +3,16 @@ import { TeambridgeAIIcon } from '../../../../src/components/icons/TeambridgeAII
 import { CheckCircleIcon } from '../../../../src/components/icons/CheckCircleIcon.tsx'
 import { ArrowNarrowRightIcon } from '../../../../src/components/icons/ArrowNarrowRightIcon.tsx'
 import { ChevronLeftIcon } from '../../../../src/components/icons/ChevronLeftIcon.tsx'
+import { ChevronDownIcon } from '../../../../src/components/icons/ChevronDownIcon.tsx'
+import { Grid01Icon } from '../../../../src/components/icons/Grid01Icon.tsx'
+import { Users03Icon } from '../../../../src/components/icons/Users03Icon.tsx'
+import { ClockIcon } from '../../../../src/components/icons/ClockIcon.tsx'
+import { CurrencyDollarCircleIcon } from '../../../../src/components/icons/CurrencyDollarCircleIcon.tsx'
+import { ClipboardCheckIcon } from '../../../../src/components/icons/ClipboardCheckIcon.tsx'
+import { MessageDotsSquareIcon } from '../../../../src/components/icons/MessageDotsSquareIcon.tsx'
+import { PuzzlePiece01Icon } from '../../../../src/components/icons/PuzzlePiece01Icon.tsx'
+import { Map01Icon } from '../../../../src/components/icons/Map01Icon.tsx'
+import { BookOpen01Icon } from '../../../../src/components/icons/BookOpen01Icon.tsx'
 import {
   PAIN_OPTIONS, PAIN_TO_AGENT, PAIN_TO_PERSONA,
   POLICY_OPTIONS, POLICIES_BY_STATE,
@@ -212,14 +222,20 @@ function normalizeGoal(g) {
 }
 
 /* ─── Step 3: Review — what we're configuring in the account ─────────
- * Modules + Policies (count) + Locations + Roles. Read-only summary,
- * one card per section so the operator can scan it in two seconds. */
+ * Three collapsible sections — Modules, Data, Policies. Each is
+ * collapsed by default with a summary chip line so the operator can
+ * scan in two seconds, then expand any one to inspect the details. */
 export function ReviewStep({ config, onBack, onContinue }) {
   const states = useMemo(() => statesFromLocations(config?.locations), [config])
-  const policiesCount = useMemo(() => policiesForStates(states).length, [states])
+  const policies = useMemo(() => policiesForStates(states), [states])
   const roles = config?.roles ?? []
   const locations = config?.locations ?? []
-  const modules = MODULES_FOR_INDUSTRY[config?.industry] ?? DEFAULT_MODULES
+  const moduleIds = MODULES_FOR_INDUSTRY[config?.industry] ?? DEFAULT_MODULE_IDS
+  const modules = moduleIds.map(id => MODULE_CATALOG[id]).filter(Boolean)
+
+  const [openSection, setOpenSection] = useState(null)
+  const toggle = (id) => setOpenSection(prev => prev === id ? null : id)
+
   return (
     <div className="cc cc--confirm">
       <header className="cc-head">
@@ -227,52 +243,104 @@ export function ReviewStep({ config, onBack, onContinue }) {
           <div className="cc-head-text">
             <span className="cc-head-name">Here's what I'm setting up</span>
             <span className="cc-head-sub">
-              For {config?.companyName ?? 'your company'}. You can change anything later.
+              For {config?.companyName ?? 'your company'}. Tap any section to inspect the detail.
             </span>
           </div>
         </div>
       </header>
 
       <div className="cm-step-body cm-review-body">
-        <section className="cm-review-section">
-          <h3 className="cm-review-section-title">Modules</h3>
-          <div className="cm-review-chips">
-            {modules.map(m => (
-              <span key={m} className="cm-review-chip is-on">{m}</span>
+        <ReviewAccordion
+          id="modules"
+          title="Modules"
+          summary={`${modules.length} active`}
+          chips={modules.map(m => m.name)}
+          open={openSection === 'modules'}
+          onToggle={() => toggle('modules')}
+        >
+          <ul className="cm-review-detail-list">
+            {modules.map(m => {
+              const Icon = m.Icon
+              return (
+                <li key={m.id} className="cm-review-detail-row">
+                  <span className={`cm-review-detail-icon cm-review-detail-icon--${m.tone}`} aria-hidden="true">
+                    <Icon size={16} />
+                  </span>
+                  <div className="cm-review-detail-text">
+                    <span className="cm-review-detail-name">{m.name}</span>
+                    <span className="cm-review-detail-desc">{m.detail}</span>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        </ReviewAccordion>
+
+        <ReviewAccordion
+          id="data"
+          title="Data"
+          summary={`${locations.length} location${locations.length === 1 ? '' : 's'} · ${roles.length} role${roles.length === 1 ? '' : 's'}`}
+          chips={[`${locations.length} locations`, `${roles.length} roles`]}
+          open={openSection === 'data'}
+          onToggle={() => toggle('data')}
+        >
+          <div className="cm-review-detail-group">
+            <div className="cm-review-detail-grouptitle">Locations</div>
+            <ul className="cm-review-detail-list">
+              {locations.length === 0 && <li className="cm-review-empty">No locations yet.</li>}
+              {locations.map((loc, i) => (
+                <li key={i} className="cm-review-detail-row">
+                  <span className="cm-review-detail-icon cm-review-detail-icon--blue" aria-hidden="true">
+                    <Map01Icon size={16} />
+                  </span>
+                  <div className="cm-review-detail-text">
+                    <span className="cm-review-detail-name">{loc.name}</span>
+                    {loc.city && <span className="cm-review-detail-desc">{loc.city}</span>}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="cm-review-detail-group">
+            <div className="cm-review-detail-grouptitle">Roles</div>
+            <div className="cm-review-chips">
+              {roles.length === 0 && <span className="cm-review-empty">No roles yet.</span>}
+              {roles.map((r, i) => <span key={i} className="cm-review-chip">{r}</span>)}
+            </div>
+          </div>
+        </ReviewAccordion>
+
+        <ReviewAccordion
+          id="policies"
+          title="Policies"
+          summary={`${policies.length} labor polic${policies.length === 1 ? 'y' : 'ies'}`}
+          chips={[
+            `${policies.length} labor policies`,
+            ...states,
+            'Federal',
+          ]}
+          open={openSection === 'policies'}
+          onToggle={() => toggle('policies')}
+        >
+          <ul className="cm-review-detail-list">
+            {policies.map(p => (
+              <li key={p.id} className="cm-review-detail-row">
+                <span className={`cm-review-detail-icon cm-review-detail-icon--${POLICY_TONE[p.category] || 'slate'}`} aria-hidden="true">
+                  <BookOpen01Icon size={16} />
+                </span>
+                <div className="cm-review-detail-text">
+                  <span className="cm-review-detail-name">{p.label}</span>
+                  <span className="cm-review-detail-desc">{p.detail}</span>
+                  <div className="cm-review-detail-tags">
+                    {p.states.map(s => (
+                      <span key={s} className={`cm-review-detail-tag ${s === 'Federal' ? 'is-fed' : ''}`}>{s}</span>
+                    ))}
+                  </div>
+                </div>
+              </li>
             ))}
-          </div>
-        </section>
-
-        <section className="cm-review-section">
-          <h3 className="cm-review-section-title">Policies</h3>
-          <div className="cm-review-chips">
-            <span className="cm-review-chip is-on">
-              {policiesCount} labor polic{policiesCount === 1 ? 'y' : 'ies'}
-            </span>
-            {states.map(s => <span key={s} className="cm-review-chip">{s}</span>)}
-            <span className="cm-review-chip">Federal</span>
-          </div>
-        </section>
-
-        <section className="cm-review-section">
-          <h3 className="cm-review-section-title">Locations</h3>
-          <div className="cm-review-chips">
-            {locations.length === 0 && <span className="cm-review-empty">No locations yet.</span>}
-            {locations.map((loc, i) => (
-              <span key={i} className="cm-review-chip">
-                {loc.name}{loc.city ? ` · ${loc.city}` : ''}
-              </span>
-            ))}
-          </div>
-        </section>
-
-        <section className="cm-review-section">
-          <h3 className="cm-review-section-title">Roles</h3>
-          <div className="cm-review-chips">
-            {roles.length === 0 && <span className="cm-review-empty">No roles yet.</span>}
-            {roles.map((r, i) => <span key={i} className="cm-review-chip">{r}</span>)}
-          </div>
-        </section>
+          </ul>
+        </ReviewAccordion>
       </div>
 
       <StepFoot onBack={onBack} onForward={onContinue} forwardLabel="Looks good" />
@@ -280,17 +348,66 @@ export function ReviewStep({ config, onBack, onContinue }) {
   )
 }
 
-const DEFAULT_MODULES = ['Scheduling', 'People', 'Time Tracking', 'Pay', 'Engage']
+function ReviewAccordion({ title, summary, chips, open, onToggle, children }) {
+  return (
+    <section className={`cm-review-accordion ${open ? 'is-open' : ''}`}>
+      <button
+        type="button"
+        className="cm-review-accordion-head"
+        onClick={onToggle}
+        aria-expanded={open}
+      >
+        <div className="cm-review-accordion-headtext">
+          <span className="cm-review-accordion-title">{title}</span>
+          <span className="cm-review-accordion-summary">{summary}</span>
+        </div>
+        {!open && chips?.length > 0 && (
+          <div className="cm-review-accordion-chips">
+            {chips.slice(0, 4).map((c, i) => (
+              <span key={i} className={`cm-review-chip ${i === 0 ? 'is-on' : ''}`}>{c}</span>
+            ))}
+            {chips.length > 4 && <span className="cm-review-chip">+{chips.length - 4}</span>}
+          </div>
+        )}
+        <span className={`cm-review-accordion-chev ${open ? 'is-open' : ''}`} aria-hidden="true">
+          <ChevronDownIcon size={14} />
+        </span>
+      </button>
+      {open && <div className="cm-review-accordion-body">{children}</div>}
+    </section>
+  )
+}
+
+/* Module catalog — icon + name + one-line detail per module. The
+ * per-industry list below picks which modules show up for any given
+ * account; everything else is filtered out of the review. */
+const MODULE_CATALOG = {
+  scheduling:  { id: 'scheduling',  name: 'Scheduling',     tone: 'blue',   Icon: Grid01Icon,                  detail: 'Build, publish, and balance schedules across every site.' },
+  people:      { id: 'people',      name: 'People',         tone: 'purple', Icon: Users03Icon,                 detail: 'Roster, profiles, history, and hours-fairness in one view.' },
+  time:        { id: 'time',        name: 'Time Tracking',  tone: 'matcha', Icon: ClockIcon,                   detail: 'Live clock-in, geo-fenced punches, and missed-punch recovery.' },
+  pay:         { id: 'pay',         name: 'Pay',            tone: 'orange', Icon: CurrencyDollarCircleIcon,    detail: 'Pay runs with OT cap, premium pay, retro, and audit trail.' },
+  credentials: { id: 'credentials', name: 'Credentials',    tone: 'matcha', Icon: ClipboardCheckIcon,          detail: 'Track licenses, certs, and training with renewal nudges.' },
+  engage:      { id: 'engage',      name: 'Engage',         tone: 'blue',   Icon: MessageDotsSquareIcon,       detail: 'Worker chat, smart broadcasts, and manager escalations.' },
+  onboarding:  { id: 'onboarding',  name: 'Onboarding',     tone: 'pink',   Icon: PuzzlePiece01Icon,           detail: 'Doc collection, badge issuance, and day-1 training flow.' },
+}
+const DEFAULT_MODULE_IDS = ['scheduling', 'people', 'time', 'pay', 'engage']
 const MODULES_FOR_INDUSTRY = {
-  events:           ['Scheduling', 'People', 'Time Tracking', 'Pay', 'Engage'],
-  healthcare:       ['Scheduling', 'People', 'Time Tracking', 'Pay', 'Credentials', 'Engage'],
-  hospitality:      ['Scheduling', 'People', 'Time Tracking', 'Pay', 'Engage'],
-  'long-term-care': ['Scheduling', 'People', 'Time Tracking', 'Pay', 'Credentials', 'Engage'],
-  security:         ['Scheduling', 'People', 'Time Tracking', 'Pay', 'Credentials', 'Engage'],
-  janitorial:       ['Scheduling', 'People', 'Time Tracking', 'Pay', 'Engage'],
-  staffing:         ['People', 'Onboarding', 'Credentials', 'Pay', 'Engage'],
-  construction:     ['Scheduling', 'People', 'Time Tracking', 'Pay', 'Credentials', 'Engage'],
-  'light-industrial': ['Scheduling', 'People', 'Time Tracking', 'Pay', 'Engage'],
+  events:             ['scheduling', 'people', 'time', 'pay', 'engage'],
+  healthcare:         ['scheduling', 'people', 'time', 'pay', 'credentials', 'engage'],
+  hospitality:        ['scheduling', 'people', 'time', 'pay', 'engage'],
+  'long-term-care':   ['scheduling', 'people', 'time', 'pay', 'credentials', 'engage'],
+  security:           ['scheduling', 'people', 'time', 'pay', 'credentials', 'engage'],
+  janitorial:         ['scheduling', 'people', 'time', 'pay', 'engage'],
+  staffing:           ['people', 'onboarding', 'credentials', 'pay', 'engage'],
+  construction:       ['scheduling', 'people', 'time', 'pay', 'credentials', 'engage'],
+  'light-industrial': ['scheduling', 'people', 'time', 'pay', 'engage'],
+}
+const POLICY_TONE = {
+  overtime:   'orange',
+  breaks:     'matcha',
+  pay:        'blue',
+  scheduling: 'purple',
+  workforce:  'pink',
 }
 
 /* ─── Step 4: Agents — hero-style automation picker ───────────────────
