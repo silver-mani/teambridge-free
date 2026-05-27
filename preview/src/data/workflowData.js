@@ -677,6 +677,28 @@ export const WORKFLOWS = [
   ONBOARDING_AUTO_ADVANCE,
 ]
 
+/* Pain → workflow IDs mapping. When the operator picked agents during
+ * onboarding, we materialize their My Workflows list from this map.
+ * Each pain id can seed multiple workflows (e.g. comms + scheduling
+ * both surface escalation-style flows). */
+export const PAIN_TO_WORKFLOW_IDS = {
+  coverage:   ['last-min-replacement'],
+  overtime:   ['ot-cap-autoreplace'],
+  onboarding: ['onboarding-auto-advance'],
+  comms:      ['late-clockin-recovery'],
+  scheduling: ['ot-cap-autoreplace'],
+  compliance: [],
+}
+
+export function workflowsForAgents(agents) {
+  if (!Array.isArray(agents) || agents.length === 0) return []
+  const ids = new Set()
+  for (const a of agents) {
+    for (const id of (PAIN_TO_WORKFLOW_IDS[a] || [])) ids.add(id)
+  }
+  return WORKFLOWS.filter(w => ids.has(w.id))
+}
+
 /* Template catalog shown on the workflows landing page. Each template
  * is a starting point an operator can spin up — they're not actual
  * configured workflows yet. Featured cards get hero treatment (large

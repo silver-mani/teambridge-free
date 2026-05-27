@@ -50,6 +50,26 @@ function ResearchBubble({ headline, steps }) {
   )
 }
 
+/* Insights bubble — rendered in-chat so the operator sees Nova's
+ * "thinking" instead of the right pane growing a wall of bullets.
+ * Same visual chassis as the research bubble but styled as a soft
+ * purple thinking panel. */
+function InsightsBubble({ headline, items }) {
+  return (
+    <div className="ob-msg ob-msg--nova ob-msg--insights">
+      <div className="ob-insights-headline">{headline}</div>
+      <ul className="ob-insights-list">
+        {items.map((text, i) => (
+          <li key={i} className="ob-insights-item">
+            <span className="ob-insights-bullet" aria-hidden="true">•</span>
+            <span>{text}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 export default function OnboardingChat({
   messages,
   composerPlaceholder = 'Type a message…',
@@ -96,6 +116,9 @@ export default function OnboardingChat({
             {messages.map((m, i) => {
               if (m.kind === 'research' || m.kind === 'thinking') {
                 return <ResearchBubble key={m.id || i} headline={m.headline} steps={m.steps} />
+              }
+              if (m.kind === 'insights') {
+                return <InsightsBubble key={m.id || i} headline={m.headline} items={m.items} />
               }
               if (m.kind === 'typing') {
                 return (

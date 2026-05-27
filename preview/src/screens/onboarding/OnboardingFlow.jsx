@@ -260,11 +260,23 @@ export default function OnboardingFlow({ onExit, onComplete }) {
       researchTimersRef.current.push(timer)
     }
 
-    // After all reveals + a settling beat, push the insights message
-    // and transition to the first review step.
+    // After all reveals + a settling beat, post Nova's thinking (the
+    // 3 things she noticed) directly in the chat so the right pane
+    // can stay focused on the company-card review, then transition.
+    const insights = Array.isArray(derived.insights) ? derived.insights : []
     const finalTimer = setTimeout(() => {
       pushMessage({ from: 'nova', text:
-        `Got a clear read on ${derived.companyName}. I'll walk you through what I set up on the right.` })
+        `Got a clear read on ${derived.companyName}. Here's what stood out:` })
+      if (insights.length > 0) {
+        pushMessage({
+          from: 'nova',
+          kind: 'insights',
+          headline: `${insights.length} thing${insights.length === 1 ? '' : 's'} I noticed about your team`,
+          items: insights,
+        })
+      }
+      pushMessage({ from: 'nova', text:
+        `I'll walk you through what I set up on the right.` })
       setState('insights')
     }, cumulative + 700)
     researchTimersRef.current.push(finalTimer)

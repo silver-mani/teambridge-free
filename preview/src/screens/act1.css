@@ -5260,6 +5260,13 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   display: grid;
   grid-template-columns: minmax(280px, 2fr) 1.2fr 1.5fr 1.2fr 0.9fr;
 }
+.wf-list-empty {
+  grid-column: 1 / -1;
+  padding: 28px var(--space-4);
+  text-align: center;
+  font-size: 13px;
+  color: var(--color-content-secondary);
+}
 .wf-list-head,
 .wf-list-row {
   display: grid;

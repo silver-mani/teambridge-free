@@ -77,8 +77,16 @@ function App() {
   // Lead capture — gate the demo behind a name / company / work-email
   // form 3 seconds after the user lands inside any account. Persisted
   // for the session so they don't see it again on every navigation.
+  // Operators who came through the build flow are also exempt: they
+  // already gave us their company URL on intake, so popping a second
+  // capture on top of their freshly-built account reads as a bait-
+  // and-switch. tb:build-config presence is the signal.
   const [leadCaptured, setLeadCaptured] = useState(() => {
-    try { return sessionStorage.getItem('tb:lead') === '1' } catch { return false }
+    try {
+      if (sessionStorage.getItem('tb:lead') === '1') return true
+      if (sessionStorage.getItem('tb:build-config')) return true
+      return false
+    } catch { return false }
   })
   const submitLead = (lead) => {
     const demo = getDemoSnapshot()

@@ -21,6 +21,7 @@ import {
 import { AGENTS } from '../../data/agents.js'
 import AgentAvatar from './AgentAvatar.jsx'
 import ConfigCard, { ALL_FIELDS } from './ConfigCard.jsx'
+import { INDUSTRIES } from '../IndustrySelector.jsx'
 
 /* ReviewSteps — four right-pane cards that replaced the single
  * ConfirmCard, broken into focused steps:
@@ -93,7 +94,9 @@ function StepFoot({ onBack, onForward, forwardLabel = 'Continue', forwardDisable
 
 /* ─── Step 1: Insights + Company ─────────────────────────────────── */
 export function InsightsStep({ config, onChange, onContinue }) {
-  const insights = config?.insights || []
+  // The "things I noticed" insights are posted into the chat panel
+  // (left pane) so this card stays focused on the company-shape
+  // review the operator can edit. See OnboardingFlow.runResearch.
   const cardFields = ALL_FIELDS.filter(f => f !== 'agents')
   return (
     <div className="cc cc--confirm">
@@ -107,27 +110,6 @@ export function InsightsStep({ config, onChange, onContinue }) {
           </div>
         </div>
       </header>
-
-      {insights.length > 0 && (
-        <section className="cm-insights">
-          <div className="cm-insights-head">
-            <span className="cm-insights-mark" aria-hidden="true">
-              <TeambridgeAIIcon size={12} />
-            </span>
-            <span className="cm-insights-title">
-              {insights.length} thing{insights.length === 1 ? '' : 's'} I noticed about your team
-            </span>
-          </div>
-          <ul className="cm-insights-list">
-            {insights.map((text, i) => (
-              <li key={i} className="cm-insights-item">
-                <span className="cm-insights-bullet" aria-hidden="true">•</span>
-                <span>{text}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
 
       <div className="cm-step-body">
         <ConfigCard
@@ -233,13 +215,18 @@ function normalizeGoal(g) {
 export function ReviewStep({ config, importMethod, onImportMethodChange, onBack, onContinue }) {
   const states = useMemo(() => statesFromLocations(config?.locations), [config])
   const allPolicies = useMemo(() => policiesForStates(states), [states])
-  const moduleIds = MODULES_FOR_INDUSTRY[config?.industry] ?? DEFAULT_MODULE_IDS
-  const catalogModules = moduleIds.map(id => MODULE_CATALOG[id]).filter(Boolean)
+  const recommendedModuleIds = MODULES_FOR_INDUSTRY[config?.industry] ?? DEFAULT_MODULE_IDS
+  // Render the entire module catalog — modules not recommended for
+  // this industry show up with their toggle off, so the operator can
+  // see everything available and turn anything on without leaving
+  // the screen.
+  const catalogModules = MODULE_DISPLAY_ORDER.map(id => MODULE_CATALOG[id]).filter(Boolean)
 
   // Each section keeps its own local state for what's enabled / edited.
-  // Modules + Policies start fully on (all the recommended items are
-  // active out of the gate); Data sections are user-editable lists.
-  const [activeModules, setActiveModules] = useState(() => new Set(catalogModules.map(m => m.id)))
+  // Modules: only the recommended set starts active.
+  // Policies: all derived rules start active.
+  // Data sections are user-editable lists.
+  const [activeModules, setActiveModules] = useState(() => new Set(recommendedModuleIds))
   const [activePolicies, setActivePolicies] = useState(() => new Set(allPolicies.map(p => p.id)))
   const [locations, setLocations] = useState(config?.locations ?? [])
   const [roles, setRoles] = useState(config?.roles ?? [])
@@ -253,6 +240,92 @@ export function ReviewStep({ config, importMethod, onImportMethodChange, onBack,
   })
   const removeAt = (setter) => (i) => setter(prev => prev.filter((_, j) => j !== i))
 
+  const companyName = config?.companyName ?? 'your company'
+  const industryLabel = INDUSTRIES.find(i => i.id === config?.industry)?.name ?? 'your industry'
+  const stateLabel = states.length === 0
+    ? 'federal baseline'
+    : states.length === 1 ? `${states[0]} + federal`
+    : `${states.slice(0, -1).join(', ')} and ${states[states.length - 1]} + federal`
+
+  // Smart per-section reasoning — visible in the collapsed accordion
+  // so the operator sees Nova's thinking without expanding anything.
+  // Each is structured as { headline, body } and rendered as a
+  // dedicated "Why this" rationale block, consistent with the step's
+  // top intro and the Agents-step rationale below.
+  const recommendedNames = recommendedModuleIds.map(id => MODULE_CATALOG[id]?.name).filter(Boolean)
+  const modulesReasoning = (() => {
+    const hasCreds = recommendedNames.includes('Credentials')
+    const hasOnb   = recommendedNames.includes('Onboarding')
+    if (hasCreds && hasOnb) {
+      return {
+        headline: `${industryLabel} runs on credentialed, high-throughput hiring.`,
+        body: `That's why I added Credentialing + Onboarding on top of the core surfaces (Scheduling, People, Time Tracking, Pay, Engage). Your roles need license and cert tracking from day one, and Onboarding helps you absorb the candidate volume your job postings imply.`,
+      }
+    }
+    if (hasCreds) {
+      return {
+        headline: `${industryLabel} roles need license + cert tracking.`,
+        body: `Credentialing is on by default alongside the core surfaces (Scheduling, People, Time Tracking, Pay, Engage) so cert expiries don't slip past anyone on your roster.`,
+      }
+    }
+    if (hasOnb) {
+      return {
+        headline: `${industryLabel} throughput is candidate placements.`,
+        body: `Onboarding leads the surfaces I turned on, with People, Credentials, Pay, and Engage filling out the rest — same shape staffing agencies use to get placements to first-shift in under a week.`,
+      }
+    }
+    return {
+      headline: `${industryLabel} operations live in the daily-driver surfaces.`,
+      body: `Scheduling, People, Time Tracking, Pay, and Engage cover the everyday workflow. I held off on Credentialing and Onboarding because your roles don't typically need either — you can flip them on anytime.`,
+    }
+  })()
+
+  const dataReasoning = (() => {
+    const sitesNoun = locations.length === 1 ? 'site' : 'sites'
+    const rolesNoun = roles.length === 1 ? 'role' : 'roles'
+    const someRoles = roles.slice(0, 3).join(', ')
+    const roleTail = roles.length > 3 ? ` and ${roles.length - 3} more` : ''
+    if (states.length >= 2) {
+      const shown = states.slice(0, 3).join(', ')
+      const extra = states.length > 3 ? ` +${states.length - 3} more` : ''
+      return {
+        headline: `${locations.length} ${sitesNoun} across ${shown}${extra} and ${roles.length} hourly ${rolesNoun}.`,
+        body: `Pulled from ${companyName}'s site, careers page, and active job postings. Roles like ${someRoles}${roleTail} surfaced repeatedly. Sample roster will mirror this footprint so you can explore before committing your real data.`,
+      }
+    }
+    if (states.length === 1) {
+      return {
+        headline: `${locations.length} ${sitesNoun} in ${states[0]} and ${roles.length} hourly ${rolesNoun}.`,
+        body: `Pulled from ${companyName}'s site and active job postings. Roles like ${someRoles}${roleTail} kept showing up. Sample roster will mirror this so you can drive the demo with realistic numbers.`,
+      }
+    }
+    return {
+      headline: `${locations.length} ${sitesNoun} and ${roles.length} hourly ${rolesNoun}.`,
+      body: `Inferred from ${companyName}'s public footprint. Tweak anything that's off, or swap how I bring in your starting roster (sample data, CSV upload, or HRIS sync).`,
+    }
+  })()
+
+  const policiesReasoning = (() => {
+    const headlines = states.map(s => POLICY_STATE_HEADLINE[s]).filter(Boolean)
+    if (states.length === 0) {
+      return {
+        headline: `Federal baseline only — FLSA weekly overtime + minor-work limits.`,
+        body: `${allPolicies.length} rule${allPolicies.length === 1 ? '' : 's'} active. Add a state-located site under Data and I'll layer the matching state rules on automatically.`,
+      }
+    }
+    if (headlines.length === 0) {
+      return {
+        headline: `${allPolicies.length} rules across ${stateLabel}.`,
+        body: `Filtered from the Teambridge compliance library by the states your sites operate in. Each rule runs automatically once active.`,
+      }
+    }
+    const tail = headlines.length > 2 ? ` +${headlines.length - 2} more state-level rules` : ''
+    return {
+      headline: `${allPolicies.length} rules across ${stateLabel}.`,
+      body: `${headlines.slice(0, 2).join('. ')}${tail}. All from the Teambridge compliance library — each runs automatically once active so you stay clean on every audit.`,
+    }
+  })()
+
   return (
     <div className="cc cc--confirm">
       <header className="cc-head">
@@ -260,7 +333,7 @@ export function ReviewStep({ config, importMethod, onImportMethodChange, onBack,
           <div className="cc-head-text">
             <span className="cc-head-name">Here's what I'm setting up</span>
             <span className="cc-head-sub">
-              For {config?.companyName ?? 'your company'}. Tap a section to inspect or edit.
+              For {companyName}. Tap a section to inspect or edit.
             </span>
           </div>
         </div>
@@ -269,7 +342,7 @@ export function ReviewStep({ config, importMethod, onImportMethodChange, onBack,
       <div className="cm-step-body cm-review-body">
         <ReviewAccordion
           title="Modules"
-          description="The product surfaces I'll turn on for your account."
+          reasoning={modulesReasoning}
           activeCount={activeModules.size}
           open={openSection === 'modules'}
           onToggle={() => toggleSection('modules')}
@@ -296,7 +369,7 @@ export function ReviewStep({ config, importMethod, onImportMethodChange, onBack,
 
         <ReviewAccordion
           title="Data"
-          description="Locations, roles, and how I'll bring in your starting roster."
+          reasoning={dataReasoning}
           activeCount={locations.length + roles.length}
           open={openSection === 'data'}
           onToggle={() => toggleSection('data')}
@@ -375,7 +448,7 @@ export function ReviewStep({ config, importMethod, onImportMethodChange, onBack,
 
         <ReviewAccordion
           title="Policies"
-          description="Labor rules I'll enforce based on your states."
+          reasoning={policiesReasoning}
           activeCount={activePolicies.size}
           open={openSection === 'policies'}
           onToggle={() => toggleSection('policies')}
@@ -410,7 +483,7 @@ export function ReviewStep({ config, importMethod, onImportMethodChange, onBack,
   )
 }
 
-function ReviewAccordion({ title, description, activeCount, open, onToggle, children }) {
+function ReviewAccordion({ title, reasoning, activeCount, open, onToggle, children }) {
   return (
     <section className={`cm-review-accordion ${open ? 'is-open' : ''}`}>
       <button
@@ -421,7 +494,6 @@ function ReviewAccordion({ title, description, activeCount, open, onToggle, chil
       >
         <div className="cm-review-accordion-headtext">
           <span className="cm-review-accordion-title">{title}</span>
-          <span className="cm-review-accordion-description">{description}</span>
         </div>
         <span className="cm-review-accordion-badge">
           {activeCount} active
@@ -430,8 +502,26 @@ function ReviewAccordion({ title, description, activeCount, open, onToggle, chil
           <ChevronDownIcon size={14} />
         </span>
       </button>
+      {reasoning && <RationaleBlock headline={reasoning.headline} body={reasoning.body} />}
       {open && <div className="cm-review-accordion-body">{children}</div>}
     </section>
+  )
+}
+
+/* Shared rationale block — used both inside each Account Setup
+ * accordion and on the Agents step. Same visual everywhere so
+ * "Nova's thinking" reads consistently. */
+function RationaleBlock({ headline, body }) {
+  return (
+    <div className="cm-rationale">
+      <span className="cm-rationale-label">
+        <TeambridgeAIIcon size={12} /> Why this
+      </span>
+      <div className="cm-rationale-text">
+        {headline && <span className="cm-rationale-headline">{headline}</span>}
+        {body && <span className="cm-rationale-body">{body}</span>}
+      </div>
+    </div>
   )
 }
 
@@ -458,10 +548,15 @@ const MODULE_CATALOG = {
   people:      { id: 'people',      name: 'People',         tone: 'purple', Icon: Users03Icon,                 detail: 'Roster, profiles, history, and hours-fairness in one view.' },
   time:        { id: 'time',        name: 'Time Tracking',  tone: 'matcha', Icon: ClockIcon,                   detail: 'Live clock-in, geo-fenced punches, and missed-punch recovery.' },
   pay:         { id: 'pay',         name: 'Pay',            tone: 'orange', Icon: CurrencyDollarCircleIcon,    detail: 'Pay runs with OT cap, premium pay, retro, and audit trail.' },
+  'instant-pay': { id: 'instant-pay', name: 'Instant Pay',  tone: 'orange', Icon: CurrencyDollarCircleIcon,    detail: 'Earned-wage access — workers tap to draw the hours they\'ve already worked.' },
   credentials: { id: 'credentials', name: 'Credentials',    tone: 'matcha', Icon: ClipboardCheckIcon,          detail: 'Track licenses, certs, and training with renewal nudges.' },
-  engage:      { id: 'engage',      name: 'Engage',         tone: 'blue',   Icon: MessageDotsSquareIcon,       detail: 'Worker chat, smart broadcasts, and manager escalations.' },
   onboarding:  { id: 'onboarding',  name: 'Onboarding',     tone: 'pink',   Icon: PuzzlePiece01Icon,           detail: 'Doc collection, badge issuance, and day-1 training flow.' },
+  engage:      { id: 'engage',      name: 'Engage',         tone: 'blue',   Icon: MessageDotsSquareIcon,       detail: 'Worker chat, smart broadcasts, and manager escalations.' },
 }
+/* Display order shown in the Modules section. We render the full
+ * catalog so the operator sees everything available — modules not
+ * recommended for their industry just start in the off state. */
+const MODULE_DISPLAY_ORDER = ['scheduling', 'people', 'time', 'pay', 'instant-pay', 'credentials', 'onboarding', 'engage']
 const DEFAULT_MODULE_IDS = ['scheduling', 'people', 'time', 'pay', 'engage']
 const MODULES_FOR_INDUSTRY = {
   events:             ['scheduling', 'people', 'time', 'pay', 'engage'],
@@ -480,6 +575,29 @@ const POLICY_TONE = {
   pay:        'blue',
   scheduling: 'purple',
   workforce:  'pink',
+}
+
+/* Per-state headline that gets surfaced in the collapsed Policies
+ * section so the operator immediately sees which signature rules
+ * we're activating — not just a count. */
+const POLICY_STATE_HEADLINE = {
+  CA: "California's predictive-scheduling rule + daily OT after 8h",
+  NY: 'New York spread-of-hours premium + day-of-rest',
+  OR: 'Oregon predictive scheduling + meal/rest enforcement',
+  WA: 'Washington predictive scheduling + paid sick leave',
+  IL: 'Illinois one-day-of-rest-in-seven + predictive scheduling',
+  MA: 'Massachusetts day-of-rest + sick leave',
+  NJ: 'New Jersey predictive scheduling + sick leave',
+  CO: 'Colorado daily OT + meal/rest',
+  NV: 'Nevada daily OT after 8h',
+  CT: 'Connecticut predictive scheduling + sick leave',
+  AZ: 'Arizona paid sick leave',
+  MD: 'Maryland paid sick leave',
+  PA: 'Pennsylvania paid sick leave',
+  VA: 'Virginia paid sick leave',
+  TX: 'Texas weekly OT (FLSA baseline)',
+  GA: 'Georgia weekly OT (FLSA baseline)',
+  FL: 'Florida weekly OT (FLSA baseline)',
 }
 
 /* ─── Step 4: Agents — horizontal carousel of specialist agents ─────
@@ -537,6 +655,56 @@ export function AgentsStep({ config, onChange, onBack, onContinue }) {
     el.scrollBy({ left: dir * step, behavior: 'smooth' })
   }
 
+  // Smart reasoning for the agent picks — names the top 2 turned-on
+  // agents and ties them to a fact about this specific company
+  // (industry shape, multi-state, headcount). The operator should
+  // read this and feel that Nova actually thought about it.
+  const companyName = config?.companyName ?? 'your team'
+  const industryLabel = INDUSTRIES.find(i => i.id === config?.industry)?.name ?? 'your operation'
+  const stateCount = (() => {
+    const set = new Set()
+    for (const loc of config?.locations ?? []) {
+      const m = String(loc.city || '').match(/\b([A-Z]{2})\b\s*$/)
+      if (m) set.add(m[1])
+    }
+    return set.size
+  })()
+  const headcountStr = (config?.headcount ?? 0).toLocaleString()
+  const turnedOn = PAIN_OPTIONS.filter(p => agentsSet.has(p.id)).map(p => AGENT_HERO[p.id]?.title).filter(Boolean)
+  const agentsReasoning = (() => {
+    if (turnedOn.length === 0) {
+      return {
+        headline: `Nothing pre-recommended yet.`,
+        body: `Pick the agents that match your day-to-day — each one's preview shows what it'll automate before you turn it on.`,
+      }
+    }
+    const lead = turnedOn.slice(0, 2).join(' + ')
+    const tailCount = turnedOn.length - 2
+    const tail = tailCount > 0 ? ` and ${tailCount} more` : ''
+    if (stateCount >= 2 && config?.headcount) {
+      return {
+        headline: `${lead}${tail} are the highest-leverage starts for ${headcountStr} hourly workers across ${stateCount} states.`,
+        body: `Multi-state ${industryLabel.toLowerCase()} ops bleed time on coverage and compliance gaps — these two agents close both. Layer in the others as your team gets comfortable.`,
+      }
+    }
+    if (stateCount >= 2) {
+      return {
+        headline: `Multi-state ${industryLabel.toLowerCase()} ops live and die by ${lead.toLowerCase()}${tail}.`,
+        body: `Operating across ${stateCount} states means coverage gaps and compliance drift compound fast — these agents catch both before they become escalations.`,
+      }
+    }
+    if (config?.headcount) {
+      return {
+        headline: `At ~${headcountStr} hourly workers, ${lead}${tail} pay back the fastest.`,
+        body: `At your scale, the daily-driver agents save the most operator time. Start with these and add the others once your team's used to working with the AI in the loop.`,
+      }
+    }
+    return {
+      headline: `For ${industryLabel.toLowerCase()}, ${lead}${tail} are the highest-leverage starts.`,
+      body: `These are the agents that show up first in real ${industryLabel.toLowerCase()} accounts. Turn the rest on as your team gets comfortable.`,
+    }
+  })()
+
   return (
     <div className="cc cc--confirm">
       <header className="cc-head">
@@ -544,11 +712,15 @@ export function AgentsStep({ config, onChange, onBack, onContinue }) {
           <div className="cc-head-text">
             <span className="cc-head-name">Want to automate any of this?</span>
             <span className="cc-head-sub">
-              I've pre-recommended {agentsSet.size} agent{agentsSet.size === 1 ? '' : 's'} for {config?.companyName ?? 'you'}. Tap to turn any on or off.
+              I've pre-recommended {agentsSet.size} agent{agentsSet.size === 1 ? '' : 's'} for {companyName}. Tap to turn any on or off.
             </span>
           </div>
         </div>
       </header>
+
+      <div className="cm-step-rationale">
+        <RationaleBlock headline={agentsReasoning.headline} body={agentsReasoning.body} />
+      </div>
 
       <div className="cm-step-body cm-agents-body">
         <div className="cm-agents-carousel">

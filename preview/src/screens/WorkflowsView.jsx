@@ -21,8 +21,10 @@ import {
   flattenNodes,
   firstNodeId,
   nodeAgent,
+  workflowsForAgents,
 } from '../data/workflowData.js'
 import { AGENTS } from '../data/agents.js'
+import { getStoredBuildConfig } from './accountOverride.js'
 
 /* ─── Entry view ──────────────────────────────────────────────────────────
    Controlled list → detail routing (same pattern as PayView). `pendingId`
@@ -51,6 +53,7 @@ export default function WorkflowsView({ industryId, pendingWorkflowId, onConsume
   }
   return (
     <WorkflowListScreen
+      industryId={industryId}
       onOpen={(id) => setRoute({ screen: 'detail', id })}
       onDemo={buzz}
     />
@@ -59,7 +62,7 @@ export default function WorkflowsView({ industryId, pendingWorkflowId, onConsume
 
 /* ─── List ────────────────────────────────────────────────────────────── */
 
-function WorkflowListScreen({ onOpen, onDemo }) {
+function WorkflowListScreen({ industryId, onOpen, onDemo }) {
   const buzz = () => onDemo?.()
   const [tab, setTab] = useState('browse')
   return (
@@ -98,7 +101,7 @@ function WorkflowListScreen({ onOpen, onDemo }) {
       {tab === 'browse' ? (
         <BrowseTemplates onOpen={onOpen} onDemo={buzz} />
       ) : (
-        <MyWorkflowsList onOpen={onOpen} onDemo={buzz} />
+        <MyWorkflowsList industryId={industryId} onOpen={onOpen} onDemo={buzz} />
       )}
     </section>
   )
@@ -345,8 +348,20 @@ function TemplateTile({ template, onOpen }) {
   )
 }
 
-function MyWorkflowsList({ onOpen, onDemo }) {
+function MyWorkflowsList({ industryId, onOpen, onDemo }) {
   const buzz = () => onDemo?.()
+  // If the operator came through the build flow we mirror what agents
+  // they picked: every selected agent seeds the matching workflow.
+  // No build config (demo path) → show the full WORKFLOWS catalog so
+  // the demo-picker accounts still feel populated.
+  const workflows = useMemo(() => {
+    const buildConfig = getStoredBuildConfig(industryId)
+    if (buildConfig && Array.isArray(buildConfig.agents)) {
+      return workflowsForAgents(buildConfig.agents)
+    }
+    return WORKFLOWS
+  }, [industryId])
+
   return (
     <>
       <div className="wf-list-toolbar">
@@ -366,7 +381,12 @@ function MyWorkflowsList({ onOpen, onDemo }) {
           <div>Last edited</div>
           <div>Status</div>
         </div>
-        {WORKFLOWS.map(w => (
+        {workflows.length === 0 && (
+          <div className="wf-list-empty">
+            No agents activated yet. Browse templates to spin one up.
+          </div>
+        )}
+        {workflows.map(w => (
           <button
             key={w.id}
             type="button"
