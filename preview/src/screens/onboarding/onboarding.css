@@ -2663,28 +2663,31 @@
 }
 
 /* Review step — three collapsible accordions (Modules / Data / Policies)
- * collapsed by default; expanding any one reveals high-fidelity rows. */
+ * collapsed by default; expanding any one reveals editable rows. */
 .cm-review-body {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 10px;
 }
 .cm-review-accordion {
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border-opaque);
-  border-radius: var(--radius-md);
+  border-radius: 14px;
   overflow: hidden;
-  transition: border-color 140ms ease;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
 }
-.cm-review-accordion.is-open { border-color: var(--color-border-selected); }
+.cm-review-accordion.is-open {
+  border-color: var(--color-border-selected);
+  box-shadow: 0 4px 14px -10px rgba(0, 0, 0, 0.18);
+}
 .cm-review-accordion-head {
   appearance: none;
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto 18px;
+  grid-template-columns: minmax(0, 1fr) auto 20px;
   align-items: center;
   gap: var(--space-3);
-  padding: 14px 18px;
+  padding: 18px 22px;
   background: transparent;
   border: none;
   font: inherit;
@@ -2697,24 +2700,36 @@
 .cm-review-accordion-headtext {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   min-width: 0;
 }
 .cm-review-accordion-title {
-  font-size: var(--text-sm);
+  font-size: 17px;
   font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.01em;
   color: var(--color-content-primary);
 }
-.cm-review-accordion-summary {
-  font-size: var(--text-xs);
+.cm-review-accordion-description {
+  font-size: var(--text-sm);
   color: var(--color-content-tertiary);
+  line-height: 1.4;
 }
-.cm-review-accordion-chips {
+.cm-review-accordion-badge {
   display: inline-flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  justify-content: flex-end;
-  max-width: 60%;
+  align-items: center;
+  padding: 5px 12px;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-secondary);
+  white-space: nowrap;
+}
+.cm-review-accordion.is-open .cm-review-accordion-badge {
+  background: var(--color-content-primary);
+  color: var(--color-bg-primary);
+  border-color: var(--color-content-primary);
 }
 .cm-review-accordion-chev {
   display: inline-flex;
@@ -2730,6 +2745,86 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+}
+
+/* Detail row — now has a trailing toggle slot. */
+.cm-review-detail-row {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-md);
+}
+.cm-review-detail-remove {
+  appearance: none;
+  background: transparent;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  color: var(--color-content-tertiary);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+.cm-review-detail-remove:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-content-primary);
+}
+
+/* Editable chips — small × button to drop a chip. */
+.cm-review-chips--editable { gap: 6px; }
+.cm-review-chip.is-editable {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 4px;
+}
+.cm-review-chip-x {
+  appearance: none;
+  background: transparent;
+  border: none;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-full);
+  color: var(--color-content-tertiary);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.cm-review-chip-x:hover { background: var(--color-bg-secondary); color: var(--color-content-primary); }
+
+/* iOS-style toggle switch (used in Modules + Policies rows). */
+.cm-toggle-switch {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  width: 36px;
+  height: 22px;
+  padding: 2px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--color-border-opaque);
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+.cm-toggle-switch-knob {
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-full);
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: transform 160ms ease;
+}
+.cm-toggle-switch.is-on { background: var(--color-content-primary); }
+.cm-toggle-switch.is-on .cm-toggle-switch-knob { transform: translateX(14px); }
+
+@media (max-width: 720px) {
+  .cm-review-accordion-description { display: none; }
 }
 
 .cm-review-chips { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -2762,16 +2857,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-}
-.cm-review-detail-row {
-  display: grid;
-  grid-template-columns: 36px 1fr;
-  gap: 12px;
-  align-items: flex-start;
-  padding: 10px 12px;
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border-opaque);
-  border-radius: var(--radius-md);
 }
 .cm-review-detail-icon {
   width: 36px;
@@ -2838,17 +2923,32 @@
   .cm-review-accordion-chips { display: none; }
 }
 
-/* Agents step — flat tiles. Big rounded square image on a soft tinted
- * background, then plain text underneath: bold title, gray description,
- * SKILLS label, pill chips. No card border around the whole tile — the
- * image carries the visual weight. Click anywhere to toggle. */
-.cm-agent-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-5) var(--space-4);
+/* Agents step — horizontal carousel of specialist tiles. The GIF fills
+ * the entire hero square (no padded colored backdrop); text sits
+ * underneath as bold title + short description. Carousel paginated
+ * with prev / next chevrons in the gutter. Click any tile to toggle. */
+.cm-agents-body { overflow: hidden; }
+.cm-agents-carousel {
+  position: relative;
+  margin: 0 -8px;
 }
+.cm-agent-strip {
+  display: flex;
+  gap: 24px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  padding: 4px 8px 20px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-opaque) transparent;
+}
+.cm-agent-strip::-webkit-scrollbar { height: 8px; }
+.cm-agent-strip::-webkit-scrollbar-thumb { background: var(--color-border-opaque); border-radius: 4px; }
+.cm-agent-strip::-webkit-scrollbar-track { background: transparent; }
 .cm-agent-card {
   appearance: none;
+  flex: 0 0 280px;
+  scroll-snap-align: start;
   background: transparent;
   border: none;
   padding: 0;
@@ -2857,50 +2957,44 @@
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 .cm-agent-hero {
   position: relative;
   aspect-ratio: 1 / 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 100%;
   border-radius: 18px;
   overflow: hidden;
-  background: #ECECE8;
   border: 1px solid var(--color-border-opaque);
   transition: box-shadow 160ms ease, transform 160ms ease, border-color 160ms ease;
+  background: var(--color-bg-secondary);
 }
 .cm-agent-card:hover .cm-agent-hero {
   transform: translateY(-2px);
-  box-shadow: 0 12px 28px -16px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 14px 28px -16px rgba(0, 0, 0, 0.25);
 }
 .cm-agent-card.is-on .cm-agent-hero {
-  box-shadow: 0 0 0 3px var(--color-content-primary), 0 12px 28px -16px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 0 0 3px var(--color-content-primary), 0 14px 28px -16px rgba(0, 0, 0, 0.25);
 }
-.cm-agent-hero--blue   { background: #EAF0FF; }
-.cm-agent-hero--purple { background: #F1EAFE; }
-.cm-agent-hero--matcha { background: #E6F7EE; }
-.cm-agent-hero--orange { background: #FFEFE0; }
-.cm-agent-hero--pink   { background: #FCE7F0; }
 .cm-agent-hero-img {
-  width: 78%;
-  max-width: 260px;
-  height: auto;
-  object-fit: contain;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 .cm-agent-on-dot {
   position: absolute;
   top: 12px;
   right: 12px;
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-full);
   background: var(--color-content-primary);
   color: var(--color-bg-primary);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
 }
 .cm-agent-body {
   display: flex;
@@ -2909,7 +3003,7 @@
   padding: 0 2px;
 }
 .cm-agent-title {
-  font-size: 17px;
+  font-size: 18px;
   font-weight: var(--font-weight-semibold);
   color: var(--color-content-primary);
   letter-spacing: -0.01em;
@@ -2918,37 +3012,35 @@
   margin: 0;
   font-size: var(--text-sm);
   line-height: 1.55;
-  color: var(--color-content-secondary);
-}
-.cm-agent-skills-label {
-  margin-top: 6px;
-  font-size: 11px;
-  font-weight: var(--font-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
   color: var(--color-content-tertiary);
 }
-.cm-agent-skills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.cm-agent-skill {
+
+/* Carousel chevron buttons — float over the strip on the left/right. */
+.cm-agents-nav {
+  position: absolute;
+  top: 140px;
+  width: 36px;
+  height: 36px;
   display: inline-flex;
   align-items: center;
-  padding: 6px 12px;
-  background: transparent;
-  border: 1px solid var(--color-border-opaque);
+  justify-content: center;
   border-radius: var(--radius-full);
-  font-size: 11px;
-  font-weight: var(--font-weight-medium);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  box-shadow: 0 4px 12px -6px rgba(0, 0, 0, 0.18);
   color: var(--color-content-primary);
+  cursor: pointer;
+  z-index: 2;
+  transition: background 140ms ease, transform 140ms ease;
 }
+.cm-agents-nav:hover { background: var(--color-bg-secondary); transform: scale(1.06); }
+.cm-agents-nav--prev { left: -10px; }
+.cm-agents-nav--next { right: -10px; }
+
 @media (max-width: 1100px) {
-  .cm-agent-grid { grid-template-columns: 1fr; }
   .cm-goal-list  { grid-template-columns: 1fr; }
+  .cm-agent-card { flex-basis: 220px; }
+  .cm-agents-nav { top: 110px; }
 }
 
 /* Review step body — used by InsightsStep/AgentsStep/PoliciesStep/
