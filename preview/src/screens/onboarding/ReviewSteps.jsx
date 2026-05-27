@@ -215,13 +215,18 @@ function normalizeGoal(g) {
 export function ReviewStep({ config, importMethod, onImportMethodChange, onBack, onContinue }) {
   const states = useMemo(() => statesFromLocations(config?.locations), [config])
   const allPolicies = useMemo(() => policiesForStates(states), [states])
-  const moduleIds = MODULES_FOR_INDUSTRY[config?.industry] ?? DEFAULT_MODULE_IDS
-  const catalogModules = moduleIds.map(id => MODULE_CATALOG[id]).filter(Boolean)
+  const recommendedModuleIds = MODULES_FOR_INDUSTRY[config?.industry] ?? DEFAULT_MODULE_IDS
+  // Render the entire module catalog — modules not recommended for
+  // this industry show up with their toggle off, so the operator can
+  // see everything available and turn anything on without leaving
+  // the screen.
+  const catalogModules = MODULE_DISPLAY_ORDER.map(id => MODULE_CATALOG[id]).filter(Boolean)
 
   // Each section keeps its own local state for what's enabled / edited.
-  // Modules + Policies start fully on (all the recommended items are
-  // active out of the gate); Data sections are user-editable lists.
-  const [activeModules, setActiveModules] = useState(() => new Set(catalogModules.map(m => m.id)))
+  // Modules: only the recommended set starts active.
+  // Policies: all derived rules start active.
+  // Data sections are user-editable lists.
+  const [activeModules, setActiveModules] = useState(() => new Set(recommendedModuleIds))
   const [activePolicies, setActivePolicies] = useState(() => new Set(allPolicies.map(p => p.id)))
   const [locations, setLocations] = useState(config?.locations ?? [])
   const [roles, setRoles] = useState(config?.roles ?? [])
@@ -247,10 +252,10 @@ export function ReviewStep({ config, importMethod, onImportMethodChange, onBack,
   // Each is structured as { headline, body } and rendered as a
   // dedicated "Why this" rationale block, consistent with the step's
   // top intro and the Agents-step rationale below.
-  const moduleNames = catalogModules.map(m => m.name)
+  const recommendedNames = recommendedModuleIds.map(id => MODULE_CATALOG[id]?.name).filter(Boolean)
   const modulesReasoning = (() => {
-    const hasCreds = moduleNames.includes('Credentials')
-    const hasOnb   = moduleNames.includes('Onboarding')
+    const hasCreds = recommendedNames.includes('Credentials')
+    const hasOnb   = recommendedNames.includes('Onboarding')
     if (hasCreds && hasOnb) {
       return {
         headline: `${industryLabel} runs on credentialed, high-throughput hiring.`,
@@ -543,10 +548,15 @@ const MODULE_CATALOG = {
   people:      { id: 'people',      name: 'People',         tone: 'purple', Icon: Users03Icon,                 detail: 'Roster, profiles, history, and hours-fairness in one view.' },
   time:        { id: 'time',        name: 'Time Tracking',  tone: 'matcha', Icon: ClockIcon,                   detail: 'Live clock-in, geo-fenced punches, and missed-punch recovery.' },
   pay:         { id: 'pay',         name: 'Pay',            tone: 'orange', Icon: CurrencyDollarCircleIcon,    detail: 'Pay runs with OT cap, premium pay, retro, and audit trail.' },
+  'instant-pay': { id: 'instant-pay', name: 'Instant Pay',  tone: 'orange', Icon: CurrencyDollarCircleIcon,    detail: 'Earned-wage access — workers tap to draw the hours they\'ve already worked.' },
   credentials: { id: 'credentials', name: 'Credentials',    tone: 'matcha', Icon: ClipboardCheckIcon,          detail: 'Track licenses, certs, and training with renewal nudges.' },
-  engage:      { id: 'engage',      name: 'Engage',         tone: 'blue',   Icon: MessageDotsSquareIcon,       detail: 'Worker chat, smart broadcasts, and manager escalations.' },
   onboarding:  { id: 'onboarding',  name: 'Onboarding',     tone: 'pink',   Icon: PuzzlePiece01Icon,           detail: 'Doc collection, badge issuance, and day-1 training flow.' },
+  engage:      { id: 'engage',      name: 'Engage',         tone: 'blue',   Icon: MessageDotsSquareIcon,       detail: 'Worker chat, smart broadcasts, and manager escalations.' },
 }
+/* Display order shown in the Modules section. We render the full
+ * catalog so the operator sees everything available — modules not
+ * recommended for their industry just start in the off state. */
+const MODULE_DISPLAY_ORDER = ['scheduling', 'people', 'time', 'pay', 'instant-pay', 'credentials', 'onboarding', 'engage']
 const DEFAULT_MODULE_IDS = ['scheduling', 'people', 'time', 'pay', 'engage']
 const MODULES_FOR_INDUSTRY = {
   events:             ['scheduling', 'people', 'time', 'pay', 'engage'],
