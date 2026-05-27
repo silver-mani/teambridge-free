@@ -3857,15 +3857,101 @@ function PanelSwapGlyph({ open }) {
   )
 }
 
+/* Replace the seeded industry feed with a small welcome slate after a
+ * fresh launch from the build flow. References what was just
+ * configured (modules, locations, agents) so the operator's first
+ * impression of "their" dashboard reads like a clean install — not a
+ * pre-baked demo history. */
+const AGENT_LABELS = {
+  coverage:   'Shift Replacement Specialist',
+  scheduling: 'Shift Filling Specialist',
+  overtime:   'Timecard Exception Specialist',
+  compliance: 'Compliance Specialist',
+  onboarding: 'Onboarding Specialist',
+  comms:      'Communications Specialist',
+}
+const AGENT_PERSONA = {
+  coverage:   'nova',
+  scheduling: 'nova',
+  overtime:   'atlas',
+  onboarding: 'sofia',
+  compliance: 'iris',
+  comms:      'leo',
+}
+function buildFreshLaunchFeed(config) {
+  const companyName = config?.companyName ?? 'your account'
+  const agents = Array.isArray(config?.agents) ? config.agents : []
+  const locationCount = (config?.locations ?? []).length
+  const roleCount = (config?.roles ?? []).length
+  const agentNames = agents.map(id => AGENT_LABELS[id]).filter(Boolean)
+  const primaryAgentPersona = agents.length > 0 ? (AGENT_PERSONA[agents[0]] ?? 'nova') : 'nova'
+
+  const cards = []
+
+  cards.push({
+    id: 'fresh-configured',
+    status: 'resolved',
+    statusLabel: 'Configured',
+    timestamp: 'Just now',
+    agentTask: 'Account setup',
+    title: `${companyName} is live on Teambridge`,
+    description: `${locationCount} location${locationCount === 1 ? '' : 's'}, ${roleCount} role${roleCount === 1 ? '' : 's'}, and your labor policies are active.`,
+  })
+
+  if (agents.length > 0) {
+    const preview = agentNames.slice(0, 2).join(', ')
+    const more = agentNames.length > 2 ? ` +${agentNames.length - 2} more` : ''
+    cards.push({
+      id: 'fresh-agents',
+      status: 'monitoring',
+      statusLabel: 'Active',
+      timestamp: 'Just now',
+      agentId: primaryAgentPersona,
+      agentTask: 'Agents activated',
+      title: `${agents.length} agent${agents.length === 1 ? '' : 's'} now watching ${companyName}`,
+      description: `${preview}${more} are warming up. They'll surface their first events as your team comes online.`,
+    })
+  }
+
+  cards.push({
+    id: 'fresh-roster',
+    status: 'sent',
+    statusLabel: 'Ready',
+    timestamp: 'Just now',
+    agentTask: 'Starting data',
+    title: 'Sample roster loaded — explore freely',
+    description: `We've seeded ${companyName} with a realistic roster. Connect your HRIS or upload a CSV anytime from Settings.`,
+  })
+
+  return cards
+}
+
 export default function Act1Dashboard({ industryId, view = 'overview', sageMode = false, otFixed = false, onApplyOTFix, onBackToIntacct, onBack, onExplore, onSelectView }) {
+  // Capture the fresh-launch flag once on mount. The scripted-scene
+  // effect down below clears it from sessionStorage on first run, so
+  // we need to lock it into local state right away. When true, the
+  // activity feed is replaced with a small set of welcome cards that
+  // reference what just got configured — not the seeded demo history.
+  const [freshLaunch] = useState(() => {
+    try { return sessionStorage.getItem('tb:fresh-launch') === '1' } catch { return false }
+  })
+
   // Apply any account override saved from the build flow — company
   // name swaps into the brand label and venue strings throughout the
   // data tree get replaced with the operator's actual locations.
   const data = useMemo(() => {
     const base = getIndustryData(industryId)
     const buildConfig = getStoredBuildConfig(industryId)
-    return applyAccountOverride(base, buildConfig)
-  }, [industryId])
+    const merged = applyAccountOverride(base, buildConfig)
+    if (freshLaunch && buildConfig) {
+      return {
+        ...merged,
+        activeCard: null,
+        feed: buildFreshLaunchFeed(buildConfig),
+      }
+    }
+    return merged
+  }, [industryId, freshLaunch])
   // Pay sub-route lives here so the chat panel can observe drill-downs
   // (home → period → user) alongside top-level view changes.
   const [paySubRoute, setPaySubRoute] = useState({ screen: 'home' })

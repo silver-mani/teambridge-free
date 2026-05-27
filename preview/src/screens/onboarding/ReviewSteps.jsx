@@ -150,7 +150,9 @@ export function GoalsStep({ config, onBack, onContinue }) {
   // under the label. All pre-toggled so the operator just untoggles
   // what doesn't fit.
   const goals = (config?.goals || []).map(normalizeGoal)
-  const [selected, setSelected] = useState(() => new Set(goals.map((_, i) => i)))
+  // Pre-select the first four — the rest start off so the operator
+  // makes a deliberate yes/no choice on the longer tail.
+  const [selected, setSelected] = useState(() => new Set(goals.slice(0, 4).map((_, i) => i)))
   const toggle = (i) => {
     setSelected(prev => {
       const next = new Set(prev)
@@ -228,7 +230,7 @@ function normalizeGoal(g) {
  * and a small active-count badge on the right. Expanding any one lets
  * the operator toggle items on/off (Modules + Policies) or edit
  * chips (Data: locations + roles). */
-export function ReviewStep({ config, onBack, onContinue }) {
+export function ReviewStep({ config, importMethod, onImportMethodChange, onBack, onContinue }) {
   const states = useMemo(() => statesFromLocations(config?.locations), [config])
   const allPolicies = useMemo(() => policiesForStates(states), [states])
   const moduleIds = MODULES_FOR_INDUSTRY[config?.industry] ?? DEFAULT_MODULE_IDS
@@ -242,6 +244,7 @@ export function ReviewStep({ config, onBack, onContinue }) {
   const [locations, setLocations] = useState(config?.locations ?? [])
   const [roles, setRoles] = useState(config?.roles ?? [])
   const [openSection, setOpenSection] = useState(null)
+  const importChoice = importMethod || 'sample'
   const toggleSection = (id) => setOpenSection(prev => prev === id ? null : id)
   const toggleInSet = (setter) => (id) => setter(prev => {
     const next = new Set(prev)
@@ -293,7 +296,7 @@ export function ReviewStep({ config, onBack, onContinue }) {
 
         <ReviewAccordion
           title="Data"
-          description="Locations and roles I'll provision from your roster."
+          description="Locations, roles, and how I'll bring in your starting roster."
           activeCount={locations.length + roles.length}
           open={openSection === 'data'}
           onToggle={() => toggleSection('data')}
@@ -341,6 +344,32 @@ export function ReviewStep({ config, onBack, onContinue }) {
                 </span>
               ))}
             </div>
+          </div>
+          <div className="cm-review-detail-group">
+            <div className="cm-review-detail-grouptitle">Starting roster</div>
+            <ul className="cm-review-detail-list">
+              {IMPORT_OPTIONS.map(opt => {
+                const on = opt.id === importChoice
+                return (
+                  <li key={opt.id}>
+                    <button
+                      type="button"
+                      className={`cm-import-row ${on ? 'is-on' : ''}`}
+                      onClick={() => onImportMethodChange?.(opt.id)}
+                      aria-pressed={on}
+                    >
+                      <span className={`cm-tile-toggle ${on ? 'is-on' : ''}`} aria-hidden="true">
+                        {on && <CheckCircleIcon size={12} />}
+                      </span>
+                      <span className="cm-import-text">
+                        <span className="cm-import-title">{opt.label}</span>
+                        <span className="cm-import-detail">{opt.detail}</span>
+                      </span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
           </div>
         </ReviewAccordion>
 

@@ -5,7 +5,7 @@ import { INDUSTRIES } from '../IndustrySelector.jsx'
 import DashboardShell, { DEFAULT_NAV_GROUPS, DEFAULT_NAV_BOTTOM } from '../shell/DashboardShell.jsx'
 import OnboardingChat from './OnboardingChat.jsx'
 import ConfigCard, { ALL_FIELDS } from './ConfigCard.jsx'
-import { InsightsStep, GoalsStep, ReviewStep, AgentsStep, DataStep } from './ReviewSteps.jsx'
+import { InsightsStep, GoalsStep, ReviewStep, AgentsStep } from './ReviewSteps.jsx'
 import BuildProgressCard from './BuildProgressCard.jsx'
 import { deriveConfig } from './urlMatcher.js'
 import { POLICIES_BY_STATE } from './steps.js'
@@ -111,7 +111,7 @@ function buildLockedNav() {
 }
 
 export default function OnboardingFlow({ onExit, onComplete }) {
-  const [state, setState] = useState('intake')              // 'intake' | 'research' | 'insights' | 'goals' | 'review' | 'agents' | 'data' | 'launching'
+  const [state, setState] = useState('intake')              // 'intake' | 'research' | 'insights' | 'goals' | 'review' | 'agents' | 'launching'
   const [pickedGoals, setPickedGoals] = useState([])
   const [intakeMode, setIntakeMode] = useState('url')       // 'url' | 'free-text'
   const [intakeDraft, setIntakeDraft] = useState('')
@@ -293,11 +293,6 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     setState('agents')
   }, [pushMessage])
   const handleAgentsContinue = useCallback(() => {
-    pushMessage({ from: 'nova', text: "Last step — how should I bring your team's data in?", instant: true })
-    setState('data')
-  }, [pushMessage])
-  const handleLaunch = useCallback((picks) => {
-    setImportMethod(picks?.importMethod || 'sample')
     pushMessage({ from: 'nova', text:
       `Launching your account. About 30 seconds — there's real configuration work happening behind the scenes.`, instant: true })
     setState('launching')
@@ -318,7 +313,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
   const composerPlaceholder = (() => {
     if (state === 'intake')    return 'Use the form below'
     if (state === 'research')  return 'Setting up…'
-    if (state === 'insights' || state === 'goals' || state === 'review' || state === 'agents' || state === 'data')
+    if (state === 'insights' || state === 'goals' || state === 'review' || state === 'agents')
                                 return 'Continue on the right →'
     if (state === 'launching') return 'Launching…'
     return 'Type a message…'
@@ -422,11 +417,13 @@ export default function OnboardingFlow({ onExit, onComplete }) {
       stepCard = (
         <ReviewStep
           config={config}
+          importMethod={importMethod}
+          onImportMethodChange={setImportMethod}
           onBack={() => setState('goals')}
           onContinue={handleReviewContinue}
         />
       )
-    } else if (state === 'agents') {
+    } else {
       stepCard = (
         <AgentsStep
           config={config}
@@ -435,30 +432,20 @@ export default function OnboardingFlow({ onExit, onComplete }) {
           onContinue={handleAgentsContinue}
         />
       )
-    } else {
-      stepCard = (
-        <DataStep
-          config={config}
-          onBack={() => setState('agents')}
-          onLaunch={handleLaunch}
-        />
-      )
     }
     const headTitle = state === 'insights' ? 'Your company'
                     : state === 'goals'    ? 'Your goals'
                     : state === 'review'   ? 'Account setup'
-                    : state === 'agents'   ? 'Agents'
-                    :                        'Starting data'
+                    :                        'Agents'
     const stepNum = state === 'insights' ? 1
                   : state === 'goals'    ? 2
                   : state === 'review'   ? 3
-                  : state === 'agents'   ? 4
-                  :                        5
+                  :                        4
     content = (
       <div className="ob-right">
         <header className="ob-right-head">
           <h1 className="ob-right-title">{headTitle}</h1>
-          <p className="ob-right-sub">Step {stepNum} of 5 · Continue when ready.</p>
+          <p className="ob-right-sub">Step {stepNum} of 4 · Continue when ready.</p>
         </header>
         <div className="ob-right-body">{stepCard}</div>
       </div>
