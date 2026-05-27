@@ -2708,12 +2708,12 @@
 .cm-review-body {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
 }
 .cm-review-accordion {
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border-opaque);
-  border-radius: 14px;
+  border-radius: 10px;
   overflow: hidden;
   transition: border-color 140ms ease, box-shadow 140ms ease;
 }
@@ -2725,10 +2725,10 @@
   appearance: none;
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto 20px;
+  grid-template-columns: minmax(0, 1fr) auto 18px;
   align-items: center;
-  gap: var(--space-3);
-  padding: 18px 22px;
+  gap: var(--space-2);
+  padding: 12px 14px;
   background: transparent;
   border: none;
   font: inherit;
@@ -2741,13 +2741,13 @@
 .cm-review-accordion-headtext {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
 }
 .cm-review-accordion-title {
-  font-size: 17px;
+  font-size: 14px;
   font-weight: var(--font-weight-semibold);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.005em;
   color: var(--color-content-primary);
 }
 .cm-review-accordion-description {
@@ -2759,11 +2759,11 @@
 .cm-review-accordion-badge {
   display: inline-flex;
   align-items: center;
-  padding: 5px 12px;
+  padding: 3px 10px;
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border-opaque);
   border-radius: var(--radius-full);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: var(--font-weight-medium);
   color: var(--color-content-secondary);
   white-space: nowrap;
@@ -2819,30 +2819,30 @@
 .cm-rationale {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 12px 16px;
+  gap: 3px;
+  padding: 8px 12px;
   background: var(--color-purple-bg-tertiary);
-  border-radius: var(--radius-md);
+  border-radius: 8px;
 }
 .cm-review-accordion .cm-rationale {
-  margin: 12px 14px;
+  margin: 8px 10px;
 }
 .cm-rationale-label {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 11px;
+  gap: 4px;
+  font-size: 10px;
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.07em;
   color: var(--color-purple-content-secondary, #6b21a8);
 }
 .cm-rationale-text {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  font-size: var(--text-sm);
-  line-height: 1.55;
+  gap: 2px;
+  font-size: 12px;
+  line-height: 1.45;
 }
 .cm-rationale-headline {
   font-weight: var(--font-weight-semibold);

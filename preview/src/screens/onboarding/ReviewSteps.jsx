@@ -334,12 +334,6 @@ export function ReviewStep({ config, importMethod, onImportMethodChange, onBack,
         </div>
       </header>
 
-      <div className="cm-review-intro">
-        Based on what I learned about <strong>{companyName}</strong>, I'm setting these defaults.
-        Don't worry — you can always tweak any of it later. Review the sections below and hit
-        <em> Looks good</em> when you're ready and I'll get it done.
-      </div>
-
       <div className="cm-step-body cm-review-body">
         <ReviewAccordion
           title="Modules"
