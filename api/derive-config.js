@@ -51,9 +51,7 @@ Return ONLY a single JSON object — no markdown, no commentary, no code fences.
     "Specific observation 3"
   ],
   "goals": [
-    "WFM-focused goal 1 specific to this company",
-    "WFM-focused goal 2 specific to this company",
-    ...
+    { "label": "Short 2-4 word goal", "detail": "One short sentence of context." }
   ],
   "confidence": {
     "industry": "high|medium|low",
@@ -77,19 +75,14 @@ Guidance:
   - comms       = smart notify / role-routing (high for multi-site, distributed teams)
   - scheduling  = schedule auto-draft (high for stable rotating teams)
 - CONNECTORS: 2-4 integration IDs the company most likely uses. Pick from the enum based on industry norms (e.g. Workday for large enterprises, BambooHR for mid-market, Gusto/Rippling for small/medium, Sage Intacct for construction, ADP very common across).
-- GOALS: 5-7 SPECIFIC workforce management goals this company would want from Teambridge. Each goal must:
-    * Name something specific to THIS company — a venue ("SoFi Stadium"), a role ("ICU RNs", "banquet servers"), a known operational pattern ("event-day spikes", "holiday surge", "swing shift handoffs"), or a metric tied to their reality.
-    * Be action-oriented — start with a verb (Cover, Reduce, Streamline, Forecast, Auto-route, Cross-train, Pre-clear).
-    * Target a workforce-management outcome ONLY: scheduling efficiency, coverage speed, overtime control, compliance/credentials, onboarding throughput, communications, forecasting/labor planning, retention.
-    * Read like a top-of-mind operator pain the COO would write on a whiteboard.
-  Bad: "Improve scheduling." (generic)
-  Bad: "Increase employee satisfaction." (not WFM-specific)
-  Bad: "Use AI to automate things." (vague)
-  Good for stadium: "Cover event-day staffing gaps at SoFi Stadium in under 2 hours when ushers no-show."
-  Good for healthcare: "Reduce ICU RN callouts at Memorial North by surfacing replacement candidates instantly."
-  Good for hospitality: "Smooth peak/off-peak banquet headcount between Marriott Marquis SF and Riverside properties."
-  Good for security: "Pre-clear armed-post certifications 30 days before expiry across the SoCal region."
-  Each goal: ONE sentence, ≤ 22 words, end with a period. No markdown.
+- GOALS: 5-7 workforce-management goals this company would want from Teambridge. Each goal is an OBJECT { label, detail }.
+    * LABEL: 2-4 words, verb-first, plain-English outcome. Examples: "Fill shifts faster", "Reduce overtime", "Onboard faster", "Pre-clear credentials", "Forecast peak demand", "Improve show rate", "Cut manager workload". KEEP IT SHORT — it shows as a chip in the UI.
+    * DETAIL: ONE short sentence (≤ 18 words) that names something specific to THIS company — a venue, a role, an operational pattern, or a state quirk. Use this for the supporting context the operator hovers/clicks for.
+    * Together each goal should target a WFM outcome only: scheduling, coverage, overtime, compliance, onboarding, comms, forecasting, retention.
+  Bad: label "Improve scheduling" (generic), detail none. Or labels longer than 4 words.
+  Good label "Fill shifts faster", detail "Cover SoFi Stadium event-day gaps when ushers no-show."
+  Good label "Reduce overtime",    detail "Smooth ICU RN hours at Memorial North across busy weeks."
+  Good label "Pre-clear credentials", detail "Catch armed-post cert expiries 30 days ahead in SoCal."
 - INSIGHTS: this is the most important field. Three SPECIFIC observations about this company's workforce that demonstrate you actually researched them — not generic industry truisms. Each insight should:
     * Reference something verifiable: a specific event, a public stat, a known fact about the company, a quirk of their operating model, a regulatory exposure their state creates, a competitor benchmark, a recent news item, a known shift pattern.
     * Connect to a Teambridge capability they'd activate: an agent that addresses it, a policy that matters because of it, a workflow that fits their shape.
@@ -201,8 +194,21 @@ export default async function handler(req, res) {
     config.insights = Array.isArray(config.insights)
       ? config.insights.filter(s => typeof s === 'string' && s.trim()).slice(0, 3)
       : []
+    // Goals can come back as objects { label, detail } (new shape) or
+    // bare strings (older prompt). Normalize both to { label, detail }.
     config.goals = Array.isArray(config.goals)
-      ? config.goals.filter(s => typeof s === 'string' && s.trim()).slice(0, 7)
+      ? config.goals
+          .map(g => {
+            if (g && typeof g === 'object' && typeof g.label === 'string' && g.label.trim()) {
+              return { label: g.label.trim(), detail: typeof g.detail === 'string' ? g.detail.trim() : '' }
+            }
+            if (typeof g === 'string' && g.trim()) {
+              return { label: g.trim().split(/\s+/).slice(0, 4).join(' '), detail: g.trim() }
+            }
+            return null
+          })
+          .filter(Boolean)
+          .slice(0, 7)
       : []
     config.url = fromFreeText ? '' : input
     config.origin = fromFreeText ? 'ai-text' : 'ai-url'

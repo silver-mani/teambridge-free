@@ -5,7 +5,7 @@ import { INDUSTRIES } from '../IndustrySelector.jsx'
 import DashboardShell, { DEFAULT_NAV_GROUPS, DEFAULT_NAV_BOTTOM } from '../shell/DashboardShell.jsx'
 import OnboardingChat from './OnboardingChat.jsx'
 import ConfigCard, { ALL_FIELDS } from './ConfigCard.jsx'
-import { InsightsStep, GoalsStep, AgentsStep, PoliciesStep, DataStep } from './ReviewSteps.jsx'
+import { InsightsStep, GoalsStep, ReviewStep, AgentsStep, PoliciesStep, DataStep } from './ReviewSteps.jsx'
 import BuildProgressCard from './BuildProgressCard.jsx'
 import { deriveConfig } from './urlMatcher.js'
 import '../act1.css'
@@ -110,7 +110,7 @@ function buildLockedNav() {
 }
 
 export default function OnboardingFlow({ onExit, onComplete }) {
-  const [state, setState] = useState('intake')              // 'intake' | 'research' | 'insights' | 'goals' | 'agents' | 'policies' | 'data' | 'launching'
+  const [state, setState] = useState('intake')              // 'intake' | 'research' | 'insights' | 'goals' | 'review' | 'agents' | 'policies' | 'data' | 'launching'
   const [pickedGoals, setPickedGoals] = useState([])
   const [intakeMode, setIntakeMode] = useState('url')       // 'url' | 'free-text'
   const [intakeDraft, setIntakeDraft] = useState('')
@@ -271,7 +271,11 @@ export default function OnboardingFlow({ onExit, onComplete }) {
   }, [pushMessage])
   const handleGoalsContinue = useCallback((picked) => {
     setPickedGoals(picked || [])
-    pushMessage({ from: 'nova', text: "Got it. Here are the agents I'd activate to match — toggle any on or off.", instant: true })
+    pushMessage({ from: 'nova', text: "Got it. Here's what I'm setting up — quick review before agents.", instant: true })
+    setState('review')
+  }, [pushMessage])
+  const handleReviewContinue = useCallback(() => {
+    pushMessage({ from: 'nova', text: "Now the fun part — want to automate any of this?", instant: true })
     setState('agents')
   }, [pushMessage])
   const handleAgentsContinue = useCallback(() => {
@@ -305,7 +309,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
   const composerPlaceholder = (() => {
     if (state === 'intake')    return 'Use the form below'
     if (state === 'research')  return 'Setting up…'
-    if (state === 'insights' || state === 'goals' || state === 'agents' || state === 'policies' || state === 'data')
+    if (state === 'insights' || state === 'goals' || state === 'review' || state === 'agents' || state === 'policies' || state === 'data')
                                 return 'Continue on the right →'
     if (state === 'launching') return 'Launching…'
     return 'Type a message…'
@@ -405,12 +409,20 @@ export default function OnboardingFlow({ onExit, onComplete }) {
           onContinue={handleGoalsContinue}
         />
       )
+    } else if (state === 'review') {
+      stepCard = (
+        <ReviewStep
+          config={config}
+          onBack={() => setState('goals')}
+          onContinue={handleReviewContinue}
+        />
+      )
     } else if (state === 'agents') {
       stepCard = (
         <AgentsStep
           config={config}
           onChange={setConfig}
-          onBack={() => setState('goals')}
+          onBack={() => setState('review')}
           onContinue={handleAgentsContinue}
         />
       )
@@ -431,21 +443,23 @@ export default function OnboardingFlow({ onExit, onComplete }) {
         />
       )
     }
-    const headTitle = state === 'insights' ? 'Review your account'
+    const headTitle = state === 'insights' ? 'Your company'
                     : state === 'goals'    ? 'Your goals'
+                    : state === 'review'   ? 'Account setup'
                     : state === 'agents'   ? 'Agents'
                     : state === 'policies' ? 'Labor policies'
                     :                        'Starting data'
     const stepNum = state === 'insights' ? 1
                   : state === 'goals'    ? 2
-                  : state === 'agents'   ? 3
-                  : state === 'policies' ? 4
-                  :                        5
+                  : state === 'review'   ? 3
+                  : state === 'agents'   ? 4
+                  : state === 'policies' ? 5
+                  :                        6
     content = (
       <div className="ob-right">
         <header className="ob-right-head">
           <h1 className="ob-right-title">{headTitle}</h1>
-          <p className="ob-right-sub">Step {stepNum} of 5 · Continue when ready.</p>
+          <p className="ob-right-sub">Step {stepNum} of 6 · Continue when ready.</p>
         </header>
         <div className="ob-right-body">{stepCard}</div>
       </div>
