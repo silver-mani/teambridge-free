@@ -709,9 +709,9 @@ export const WORKFLOW_TEMPLATES_FEATURED = [
     nodeCount: 14,
     workflowId: 'last-min-replacement',
     highlights: [
-      'Ranks 12 eligible workers in seconds — proximity, accept rate, hours fairness, 90-day performance.',
-      'Sends offers to the top 3 in parallel with a 90-second expiry; first accept wins, others rescind.',
-      'Hands off to Iris for shift publish + payroll touch-up, then logs the close-out in your coverage recap.',
+      'Ranks eligible workers by proximity, performance, and fairness.',
+      'Sends timed offers to the top candidates; first accept wins.',
+      'Publishes the shift, updates payroll, and logs the close-out.',
     ],
     metrics: [
       { label: 'Time to fill', value: '4 min',  sub: 'down from ~47 min manual' },
@@ -729,9 +729,9 @@ export const WORKFLOW_TEMPLATES_FEATURED = [
     nodeCount: 11,
     workflowId: 'ot-cap-autoreplace',
     highlights: [
-      'Projects each worker\'s pay-period hours daily and flags anyone trending past your OT cap.',
-      'Surfaces compliant swaps from workers below threshold with matching skills + availability.',
-      'Auto-publishes the rebalance after a manager 1-tap confirm, or runs lights-out under your policy.',
+      'Spots workers trending past your OT cap before they cross it.',
+      'Suggests compliant swaps from teammates with matching skills.',
+      'Rebalances with a one-tap confirm — or auto-applies under your policy.',
     ],
     metrics: [
       { label: 'OT spend',        value: '−34%', sub: 'period-over-period' },
@@ -748,9 +748,9 @@ export const WORKFLOW_TEMPLATES_FEATURED = [
     triggerLabel: 'Cert expires in ≤ 30 days',
     nodeCount: 9,
     highlights: [
-      'Indexes every credential — state license, BLS, OSHA, food-handler, TABC — in one workforce graph.',
-      'DMs each worker at 60 / 30 / 7 days with the exact renewal link for their role and state.',
-      'Blocks scheduling against any role whose credential lapses, with an instant supervisor escalation.',
+      'Tracks every license, cert, and training across your workforce.',
+      'Nudges workers ahead of expiry with the right renewal link.',
+      'Blocks scheduling against any lapsed credential automatically.',
     ],
     metrics: [
       { label: 'Lapsed-credential shifts', value: '0',   sub: '14 last quarter' },
@@ -765,9 +765,9 @@ export const WORKFLOW_TEMPLATES = [
   { id: 'tpl-callout-cascade',  title: 'Callout Cascade',          description: 'Tiered offers to A→B→C candidates with 90s expiry per tier.', agentId: 'nova',  category: 'fill-faster',
     triggerLabel: 'Shift cancelled, no backup',
     highlights: [
-      'Builds 3 tiers of candidates by performance + proximity; each tier gets 90s to accept.',
-      'Cascades automatically — no manager hand-off between tiers.',
-      'Logs which tier filled the shift so you can tune the ranking over time.',
+      'Offers shifts in tiers — best fits first, broader pool if needed.',
+      'Cascades on its own without a manager in the middle.',
+      'Learns which tier tends to close gaps so ranking gets sharper.',
     ],
     metrics: [
       { label: 'Fill rate (Tier A)', value: '67%' },
@@ -778,9 +778,9 @@ export const WORKFLOW_TEMPLATES = [
   { id: 'tpl-no-show-recovery', title: 'No-Show Recovery',         description: 'Detect missed clock-in, ping the worker, escalate to manager at 15 min.', agentId: 'nova',  category: 'show-rate',
     triggerLabel: 'No clock-in 5 min after start',
     highlights: [
-      'Pings the worker on the channel they prefer; reads geofence + last app open to gauge intent.',
-      'If no response in 10 min, opens a callout cascade in parallel with manager paging.',
-      'Closes the loop with payroll so missed start time is captured cleanly.',
+      'Pings the worker on their preferred channel and checks intent.',
+      'Opens a coverage cascade and pages the manager if no reply.',
+      'Squares up payroll for the missed start automatically.',
     ],
     metrics: [
       { label: 'No-show → coverage', value: '11 min', sub: 'median end-to-end' },
@@ -791,9 +791,9 @@ export const WORKFLOW_TEMPLATES = [
   { id: 'tpl-event-day-surge',  title: 'Event-Day Surge Coverage', description: 'Pre-stage standby pool the morning of a peak event; auto-offer if any role unders.', agentId: 'atlas', category: 'fill-faster',
     triggerLabel: 'Peak-event day, 8am local',
     highlights: [
-      'Pulls a standby pool sized to the historical no-show rate for events of this size.',
-      'Watches in-window staffing every 15 min; auto-offers to standby when any role unders.',
-      'Releases unused standby workers with a partial-shift credit at the cut-off you set.',
+      'Stages a standby pool based on past no-show rates.',
+      'Watches staffing live and auto-offers when any role unders.',
+      'Releases unused standby with a credit at your cut-off.',
     ],
     metrics: [
       { label: 'Day-of fill rate',  value: '98%' },
@@ -804,9 +804,9 @@ export const WORKFLOW_TEMPLATES = [
   { id: 'tpl-float-pool-route', title: 'Float Pool Routing',       description: 'Send float-eligible workers to units with the deepest gap first, by acuity.', agentId: 'nova',  category: 'fill-faster',
     triggerLabel: 'Float worker clocks in',
     highlights: [
-      'Ranks units by acuity-weighted gap; floats land where they\'ll move the needle first.',
-      'Honors skill + cert match before depth-of-gap so quality bar stays intact.',
-      'Re-routes mid-shift if a deeper gap opens elsewhere on campus.',
+      'Sends floats where the gap is deepest first.',
+      'Matches skills and certs before depth-of-gap.',
+      'Re-routes mid-shift if a bigger gap opens elsewhere.',
     ],
     metrics: [
       { label: 'Acuity-weighted gap', value: '−44%' },
@@ -819,9 +819,9 @@ export const WORKFLOW_TEMPLATES = [
   { id: 'tpl-ot-projection',    title: 'OT Projection Alerts',     description: 'Flag workers projected to clear OT threshold 3 days before pay period close.', agentId: 'atlas', category: 'labor-costs',
     triggerLabel: 'Worker projected to clear OT cap',
     highlights: [
-      'Re-projects every worker\'s period total each evening based on punches + published schedule.',
-      'Alerts the manager 3 days ahead with the specific shifts driving the overage.',
-      'One-click swap proposals — no spreadsheet wrangling.',
+      'Projects each worker\'s hours daily, not just at period close.',
+      'Alerts the manager ahead of time with the shifts driving it.',
+      'Suggests swaps in one click — no spreadsheets.',
     ],
     metrics: [
       { label: 'OT surprises', value: '−71%', sub: 'caught mid-period vs. at close' },
@@ -832,9 +832,9 @@ export const WORKFLOW_TEMPLATES = [
   { id: 'tpl-double-time',      title: 'Double-Time Guardrails',   description: 'Block shifts that would trigger double-time premium unless approved by a manager.', agentId: 'leo',   category: 'labor-costs',
     triggerLabel: 'Shift edit would trigger 2x pay',
     highlights: [
-      'Catches edits that would push a worker past your double-time threshold before publish.',
-      'Requires a manager confirm with the cost delta and approval reason logged.',
-      'Provides 1-click alternate-assignee suggestions that fit policy.',
+      'Catches edits that would trigger double-time before publish.',
+      'Asks for a manager confirm with the cost delta in plain view.',
+      'Suggests policy-fitting alternates in a single click.',
     ],
     metrics: [
       { label: 'Unintended 2x shifts', value: '0',   sub: '14 last quarter' },
@@ -845,9 +845,9 @@ export const WORKFLOW_TEMPLATES = [
   { id: 'tpl-missed-punch',     title: 'Missed Punch Recovery',    description: 'Reconstruct missed clock events from schedule + door access, queue for approval.', agentId: 'sofia', category: 'labor-costs',
     triggerLabel: 'Punch missing at shift end',
     highlights: [
-      'Reconstructs likely start/end from schedule, door access, and team chat presence.',
-      'Routes the reconstruction to the manager for a 1-tap approve.',
-      'Notifies the worker so they can confirm or correct from their phone.',
+      'Pieces together a likely punch from schedule and access data.',
+      'Sends it to the manager for a one-tap approval.',
+      'Lets the worker confirm or fix it from their phone.',
     ],
     metrics: [
       { label: 'Time correction window', value: '< 24h', sub: 'down from 5–7 days' },
@@ -858,9 +858,9 @@ export const WORKFLOW_TEMPLATES = [
   { id: 'tpl-premium-route',    title: 'Premium Pay Routing',      description: 'Route holiday and weekend differential shifts to opted-in workers first.', agentId: 'nova',  category: 'labor-costs',
     triggerLabel: 'Premium-rate shift published',
     highlights: [
-      'Maintains an opt-in list of workers who want premium shifts.',
-      'Offers premium-rate shifts to opted-in workers first, before broad publish.',
-      'Tracks fairness so the same names don\'t always get first crack.',
+      'Keeps an opt-in list of workers who want premium shifts.',
+      'Offers them first, before the shift opens to everyone.',
+      'Rotates the first-look so the same names don\'t always win.',
     ],
     metrics: [
       { label: 'Premium-shift fill', value: '+22%' },
@@ -873,9 +873,9 @@ export const WORKFLOW_TEMPLATES = [
   { id: 'tpl-license-renew',    title: 'License Renewal Reminders', description: 'DM workers 60/30/7 days before expiry with the exact renewal link.', agentId: 'iris',  category: 'compliance',
     triggerLabel: 'License expires in 60 days',
     highlights: [
-      'Surfaces upcoming renewals across every state + license type your workforce holds.',
-      'Sends the right link for the right state at 60 / 30 / 7-day cadence.',
-      'Auto-blocks the worker from new scheduled hours if the renewal slips past expiry.',
+      'Surfaces upcoming renewals across every state and license type.',
+      'Sends the right link with the right lead time.',
+      'Blocks new scheduled hours if a renewal slips past expiry.',
     ],
     metrics: [
       { label: 'On-time renewals', value: '98%' },
@@ -886,9 +886,9 @@ export const WORKFLOW_TEMPLATES = [
   { id: 'tpl-training-due',     title: 'Training Due Watch',        description: 'Pull due dates from the LMS and block scheduling when training lapses.', agentId: 'iris',  category: 'compliance',
     triggerLabel: 'LMS due date within 14 days',
     highlights: [
-      'Reads each worker\'s upcoming training due dates from your LMS.',
-      'Nudges with role-specific context — what the training unlocks for them.',
-      'Holds scheduling against the impacted role if training lapses.',
+      'Pulls upcoming training due dates from your LMS.',
+      'Nudges workers with context — what the training unlocks.',
+      'Holds scheduling against the role if training lapses.',
     ],
     metrics: [
       { label: 'On-time completions', value: '+18%' },
@@ -899,8 +899,8 @@ export const WORKFLOW_TEMPLATES = [
   { id: 'tpl-predictive-sched', title: 'Predictive Scheduling',     description: 'Hold schedules to your state\'s 14-day notice rule; flag any inside-window edits.', agentId: 'leo',   category: 'compliance',
     triggerLabel: 'Schedule edit inside 14d window',
     highlights: [
-      'Tracks your state\'s predictive-scheduling rule per worker, location, and role.',
-      'Flags any inside-window edit with the legal premium the edit would trigger.',
+      'Applies your state\'s predictive-scheduling rule automatically.',
+      'Flags inside-window edits with the premium they\'d trigger.',
       'Logs the audit trail you\'d need if a regulator ever asked.',
     ],
     metrics: [
@@ -914,8 +914,8 @@ export const WORKFLOW_TEMPLATES = [
   { id: 'tpl-onb-advance',      title: 'Onboarding Auto-Advance',   description: 'Move new hires through I-9, badge, role training without operator nudges.', agentId: 'sofia', category: 'onboarding',
     triggerLabel: 'Offer accepted',
     highlights: [
-      'Threads each new hire through I-9, payroll, badge, and role training automatically.',
-      'Surfaces blockers (waiting on docs, missing approver) before they become escalations.',
+      'Walks each new hire through paperwork, badge, and training.',
+      'Surfaces blockers early — before they become escalations.',
       'Hands off the moment the hire is shift-ready.',
     ],
     metrics: [
@@ -927,9 +927,9 @@ export const WORKFLOW_TEMPLATES = [
   { id: 'tpl-doc-collect',      title: 'Document Collection',       description: 'Chase missing W-4 / direct deposit / cert uploads on a polite cadence.', agentId: 'sofia', category: 'onboarding',
     triggerLabel: 'Required doc missing 24h+',
     highlights: [
-      'Auto-chases missing W-4, direct deposit, and credential uploads.',
-      'Switches channel after 24h — SMS → email → manager.',
-      'Recognizes "looks like" uploads (HR vs. tax forms) so you don\'t mis-route.',
+      'Chases missing paperwork without HR having to remember.',
+      'Switches channel if the first nudge goes unanswered.',
+      'Recognizes uploaded docs so they land in the right folder.',
     ],
     metrics: [
       { label: 'Docs complete by day 3', value: '94%' },
@@ -940,9 +940,9 @@ export const WORKFLOW_TEMPLATES = [
   { id: 'tpl-badge-issue',      title: 'Badge & Access Issuance',   description: 'Open badge request in security system the moment day-1 confirms; close ticket when picked up.', agentId: 'iris',  category: 'onboarding',
     triggerLabel: 'Day 1 confirmed',
     highlights: [
-      'Opens the badge ticket in your access system the moment day-1 confirms.',
-      'Closes the loop when the badge is picked up — no double entry.',
-      'Catches dormant requests before they delay the worker\'s first shift.',
+      'Opens the badge ticket the moment day-1 confirms.',
+      'Closes the loop on pickup — no double entry.',
+      'Flags stuck requests before they delay the first shift.',
     ],
     metrics: [
       { label: 'Day-1 badge ready',  value: '99%' },
@@ -955,9 +955,9 @@ export const WORKFLOW_TEMPLATES = [
   { id: 'tpl-shift-confirm',    title: 'Shift Confirmations',       description: 'Confirm next-day shifts 18h ahead; route non-confirms straight to the callout cascade.', agentId: 'nova',  category: 'show-rate',
     triggerLabel: '18h before shift start',
     highlights: [
-      'Pings each worker 18h before the shift to confirm.',
-      'Routes non-confirms directly into the callout cascade — no manager middle-step.',
-      'Tracks confirm rate per worker for future ranking weight.',
+      'Pings each worker the day before to confirm.',
+      'Routes non-confirms straight into the callout cascade.',
+      'Learns each worker\'s reliability for future ranking.',
     ],
     metrics: [
       { label: 'Confirm rate',  value: '92%' },
@@ -968,9 +968,9 @@ export const WORKFLOW_TEMPLATES = [
   { id: 'tpl-broadcast-route',  title: 'Smart Broadcast Routing',   description: 'Send announcements only to the roles/sites that need them — no full-org noise.', agentId: 'sofia', category: 'manager-burden',
     triggerLabel: 'New broadcast posted',
     highlights: [
-      'Routes broadcasts only to the roles + sites the content applies to.',
-      'Suggests improvements when language is too generic to land.',
-      'Tracks open + acknowledge rates per role.',
+      'Sends each broadcast only to who actually needs it.',
+      'Flags wording that\'s too generic to land.',
+      'Tracks who opened and acknowledged, per role.',
     ],
     metrics: [
       { label: 'Open rate',       value: '+38%' },
@@ -981,9 +981,9 @@ export const WORKFLOW_TEMPLATES = [
   { id: 'tpl-manager-escalate', title: 'Manager Escalation',        description: 'Escalate stuck workflows to the right manager based on site, role, and time of day.', agentId: 'leo',   category: 'manager-burden',
     triggerLabel: 'Workflow stuck > policy SLA',
     highlights: [
-      'Routes escalations to the on-call manager for that site + time-of-day.',
-      'Includes the workflow\'s full context so the manager doesn\'t have to dig.',
-      'Closes the loop back to the originating workflow on resolution.',
+      'Routes each escalation to the right on-call manager.',
+      'Sends the full context so they don\'t have to dig.',
+      'Closes the loop back to the workflow on resolution.',
     ],
     metrics: [
       { label: 'Escalation time-to-touch', value: '< 4 min' },
@@ -996,9 +996,9 @@ export const WORKFLOW_TEMPLATES = [
   { id: 'tpl-auto-draft',       title: 'Schedule Auto-Draft',       description: 'Draft next week\'s schedule from demand forecast, availability, and fairness rules.', agentId: 'atlas', category: 'scheduling',
     triggerLabel: 'Weekly draft window opens',
     highlights: [
-      'Drafts the schedule from forecasted demand, availability, and fairness constraints.',
-      'Pre-explains every choice so you can sanity-check the AI\'s reasoning.',
-      'Re-runs in seconds when you tweak a constraint — no copy-paste.',
+      'Drafts from demand, availability, and fairness in one pass.',
+      'Explains each choice so you can sanity-check it.',
+      'Re-runs instantly when you tweak a constraint.',
     ],
     metrics: [
       { label: 'Draft time',        value: '12 min', sub: 'down from 4–6h' },
@@ -1009,9 +1009,9 @@ export const WORKFLOW_TEMPLATES = [
   { id: 'tpl-peak-forecast',    title: 'Peak Headcount Forecast',   description: 'Forecast peak demand 4 weeks out so you can pre-publish the matching skeleton.', agentId: 'atlas', category: 'scheduling',
     triggerLabel: 'New forecast generated',
     highlights: [
-      'Models peak demand 4 weeks ahead using your seasonal + event calendar.',
-      'Pre-publishes the skeleton so you can lock in early without surprise.',
-      'Highlights weeks where your skeleton is below the forecast plus buffer.',
+      'Models peak demand weeks ahead using your event and season patterns.',
+      'Pre-publishes a skeleton so you can lock in early.',
+      'Flags weeks where the skeleton is below forecast plus buffer.',
     ],
     metrics: [
       { label: 'Forecast accuracy', value: '94%', sub: 'within ±5% on peak weeks' },
@@ -1022,9 +1022,9 @@ export const WORKFLOW_TEMPLATES = [
   { id: 'tpl-hours-balance',    title: 'Hours Fairness Rebalance',  description: 'Spread shift offers across the team to keep no one chronically under- or over-hours.', agentId: 'nova',  category: 'scheduling',
     triggerLabel: 'Weekly fairness check',
     highlights: [
-      'Tracks a rolling 8-week hours-distribution per worker.',
-      'Rebalances shift offers toward workers who\'ve been chronically under.',
-      'Flags when ranking would over-concentrate hours on the same people.',
+      'Tracks each worker\'s hours over a rolling window.',
+      'Tilts new offers toward people who\'ve been chronically under.',
+      'Catches when the same names keep getting first crack.',
     ],
     metrics: [
       { label: 'Hours variance (8-wk)', value: '−42%' },

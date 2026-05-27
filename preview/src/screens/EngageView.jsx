@@ -127,18 +127,79 @@ const CONVERSATIONS = [
   },
 ]
 
-// The thread shown in the right pane — Miguel R., the lead OT-risk
-// employee from the Sage CFO dashboard handoff.
-const MIGUEL_THREAD = [
-  { who: 'sera',   when: 'Yesterday 4:12 PM', text: "Heads up — you\'re projecting **46 hrs** this week between Civic Arena (32) and the Saturday Niners home game (14). That puts you 6 hrs over the OT cap." },
-  { who: 'miguel', when: 'Yesterday 4:18 PM', text: "ya I saw. didn't realize the niners game was on me too" },
-  { who: 'sera',   when: 'Yesterday 4:19 PM', text: "Got it. I have **two options** that keep you under the cap and don\'t cost you any money." },
-  { who: 'sera',   when: 'Yesterday 4:19 PM',
-    text: "**Option A** — Move the Saturday 4–9 PM gate 3 shift to Jordan K. (28 hrs this week, gate 3 qualified, 4.9 rating). You stay at 32 hrs, no pay change.\n\n**Option B** — Split it: keep your Saturday 4–6 PM brief, hand 6–9 PM to Jordan. You finish at 34 hrs, still 6 hrs of room.",
-    quoteAttachment: true },
-  { who: 'miguel', when: 'Today 8:54 AM',     text: "go with option A. Jordan's solid" },
-  { who: 'sera',   when: 'Today 8:55 AM',     text: "Done. Jordan accepted in **47 seconds**. You\'re back to 32 hrs and the OT cap is restored. Thanks Miguel.", confirmed: true },
-]
+/* Per-conversation threads. Each conversation in the list has its own
+ * messages array so clicking through the list renders a unique chat
+ * (Marcus J., Priya S., etc.), not Miguel's thread repeated. Sera is
+ * the agent voice across all threads — same persona, different worker. */
+const THREADS = {
+  miguel: [
+    { who: 'sera',   when: 'Yesterday 4:12 PM', text: "Heads up — you\'re projecting **46 hrs** this week between Civic Arena (32) and the Saturday Niners home game (14). That puts you 6 hrs over the OT cap." },
+    { who: 'peer',   when: 'Yesterday 4:18 PM', text: "ya I saw. didn't realize the niners game was on me too" },
+    { who: 'sera',   when: 'Yesterday 4:19 PM', text: "Got it. I have **two options** that keep you under the cap and don\'t cost you any money." },
+    { who: 'sera',   when: 'Yesterday 4:19 PM',
+      text: "**Option A** — Move the Saturday 4–9 PM gate 3 shift to Jordan K. (28 hrs this week, gate 3 qualified, 4.9 rating). You stay at 32 hrs, no pay change.\n\n**Option B** — Split it: keep your Saturday 4–6 PM brief, hand 6–9 PM to Jordan. You finish at 34 hrs, still 6 hrs of room.",
+      quoteAttachment: { title: '2 swap proposals · Saturday Apr 25', meta: 'Auto-drafted by Nova · OT-cap protected · 0 pay delta' } },
+    { who: 'peer',   when: 'Today 8:54 AM',     text: "go with option A. Jordan's solid" },
+    { who: 'sera',   when: 'Today 8:55 AM',     text: "Done. Jordan accepted in **47 seconds**. You\'re back to 32 hrs and the OT cap is restored. Thanks Miguel.", confirmed: true },
+  ],
+  marcus: [
+    { who: 'sera', when: 'Yesterday 6:02 PM', text: "Picking up Saturday\'s gate 3 (4–9 PM) would put you at **44 hrs** — that trips your OT cap. Want me to find a swap?" },
+    { who: 'peer', when: 'Yesterday 6:08 PM', text: "I want the hours tbh. Anything else I can pick up later in the week?" },
+    { who: 'sera', when: 'Yesterday 6:10 PM',
+      text: "Yes — **two options** that keep you under the cap:\n\n• Trade Saturday 4–9 PM for Friday\'s 11 AM–4 PM premium suite shift (+$3/hr differential).\n• Hold Saturday and pick up Sun 12–4 PM concessions instead.",
+      quoteAttachment: { title: 'Suggested swaps · this week', meta: 'Both keep you at 39 hrs · differential included' } },
+    { who: 'peer', when: 'Today 8:31 AM', text: "let\'s do the Friday premium suite one" },
+    { who: 'sera', when: 'Today 8:32 AM', text: "Swapped. You\'re on Friday 11 AM–4 PM, premium-suite section. Ratesheet shows **+$22.50** vs. the Saturday gate. See you then.", confirmed: true },
+  ],
+  priya: [
+    { who: 'sera', when: 'Yesterday 7:14 PM', text: "Quick heads-up — Saturday\'s 5 AM load-in moved to **6 AM** to give the rigging crew an extra hour. Same gate, same role." },
+    { who: 'peer', when: 'Yesterday 7:22 PM', text: "ok noted. is the wrap time the same?" },
+    { who: 'sera', when: 'Yesterday 7:23 PM', text: "Same wrap — **10 AM** — so you\'re down from 5 hrs to 4 hrs. I\'ve adjusted your time sheet. Confirm when you can?" },
+    { who: 'peer', when: 'Today 7:51 AM',     text: "Confirmed 👍" },
+    { who: 'sera', when: 'Today 7:52 AM',     text: "Got it — see you Saturday at 6 AM. I\'ll send a reminder Friday night.", confirmed: true },
+  ],
+  diane: [
+    { who: 'sera', when: 'Yesterday 5:46 PM', text: "Two **F&B shifts** opened up Sun afternoon if you want hours — 12–4 PM east concourse, and 1–5 PM premium-suite. You\'re at 26 hrs for the week so both fit." },
+    { who: 'peer', when: 'Yesterday 5:51 PM', text: "I\'ll take the premium suite one, thanks!" },
+    { who: 'sera', when: 'Yesterday 5:51 PM', text: "Locked in. Sunday 1–5 PM, premium-suite east. Pre-shift brief at 12:45 PM in section 213." },
+    { who: 'sera', when: 'Today 8:38 AM',     text: "Reminder for tomorrow — Sunday 1 PM, section 213 brief. **+$2/hr** differential applies.", confirmed: true },
+  ],
+  carlos: [
+    { who: 'sera', when: 'Yesterday 5:02 PM', text: "Premium-suite head count for Saturday was revised — we need **+6 attendants** on the 4 PM call." },
+    { who: 'sera', when: 'Yesterday 5:02 PM', text: "You\'re the lead on that section. Should I open the gap to your standing team first, or broadcast to all premium-trained staff?" },
+    { who: 'peer', when: 'Yesterday 5:18 PM', text: "open to my team first. 1hr to respond then broadcast." },
+    { who: 'sera', when: 'Yesterday 5:19 PM', text: "On it. Targeting your 14-person section. I\'ll roll to a broadcast at 6:20 PM if we still have gaps." },
+    { who: 'sera', when: 'Today 7:02 AM',     text: "Filled — **5 from your team**, 1 from the broadcast. Sat 4 PM call is fully staffed.", confirmed: true },
+  ],
+  jordan: [
+    { who: 'sera', when: 'Yesterday 3:48 PM', text: "Confirming you\'re OK to swap into **Marcus J.\'s Friday gate 3 shift** (4–9 PM). You\'re at 28 hrs so it puts you at 33." },
+    { who: 'peer', when: 'Yesterday 3:54 PM', text: "yes I\'m good with that" },
+    { who: 'sera', when: 'Yesterday 3:54 PM', text: "Done — added to your schedule, paystub will reflect the swap automatically. Marcus credited with the swap-out." },
+    { who: 'sera', when: 'Today 9:10 AM',     text: "Reminder: Friday 4 PM, gate 3. Pre-shift huddle 3:45 in the east tunnel.", confirmed: true },
+  ],
+  rachel: [
+    { who: 'sera', when: 'Yesterday 8:04 PM', text: "Sandra called out for **Saturday 7 PM at Civic** — can you take it? Same role, same pay. You\'re at 24 hrs so plenty of room." },
+    { who: 'peer', when: 'Yesterday 8:09 PM', text: "yes! I can take it" },
+    { who: 'sera', when: 'Yesterday 8:09 PM', text: "Locked in. Saturday 7 PM, Civic — section 4 supervisor. Pre-shift 6:30." },
+    { who: 'sera', when: 'Today 6:32 AM',     text: "Reminder — tonight 7 PM, Civic section 4. **+$1.50/hr** weekend differential applies.", confirmed: true },
+  ],
+  david: [
+    { who: 'sera', when: 'Yesterday 11:14 AM', text: "Fairness check — you\'ve been **on for 5 shifts in a row**. Want me to swap Sunday out so you get a real break?" },
+    { who: 'peer', when: 'Yesterday 11:30 AM', text: "actually yeah. Sunday off would be great" },
+    { who: 'sera', when: 'Yesterday 11:31 AM', text: "Done. Sunday\'s shift opened up to the standby pool, and you\'re off. **6 days on, 1 off** — let\'s not let it stretch past 5 again." },
+    { who: 'peer', when: 'Today 8:02 AM',      text: "appreciate it. thanks Sera." },
+    { who: 'sera', when: 'Today 8:02 AM',      text: "Enjoy Sunday. I\'ll watch your rotations going forward.", confirmed: true },
+  ],
+  broadcast: [
+    { who: 'sera', when: 'Yesterday 9:00 AM',
+      text: "**Niners Game-Day Brief — Saturday**\n\nGates open at **4:30 PM**. Pre-shift huddle by section at **3:45 PM**. Wear the red event polo, badge visible. Water + ice stations at sections 105, 210, 315.",
+      quoteAttachment: { title: 'Game-Day Brief · Levi\'s Stadium', meta: 'Sent to 142 Event Staff · Read by 138' } },
+    { who: 'sera', when: 'Yesterday 9:00 AM', text: "Reply here with questions — I\'ll route role-specific ones to your section lead." },
+    { who: 'peer', when: 'Yesterday 10:14 AM', text: "(Marisol G.) Where do new hires pick up their polo?" },
+    { who: 'sera', when: 'Yesterday 10:14 AM', text: "Section 1 wardrobe, west tunnel entrance. Bring your ID — they\'ll sign one out and back in at wrap." },
+    { who: 'sera', when: 'Today 7:00 AM',      text: "Final reminder — gates 4:30 PM. **138 of 142** confirmed. 4 outstanding (Marcus J., Priya S., Diane K., Rachel W.) — I\'ve pinged each separately.", confirmed: true },
+  ],
+}
 
 export default function EngageView({ onDemo, onToggleActivityDrawer, activityDrawerOpen }) {
   const [activeDept, setActiveDept] = useState('sched')
@@ -146,6 +207,7 @@ export default function EngageView({ onDemo, onToggleActivityDrawer, activityDra
   const buzz = () => onDemo?.()
 
   const conv = CONVERSATIONS.find(c => c.id === activeConv) ?? CONVERSATIONS[0]
+  const thread = THREADS[conv.id] ?? THREADS.miguel
 
   return (
     <section className="engage" aria-label="Engage">
@@ -267,7 +329,7 @@ export default function EngageView({ onDemo, onToggleActivityDrawer, activityDra
           </span>
           <div className="engage-thread-titleblock">
             <div className="engage-thread-name">{conv.name}</div>
-            <div className="engage-thread-sub">Last message {MIGUEL_THREAD.at(-1).when}</div>
+            <div className="engage-thread-sub">Last message {thread.at(-1).when}</div>
           </div>
           <div className="engage-thread-actions">
             <button type="button" className="engage-thread-confirm" onClick={buzz} aria-label="Mark resolved">
@@ -294,7 +356,7 @@ export default function EngageView({ onDemo, onToggleActivityDrawer, activityDra
         <div className="engage-thread-body">
           <div className="engage-thread-day">Today, Apr 24 2026</div>
 
-          {MIGUEL_THREAD.map((m, i) => (
+          {thread.map((m, i) => (
             <ThreadMessage key={i} message={m} sender={conv} />
           ))}
         </div>
@@ -335,8 +397,8 @@ function ThreadMessage({ message, sender }) {
           ))}
           {message.quoteAttachment && (
             <div className="engage-msg-attachment">
-              <div className="engage-msg-attachment-title">2 swap proposals · Saturday Apr 25</div>
-              <div className="engage-msg-attachment-meta">Auto-drafted by Nova · OT-cap protected · 0 pay delta</div>
+              <div className="engage-msg-attachment-title">{message.quoteAttachment.title}</div>
+              <div className="engage-msg-attachment-meta">{message.quoteAttachment.meta}</div>
             </div>
           )}
         </div>

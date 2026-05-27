@@ -6994,10 +6994,16 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
 .engage {
   display: grid;
   grid-template-columns: 220px 320px 1fr;
-  height: 100%;
+  /* Anchor to viewport so the rail / list / thread each scroll inside
+   * without the page itself pushing past 100vh. min-height:0 lets the
+   * grid children honor their own overflow rules. */
+  height: 100vh;
+  max-height: 100vh;
+  min-height: 0;
   background: var(--color-bg-primary);
   overflow: hidden;
 }
+.engage > * { min-height: 0; }
 
 .engage-rail {
   border-right: 1px solid var(--color-border-opaque);
@@ -7360,7 +7366,9 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
 .engage-msg-bubble p + p { margin-top: 6px; }
 
 .engage-msg-bubble--agent {
-  background: var(--color-content-primary);
+  /* Soft Teambridge blue — Sera's voice on the worker's phone, not
+   * an admin black-pill that reads punitive. */
+  background: linear-gradient(135deg, #2F62FF 0%, #1170FF 100%);
   color: #fff;
   border-color: transparent;
 }
