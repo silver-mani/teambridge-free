@@ -141,15 +141,15 @@ const NAV_GROUPS = [
   {
     label: 'Schedule',
     items: [
-      { id: 'schedule',       label: 'Full Schedule',  Icon: Grid01Icon                 },
-      { id: 'shift-requests', label: 'Shift Requests', Icon: ArrowCircleBrokenRightIcon },
+      { id: 'schedule',       label: 'Schedule', Icon: Grid01Icon                 },
+      { id: 'shift-requests', label: 'Requests', Icon: ArrowCircleBrokenRightIcon },
     ],
   },
   {
     label: 'Time Tracking',
     items: [
-      { id: 'time-tracking', label: 'Live Tracking', Icon: Map01Icon  },
-      { id: 'timesheets',    label: 'Timesheets',    Icon: ClockIcon  },
+      { id: 'time-tracking', label: 'Tracking',   Icon: Map01Icon  },
+      { id: 'timesheets',    label: 'Timesheets', Icon: ClockIcon  },
     ],
   },
   {
@@ -164,9 +164,9 @@ const NAV_GROUPS = [
 const NAV_BOTTOM_GROUP = {
   label: 'Admin',
   items: [
-    { id: 'workflows', label: 'Agent Workflows', Icon: GitBranch01Icon },
-    { id: 'policies',  label: 'Policy Builder',  Icon: BookOpen01Icon  },
-    { id: 'settings',  label: 'Settings',        Icon: SettingsGearIcon },
+    { id: 'workflows', label: 'Agents',   Icon: GitBranch01Icon  },
+    { id: 'policies',  label: 'Policies', Icon: BookOpen01Icon   },
+    { id: 'settings',  label: 'Settings', Icon: SettingsGearIcon },
   ],
 }
 
@@ -3802,10 +3802,10 @@ const TITLE_FOR_VIEW = {
   people:          'People',
   pay:             'Pay',
   engage:          'Engage',
-  workflows:       'Workflows',
-  policies:        'Policy Builder',
-  'time-tracking': 'Time Tracking',
-  'shift-requests': 'Shift Requests',
+  workflows:       'Agents',
+  policies:        'Policies',
+  'time-tracking': 'Tracking',
+  'shift-requests': 'Requests',
   settings:        'Settings',
   onboarding:      'Onboarding',
   timesheets:      'Timesheets',

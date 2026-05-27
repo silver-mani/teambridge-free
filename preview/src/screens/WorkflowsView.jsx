@@ -63,10 +63,10 @@ function WorkflowListScreen({ onOpen, onDemo }) {
   const buzz = () => onDemo?.()
   const [tab, setTab] = useState('browse')
   return (
-    <section className="wf" aria-label="Agent Workflows">
+    <section className="wf" aria-label="Agents">
       <header className="wf-head">
         <div className="wf-head-titlewrap">
-          <h1 className="wf-title">Agent Workflows</h1>
+          <h1 className="wf-title">Agents</h1>
           <nav className="wf-tabs" role="tablist" aria-label="Workflow views">
             <button
               type="button"
