@@ -243,42 +243,82 @@ export function ReviewStep({ config, importMethod, onImportMethodChange, onBack,
     : `${states.slice(0, -1).join(', ')} and ${states[states.length - 1]} + federal`
 
   // Smart per-section reasoning — visible in the collapsed accordion
-  // head so the operator can see what Nova was thinking without
-  // expanding anything. Each line references the actual research:
-  // industry shape, location count, the specific states' policies.
+  // so the operator sees Nova's thinking without expanding anything.
+  // Each is structured as { headline, body } and rendered as a
+  // dedicated "Why this" rationale block, consistent with the step's
+  // top intro and the Agents-step rationale below.
   const moduleNames = catalogModules.map(m => m.name)
   const modulesReasoning = (() => {
     const hasCreds = moduleNames.includes('Credentials')
     const hasOnb   = moduleNames.includes('Onboarding')
-    if (hasCreds && hasOnb)  return `${industryLabel} runs on credentialed, high-throughput hiring — I added Credentialing + Onboarding on top of the core surfaces.`
-    if (hasCreds)            return `${industryLabel} roles need license + cert tracking, so Credentialing is on by default alongside the core surfaces.`
-    if (hasOnb)              return `${industryLabel} throughput is candidate placements — Onboarding leads the surfaces I turned on.`
-    return `${industryLabel} operations need the daily-driver surfaces; I held off on Credentialing and Onboarding since your roles don't typically need them.`
+    if (hasCreds && hasOnb) {
+      return {
+        headline: `${industryLabel} runs on credentialed, high-throughput hiring.`,
+        body: `That's why I added Credentialing + Onboarding on top of the core surfaces (Scheduling, People, Time Tracking, Pay, Engage). Your roles need license and cert tracking from day one, and Onboarding helps you absorb the candidate volume your job postings imply.`,
+      }
+    }
+    if (hasCreds) {
+      return {
+        headline: `${industryLabel} roles need license + cert tracking.`,
+        body: `Credentialing is on by default alongside the core surfaces (Scheduling, People, Time Tracking, Pay, Engage) so cert expiries don't slip past anyone on your roster.`,
+      }
+    }
+    if (hasOnb) {
+      return {
+        headline: `${industryLabel} throughput is candidate placements.`,
+        body: `Onboarding leads the surfaces I turned on, with People, Credentials, Pay, and Engage filling out the rest — same shape staffing agencies use to get placements to first-shift in under a week.`,
+      }
+    }
+    return {
+      headline: `${industryLabel} operations live in the daily-driver surfaces.`,
+      body: `Scheduling, People, Time Tracking, Pay, and Engage cover the everyday workflow. I held off on Credentialing and Onboarding because your roles don't typically need either — you can flip them on anytime.`,
+    }
   })()
 
   const dataReasoning = (() => {
     const sitesNoun = locations.length === 1 ? 'site' : 'sites'
     const rolesNoun = roles.length === 1 ? 'role' : 'roles'
+    const someRoles = roles.slice(0, 3).join(', ')
+    const roleTail = roles.length > 3 ? ` and ${roles.length - 3} more` : ''
     if (states.length >= 2) {
       const shown = states.slice(0, 3).join(', ')
       const extra = states.length > 3 ? ` +${states.length - 3} more` : ''
-      return `${locations.length} ${sitesNoun} across ${shown}${extra}, and ${roles.length} hourly ${rolesNoun} I inferred from ${companyName}'s site + job postings.`
+      return {
+        headline: `${locations.length} ${sitesNoun} across ${shown}${extra} and ${roles.length} hourly ${rolesNoun}.`,
+        body: `Pulled from ${companyName}'s site, careers page, and active job postings. Roles like ${someRoles}${roleTail} surfaced repeatedly. Sample roster will mirror this footprint so you can explore before committing your real data.`,
+      }
     }
     if (states.length === 1) {
-      return `${locations.length} ${sitesNoun} in ${states[0]} and ${roles.length} hourly ${rolesNoun} pulled from ${companyName}'s job postings.`
+      return {
+        headline: `${locations.length} ${sitesNoun} in ${states[0]} and ${roles.length} hourly ${rolesNoun}.`,
+        body: `Pulled from ${companyName}'s site and active job postings. Roles like ${someRoles}${roleTail} kept showing up. Sample roster will mirror this so you can drive the demo with realistic numbers.`,
+      }
     }
-    return `${locations.length} ${sitesNoun} and ${roles.length} hourly ${rolesNoun} inferred from ${companyName}'s public footprint.`
+    return {
+      headline: `${locations.length} ${sitesNoun} and ${roles.length} hourly ${rolesNoun}.`,
+      body: `Inferred from ${companyName}'s public footprint. Tweak anything that's off, or swap how I bring in your starting roster (sample data, CSV upload, or HRIS sync).`,
+    }
   })()
 
   const policiesReasoning = (() => {
     const headlines = states.map(s => POLICY_STATE_HEADLINE[s]).filter(Boolean)
     if (states.length === 0) {
-      return `Federal baseline only — FLSA weekly overtime + minor-work limits. ${allPolicies.length} rule${allPolicies.length === 1 ? '' : 's'} active.`
+      return {
+        headline: `Federal baseline only — FLSA weekly overtime + minor-work limits.`,
+        body: `${allPolicies.length} rule${allPolicies.length === 1 ? '' : 's'} active. Add a state-located site under Data and I'll layer the matching state rules on automatically.`,
+      }
     }
     if (headlines.length === 0) {
-      return `${allPolicies.length} rules across ${stateLabel}.`
+      return {
+        headline: `${allPolicies.length} rules across ${stateLabel}.`,
+        body: `Filtered from the Teambridge compliance library by the states your sites operate in. Each rule runs automatically once active.`,
+      }
     }
-    return `${headlines.slice(0, 2).join(' · ')} — ${allPolicies.length} rules total across ${stateLabel}.`
+    const tail = headlines.length > 2 ? ` +${headlines.length - 2} more state-level rules` : ''
+    return {
+      headline: `${allPolicies.length} rules across ${stateLabel}.`,
+      body: `${headlines.slice(0, 2).join('. ')}${tail}. All from the Teambridge compliance library — each runs automatically once active so you stay clean on every audit.`,
+    }
   })()
 
   return (
@@ -303,7 +343,7 @@ export function ReviewStep({ config, importMethod, onImportMethodChange, onBack,
       <div className="cm-step-body cm-review-body">
         <ReviewAccordion
           title="Modules"
-          description={modulesReasoning}
+          reasoning={modulesReasoning}
           activeCount={activeModules.size}
           open={openSection === 'modules'}
           onToggle={() => toggleSection('modules')}
@@ -330,7 +370,7 @@ export function ReviewStep({ config, importMethod, onImportMethodChange, onBack,
 
         <ReviewAccordion
           title="Data"
-          description={dataReasoning}
+          reasoning={dataReasoning}
           activeCount={locations.length + roles.length}
           open={openSection === 'data'}
           onToggle={() => toggleSection('data')}
@@ -409,7 +449,7 @@ export function ReviewStep({ config, importMethod, onImportMethodChange, onBack,
 
         <ReviewAccordion
           title="Policies"
-          description={policiesReasoning}
+          reasoning={policiesReasoning}
           activeCount={activePolicies.size}
           open={openSection === 'policies'}
           onToggle={() => toggleSection('policies')}
@@ -444,7 +484,7 @@ export function ReviewStep({ config, importMethod, onImportMethodChange, onBack,
   )
 }
 
-function ReviewAccordion({ title, description, activeCount, open, onToggle, children }) {
+function ReviewAccordion({ title, reasoning, activeCount, open, onToggle, children }) {
   return (
     <section className={`cm-review-accordion ${open ? 'is-open' : ''}`}>
       <button
@@ -455,7 +495,6 @@ function ReviewAccordion({ title, description, activeCount, open, onToggle, chil
       >
         <div className="cm-review-accordion-headtext">
           <span className="cm-review-accordion-title">{title}</span>
-          <span className="cm-review-accordion-description">{description}</span>
         </div>
         <span className="cm-review-accordion-badge">
           {activeCount} active
@@ -464,8 +503,26 @@ function ReviewAccordion({ title, description, activeCount, open, onToggle, chil
           <ChevronDownIcon size={14} />
         </span>
       </button>
+      {reasoning && <RationaleBlock headline={reasoning.headline} body={reasoning.body} />}
       {open && <div className="cm-review-accordion-body">{children}</div>}
     </section>
+  )
+}
+
+/* Shared rationale block — used both inside each Account Setup
+ * accordion and on the Agents step. Same visual everywhere so
+ * "Nova's thinking" reads consistently. */
+function RationaleBlock({ headline, body }) {
+  return (
+    <div className="cm-rationale">
+      <span className="cm-rationale-label">
+        <TeambridgeAIIcon size={12} /> Why this
+      </span>
+      <div className="cm-rationale-text">
+        {headline && <span className="cm-rationale-headline">{headline}</span>}
+        {body && <span className="cm-rationale-body">{body}</span>}
+      </div>
+    </div>
   )
 }
 
@@ -612,21 +669,36 @@ export function AgentsStep({ config, onChange, onBack, onContinue }) {
   const turnedOn = PAIN_OPTIONS.filter(p => agentsSet.has(p.id)).map(p => AGENT_HERO[p.id]?.title).filter(Boolean)
   const agentsReasoning = (() => {
     if (turnedOn.length === 0) {
-      return `Nothing pre-recommended yet — pick the agents that match your day-to-day.`
+      return {
+        headline: `Nothing pre-recommended yet.`,
+        body: `Pick the agents that match your day-to-day — each one's preview shows what it'll automate before you turn it on.`,
+      }
     }
     const lead = turnedOn.slice(0, 2).join(' + ')
     const tailCount = turnedOn.length - 2
     const tail = tailCount > 0 ? ` and ${tailCount} more` : ''
     if (stateCount >= 2 && config?.headcount) {
-      return `For ${headcountStr} hourly workers across ${stateCount} states, ${lead}${tail} are the highest-leverage starts.`
+      return {
+        headline: `${lead}${tail} are the highest-leverage starts for ${headcountStr} hourly workers across ${stateCount} states.`,
+        body: `Multi-state ${industryLabel.toLowerCase()} ops bleed time on coverage and compliance gaps — these two agents close both. Layer in the others as your team gets comfortable.`,
+      }
     }
     if (stateCount >= 2) {
-      return `Multi-state ${industryLabel.toLowerCase()} ops live and die by ${lead.toLowerCase()} — that's why those are on first.`
+      return {
+        headline: `Multi-state ${industryLabel.toLowerCase()} ops live and die by ${lead.toLowerCase()}${tail}.`,
+        body: `Operating across ${stateCount} states means coverage gaps and compliance drift compound fast — these agents catch both before they become escalations.`,
+      }
     }
     if (config?.headcount) {
-      return `At ~${headcountStr} hourly workers, ${lead}${tail} pay back the fastest for ${industryLabel.toLowerCase()}.`
+      return {
+        headline: `At ~${headcountStr} hourly workers, ${lead}${tail} pay back the fastest.`,
+        body: `At your scale, the daily-driver agents save the most operator time. Start with these and add the others once your team's used to working with the AI in the loop.`,
+      }
     }
-    return `For ${industryLabel.toLowerCase()}, ${lead}${tail} are the highest-leverage starts.`
+    return {
+      headline: `For ${industryLabel.toLowerCase()}, ${lead}${tail} are the highest-leverage starts.`,
+      body: `These are the agents that show up first in real ${industryLabel.toLowerCase()} accounts. Turn the rest on as your team gets comfortable.`,
+    }
   })()
 
   return (
@@ -642,7 +714,9 @@ export function AgentsStep({ config, onChange, onBack, onContinue }) {
         </div>
       </header>
 
-      <p className="cm-agents-reasoning">{agentsReasoning}</p>
+      <div className="cm-step-rationale">
+        <RationaleBlock headline={agentsReasoning.headline} body={agentsReasoning.body} />
+      </div>
 
       <div className="cm-step-body cm-agents-body">
         <div className="cm-agents-carousel">

@@ -2793,7 +2793,7 @@
  * above the three accordions. Gives the operator confidence that
  * everything below is editable. */
 .cm-review-intro {
-  margin: 0 var(--space-5) var(--space-3);
+  margin: var(--space-4) var(--space-5) var(--space-3);
   padding: 14px 16px;
   background: var(--color-purple-bg-tertiary);
   border-radius: var(--radius-md);
@@ -2810,6 +2810,46 @@
   padding: 1px 6px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--color-border-opaque);
+}
+
+/* Shared "Why this" rationale block — used inside every Account
+ * Setup accordion and on the Agents step. Same visual chrome
+ * everywhere so Nova's reasoning reads consistently across the
+ * onboarding flow. */
+.cm-rationale {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 16px;
+  background: var(--color-purple-bg-tertiary);
+  border-radius: var(--radius-md);
+}
+.cm-review-accordion .cm-rationale {
+  margin: 12px 14px;
+}
+.cm-rationale-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-purple-content-secondary, #6b21a8);
+}
+.cm-rationale-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}
+.cm-rationale-headline {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-content-primary);
+}
+.cm-rationale-body {
+  color: var(--color-purple-content-secondary, #6b21a8);
 }
 
 /* Detail row — now has a trailing toggle slot. */
@@ -2992,18 +3032,11 @@
  * the entire hero square (no padded colored backdrop); text sits
  * underneath as bold title + short description. Carousel paginated
  * with prev / next chevrons in the gutter. Click any tile to toggle. */
-/* Reasoning line for the Agents step — sits between the card header
- * and the carousel, explaining why these specific agents were picked
- * for this company. Same purple tint as the review intro so it reads
- * as Nova's thinking surfacing in-card. */
-.cm-agents-reasoning {
-  margin: 0 var(--space-5) var(--space-3);
-  padding: 12px 16px;
-  background: var(--color-purple-bg-tertiary);
-  border-radius: var(--radius-md);
-  font-size: var(--text-sm);
-  line-height: 1.55;
-  color: var(--color-content-primary);
+/* Step-level rationale wrapper — gives the Agents step the same
+ * outer margins as the Account Setup intro so both reasoning blocks
+ * sit in the same gutter. */
+.cm-step-rationale {
+  margin: 0 var(--space-5) var(--space-4);
 }
 
 .cm-agents-body { overflow: hidden; }
