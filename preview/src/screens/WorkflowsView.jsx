@@ -12,14 +12,17 @@ import { AlertTriangleIcon }    from '../../../src/components/icons/AlertTriangl
 import { GitBranch01Icon }      from '../../../src/components/icons/GitBranch01Icon.tsx'
 import { Target04Icon }         from '../../../src/components/icons/Target04Icon.tsx'
 import { XIcon }                from '../../../src/components/icons/XIcon.tsx'
-import { ListBulletIcon }       from '../../../src/components/icons/ListBulletIcon.tsx'
 import {
   WORKFLOWS,
+  WORKFLOW_TEMPLATES_FEATURED,
+  templatesByCategory,
+  getTemplate,
   getWorkflow,
   flattenNodes,
   firstNodeId,
   nodeAgent,
 } from '../data/workflowData.js'
+import { AGENTS } from '../data/agents.js'
 
 /* ─── Entry view ──────────────────────────────────────────────────────────
    Controlled list → detail routing (same pattern as PayView). `pendingId`
@@ -58,20 +61,294 @@ export default function WorkflowsView({ industryId, pendingWorkflowId, onConsume
 
 function WorkflowListScreen({ onOpen, onDemo }) {
   const buzz = () => onDemo?.()
+  const [tab, setTab] = useState('browse')
   return (
-    <section className="wf" aria-label="Agent Workflows">
+    <section className="wf" aria-label="Agents">
       <header className="wf-head">
-        <h1 className="wf-title">Agent Workflows</h1>
+        <div className="wf-head-titlewrap">
+          <h1 className="wf-title">Agents</h1>
+          <nav className="wf-tabs" role="tablist" aria-label="Workflow views">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === 'browse'}
+              className={`wf-tab ${tab === 'browse' ? 'is-active' : ''}`}
+              onClick={() => setTab('browse')}
+            >
+              Browse
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === 'mine'}
+              className={`wf-tab ${tab === 'mine' ? 'is-active' : ''}`}
+              onClick={() => setTab('mine')}
+            >
+              My Workflows
+            </button>
+          </nav>
+        </div>
         <div className="wf-head-actions">
-          <button type="button" className="wf-btn" onClick={buzz}>
-            <PlusIcon size={14} /> New workflow
-          </button>
-          <button type="button" className="wf-icon-btn" onClick={buzz} aria-label="Open menu">
-            <ListBulletIcon size={16} />
+          <button type="button" className="wf-btn wf-btn-dark" onClick={buzz}>
+            <PlusIcon size={14} /> Create Workflow
           </button>
         </div>
       </header>
 
+      {tab === 'browse' ? (
+        <BrowseTemplates onOpen={onOpen} onDemo={buzz} />
+      ) : (
+        <MyWorkflowsList onOpen={onOpen} onDemo={buzz} />
+      )}
+    </section>
+  )
+}
+
+function BrowseTemplates({ onOpen, onDemo }) {
+  const buzz = () => onDemo?.()
+  const grouped = templatesByCategory()
+  const [activeTemplateId, setActiveTemplateId] = useState(null)
+  const activeTemplate = activeTemplateId ? getTemplate(activeTemplateId) : null
+  return (
+    <>
+      <h2 className="wf-section-title">Featured</h2>
+      <div className="wf-featured">
+        {WORKFLOW_TEMPLATES_FEATURED.map(tpl => (
+          <FeaturedTemplateCard key={tpl.id} template={tpl} onOpen={() => setActiveTemplateId(tpl.id)} />
+        ))}
+      </div>
+
+      <div className="wf-browse-toolbar">
+        <h2 className="wf-section-title wf-section-title-flush">All Workflows</h2>
+        <div className="wf-browse-toolbar-right">
+          <div className="wf-list-search" role="search">
+            <SearchSmIcon size={14} />
+            <input type="text" placeholder="Find templates…" onClick={buzz} onChange={() => {}} />
+          </div>
+          <button type="button" className="wf-filter" onClick={buzz}>All categories <ChevronDownIcon size={12} /></button>
+          <button type="button" className="wf-filter" onClick={buzz}>All agents <ChevronDownIcon size={12} /></button>
+        </div>
+      </div>
+
+      <div className="wf-tpl-groups">
+        {grouped.map(group => (
+          <div key={group.id} className="wf-tpl-group">
+            <h3 className="wf-tpl-group-title">{group.label}</h3>
+            <div className="wf-tpl-grid">
+              {group.items.map(tpl => (
+                <TemplateTile key={tpl.id} template={tpl} onOpen={() => setActiveTemplateId(tpl.id)} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {activeTemplate && (
+        <TemplateModal
+          template={activeTemplate}
+          onClose={() => setActiveTemplateId(null)}
+          onViewDetails={() => {
+            const wfId = activeTemplate.workflowId
+            if (wfId && WORKFLOWS.some(w => w.id === wfId)) {
+              setActiveTemplateId(null)
+              onOpen(wfId)
+            } else {
+              buzz()
+            }
+          }}
+          onTurnOn={buzz}
+        />
+      )}
+    </>
+  )
+}
+
+/* Interstitial details modal — overview, what it does, key metrics,
+ * "Turn On" (primary) + "View workflow details" (secondary). Turn On
+ * flips to a confirmed state in-line; details navigation only fires
+ * when the template is backed by a real workflow definition. */
+function TemplateModal({ template, onClose, onViewDetails, onTurnOn }) {
+  const agent = AGENTS[template.agentId]
+  const [turnedOn, setTurnedOn] = useState(false)
+  const hasWorkflow = !!template.workflowId && WORKFLOWS.some(w => w.id === template.workflowId)
+
+  // Esc closes; click on backdrop closes.
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  const handleTurnOn = () => {
+    if (turnedOn) return
+    setTurnedOn(true)
+    onTurnOn?.()
+  }
+
+  return (
+    <div
+      className="wf-modal-scrim"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${template.title} template details`}
+      onClick={onClose}
+    >
+      <div className="wf-modal" onClick={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          className="wf-modal-close"
+          onClick={onClose}
+          aria-label="Close template details"
+        >
+          <XIcon size={14} />
+        </button>
+
+        <header className="wf-modal-head">
+          {agent && (
+            <span
+              className={`wf-modal-agent agent-avatar agent-avatar-${agent.color}`}
+              style={{ backgroundImage: `url(${agent.avatar})` }}
+              aria-label={agent.name}
+              role="img"
+            />
+          )}
+          <div className="wf-modal-head-text">
+            <span className="wf-modal-agent-line">
+              <span className="wf-modal-agent-name">{agent?.name}</span>
+              <span className="wf-modal-agent-sep" aria-hidden="true">·</span>
+              <span className="wf-modal-agent-role">{agent?.role}</span>
+            </span>
+            <h2 className="wf-modal-title">{template.title}</h2>
+          </div>
+        </header>
+
+        <p className="wf-modal-desc">{template.description}</p>
+
+        {template.triggerLabel && (
+          <div className="wf-modal-trigger">
+            <span className="wf-modal-trigger-label">Trigger</span>
+            <span className="wf-modal-trigger-value">{template.triggerLabel}</span>
+          </div>
+        )}
+
+        {template.highlights?.length > 0 && (
+          <div className="wf-modal-section">
+            <h3 className="wf-modal-section-title">What it does</h3>
+            <ul className="wf-modal-list">
+              {template.highlights.map((h, i) => (
+                <li key={i} className="wf-modal-list-item">
+                  <span className="wf-modal-list-bullet" aria-hidden="true">
+                    <CheckCircleIcon size={12} />
+                  </span>
+                  <span>{h}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {template.metrics?.length > 0 && (
+          <div className="wf-modal-section">
+            <h3 className="wf-modal-section-title">Key metrics it improves</h3>
+            <div className="wf-modal-metrics">
+              {template.metrics.map((m, i) => (
+                <div key={i} className="wf-modal-metric">
+                  <span className="wf-modal-metric-value">{m.value}</span>
+                  <span className="wf-modal-metric-label">{m.label}</span>
+                  {m.sub && <span className="wf-modal-metric-sub">{m.sub}</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <footer className="wf-modal-foot">
+          <button
+            type="button"
+            className="wf-btn wf-modal-secondary"
+            onClick={onViewDetails}
+            disabled={!hasWorkflow}
+            title={hasWorkflow ? undefined : 'Workflow details available after you turn this on.'}
+          >
+            View workflow details
+          </button>
+          <button
+            type="button"
+            className={`wf-btn wf-btn-dark wf-modal-primary ${turnedOn ? 'is-on' : ''}`}
+            onClick={handleTurnOn}
+          >
+            {turnedOn ? (
+              <>
+                <CheckCircleIcon size={14} /> Turned On
+              </>
+            ) : (
+              'Turn On'
+            )}
+          </button>
+        </footer>
+      </div>
+    </div>
+  )
+}
+
+function FeaturedTemplateCard({ template, onOpen }) {
+  const agent = AGENTS[template.agentId]
+  return (
+    <button
+      type="button"
+      className={`wf-featured-card wf-featured-card-${template.gradient}`}
+      onClick={onOpen}
+    >
+      <div className="wf-featured-head">
+        {agent && (
+          <span
+            className={`wf-featured-agent agent-avatar agent-avatar-${agent.color}`}
+            style={{ backgroundImage: `url(${agent.avatar})` }}
+            aria-label={agent.name}
+            role="img"
+          />
+        )}
+        <span className="wf-featured-meta">
+          <span className="wf-featured-agent-name">{agent?.name}</span>
+          <span className="wf-featured-agent-role">{agent?.role}</span>
+        </span>
+      </div>
+      <div className="wf-featured-body">
+        <div className="wf-featured-title">{template.title}</div>
+        <div className="wf-featured-desc">{template.description}</div>
+      </div>
+      <div className="wf-featured-foot">
+        <span className="wf-featured-pill">{template.triggerLabel}</span>
+        <span className="wf-featured-nodes">{template.nodeCount} steps</span>
+      </div>
+    </button>
+  )
+}
+
+function TemplateTile({ template, onOpen }) {
+  const agent = AGENTS[template.agentId]
+  return (
+    <button type="button" className="wf-tpl-tile" onClick={onOpen}>
+      {agent && (
+        <span
+          className={`wf-tpl-tile-avatar agent-avatar agent-avatar-${agent.color}`}
+          style={{ backgroundImage: `url(${agent.avatar})` }}
+          aria-label={agent.name}
+          role="img"
+        />
+      )}
+      <div className="wf-tpl-tile-text">
+        <div className="wf-tpl-tile-title">{template.title}</div>
+        <div className="wf-tpl-tile-desc">{template.description}</div>
+      </div>
+    </button>
+  )
+}
+
+function MyWorkflowsList({ onOpen, onDemo }) {
+  const buzz = () => onDemo?.()
+  return (
+    <>
       <div className="wf-list-toolbar">
         <div className="wf-list-search" role="search">
           <SearchSmIcon size={14} />
@@ -83,7 +360,7 @@ function WorkflowListScreen({ onOpen, onDemo }) {
 
       <div className="wf-list" role="table">
         <div className="wf-list-head" role="row">
-          <div>Workflow</div>
+          <div className="wf-list-cell-name-head">Workflow</div>
           <div>Owner</div>
           <div>Trigger</div>
           <div>Last edited</div>
@@ -116,7 +393,7 @@ function WorkflowListScreen({ onOpen, onDemo }) {
           </button>
         ))}
       </div>
-    </section>
+    </>
   )
 }
 

@@ -108,5 +108,8 @@ export function applyAccountOverride(baseData, config) {
   if (config.companyName) {
     updated.label = config.companyName
   }
+  if (config.url) {
+    updated.brandUrl = config.url
+  }
   return updated
 }

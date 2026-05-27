@@ -44,15 +44,15 @@ export const DEFAULT_NAV_GROUPS = [
   {
     label: 'Schedule',
     items: [
-      { id: 'schedule',       label: 'Full Schedule',  Icon: Grid01Icon },
-      { id: 'shift-requests', label: 'Shift Requests', Icon: ArrowCircleBrokenRightIcon },
+      { id: 'schedule',       label: 'Schedule', Icon: Grid01Icon },
+      { id: 'shift-requests', label: 'Requests', Icon: ArrowCircleBrokenRightIcon },
     ],
   },
   {
     label: 'Time Tracking',
     items: [
-      { id: 'time-tracking', label: 'Live Tracking', Icon: Map01Icon },
-      { id: 'timesheets',    label: 'Timesheets',    Icon: ClockIcon },
+      { id: 'time-tracking', label: 'Tracking',   Icon: Map01Icon },
+      { id: 'timesheets',    label: 'Timesheets', Icon: ClockIcon },
     ],
   },
   {
@@ -67,9 +67,9 @@ export const DEFAULT_NAV_GROUPS = [
 export const DEFAULT_NAV_BOTTOM = {
   label: 'Admin',
   items: [
-    { id: 'workflows', label: 'Agent Workflows', Icon: GitBranch01Icon },
-    { id: 'policies',  label: 'Policy Builder',  Icon: BookOpen01Icon },
-    { id: 'settings',  label: 'Settings',        Icon: SettingsGearIcon },
+    { id: 'workflows', label: 'Agents',   Icon: GitBranch01Icon },
+    { id: 'policies',  label: 'Policies', Icon: BookOpen01Icon },
+    { id: 'settings',  label: 'Settings', Icon: SettingsGearIcon },
   ],
 }
 

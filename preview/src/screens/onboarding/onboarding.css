@@ -2610,36 +2610,437 @@
   line-height: var(--line-height-loose);
 }
 
-/* Goals step — Claude-generated WFM goal list. Multi-select rows that
- * read as substantive operator goals, all pre-toggled. */
-.cm-goal-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
-.cm-goal-row {
-  width: 100%;
+/* Goals step — short chip-style options. Each chip has a short
+ * primary label and a one-line detail under it. The "checked" state
+ * is a soft inverted fill, not a heavy stroked check icon. */
+.cm-goal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: grid;
-  grid-template-columns: 18px 1fr;
-  align-items: flex-start;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+.cm-goal-chip {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border-opaque);
   border-radius: var(--radius-md);
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: border-color 120ms ease, background 120ms ease;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
 }
-.cm-goal-row:hover { border-color: var(--color-border-selected); }
-.cm-goal-row.is-on { border-color: var(--color-content-primary); }
-.cm-goal-row .cm-tile-toggle { margin-top: 2px; }
-.cm-goal-text {
+.cm-goal-chip:hover { border-color: var(--color-border-selected); }
+.cm-goal-chip.is-on {
+  background: var(--color-content-primary);
+  border-color: var(--color-content-primary);
+  color: var(--color-bg-primary);
+}
+.cm-goal-chip-label {
   font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
   color: var(--color-content-primary);
-  line-height: var(--line-height-loose);
+  line-height: 1.3;
+}
+.cm-goal-chip.is-on .cm-goal-chip-label { color: var(--color-bg-primary); }
+.cm-goal-chip-detail {
+  font-size: var(--text-xs);
+  color: var(--color-content-tertiary);
+  line-height: 1.4;
+}
+.cm-goal-chip.is-on .cm-goal-chip-detail {
+  color: color-mix(in srgb, var(--color-bg-primary) 78%, transparent);
 }
 .cm-goal-empty {
   font-size: var(--text-sm);
   color: var(--color-content-tertiary);
   padding: var(--space-3) var(--space-4);
+}
+
+/* Review step — three collapsible accordions (Modules / Data / Policies)
+ * collapsed by default; expanding any one reveals editable rows. */
+.cm-review-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cm-review-accordion {
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+.cm-review-accordion.is-open {
+  border-color: var(--color-border-selected);
+  box-shadow: 0 4px 14px -10px rgba(0, 0, 0, 0.18);
+}
+.cm-review-accordion-head {
+  appearance: none;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 20px;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 18px 22px;
+  background: transparent;
+  border: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+.cm-review-accordion-head:hover { background: var(--color-bg-secondary); }
+.cm-review-accordion.is-open .cm-review-accordion-head { background: var(--color-bg-secondary); }
+.cm-review-accordion-headtext {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.cm-review-accordion-title {
+  font-size: 17px;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.01em;
+  color: var(--color-content-primary);
+}
+.cm-review-accordion-description {
+  font-size: var(--text-sm);
+  color: var(--color-content-tertiary);
+  line-height: 1.4;
+}
+.cm-review-accordion-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-secondary);
+  white-space: nowrap;
+}
+.cm-review-accordion.is-open .cm-review-accordion-badge {
+  background: var(--color-content-primary);
+  color: var(--color-bg-primary);
+  border-color: var(--color-content-primary);
+}
+.cm-review-accordion-chev {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-content-tertiary);
+  transition: transform 160ms ease;
+}
+.cm-review-accordion-chev.is-open { transform: rotate(180deg); }
+.cm-review-accordion-body {
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  border-top: 1px solid var(--color-border-opaque);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Detail row — now has a trailing toggle slot. */
+.cm-review-detail-row {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-md);
+}
+.cm-review-detail-remove {
+  appearance: none;
+  background: transparent;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  color: var(--color-content-tertiary);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+.cm-review-detail-remove:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-content-primary);
+}
+
+/* Editable chips — small × button to drop a chip. */
+.cm-review-chips--editable { gap: 6px; }
+.cm-review-chip.is-editable {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 4px;
+}
+.cm-review-chip-x {
+  appearance: none;
+  background: transparent;
+  border: none;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-full);
+  color: var(--color-content-tertiary);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.cm-review-chip-x:hover { background: var(--color-bg-secondary); color: var(--color-content-primary); }
+
+/* iOS-style toggle switch (used in Modules + Policies rows). */
+.cm-toggle-switch {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  width: 36px;
+  height: 22px;
+  padding: 2px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--color-border-opaque);
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+.cm-toggle-switch-knob {
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-full);
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: transform 160ms ease;
+}
+.cm-toggle-switch.is-on { background: var(--color-content-primary); }
+.cm-toggle-switch.is-on .cm-toggle-switch-knob { transform: translateX(14px); }
+
+@media (max-width: 720px) {
+  .cm-review-accordion-description { display: none; }
+}
+
+.cm-review-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.cm-review-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+  white-space: nowrap;
+}
+.cm-review-chip.is-on {
+  background: var(--color-content-primary);
+  border-color: var(--color-content-primary);
+  color: var(--color-bg-primary);
+}
+.cm-review-empty {
+  font-size: var(--text-xs);
+  color: var(--color-content-tertiary);
+}
+
+.cm-review-detail-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.cm-review-detail-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.cm-review-detail-icon--blue   { background: color-mix(in srgb, #446CFF 12%, transparent); color: #2746B5; }
+.cm-review-detail-icon--purple { background: color-mix(in srgb, #8C4FE2 12%, transparent); color: #6B21A8; }
+.cm-review-detail-icon--matcha { background: color-mix(in srgb, #1EDFDE 14%, transparent); color: #0F766E; }
+.cm-review-detail-icon--orange { background: color-mix(in srgb, #F08A2E 14%, transparent); color: #C2410C; }
+.cm-review-detail-icon--pink   { background: color-mix(in srgb, #F89BB6 18%, transparent); color: #9D174D; }
+.cm-review-detail-icon--slate  { background: var(--color-bg-secondary); color: var(--color-content-secondary); }
+.cm-review-detail-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.cm-review-detail-name {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+}
+.cm-review-detail-desc {
+  font-size: var(--text-xs);
+  color: var(--color-content-tertiary);
+  line-height: 1.45;
+}
+.cm-review-detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.cm-review-detail-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-content-secondary);
+  letter-spacing: 0.04em;
+}
+.cm-review-detail-tag.is-fed {
+  background: color-mix(in srgb, #446CFF 12%, transparent);
+  color: #2746B5;
+}
+.cm-review-detail-group { display: flex; flex-direction: column; gap: 8px; }
+.cm-review-detail-grouptitle {
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-content-tertiary);
+}
+
+@media (max-width: 720px) {
+  .cm-review-accordion-chips { display: none; }
+}
+
+/* Agents step — horizontal carousel of specialist tiles. The GIF fills
+ * the entire hero square (no padded colored backdrop); text sits
+ * underneath as bold title + short description. Carousel paginated
+ * with prev / next chevrons in the gutter. Click any tile to toggle. */
+.cm-agents-body { overflow: hidden; }
+.cm-agents-carousel {
+  position: relative;
+  margin: 0 -8px;
+}
+.cm-agent-strip {
+  display: flex;
+  gap: 24px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  padding: 4px 8px 20px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-opaque) transparent;
+}
+.cm-agent-strip::-webkit-scrollbar { height: 8px; }
+.cm-agent-strip::-webkit-scrollbar-thumb { background: var(--color-border-opaque); border-radius: 4px; }
+.cm-agent-strip::-webkit-scrollbar-track { background: transparent; }
+.cm-agent-card {
+  appearance: none;
+  flex: 0 0 280px;
+  scroll-snap-align: start;
+  background: transparent;
+  border: none;
+  padding: 0;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.cm-agent-hero {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid var(--color-border-opaque);
+  transition: box-shadow 160ms ease, transform 160ms ease, border-color 160ms ease;
+  background: var(--color-bg-secondary);
+}
+.cm-agent-card:hover .cm-agent-hero {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px -16px rgba(0, 0, 0, 0.25);
+}
+.cm-agent-card.is-on .cm-agent-hero {
+  box-shadow: 0 0 0 3px var(--color-content-primary), 0 14px 28px -16px rgba(0, 0, 0, 0.25);
+}
+.cm-agent-hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.cm-agent-on-dot {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--color-content-primary);
+  color: var(--color-bg-primary);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+}
+.cm-agent-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 2px;
+}
+.cm-agent-title {
+  font-size: 18px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-content-primary);
+  letter-spacing: -0.01em;
+}
+.cm-agent-desc {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--color-content-tertiary);
+}
+
+/* Carousel chevron buttons — float over the strip on the left/right. */
+.cm-agents-nav {
+  position: absolute;
+  top: 140px;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  box-shadow: 0 4px 12px -6px rgba(0, 0, 0, 0.18);
+  color: var(--color-content-primary);
+  cursor: pointer;
+  z-index: 2;
+  transition: background 140ms ease, transform 140ms ease;
+}
+.cm-agents-nav:hover { background: var(--color-bg-secondary); transform: scale(1.06); }
+.cm-agents-nav--prev { left: -10px; }
+.cm-agents-nav--next { right: -10px; }
+
+@media (max-width: 1100px) {
+  .cm-goal-list  { grid-template-columns: 1fr; }
+  .cm-agent-card { flex-basis: 220px; }
+  .cm-agents-nav { top: 110px; }
 }
 
 /* Review step body — used by InsightsStep/AgentsStep/PoliciesStep/
