@@ -22,6 +22,30 @@ import AgentAvatar from './AgentAvatar.jsx'
 
 export const ALL_FIELDS = ['summary', 'industry', 'headcount', 'locations', 'roles']
 
+/* CompanyFavicon — pulls the favicon for `url` via Google's s2/favicons
+ * service and renders it as a 24×24 image. Falls back to the
+ * caller-provided `fallback` node on load error (e.g. for a fresh
+ * intake before the URL resolves, or when the site has no favicon). */
+function CompanyFavicon({ url, fallback }) {
+  const [errored, setErrored] = useState(false)
+  // Reset the error flag when the URL changes — a new domain deserves
+  // a fresh attempt before falling back.
+  useEffect(() => { setErrored(false) }, [url])
+  const domain = (url || '').replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '').trim()
+  if (!domain || errored) return fallback
+  const src = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`
+  return (
+    <img
+      src={src}
+      alt=""
+      width={24}
+      height={24}
+      style={{ display: 'block', width: 24, height: 24, borderRadius: 4 }}
+      onError={() => setErrored(true)}
+    />
+  )
+}
+
 function ConfidenceBadge({ level }) {
   if (!level) return null
   const cls = level === 'high' ? 'cc-conf--high' : level === 'medium' ? 'cc-conf--med' : 'cc-conf--low'
@@ -352,7 +376,10 @@ export default function ConfigCard({
               background: `var(--color-${industry.color}-bg-tertiary)`,
               color:      `var(--color-${industry.color}-content-secondary)`,
             } : undefined} aria-hidden="true">
-              {industry ? <industry.Icon /> : <TeambridgeAIIcon size={16} />}
+              <CompanyFavicon
+                url={config.url}
+                fallback={industry ? <industry.Icon /> : <TeambridgeAIIcon size={16} />}
+              />
             </span>
             <div className="cc-head-text">
               {editable ? (
