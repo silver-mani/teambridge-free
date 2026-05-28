@@ -9,6 +9,7 @@ import { InsightsStep, GoalsStep, ReviewStep, AgentsStep } from './ReviewSteps.j
 import BuildProgressCard from './BuildProgressCard.jsx'
 import { deriveConfig } from './urlMatcher.js'
 import { POLICIES_BY_STATE } from './steps.js'
+import { trackDemoEvent } from '../../lib/demoTracking.js'
 import '../act1.css'
 import './onboarding.css'
 
@@ -110,6 +111,26 @@ function buildLockedNav() {
   }
 }
 
+function trackedConfig(config) {
+  if (!config) return {}
+  return {
+    companyName: config.companyName,
+    industry: config.industry,
+    headcount: config.headcount,
+    headcountRange: config.headcountRange,
+    origin: config.origin,
+    url: config.url,
+    locationCount: Array.isArray(config.locations) ? config.locations.length : 0,
+    roleCount: Array.isArray(config.roles) ? config.roles.length : 0,
+    agents: Array.isArray(config.agents) ? config.agents : [],
+    connectors: Array.isArray(config.suggestedConnectors) ? config.suggestedConnectors : [],
+    goals: Array.isArray(config.goals)
+      ? config.goals.map(g => typeof g === 'string' ? g : g?.label).filter(Boolean).slice(0, 7)
+      : [],
+    confidence: config.confidence,
+  }
+}
+
 export default function OnboardingFlow({ onExit, onComplete }) {
   const [state, setState] = useState('intake')              // 'intake' | 'research' | 'insights' | 'goals' | 'review' | 'agents' | 'launching'
   const [pickedGoals, setPickedGoals] = useState([])
@@ -176,6 +197,10 @@ export default function OnboardingFlow({ onExit, onComplete }) {
       ? 'your description'
       : text.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '')
 
+    trackDemoEvent('build_intake_submitted', {
+      inputMode: isFreeText ? 'free-text' : 'url',
+      input: text.slice(0, 300),
+    })
     pushMessage({ from: 'user', text })
     setIntakeDraft('')
     setRevealedFields(new Set(['summary']))
@@ -219,6 +244,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     }
 
     setConfig(derived)
+    trackDemoEvent('build_config_derived', trackedConfig(derived))
     cascadeResearchSteps(derived, bubbleId)
   }, [intakeMode, pushMessage]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -292,19 +318,44 @@ export default function OnboardingFlow({ onExit, onComplete }) {
    * Final step (DataStep) calls onLaunch which transitions to
    * 'launching' (the BuildProgressCard animation). */
   const handleInsightsContinue = useCallback(() => {
+    trackDemoEvent('build_insights_confirmed', trackedConfig(config))
     pushMessage({ from: 'nova', text: "What are you looking to do with Teambridge?", instant: true })
     setState('goals')
-  }, [pushMessage])
+  }, [config, pushMessage])
   const handleGoalsContinue = useCallback((picked) => {
     setPickedGoals(picked || [])
+    trackDemoEvent('build_goals_selected', {
+      companyName: config?.companyName,
+      industry: config?.industry,
+      goals: (picked || []).map(g => g?.label || g).filter(Boolean),
+    })
     pushMessage({ from: 'nova', text: "Got it. Here's what I'm setting up — quick review before agents.", instant: true })
     setState('review')
-  }, [pushMessage])
+  }, [config, pushMessage])
+  const handleImportMethodChange = useCallback((method) => {
+    setImportMethod(method)
+    trackDemoEvent('build_import_method_selected', {
+      companyName: config?.companyName,
+      industry: config?.industry,
+      importMethod: method,
+    })
+  }, [config])
   const handleReviewContinue = useCallback(() => {
+    trackDemoEvent('build_account_review_confirmed', {
+      ...trackedConfig(config),
+      importMethod,
+      selectedGoals: pickedGoals.map(g => g?.label || g).filter(Boolean),
+      policyCount: derivedPolicies.length,
+    })
     pushMessage({ from: 'nova', text: "Now the fun part — want to automate any of this?", instant: true })
     setState('agents')
-  }, [pushMessage])
+  }, [config, derivedPolicies.length, importMethod, pickedGoals, pushMessage])
   const handleAgentsContinue = useCallback(() => {
+    trackDemoEvent('build_agents_confirmed', {
+      companyName: config?.companyName,
+      industry: config?.industry,
+      agents: Array.isArray(config?.agents) ? config.agents : [],
+    })
     pushMessage({ from: 'nova', text:
       `Launching your account. About 30 seconds — there's real configuration work happening behind the scenes.`, instant: true })
     setState('launching')
@@ -315,8 +366,14 @@ export default function OnboardingFlow({ onExit, onComplete }) {
   }, [config, pushMessage])
 
   const handleLaunchComplete = useCallback(() => {
+    trackDemoEvent('build_account_launched', {
+      ...trackedConfig(config),
+      importMethod,
+      selectedGoals: pickedGoals.map(g => g?.label || g).filter(Boolean),
+      policyCount: derivedPolicies.length,
+    })
     onComplete?.(config)
-  }, [config, onComplete])
+  }, [config, derivedPolicies.length, importMethod, onComplete, pickedGoals])
 
   /* ── Render ── */
   const industry = state === 'intake' ? null : (config ? INDUSTRIES.find(i => i.id === config.industry) : null)
@@ -430,7 +487,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
         <ReviewStep
           config={config}
           importMethod={importMethod}
-          onImportMethodChange={setImportMethod}
+          onImportMethodChange={handleImportMethodChange}
           onBack={() => setState('goals')}
           onContinue={handleReviewContinue}
         />
