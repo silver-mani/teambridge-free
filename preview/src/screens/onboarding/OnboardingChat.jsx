@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowNarrowUpIcon } from '../../../../src/components/icons/ArrowNarrowUpIcon.tsx'
 import { CheckCircleIcon } from '../../../../src/components/icons/CheckCircleIcon.tsx'
+import { ChevronDownIcon } from '../../../../src/components/icons/ChevronDownIcon.tsx'
+import { SearchSmIcon } from '../../../../src/components/icons/SearchSmIcon.tsx'
 import TeambridgeLogo from './TeambridgeLogo.jsx'
 
 /* ──────────────────────────────────────────────────────────────────────
@@ -31,21 +33,129 @@ function Bubble({ from, children }) {
   )
 }
 
+/* ResearchBubble — Alloy AIActivityTrail structure.
+ *   · Collapsible body with a left-border timeline.
+ *   · Header summary: "Working · <current step>" while live, then
+ *     "Thought · N steps" once everything is done.
+ *   · Live state paints a flowing AI gradient on the header text;
+ *     done state collapses by default but stays toggleable.
+ *   · Pending steps are filtered out of the visible body so the log
+ *     reads as work-so-far, not work-to-come. */
 function ResearchBubble({ headline, steps }) {
-  return (
-    <div className="ob-msg ob-msg--nova">
-      <div className="ob-research-headline">{headline}</div>
-      <ul className="ob-research-list">
-        {steps.map((s, i) => (
-          <li key={i} className={`ob-research-step ob-research-step--${s.status}`}>
-            <span className="ob-research-mark" aria-hidden="true">
-              {s.status === 'done' && <CheckCircleIcon size={11} />}
-              {s.status === 'active' && <span className="ob-research-spin" />}
+  const trailState = steps.every(s => s.status === 'done') ? 'done' : 'live'
+  const [manualExpanded, setManualExpanded] = useState(null)
+  // Reset manual override when the lifecycle flips (e.g. live → done),
+  // so the new default (collapsed-on-done) takes over unless the user
+  // re-toggles afterwards.
+  useEffect(() => { setManualExpanded(null) }, [trailState])
+
+  const defaultExpanded = trailState === 'live'
+  const expanded = manualExpanded !== null ? manualExpanded : defaultExpanded
+  const toggle = () => setManualExpanded(!expanded)
+
+  // Steps to render in the body. Drop pending — they preview future
+  // work and clutter the trail. Active + done flow into the timeline.
+  const visibleSteps = useMemo(
+    () => steps.filter(s => s.status !== 'pending'),
+    [steps],
+  )
+
+  // Build the header summary. Live: "Working · <active step text>".
+  // Done: use the caller-provided headline if any, else "Thought · N steps".
+  const activeIdx = visibleSteps.findIndex(s => s.status === 'active')
+  const lastIdx = visibleSteps.length - 1
+  const currentIdx = activeIdx >= 0 ? activeIdx : lastIdx
+  const currentText =
+    currentIdx >= 0 ? visibleSteps[currentIdx].text : null
+
+  let summary
+  if (trailState === 'live') {
+    summary = (
+      <>
+        Working
+        {currentText != null && (
+          <>
+            {' · '}
+            <span key={currentIdx} className="ob-trail-header-current">
+              {currentText}
             </span>
-            <span className="ob-research-text">{s.text}</span>
-          </li>
-        ))}
-      </ul>
+          </>
+        )}
+      </>
+    )
+  } else {
+    const tail =
+      steps.length === 1 ? '1 step' : `${steps.length} steps`
+    summary = (
+      <>
+        {headline ? headline.replace(/\.$/, '') : 'Thought'}
+        {' · '}
+        {tail}
+      </>
+    )
+  }
+
+  return (
+    <div
+      className="ob-msg ob-msg--nova ob-trail"
+      data-state={trailState}
+      data-expanded={expanded}
+    >
+      <button
+        type="button"
+        className="ob-trail-header"
+        onClick={toggle}
+        aria-expanded={expanded}
+        aria-label={expanded ? 'Collapse activity trail' : 'Expand activity trail'}
+      >
+        <span key={trailState} className="ob-trail-header-summary">{summary}</span>
+        <span
+          className={`ob-trail-header-chevron ${expanded ? 'is-expanded' : ''}`}
+          aria-hidden="true"
+        >
+          <ChevronDownIcon size={14} />
+        </span>
+      </button>
+
+      <div
+        className={`ob-trail-body ${expanded ? 'is-expanded' : ''}`}
+        aria-hidden={!expanded}
+      >
+        <div className="ob-trail-body-inner">
+          <div className="ob-trail-body-content">
+            {visibleSteps.map((s, i) => {
+              const isActive = s.status === 'active'
+              const animate = isActive && trailState === 'live'
+              return (
+                <div
+                  key={i}
+                  className={`ob-trail-step ob-trail-step--${s.status} ${animate ? 'is-animating' : ''}`}
+                  data-step-status={s.status}
+                >
+                  <span className="ob-trail-step-icon" aria-hidden="true">
+                    {s.status === 'done'
+                      ? <CheckCircleIcon size={14} />
+                      : <SearchSmIcon size={14} />}
+                  </span>
+                  <span className="ob-trail-step-body">
+                    <span className="ob-trail-step-label">{s.text}</span>
+                  </span>
+                </div>
+              )
+            })}
+            {trailState === 'done' && (
+              <div className="ob-trail-step ob-trail-step--done">
+                <span className="ob-trail-step-icon" aria-hidden="true">
+                  <CheckCircleIcon size={14} />
+                </span>
+                <span className="ob-trail-step-body">
+                  <span className="ob-trail-step-label">Done</span>
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

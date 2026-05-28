@@ -19,12 +19,14 @@
 
 .ob-root {
   /* Pin to viewport — each pane below scrolls internally so the
-   * whole page never scrolls. */
+   * whole page never scrolls. The canvas behind the right-pane card
+   * is the primary (lightest) surface — in light mode that's white;
+   * in dark mode it resolves to the corresponding dark base. */
   height: 100vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: var(--color-bg-secondary);
+  background: var(--color-bg-primary);
   font-family: var(--font-sans);
   color: var(--color-content-primary);
 }
@@ -144,7 +146,6 @@
   height: 100%;
   overflow: hidden;
   background: var(--color-bg-primary);
-  border-right: 1px solid var(--color-border-opaque);
 }
 .ob-chat-frame {
   height: 100%;
@@ -210,31 +211,46 @@
 }
 
 
+/* Chat thread — styling mirrors Alloy <AIThread> (compact density).
+ * AI messages read as long-form prose flush-left with no bubble; user
+ * messages are constrained pills on a secondary surface, right-aligned
+ * with a 1px opaque border. Vertical rhythm uses --space-4 (16px) to
+ * match Alloy's `compact` density, suited to this side-panel context. */
 .ob-chat-messages {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 
-/* Nova messages — plain left-aligned text on the chat surface.
- * Modeled on Claude's chat UI: the AI is the surface, not a chip.
- * User messages keep the bubble (.ob-bubble--user below). */
+/* AI (Nova) message — plain text on the chat surface, full width.
+ * Mirrors Alloy's `.messageBodyAi` typography: sm size, loose line
+ * height, normal tracking, pre-wrap so newlines from streams render. */
 .ob-msg--nova {
+  width: 100%;
+  padding: 0;
+  font-family: var(--font-sans);
   font-size: var(--text-sm);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-loose);
+  letter-spacing: var(--tracking-normal);
   color: var(--color-content-primary);
+  word-break: break-word;
+  white-space: pre-wrap;
   animation: ob-fade-in 240ms ease;
 }
-.ob-msg--nova + .ob-msg--nova { margin-top: var(--space-1); }
+.ob-msg--nova + .ob-msg--nova { margin-top: 0; }
 
-/* Bubble rows (user messages only now) */
+/* Bubble row — user-only now; sits on the right edge with the slide-in
+ * animation Alloy applies to outbound bubbles. */
 .ob-bubble-row {
   display: flex;
   align-items: flex-end;
   gap: var(--space-2);
-  animation: ob-fade-in 240ms ease;
 }
-.ob-bubble-row--user { justify-content: flex-end; }
+.ob-bubble-row--user {
+  justify-content: flex-end;
+  animation: ob-outbound-in 220ms var(--ease-out, cubic-bezier(0, 0, 0.2, 1)) both;
+}
 
 .ob-avatar {
   display: inline-flex; align-items: center; justify-content: center;
@@ -247,66 +263,252 @@
   color: #fff;
 }
 
+/* User bubble — Alloy `.messageBodyUser`: pill on bg-secondary with a
+ * 1px opaque border, radius-lg, capped at 88% so long messages wrap
+ * before they cross the column. No "tail" corner — Alloy keeps every
+ * corner equally rounded. */
 .ob-bubble {
-  max-width: 85%;
-  padding: var(--space-3) var(--space-4);
+  max-width: 88%;
+  padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-lg);
+  font-family: var(--font-sans);
   font-size: var(--text-sm);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-loose);
+  letter-spacing: var(--tracking-normal);
+  word-break: break-word;
+  white-space: pre-wrap;
 }
 .ob-bubble--nova {
-  background: var(--color-bg-tertiary);
+  /* Reserved — assistant bubbles aren't used in the current flow, but
+   * the variant is kept so a future tool/system message can render
+   * inside a bubble without breaking the thread layout. */
+  background: var(--color-bg-secondary);
   color: var(--color-content-primary);
-  border-bottom-left-radius: var(--radius-xs);
+  border: 1px solid var(--color-border-opaque);
 }
 .ob-bubble--user {
-  background: var(--color-bg-tertiary);
+  background: var(--color-bg-secondary);
   color: var(--color-content-primary);
-  border-bottom-right-radius: var(--radius-xs);
+  border: 1px solid var(--color-border-opaque);
 }
 
-/* Research bubble — Nova's live-updating checklist */
-.ob-research-headline {
-  margin-bottom: var(--space-2);
-  font-weight: var(--font-weight-medium);
+@keyframes ob-outbound-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ob-bubble-row--user {
+    animation: ob-fade-in 120ms var(--ease-out, cubic-bezier(0, 0, 0.2, 1)) both;
+  }
 }
 
-.ob-research-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+/* Research bubble — Alloy AIActivityTrail structure. Collapsible
+ * header summary + body with a left-border timeline of step rows. */
+.ob-trail {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-}
-
-.ob-research-step {
-  display: grid;
-  grid-template-columns: 16px 1fr;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--text-xs);
+  width: 100%;
+  font-family: var(--font-sans);
   color: var(--color-content-secondary);
 }
-.ob-research-step--pending { opacity: 0.4; }
-.ob-research-step--done    { color: var(--color-content-primary); }
 
-.ob-research-mark {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 16px; height: 16px;
-  color: var(--color-matcha-content-secondary);
+/* Header — clickable summary row. Sits inline-flex so the row stays
+ * tight to its content rather than spanning the full bubble width. */
+.ob-trail-header {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  align-self: flex-start;
+  max-width: calc(100% + var(--space-2));
+  padding: var(--space-1) var(--space-2);
+  margin-left: calc(var(--space-2) * -1);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  color: inherit;
+  text-align: left;
+  transition: background var(--duration-fast, 120ms), color var(--duration-fast, 120ms);
 }
-.ob-research-step--active .ob-research-mark { color: var(--color-content-tertiary); }
-.ob-research-step--pending .ob-research-mark { color: var(--color-content-tertiary); opacity: 0.6; }
+.ob-trail-header:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-content-primary);
+}
+.ob-trail-header:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-ring-focus, 0 0 0 3px color-mix(in srgb, var(--ai-grad-mid, #446CFF) 35%, transparent));
+}
 
-.ob-research-spin {
-  width: 10px; height: 10px;
-  border: 1.5px solid var(--color-border-opaque);
-  border-top-color: var(--color-content-primary);
-  border-radius: var(--radius-full);
-  animation: ob-spin 700ms linear infinite;
+/* Summary text — single-line ellipsis. Fade-in via keyed remount on
+ * each lifecycle change (see React key={trailState}). */
+.ob-trail-header-summary {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: ob-trail-summary-fade 260ms var(--ease-out, cubic-bezier(0, 0, 0.2, 1)) both;
 }
-@keyframes ob-spin { to { transform: rotate(360deg); } }
+@keyframes ob-trail-summary-fade {
+  from { opacity: 0; transform: translateY(2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Live state — flowing AI gradient across the summary text. Purple ↔
+ * blue cycle with matching endpoints so the loop is invisible. */
+.ob-trail[data-state="live"] .ob-trail-header-summary {
+  background: linear-gradient(90deg, #8C4FE2 0%, #446CFF 50%, #8C4FE2 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+          background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation:
+    ob-trail-summary-fade 260ms var(--ease-out, cubic-bezier(0, 0, 0.2, 1)) both,
+    ob-trail-summary-flow 4000ms linear infinite;
+}
+
+/* The "current step" span trailing "Working · " — typewriter reveal
+ * each time the active step advances (keyed remount restarts it). */
+.ob-trail-header-current {
+  display: inline-block;
+  vertical-align: bottom;
+  animation: ob-trail-header-type 700ms steps(36, end) both;
+}
+.ob-trail[data-state="live"] .ob-trail-header-current {
+  background: linear-gradient(90deg, #8C4FE2 0%, #446CFF 50%, #8C4FE2 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+          background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation:
+    ob-trail-header-type 700ms steps(36, end) both,
+    ob-trail-summary-flow 4000ms linear infinite;
+}
+@keyframes ob-trail-header-type {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0 0 0); }
+}
+@keyframes ob-trail-summary-flow {
+  from { background-position:    0% 0; }
+  to   { background-position: -200% 0; }
+}
+
+/* Chevron — hidden at rest, fades in on hover/focus/expanded. */
+.ob-trail-header-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-content-tertiary);
+  opacity: 0;
+  transition:
+    transform 200ms var(--ease-out, cubic-bezier(0, 0, 0.2, 1)),
+    opacity   120ms ease;
+  transform: rotate(-90deg);
+}
+.ob-trail-header-chevron.is-expanded { transform: rotate(0deg); }
+.ob-trail-header:hover .ob-trail-header-chevron,
+.ob-trail-header:focus-visible .ob-trail-header-chevron,
+.ob-trail-header[aria-expanded="true"] .ob-trail-header-chevron {
+  opacity: 1;
+}
+
+/* Body — grid-template-rows trick gives a CSS-only height transition. */
+.ob-trail-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 320ms var(--ease-out, cubic-bezier(0, 0, 0.2, 1)),
+    opacity            320ms var(--ease-out, cubic-bezier(0, 0, 0.2, 1));
+}
+.ob-trail-body.is-expanded {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.ob-trail-body-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+.ob-trail-body-content {
+  margin-left: 6.5px;
+  margin-top: var(--space-1);
+  padding: var(--space-2) 0 var(--space-2) var(--space-2);
+  border-left: 1px solid var(--color-border-opaque);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* Step row — icon + label, status drives color. */
+.ob-trail-step {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding-left: var(--space-3);
+  font-size: var(--text-xs);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-content-secondary);
+  transition: color 120ms ease;
+}
+.ob-trail-step--pending { color: var(--color-content-tertiary); }
+.ob-trail-step--active  { color: var(--color-content-primary); }
+.ob-trail-step--done    { color: var(--color-content-secondary); }
+.ob-trail-step--error   { color: var(--color-error-content, #b42318); }
+
+.ob-trail-step-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: currentColor;
+}
+.ob-trail-step--done .ob-trail-step-icon {
+  color: var(--color-matcha-content-secondary, var(--color-success-content, #079455));
+}
+
+/* Pulse on the active step's icon while the trail is live. */
+.ob-trail-step.is-animating .ob-trail-step-icon {
+  animation: ob-trail-step-pulse 1400ms ease infinite;
+}
+@keyframes ob-trail-step-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.45; }
+}
+
+.ob-trail-step-body {
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+}
+.ob-trail-step-label {
+  /* inherits from .ob-trail-step */
+}
+
+/* Reduced motion — kill the shimmer + animations, fall back to a
+ * static color so the summary still reads. */
+@media (prefers-reduced-motion: reduce) {
+  .ob-trail-body,
+  .ob-trail-header-chevron { transition: none; }
+  .ob-trail[data-state="live"] .ob-trail-header-summary,
+  .ob-trail[data-state="live"] .ob-trail-header-current,
+  .ob-trail-header-summary,
+  .ob-trail-step.is-animating .ob-trail-step-icon { animation: none; }
+  .ob-trail[data-state="live"] .ob-trail-header-summary,
+  .ob-trail[data-state="live"] .ob-trail-header-current {
+    background: none;
+    color: var(--color-content-secondary);
+    -webkit-text-fill-color: var(--color-content-secondary);
+  }
+}
 
 /* Insights bubble — Nova's "3 things I noticed" rendered inline in
  * the chat. Soft purple chassis so it reads as a thinking artifact,
@@ -373,8 +575,7 @@
  * it; just a top border for separation. */
 .ob-compose {
   flex-shrink: 0;
-  padding: var(--space-3) var(--space-6) var(--space-5);
-  border-top: 1px solid var(--color-border-opaque);
+  padding: var(--space-4);
   background: transparent;
 }
 .ob-compose-row {
@@ -431,13 +632,25 @@
    * flex-basis didn't always resolve through the grid-cell parent.
    * grid-template-rows: minmax(0, 1fr) explicitly tells the row to
    * shrink below content height, which is what makes overflow-y on
-   * the body actually trigger a scrollbar. */
-  height: 100%;
+   * the body actually trigger a scrollbar.
+   *
+   * 16px padding on every edge of the wrapper — head + body sit flush
+   * inside that inset, with their own padding zeroed out so the inner
+   * spacing reads as exactly 16px from any side of the pane. */
+  /* `height: calc(100% - 32px)` keeps the pane bounded inside its grid
+   * cell when 16px margin is added on every side — without the calc,
+   * the wrapper still measures 100% of its cell, and the bottom margin
+   * pushes the rounded corner off-screen. */
+  height: calc(100% - var(--space-4) * 2);
   min-height: 0;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
+  margin: var(--space-4);
+  padding: var(--space-4);
   background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: 12px;
 }
 
 /* Animated agent avatar — renders a Teambridge persona's GIF as a
@@ -657,9 +870,10 @@
 }
 
 .ob-right-head {
-  /* Auto row of .ob-right grid — natural content height. */
-  padding: var(--space-5) var(--space-6) var(--space-4);
-  border-bottom: 1px solid var(--color-border-opaque);
+  /* Auto row of .ob-right grid — natural content height. The wrapper
+   * provides the outer 16px inset; no extra padding here, the body's
+   * own top padding handles the gap below the title block. */
+  padding: 0;
   background: transparent;
 }
 .ob-right-title {
@@ -691,7 +905,7 @@
   max-height: calc(100vh - 100px);
   min-height: 0;
   overflow-y: scroll;
-  padding: var(--space-5) var(--space-6) var(--space-6);
+  padding: var(--space-4) 0 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
@@ -1295,7 +1509,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 4px var(--space-2);
+  padding: 0;
   background: transparent;
   border: 1px dashed transparent;
   border-radius: var(--radius-sm);
@@ -1581,6 +1795,10 @@
   min-height: 0;
   height: 100%;
   overflow: hidden;
+  /* Override act1.css's `.act1-root { background: var(--color-bg-secondary) }`
+   * so the 16px margin gutter around the right-pane card shows the primary
+   * (lightest) surface, not the canvas grey. */
+  background: var(--color-bg-primary);
   grid-template-columns: 240px 360px minmax(0, 1fr);  /* chat narrower than content */
   /* Force the implicit row to fill the grid container instead of
    * sizing to content (which would let the right pane expand past
@@ -2407,15 +2625,25 @@
   color: var(--color-content-primary);
 }
 
-/* ─────────────────────── Shared card footer (CTAs) ────────────────── */
+/* ─────────────────────── Step footer (CTAs) ──────────────────────────
+ * Detached row that sits BELOW the .cc card — JSX renders it as a
+ * sibling of the card so the card chrome (border/radius) stops at the
+ * step-body and the buttons float on the right-pane canvas. */
 .cc-foot {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  padding: var(--space-4) var(--space-5);
-  border-top: 1px solid var(--color-border-opaque);
-  background: var(--color-bg-secondary);
+  padding: 0;
+  background: transparent;
+}
+
+/* When the foot sits directly after a .cc card inside the right pane,
+ * drop the card's bottom border so the operator doesn't read it as a
+ * divider above the buttons. The .cc-foot itself has no padding /
+ * background / border, so the row reads as a free-floating CTA pair. */
+.ob-right-body > .cc:has(+ .cc-foot) {
+  border-bottom: 0;
 }
 .cc-foot-sub {
   font-size: var(--text-xs);

@@ -99,29 +99,31 @@ export function InsightsStep({ config, onChange, onContinue }) {
   // review the operator can edit. See OnboardingFlow.runResearch.
   const cardFields = ALL_FIELDS.filter(f => f !== 'agents')
   return (
-    <div className="cc cc--confirm">
-      <header className="cc-head">
-        <div className="cc-head-left">
-          <div className="cc-head-text">
-            <span className="cc-head-name">Here's what I learned</span>
-            <span className="cc-head-sub">
-              Quick read on {config?.companyName ?? 'your company'} before I commit anything.
-            </span>
+    <>
+      <div className="cc cc--confirm">
+        <header className="cc-head">
+          <div className="cc-head-left">
+            <div className="cc-head-text">
+              <span className="cc-head-name">Here's what I learned</span>
+              <span className="cc-head-sub">
+                Quick read on {config?.companyName ?? 'your company'} before I commit anything.
+              </span>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <div className="cm-step-body">
-        <ConfigCard
-          config={config}
-          editable={true}
-          onChange={onChange}
-          visibleFields={cardFields}
-        />
+        <div className="cm-step-body">
+          <ConfigCard
+            config={config}
+            editable={true}
+            onChange={onChange}
+            visibleFields={cardFields}
+          />
+        </div>
       </div>
 
       <StepFoot onForward={onContinue} forwardLabel="Looks right" sub="Tap any field above to edit." />
-    </div>
+    </>
   )
 }
 
@@ -145,44 +147,46 @@ export function GoalsStep({ config, onBack, onContinue }) {
   }
   const count = selected.size
   return (
-    <div className="cc cc--confirm">
-      <header className="cc-head">
-        <div className="cc-head-left">
-          <div className="cc-head-text">
-            <span className="cc-head-name">
-              What are you looking to do?
-            </span>
-            <span className="cc-head-sub">
-              Tap to toggle. Tailored to {config?.companyName ?? 'your company'}.
-            </span>
+    <>
+      <div className="cc cc--confirm">
+        <header className="cc-head">
+          <div className="cc-head-left">
+            <div className="cc-head-text">
+              <span className="cc-head-name">
+                What are you looking to do?
+              </span>
+              <span className="cc-head-sub">
+                Tap to toggle. Tailored to {config?.companyName ?? 'your company'}.
+              </span>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <div className="cm-step-body">
-        <ul className="cm-goal-list">
-          {goals.map((g, i) => {
-            const on = selected.has(i)
-            return (
-              <li key={i}>
-                <button
-                  type="button"
-                  className={`cm-goal-chip ${on ? 'is-on' : ''}`}
-                  onClick={() => toggle(i)}
-                  aria-pressed={on}
-                >
-                  <span className="cm-goal-chip-label">{g.label}</span>
-                  {g.detail && <span className="cm-goal-chip-detail">{g.detail}</span>}
-                </button>
-              </li>
-            )
-          })}
-        </ul>
-        {goals.length === 0 && (
-          <div className="cm-goal-empty">
-            We'll set things up based on your industry defaults.
-          </div>
-        )}
+        <div className="cm-step-body">
+          <ul className="cm-goal-list">
+            {goals.map((g, i) => {
+              const on = selected.has(i)
+              return (
+                <li key={i}>
+                  <button
+                    type="button"
+                    className={`cm-goal-chip ${on ? 'is-on' : ''}`}
+                    onClick={() => toggle(i)}
+                    aria-pressed={on}
+                  >
+                    <span className="cm-goal-chip-label">{g.label}</span>
+                    {g.detail && <span className="cm-goal-chip-detail">{g.detail}</span>}
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+          {goals.length === 0 && (
+            <div className="cm-goal-empty">
+              We'll set things up based on your industry defaults.
+            </div>
+          )}
+        </div>
       </div>
 
       <StepFoot
@@ -190,7 +194,7 @@ export function GoalsStep({ config, onBack, onContinue }) {
         onForward={() => onContinue(Array.from(selected).map(i => goals[i]))}
         forwardDisabled={goals.length > 0 && count === 0}
       />
-    </div>
+    </>
   )
 }
 
@@ -327,6 +331,7 @@ export function ReviewStep({ config, importMethod, onImportMethodChange, onBack,
   })()
 
   return (
+    <>
     <div className="cc cc--confirm">
       <header className="cc-head">
         <div className="cc-head-left">
@@ -478,8 +483,10 @@ export function ReviewStep({ config, importMethod, onImportMethodChange, onBack,
         </ReviewAccordion>
       </div>
 
-      <StepFoot onBack={onBack} onForward={onContinue} forwardLabel="Looks good" />
     </div>
+
+      <StepFoot onBack={onBack} onForward={onContinue} forwardLabel="Looks good" />
+    </>
   )
 }
 
@@ -706,6 +713,7 @@ export function AgentsStep({ config, onChange, onBack, onContinue }) {
   })()
 
   return (
+    <>
     <div className="cc cc--confirm">
       <header className="cc-head">
         <div className="cc-head-left">
@@ -779,8 +787,10 @@ export function AgentsStep({ config, onChange, onBack, onContinue }) {
         </div>
       </div>
 
-      <StepFoot onBack={onBack} onForward={onContinue} />
     </div>
+
+      <StepFoot onBack={onBack} onForward={onContinue} />
+    </>
   )
 }
 
@@ -802,6 +812,7 @@ export function PoliciesStep({ config, onBack, onContinue }) {
     : 'your states'
 
   return (
+    <>
     <div className="cc cc--confirm">
       <header className="cc-head">
         <div className="cc-head-left">
@@ -847,8 +858,10 @@ export function PoliciesStep({ config, onBack, onContinue }) {
         </div>
       </div>
 
-      <StepFoot onBack={onBack} onForward={() => onContinue(Array.from(selected))} />
     </div>
+
+      <StepFoot onBack={onBack} onForward={() => onContinue(Array.from(selected))} />
+    </>
   )
 }
 
@@ -856,6 +869,7 @@ export function PoliciesStep({ config, onBack, onContinue }) {
 export function DataStep({ config, onBack, onLaunch }) {
   const [importMethod, setImportMethod] = useState('sample')
   return (
+    <>
     <div className="cc cc--confirm">
       <header className="cc-head">
         <div className="cc-head-left">
@@ -889,11 +903,13 @@ export function DataStep({ config, onBack, onLaunch }) {
         </div>
       </div>
 
+    </div>
+
       <StepFoot
         onBack={onBack}
         onForward={() => onLaunch({ importMethod })}
         forwardLabel="Launch my account"
       />
-    </div>
+    </>
   )
 }
