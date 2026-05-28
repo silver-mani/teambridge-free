@@ -218,6 +218,8 @@ function heuristicConfig(rawInput, fromFreeText) {
     roles: [...defaults.roles],
     agents: [...defaults.agents],
     suggestedConnectors: [...defaults.suggestedConnectors],
+    goals: [...(defaults.goals || [])],
+    insights: [],
     confidence: {
       industry: CONFIDENCE.low, headcount: CONFIDENCE.low,
       locations: CONFIDENCE.low, roles: CONFIDENCE.low,
