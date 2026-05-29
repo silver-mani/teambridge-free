@@ -8,6 +8,12 @@
       "port": 5180
     },
     {
+      "name": "teambridge-free",
+      "runtimeExecutable": "/opt/homebrew/opt/node@22/bin/node",
+      "runtimeArgs": ["/Users/unassignedlaptop9/Documents/teambridge-free/preview/node_modules/vite/bin/vite.js", "--port", "5181", "/Users/unassignedlaptop9/Documents/teambridge-free/preview"],
+      "port": 5181
+    },
+    {
       "name": "teambridge-website (dev)",
       "runtimeExecutable": "/opt/homebrew/opt/node@22/bin/node",
       "runtimeArgs": ["../teambridge-website/node_modules/vite/bin/vite.js", "../teambridge-website"],

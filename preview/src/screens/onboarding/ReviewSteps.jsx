@@ -726,22 +726,26 @@ export function AgentsStep({ config, onChange, onBack, onContinue }) {
         </div>
       </header>
 
-      <div className="cm-step-rationale">
-        <RationaleBlock headline={agentsReasoning.headline} body={agentsReasoning.body} />
-      </div>
+      {/* Header stays as-is above. Everything else is grouped under
+        * a single wrapper (.ag-content) which contains two sibling
+        * blocks: the rationale ("why this") and the agents grid. */}
+      <div className="ag-content">
+        <div className="ag-why">
+          <RationaleBlock headline={agentsReasoning.headline} body={agentsReasoning.body} />
+        </div>
 
-      <div className="cm-step-body cm-agents-body">
-        <div className="cm-agents-carousel">
-          <button
-            type="button"
-            className="cm-agents-nav cm-agents-nav--prev"
-            onClick={() => scrollByCard(-1)}
-            aria-label="Previous agents"
-          >
-            <ChevronLeftIcon size={16} />
-          </button>
-          <div ref={scrollRef} className="cm-agent-strip">
-            {ordered.map(p => {
+        <div className="ag-agents">
+          <div className="cm-agents-carousel">
+            <button
+              type="button"
+              className="cm-agents-nav cm-agents-nav--prev"
+              onClick={() => scrollByCard(-1)}
+              aria-label="Previous agents"
+            >
+              <ChevronLeftIcon size={16} />
+            </button>
+            <div ref={scrollRef} className="cm-agent-strip">
+              {ordered.map(p => {
               const hero = AGENT_HERO[p.id]
               const personaId = PAIN_TO_PERSONA[p.id]
               const persona = AGENTS[personaId]
@@ -775,15 +779,16 @@ export function AgentsStep({ config, onChange, onBack, onContinue }) {
                 </button>
               )
             })}
+            </div>
+            <button
+              type="button"
+              className="cm-agents-nav cm-agents-nav--next"
+              onClick={() => scrollByCard(1)}
+              aria-label="Next agents"
+            >
+              <ChevronRightIcon size={16} />
+            </button>
           </div>
-          <button
-            type="button"
-            className="cm-agents-nav cm-agents-nav--next"
-            onClick={() => scrollByCard(1)}
-            aria-label="Next agents"
-          >
-            <ChevronRightIcon size={16} />
-          </button>
         </div>
       </div>
 

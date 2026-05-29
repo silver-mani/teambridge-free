@@ -2,12 +2,28 @@ import { useState } from 'react'
 import { Eyebrow } from '../../../src/components/Eyebrow/Eyebrow.tsx'
 import { TeambridgeAIIcon } from '../../../src/components/icons/TeambridgeAIIcon.tsx'
 import { ArrowNarrowRightIcon } from '../../../src/components/icons/ArrowNarrowRightIcon.tsx'
+import { Users03Icon } from '../../../src/components/icons/Users03Icon.tsx'
+import { Microphone02Icon } from '../../../src/components/icons/Microphone02Icon.tsx'
+import { Bell01Icon } from '../../../src/components/icons/Bell01Icon.tsx'
+import { PackageIcon } from '../../../src/components/icons/PackageIcon.tsx'
+import { Home02Icon } from '../../../src/components/icons/Home02Icon.tsx'
+import { Trash03Icon } from '../../../src/components/icons/Trash03Icon.tsx'
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   Industry icons — 24×24 stroke icons drawn to match Alloy's icon style:
-   stroke currentColor, round caps/joins, stroke-width 1.5 at this size.
-   Kept inline (no medical / security / construction icons exist in the set).
+   Industry icons — strict order of preference:
+     1. An Alloy icon that semantically fits the industry (wrapped at 24px so
+        the IndustryCard's 44×44 chip and the ConfigCard's 24×24 chip both
+        render at the expected pixel sizes via parent CSS).
+     2. An inline stroke icon (currentColor, round caps, sw 1.5 at 24px),
+        used only when no Alloy icon represents the concept well — e.g.
+        healthcare's heart-pulse, security's shield, construction's hard hat.
    ───────────────────────────────────────────────────────────────────────────── */
+
+// Wrap an Alloy icon to render at 24×24 by default (matches the chip sizes
+// our INDUSTRIES catalogue expects). The .cc-industry-mark CSS shrinks it
+// to 14px inside the small chip.
+const AlloyWrap = (Icon) => () => <Icon size={24} />
+
 
 const iconBase = {
   width: 24,
@@ -28,22 +44,11 @@ const HealthcareIcon = () => (
   </svg>
 )
 
-const StaffingIcon = () => (
-  <svg {...iconBase}>
-    <path d="M16 21v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 19.5V21" />
-    <circle cx="10" cy="8" r="3.5" />
-    <path d="M20 21v-1.5a3.5 3.5 0 0 0-2.6-3.38" />
-    <path d="M15.5 4.13a3.5 3.5 0 0 1 0 6.74" />
-  </svg>
-)
+// Staffing → Users03 (group of three people, the staffing/agency archetype)
+const StaffingIcon = AlloyWrap(Users03Icon)
 
-const EventsIcon = () => (
-  <svg {...iconBase}>
-    <rect x="9" y="3" width="6" height="12" rx="3" />
-    <path d="M5 12v1a7 7 0 0 0 14 0v-1" />
-    <path d="M12 20v2M8.5 22h7" />
-  </svg>
-)
+// Events & Venues → Microphone02 (stage / performance / event mark)
+const EventsIcon = AlloyWrap(Microphone02Icon)
 
 const SecurityIcon = () => (
   <svg {...iconBase}>
@@ -52,13 +57,8 @@ const SecurityIcon = () => (
   </svg>
 )
 
-const LightIndustrialIcon = () => (
-  <svg {...iconBase}>
-    <path d="M21 16V8a1.5 1.5 0 0 0-.75-1.3l-7.5-4.3a1.5 1.5 0 0 0-1.5 0L3.75 6.7A1.5 1.5 0 0 0 3 8v8a1.5 1.5 0 0 0 .75 1.3l7.5 4.3a1.5 1.5 0 0 0 1.5 0l7.5-4.3A1.5 1.5 0 0 0 21 16Z" />
-    <path d="M3.27 7.3 12 12.25l8.73-4.95" />
-    <path d="M12 22V12.25" />
-  </svg>
-)
+// Light Industrial → Package (warehouse / logistics / shipping box)
+const LightIndustrialIcon = AlloyWrap(PackageIcon)
 
 const ConstructionIcon = () => (
   <svg {...iconBase}>
@@ -69,32 +69,16 @@ const ConstructionIcon = () => (
   </svg>
 )
 
-const HospitalityIcon = () => (
-  <svg {...iconBase}>
-    {/* Bell on a tray — universal "service" mark */}
-    <path d="M4 18h16" />
-    <path d="M5 18a7 7 0 0 1 14 0" />
-    <path d="M12 6V4M10 4h4" />
-  </svg>
-)
+// Hospitality → Bell01 (the universal hotel / room-service bell)
+const HospitalityIcon = AlloyWrap(Bell01Icon)
 
-const LongTermCareIcon = () => (
-  <svg {...iconBase}>
-    {/* Hands-with-heart — caregiving */}
-    <path d="M12 21s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.5-7 10-7 10Z" />
-    <path d="M9 11h2l1-1.5L13 12l1-1.5h2" />
-  </svg>
-)
+// Long Term Care → Home02 (in-home / assisted-living setting; closest
+// match in Alloy. No heart/hand-care icon exists in the set.)
+const LongTermCareIcon = AlloyWrap(Home02Icon)
 
-const JanitorialIcon = () => (
-  <svg {...iconBase}>
-    {/* Spray-bottle / cleaning kit */}
-    <path d="M9 7V4h4v3" />
-    <path d="M14 7H8a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2Z" />
-    <path d="M9 12h4" />
-    <path d="M16 7l4-2v6l-4-2" />
-  </svg>
-)
+// Janitorial & Facilities → Trash03 (waste / cleaning; closest match
+// in Alloy. No spray-bottle or broom icon exists in the set.)
+const JanitorialIcon = AlloyWrap(Trash03Icon)
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Industry catalogue
