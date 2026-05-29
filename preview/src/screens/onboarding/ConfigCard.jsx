@@ -8,6 +8,20 @@ import { Edit03Icon } from '../../../../src/components/icons/Edit03Icon.tsx'
 import { PAIN_OPTIONS, PAIN_TO_AGENT } from './steps.js'
 import AgentAvatar from './AgentAvatar.jsx'
 
+/* Map-pin icon — inline because Alloy doesn't ship a MapPin in its
+ * icon set. Stroke style matches the Alloy convention (round caps,
+ * scaled stroke-width). Used as the leading mark on location chips. */
+function MapPinIcon({ size = 10 }) {
+  const s = typeof size === 'number' ? size : parseFloat(size)
+  const sw = s <= 12 ? 2 : s <= 16 ? 1.75 : 1.5
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" strokeWidth={sw} aria-hidden="true">
+      <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="12" cy="10" r="3" stroke="currentColor" />
+    </svg>
+  )
+}
+
 /* ──────────────────────────────────────────────────────────────────────
  * ConfigCard — the visual representation of the derived configuration.
  * Used by both:
@@ -22,18 +36,65 @@ import AgentAvatar from './AgentAvatar.jsx'
 
 export const ALL_FIELDS = ['summary', 'industry', 'headcount', 'locations', 'roles']
 
+/* Sample the dominant background color of a loaded favicon image by
+ * averaging its 4 corner pixels. Skips fully-transparent corners (so
+ * a transparent-PNG favicon falls back to whatever the caller chooses,
+ * typically white). Returns an `rgb(...)` string or null if the image
+ * can't be read (CORS) or every corner is transparent. */
+function detectFaviconBg(img) {
+  try {
+    const w = img.naturalWidth, h = img.naturalHeight
+    if (!w || !h) return null
+    const canvas = document.createElement('canvas')
+    canvas.width = w; canvas.height = h
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(img, 0, 0)
+    const data = ctx.getImageData(0, 0, w, h).data
+    const corners = [[0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1]]
+    let r = 0, g = 0, b = 0, n = 0
+    for (const [x, y] of corners) {
+      const i = (y * w + x) * 4
+      if (data[i + 3] < 128) continue
+      r += data[i]; g += data[i + 1]; b += data[i + 2]; n++
+    }
+    if (!n) return null
+    return `rgb(${Math.round(r / n)}, ${Math.round(g / n)}, ${Math.round(b / n)})`
+  } catch {
+    return null // CORS failure (image tainted)
+  }
+}
+
 /* CompanyFavicon — pulls the favicon for `url` via Google's s2/favicons
  * service and renders it as a 24×24 image. Falls back to the
  * caller-provided `fallback` node on load error (e.g. for a fresh
- * intake before the URL resolves, or when the site has no favicon). */
-function CompanyFavicon({ url, fallback }) {
+ * intake before the URL resolves, or when the site has no favicon).
+ *
+ * Background color detection runs as a SEPARATE best-effort probe
+ * with crossOrigin="anonymous" so the displayed image isn't blocked
+ * when Google's service omits CORS headers. If the probe fails (CORS
+ * or 404), onBgColor receives null and the parent uses its default. */
+function CompanyFavicon({ url, fallback, onBgColor }) {
   const [errored, setErrored] = useState(false)
   // Reset the error flag when the URL changes — a new domain deserves
   // a fresh attempt before falling back.
   useEffect(() => { setErrored(false) }, [url])
   const domain = (url || '').replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '').trim()
-  if (!domain || errored) return fallback
-  const src = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`
+  const src = domain ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` : null
+
+  // Out-of-band color probe. Uses a detached Image with CORS so we
+  // can read pixels; failure is silent (the visible img keeps working).
+  useEffect(() => {
+    if (!src || !onBgColor) return
+    let cancelled = false
+    const probe = new Image()
+    probe.crossOrigin = 'anonymous'
+    probe.onload = () => { if (!cancelled) onBgColor(detectFaviconBg(probe)) }
+    probe.onerror = () => { if (!cancelled) onBgColor(null) }
+    probe.src = src
+    return () => { cancelled = true; probe.onload = null; probe.onerror = null }
+  }, [src, onBgColor])
+
+  if (!src || errored) return fallback
   return (
     <img
       src={src}
@@ -227,24 +288,21 @@ function LocationsEdit({ items, onChange }) {
   }
 
   return (
-    <div className="cc-locs">
-      <ul className="cc-loc-list">
-        {items.map((loc, i) => (
-          <li key={`${loc.name}-${i}`} className="cc-loc-row">
-            <span className="cc-loc-dot" aria-hidden="true" />
-            <span className="cc-loc-name">{loc.name}</span>
-            {loc.city && <span className="cc-loc-city">{loc.city}</span>}
-            <button
-              type="button"
-              className="cc-loc-x"
-              onClick={() => remove(i)}
-              aria-label={`Remove ${loc.name}`}
-            >
-              <XIcon size={11} />
-            </button>
-          </li>
-        ))}
-      </ul>
+    <div className="cc-chips">
+      {items.map((loc, i) => (
+        <span key={`${loc.name}-${i}`} className="cc-chip cc-chip--loc">
+          <MapPinIcon size={10} />
+          <span>{loc.name}{loc.city ? ` · ${loc.city}` : ''}</span>
+          <button
+            type="button"
+            className="cc-chip-x"
+            onClick={() => remove(i)}
+            aria-label={`Remove ${loc.name}`}
+          >
+            <XIcon size={10} />
+          </button>
+        </span>
+      ))}
       {adding ? (
         <div className="cc-loc-add">
           <input
@@ -266,7 +324,7 @@ function LocationsEdit({ items, onChange }) {
           <button type="button" className="cc-mini-ghost" onClick={() => { setAdding(false); setDraftName(''); setDraftCity('') }}>Cancel</button>
         </div>
       ) : (
-        <button type="button" className="cc-chip cc-chip--add cc-chip--block" onClick={() => setAdding(true)}>
+        <button type="button" className="cc-chip cc-chip--add" onClick={() => setAdding(true)}>
           <PlusIcon size={10} /> Add location
         </button>
       )}
@@ -365,6 +423,12 @@ export default function ConfigCard({
 
   const industry = INDUSTRIES.find(i => i.id === config.industry)
 
+  // Background color of the favicon chip — auto-detected from the
+  // favicon's corner pixels once it loads, defaults to white. Reset
+  // whenever the URL changes so we re-sample for the new domain.
+  const [faviconBg, setFaviconBg] = useState(null)
+  useEffect(() => { setFaviconBg(null) }, [config.url])
+
   const update = (field, value) => onChange({ ...config, [field]: value })
 
   return (
@@ -372,13 +436,24 @@ export default function ConfigCard({
       {showHeader && (
         <header className="cc-head">
           <div className="cc-head-left">
-            <span className="cc-head-mark" style={industry ? {
-              background: `var(--color-${industry.color}-bg-tertiary)`,
-              color:      `var(--color-${industry.color}-content-secondary)`,
-            } : undefined} aria-hidden="true">
+            <span
+              className="cc-head-mark"
+              aria-hidden="true"
+              style={{
+                background: config.url
+                  ? (faviconBg || 'var(--color-bg-secondary)')
+                  : industry
+                    ? `var(--color-${industry.color}-bg-tertiary)`
+                    : 'var(--color-bg-secondary)',
+                color: industry
+                  ? `var(--color-${industry.color}-content-secondary)`
+                  : undefined,
+              }}
+            >
               <CompanyFavicon
                 url={config.url}
                 fallback={industry ? <industry.Icon /> : <TeambridgeAIIcon size={16} />}
+                onBgColor={setFaviconBg}
               />
             </span>
             <div className="cc-head-text">
@@ -433,15 +508,14 @@ export default function ConfigCard({
         {editable ? (
           <LocationsEdit items={config.locations || []} onChange={v => update('locations', v)} />
         ) : (
-          <ul className="cc-loc-list">
+          <div className="cc-chips">
             {(config.locations || []).map((loc, i) => (
-              <li key={i} className="cc-loc-row cc-loc-row--readonly">
-                <span className="cc-loc-dot" aria-hidden="true" />
-                <span className="cc-loc-name">{loc.name}</span>
-                {loc.city && <span className="cc-loc-city">{loc.city}</span>}
-              </li>
+              <span key={i} className="cc-chip cc-chip--readonly cc-chip--loc">
+                <MapPinIcon size={10} />
+                <span>{loc.name}{loc.city ? ` · ${loc.city}` : ''}</span>
+              </span>
             ))}
-          </ul>
+          </div>
         )}
       </FieldRow>
 

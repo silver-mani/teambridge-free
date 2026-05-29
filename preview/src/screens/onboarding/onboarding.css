@@ -154,7 +154,6 @@
 }
 .ob-chat-head {
   padding: var(--space-4) var(--space-6) var(--space-2);
-  border-bottom: 1px solid var(--color-border-opaque);
 }
 .ob-chat-title {
   display: inline-flex;
@@ -173,7 +172,18 @@
 .ob-chat-scroll {
   min-height: 0;
   overflow-y: auto;
-  padding: var(--space-3) var(--space-6) var(--space-4);
+  padding: 0 var(--space-6) var(--space-4);
+}
+.ob-chat-scroll::before {
+  content: "";
+  display: block;
+  position: sticky;
+  top: 0;
+  height: 36px;
+  margin: 0 calc(-1 * var(--space-6)) -36px;
+  background: linear-gradient(to top, rgba(255, 255, 255, 0) 0%, #fff 100%);
+  pointer-events: none;
+  z-index: 1;
 }
 
 /* Typing indicator — three bouncing dots Nova shows while composing
@@ -646,7 +656,7 @@
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
-  margin: var(--space-4);
+  margin: var(--space-4) var(--space-4) var(--space-4) 0;
   padding: var(--space-4);
   background: var(--color-bg-secondary);
   border: 1px solid var(--color-border-opaque);
@@ -884,7 +894,7 @@
   color: var(--color-content-primary);
 }
 .ob-right-sub {
-  margin: var(--space-1) 0 0;
+  margin: 0;
   font-size: var(--text-sm);
   color: var(--color-content-tertiary);
   line-height: var(--line-height-loose);
@@ -1433,7 +1443,6 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--color-content-tertiary);
-  padding-top: 6px;
 }
 .cc-row-status {
   display: inline-flex; align-items: center; justify-content: center;
@@ -1491,6 +1500,10 @@
   width: 24px; height: 24px;
   border-radius: var(--radius-sm);
   flex-shrink: 0;
+}
+.cc-industry-mark > svg {
+  width: 14px;
+  height: 14px;
 }
 
 .cc-industry-picker {
@@ -1579,6 +1592,8 @@
   color: var(--color-content-primary);
 }
 .cc-chip--readonly { background: var(--color-bg-tertiary); border-color: transparent; }
+/* Leading pin on location chips renders quieter than the text. */
+.cc-chip--loc > svg { color: var(--color-content-tertiary); flex-shrink: 0; }
 .cc-chip--add {
   background: transparent;
   border-style: dashed;
@@ -2898,7 +2913,7 @@
   padding: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-2);
+  gap: 12px;
 }
 .cm-goal-chip {
   width: 100%;
@@ -2949,7 +2964,7 @@
 .cm-review-body {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 12px;
 }
 .cm-review-accordion {
   background: var(--color-bg-primary);
@@ -3023,7 +3038,7 @@
 }
 .cm-review-accordion-chev.is-open { transform: rotate(180deg); }
 .cm-review-accordion-body {
-  padding: var(--space-3) var(--space-4) var(--space-4);
+  padding: 16px;
   border-top: 1px solid var(--color-border-opaque);
   display: flex;
   flex-direction: column;
@@ -3066,7 +3081,10 @@
   border-radius: 8px;
 }
 .cm-review-accordion .cm-rationale {
-  margin: 8px 10px;
+  margin-top: 12px;
+  margin-right: 10px;
+  margin-bottom: 8px;
+  margin-left: 10px;
 }
 .cm-rationale-label {
   display: inline-flex;
@@ -3278,12 +3296,28 @@
  * sit in the same gutter. */
 .cm-step-rationale {
   margin: 0 var(--space-5) var(--space-4);
+  padding-top: 12px;
 }
 
 .cm-agents-body { overflow: hidden; }
+
+/* AgentsStep layout — header stays untouched. Below it, .ag-content
+ * groups two siblings: .ag-why (the rationale card) and .ag-agents
+ * (the horizontal-scrolling carousel of agent cards). */
+.ag-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+}
+.ag-why { /* container only — RationaleBlock renders its own visual */ }
+.ag-agents {
+  /* Clip the strip's horizontal overflow to this container so cards
+   * don't bleed past the ag-content padding edge. */
+  overflow: hidden;
+}
 .cm-agents-carousel {
   position: relative;
-  margin: 0 -8px;
 }
 .cm-agent-strip {
   display: flex;
@@ -3291,7 +3325,7 @@
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
-  padding: 4px 8px 20px;
+  padding: 4px 0 20px;
   scrollbar-width: thin;
   scrollbar-color: var(--color-border-opaque) transparent;
 }
@@ -3398,9 +3432,21 @@
 
 /* Review step body — used by InsightsStep/AgentsStep/PoliciesStep/
  * DataStep cards. Slightly more padding than the ConfirmCard sections
- * since these are full-screen focused steps. */
+ * since these are full-screen focused steps. The inner ConfigCard
+ * drops its own border here so the body padding becomes the frame. */
 .cm-step-body {
-  padding: var(--space-4) var(--space-5);
+  padding: 20px;
+}
+.cm-step-body > .cc {
+  border: none;
+  border-radius: 0;
+}
+.cm-step-body > .cc > .cc-head {
+  padding: 0 0 12px;
+}
+.cm-step-body > .cc > .cc-row {
+  padding: 12px 0;
+  margin: 0;
 }
 .cm-back {
   display: inline-flex; align-items: center; gap: var(--space-1);
