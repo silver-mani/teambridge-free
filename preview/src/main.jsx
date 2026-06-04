@@ -121,6 +121,8 @@ function App() {
           path: demo.path,
           landingPage: demo.landingPage,
           timeInDemoMs: demo.timeInDemoMs,
+          emailQuality: lead.emailQuality,
+          emailAttempts: lead.emailAttempts,
         }),
         keepalive: true,
       })
@@ -225,7 +227,13 @@ function App() {
   return (
     <>
       {view}
-      {showGate && <LeadCaptureGate onSubmit={submitLead} onShown={() => trackDemoEvent('lead_gate_shown')} />}
+      {showGate && (
+        <LeadCaptureGate
+          onSubmit={submitLead}
+          onShown={() => trackDemoEvent('lead_gate_shown')}
+          sessionId={getDemoSnapshot().sessionId}
+        />
+      )}
     </>
   )
 }
