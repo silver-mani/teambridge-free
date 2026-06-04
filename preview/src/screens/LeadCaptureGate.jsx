@@ -11,16 +11,90 @@ import { TeambridgeAIIcon } from '../../../src/components/icons/TeambridgeAIIcon
  *   the gate is the gate.
  * ────────────────────────────────────────────────────────────────────── */
 
-const PERSONAL_EMAIL_DOMAINS = new Set([
-  'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com',
-  'aol.com', 'msn.com', 'live.com', 'me.com', 'mac.com', 'proton.me', 'protonmail.com',
+// ─── Email quality classification ────────────────────────────────────────────
+// Inline sets — no npm package, instant, zero bundle overhead.
+// Two tiers: PERSONAL (free consumer providers) and DISPOSABLE (temp/burner).
+// "work" is the residual: anything that passes both checks.
+
+const PERSONAL_DOMAINS = new Set([
+  // Google
+  'gmail.com','googlemail.com',
+  // Microsoft
+  'outlook.com','hotmail.com','hotmail.co.uk','hotmail.fr','hotmail.de',
+  'hotmail.es','hotmail.it','live.com','live.co.uk','live.fr','live.de',
+  'msn.com','passport.com',
+  // Apple
+  'icloud.com','me.com','mac.com',
+  // Yahoo
+  'yahoo.com','yahoo.co.uk','yahoo.fr','yahoo.de','yahoo.es','yahoo.it',
+  'yahoo.ca','yahoo.com.br','yahoo.com.mx','yahoo.com.ar','ymail.com','rocketmail.com',
+  // AOL / Oath
+  'aol.com','aim.com',
+  // Privacy / encrypted
+  'protonmail.com','proton.me','pm.me','tutanota.com','tuta.io','hey.com',
+  // Zoho free tier
+  'zoho.com',
+  // Generic free
+  'mail.com','email.com','inbox.com','fastmail.com','fastmail.fm',
+  'gmx.com','gmx.net','gmx.de','web.de','freenet.de','t-online.de',
+  // Russian / CIS
+  'yandex.com','yandex.ru','mail.ru','bk.ru','list.ru','inbox.ru',
+  // Asian providers
+  'qq.com','163.com','126.com','sina.com','sina.cn',
+  'naver.com','daum.net','hanmail.net',
+  // European ISPs
+  'orange.fr','laposte.net','sfr.fr','free.fr','wanadoo.fr',
+  'libero.it','virgilio.it','tiscali.it','alice.it',
+  'gmx.at','chello.at',
+  'rambler.ru','ukr.net',
+  // Other
+  'rediffmail.com','indiatimes.com',
 ])
 
-function isWorkEmail(email) {
+const DISPOSABLE_DOMAINS = new Set([
+  'mailinator.com','guerrillamail.com','guerrillamail.net','guerrillamail.org',
+  'guerrillamail.biz','guerrillamail.de','guerrillamail.info',
+  'yopmail.com','yopmail.fr','cool.fr.nf','jetable.fr.nf','nospam.ze.tc',
+  'nomail.xl.cx','mega.zik.dj','speed.1s.fr','courriel.fr.nf',
+  'moncourrier.fr.nf','monemail.fr.nf','monmail.fr.nf',
+  'tempmail.com','temp-mail.org','temp-mail.io','dispostable.com',
+  'throwam.com','trashmail.com','trashmail.me','trashmail.net',
+  'trashmail.at','trashmail.io','trashmail.org',
+  'mailnull.com','maildrop.cc','sharklasers.com','guerrillamailblock.com',
+  'grr.la','spam4.me','spamgourmet.com','spamgourmet.net','spamgourmet.org',
+  'spammotel.com','spamspot.com','spambox.us',
+  'spamhole.com','spaml.com','spaml.de','spamoff.de',
+  'getairmail.com','filzmail.com',
+  'fakeinbox.com','fakeinbox.net','fakeinbox.org',
+  'mailexpire.com','mailscrap.com','mailnew.com',
+  'tempemail.net','tempinbox.com','tempinbox.net','tempinbox.co.uk',
+  'discard.email','discardmail.com','discardmail.de',
+  'spamgrab.net','spamavert.com','spam.la','spam.su',
+  'bogusmailaddress.com','dontreg.com','dontsendmespam.de',
+  'example.com','test.com','test.org','testing.com',
+  'nospamfor.us','nospam4.us','no-spam.ws','no-spam.host',
+  'jetable.com','jetable.net','jetable.org','jetable.fr',
+  'despam.it','despammed.com',
+  'obobbo.com','spamfree24.org','spamfree24.de','spamfree24.info',
+  'spamfree24.biz','spamfree24.eu',
+  'kasmail.com','lol.ovpn.to','trbvm.com','33mail.com',
+  'cuvox.de','dayrep.com','einrot.com','fleckens.hu',
+  'gustr.com','harakirimail.com','jourrapide.com','objectmail.com',
+  'ownmail.net','pecinan.com','rhyta.com','superrito.com',
+  'teleworm.us','tinyurl24.com','zetmail.com',
+])
+
+/**
+ * Returns "work" | "personal" | "disposable".
+ * Quality is set client-side and trusted — no server re-check.
+ */
+function classifyEmail(email) {
   const trimmed = email.trim().toLowerCase()
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return false
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return 'personal'
   const domain = trimmed.split('@')[1]
-  return !PERSONAL_EMAIL_DOMAINS.has(domain)
+  if (DISPOSABLE_DOMAINS.has(domain)) return 'disposable'
+  if (PERSONAL_DOMAINS.has(domain)) return 'personal'
+  return 'work'
 }
 
 export default function LeadCaptureGate({ onSubmit, onShown }) {
