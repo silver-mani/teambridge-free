@@ -81,6 +81,8 @@ export default async function handler(req, res) {
     path,
     landingPage,
     timeInDemoMs,
+    emailQuality,
+    emailAttempts,
   } = body || {};
   if (!email || typeof email !== "string") {
     return res.status(400).json({ error: "email_required" });
@@ -115,6 +117,8 @@ export default async function handler(req, res) {
       ipTimezone,
       ipAddress,
       demoSessionId: demoSessionId || undefined,
+      emailQuality: typeof emailQuality === 'string' ? emailQuality : undefined,
+      emailAttempts: Array.isArray(emailAttempts) ? emailAttempts.slice(0, 20) : undefined,
       industry: industry || undefined,
       firstTouchLandingPage: landingPage || undefined,
       firstTouchReferrer: referrer || undefined,
