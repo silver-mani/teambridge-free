@@ -96,6 +96,7 @@ function classifyEmail(email) {
   if (PERSONAL_DOMAINS.has(domain)) return 'personal'
   return 'work'
 }
+const isWorkEmail = email => classifyEmail(email) === 'work'
 
 export default function LeadCaptureGate({ onSubmit, onShown }) {
   const [visible, setVisible]   = useState(false)
