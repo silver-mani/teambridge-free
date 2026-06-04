@@ -227,13 +227,6 @@ function App() {
   return (
     <>
       {view}
-      {showGate && (
-        <LeadCaptureGate
-          onSubmit={submitLead}
-          onShown={() => trackDemoEvent('lead_gate_shown')}
-          sessionId={getDemoSnapshot().sessionId}
-        />
-      )}
     </>
   )
 }
