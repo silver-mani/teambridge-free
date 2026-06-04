@@ -96,14 +96,13 @@ function classifyEmail(email) {
   if (PERSONAL_DOMAINS.has(domain)) return 'personal'
   return 'work'
 }
-const isWorkEmail = email => classifyEmail(email) === 'work'
-
-export default function LeadCaptureGate({ onSubmit, onShown }) {
+export default function LeadCaptureGate({ onSubmit, onShown, sessionId }) {
   const [visible, setVisible]   = useState(false)
   const [name, setName]         = useState('')
   const [company, setCompany]   = useState('')
   const [email, setEmail]       = useState('')
   const [touched, setTouched]   = useState(false)
+  const [emailAttempts, setEmailAttempts] = useState([])
 
   // Pop after 3s so the operator gets a glimpse of the dashboard first.
   useEffect(() => {
@@ -127,21 +126,46 @@ export default function LeadCaptureGate({ onSubmit, onShown }) {
 
   const nameOk    = name.trim().length >= 2
   const companyOk = company.trim().length >= 2
-  const emailOk   = isWorkEmail(email)
+  const emailOk   = classifyEmail(email) === 'work'
   const valid     = nameOk && companyOk && emailOk
 
   const submit = (e) => {
     e.preventDefault()
     setTouched(true)
-    if (!valid) return
-    // The /api/capture-lead POST in main.jsx is what actually lands the
-    // lead in Convex / HubSpot. No tab redirect — modern browsers can't
-    // open a new tab in the background, so any window.open here drags
-    // the operator off the demo. We just gate, capture, and dismiss.
+    if (!nameOk || !companyOk) return
+
+    const quality = classifyEmail(email)
+    if (quality !== 'work') {
+      const attempt = {
+        email: email.trim().toLowerCase(),
+        quality,
+        blockedAt: Date.now(),
+      }
+      setEmailAttempts(prev => [...prev, attempt])
+
+      // Fire-and-forget log to server — never blocks the UX
+      if (sessionId) {
+        fetch('/api/log-email-attempt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId,
+            attemptedEmail: attempt.email,
+            emailQuality: quality,
+            userAgent: navigator.userAgent,
+          }),
+          keepalive: true,
+        }).catch(() => { /* swallowed — log failure is non-fatal */ })
+      }
+      return // keep gate open
+    }
+
     onSubmit({
       name: name.trim(),
       company: company.trim(),
       email: email.trim().toLowerCase(),
+      emailQuality: 'work',
+      emailAttempts,
     })
   }
 
@@ -195,7 +219,9 @@ export default function LeadCaptureGate({ onSubmit, onShown }) {
               <span className="lead-gate-hint">
                 {email.trim().length === 0
                   ? 'Work email required.'
-                  : 'Please use your work email — we can\'t verify personal addresses.'}
+                  : classifyEmail(email) === 'disposable'
+                  ? "Temporary email addresses aren't allowed. Please use your work email."
+                  : "Please use your work email — we can't verify personal addresses."}
               </span>
             )}
           </label>
