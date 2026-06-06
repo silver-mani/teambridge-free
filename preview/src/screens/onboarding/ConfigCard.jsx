@@ -36,6 +36,23 @@ function MapPinIcon({ size = 10 }) {
 
 export const ALL_FIELDS = ['summary', 'industry', 'headcount', 'locations', 'roles']
 
+function IndustryMark({ industry }) {
+  if (!industry) {
+    return (
+      <span className="cc-industry-mark cc-industry-mark--empty" aria-hidden="true">
+        <TeambridgeAIIcon size={14} />
+      </span>
+    )
+  }
+
+  return (
+    <span className="cc-industry-mark" aria-hidden="true">
+      <span className="cc-industry-metric">{industry.metric}</span>
+      <span className="cc-industry-status">{industry.status}</span>
+    </span>
+  )
+}
+
 /* Sample the dominant background color of a loaded favicon image by
  * averaging its 4 corner pixels. Skips fully-transparent corners (so
  * a transparent-PNG favicon falls back to whatever the caller chooses,
@@ -338,12 +355,7 @@ function IndustryEdit({ value, onChange }) {
   if (!open) {
     return (
       <button type="button" className="cc-inline-display" onClick={() => setOpen(true)}>
-        <span className="cc-industry-mark" style={current ? {
-          background: `var(--color-${current.color}-bg-tertiary)`,
-          color:      `var(--color-${current.color}-content-secondary)`,
-        } : undefined} aria-hidden="true">
-          {current ? <current.Icon /> : null}
-        </span>
+        <IndustryMark industry={current} />
         <span className="cc-inline-text">{current?.name ?? value}</span>
         <span className="cc-inline-edit" aria-hidden="true"><Edit03Icon size={12} /></span>
       </button>
@@ -358,12 +370,7 @@ function IndustryEdit({ value, onChange }) {
           className={`cc-industry-opt ${value === ind.id ? 'is-selected' : ''}`}
           onClick={() => { onChange(ind.id); setOpen(false) }}
         >
-          <span className="cc-industry-mark" style={{
-            background: `var(--color-${ind.color}-bg-tertiary)`,
-            color:      `var(--color-${ind.color}-content-secondary)`,
-          }} aria-hidden="true">
-            <ind.Icon />
-          </span>
+          <IndustryMark industry={ind} />
           <span>{ind.name}</span>
         </button>
       ))}
@@ -442,17 +449,12 @@ export default function ConfigCard({
               style={{
                 background: config.url
                   ? (faviconBg || 'var(--color-bg-secondary)')
-                  : industry
-                    ? `var(--color-${industry.color}-bg-tertiary)`
-                    : 'var(--color-bg-secondary)',
-                color: industry
-                  ? `var(--color-${industry.color}-content-secondary)`
-                  : undefined,
+                  : 'var(--color-bg-secondary)',
               }}
             >
               <CompanyFavicon
                 url={config.url}
-                fallback={industry ? <industry.Icon /> : <TeambridgeAIIcon size={16} />}
+                fallback={<TeambridgeAIIcon size={16} />}
                 onBgColor={setFaviconBg}
               />
             </span>
@@ -481,12 +483,7 @@ export default function ConfigCard({
           <IndustryEdit value={config.industry} onChange={v => update('industry', v)} />
         ) : (
           <span className="cc-row-flat">
-            <span className="cc-industry-mark" style={industry ? {
-              background: `var(--color-${industry.color}-bg-tertiary)`,
-              color:      `var(--color-${industry.color}-content-secondary)`,
-            } : undefined} aria-hidden="true">
-              {industry ? <industry.Icon /> : null}
-            </span>
+            <IndustryMark industry={industry} />
             {industry?.name ?? config.industry}
             <ConfidenceBadge level={config.confidence?.industry} />
           </span>

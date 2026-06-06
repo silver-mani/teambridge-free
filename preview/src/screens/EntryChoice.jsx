@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import { Eyebrow } from '../../../src/components/Eyebrow/Eyebrow.tsx'
 import { ArrowNarrowRightIcon } from '../../../src/components/icons/ArrowNarrowRightIcon.tsx'
-import { SparkleIcon } from './onboarding/SparkleIcon.jsx'
-import { Grid01Icon } from '../../../src/components/icons/Grid01Icon.tsx'
 
 const BASE = import.meta.env.BASE_URL
 const TEAMBRIDGE_LOGO =
@@ -16,7 +14,29 @@ const ROBOT_ANIMATION = `${BASE}agents/nova.gif`
  * Keeps the brand lockup quiet, like the real product.
  * ────────────────────────────────────────────────────────────────────── */
 
-function ChoiceCard({ kind, title, lede, Icon, accent, onClick }) {
+function ProductPreview({ kind }) {
+  if (kind === 'build') {
+    return (
+      <div className="entry-product-preview entry-product-preview--build" aria-hidden="true">
+        <img src={ROBOT_ANIMATION} alt="" />
+        <div>
+          <span>Company found</span>
+          <strong>Workspace being built</strong>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="entry-product-preview entry-product-preview--demo" aria-hidden="true">
+      <div><span>Coverage</span><strong>Resolved</strong></div>
+      <div><span>Payroll</span><strong>Ready</strong></div>
+      <div><span>Agents</span><strong>Live</strong></div>
+    </div>
+  )
+}
+
+function ChoiceCard({ kind, title, lede, action, onClick }) {
   const [hover, setHover]     = useState(false)
   const [pressed, setPressed] = useState(false)
 
@@ -46,21 +66,7 @@ function ChoiceCard({ kind, title, lede, Icon, accent, onClick }) {
         minHeight: 280,
       }}
     >
-      <span
-        aria-hidden="true"
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: 56,
-          height: 56,
-          borderRadius: 'var(--radius-md)',
-          background: `var(--color-${accent}-bg-tertiary)`,
-          color:      `var(--color-${accent}-content-secondary)`,
-        }}
-      >
-        <Icon />
-      </span>
+      <ProductPreview kind={kind} />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', flex: 1 }}>
         <span
@@ -98,7 +104,7 @@ function ChoiceCard({ kind, title, lede, Icon, accent, onClick }) {
           transform: hover ? 'translateX(2px)' : 'translateX(0)',
         }}
       >
-        {kind === 'build' ? 'Start setup' : 'Browse industries'}
+        {action}
         <ArrowNarrowRightIcon size={16} />
       </span>
     </button>
@@ -157,7 +163,7 @@ export default function EntryChoice({ onBuild, onExplore }) {
         >
           <section style={{ minWidth: 0 }}>
             <Eyebrow style={{ color: 'var(--color-content-tertiary)', marginBottom: 'var(--space-4)' }}>
-              Interactive demo
+              Teambridge demo
             </Eyebrow>
             <h1
               style={{
@@ -169,7 +175,7 @@ export default function EntryChoice({ onBuild, onExplore }) {
                 color: 'var(--color-content-primary)',
               }}
             >
-              Build or explore your Teambridge workspace.
+              Start with a workspace that feels like yours.
             </h1>
             <p
               style={{
@@ -180,8 +186,8 @@ export default function EntryChoice({ onBuild, onExplore }) {
                 color: 'var(--color-content-tertiary)',
               }}
             >
-              Start with a guided setup or drop into a ready-made account with realistic
-              scheduling, staffing, payroll, and agent workflows.
+              Let Nova build a workspace from your company context, or open a realistic
+              industry account with scheduling, payroll, onboarding, compliance, and agents already running.
             </p>
             <div
               style={{
@@ -206,7 +212,7 @@ export default function EntryChoice({ onBuild, onExplore }) {
                   background: 'var(--color-bg-primary)',
                 }}
               />
-              <span>Nova keeps the setup moving while the workspace fills in.</span>
+              <span>Nova stays with the demo and can walk the product with voice once you are inside.</span>
             </div>
           </section>
 
@@ -225,18 +231,16 @@ export default function EntryChoice({ onBuild, onExplore }) {
           >
             <ChoiceCard
               kind="build"
-              title="Build your account"
-              lede="Walk through a quick setup. We'll personalize your dashboard, connect your tools, and stand up your first agent."
-              Icon={SparkleIcon}
-              accent="purple"
+              title="Build my workspace"
+              lede="Give Nova your website or a short description. It fills in locations, roles, goals, policies, and the first set of Teambridge agents."
+              action="Start with my company"
               onClick={onBuild}
             />
             <ChoiceCard
               kind="demo"
-              title="Explore demo accounts"
-              lede="Drop into a fully-loaded account for your industry. Watch how Teambridge AI runs shift coverage, scheduling, and payroll."
-              Icon={Grid01Icon}
-              accent="blue"
+              title="Open a live demo account"
+              lede="Choose an operating model and jump into a working Teambridge workspace with realistic shifts, staff, payroll, and agent activity."
+              action="Choose an industry"
               onClick={onExplore}
             />
           </div>

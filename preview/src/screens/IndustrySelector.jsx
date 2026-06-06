@@ -1,105 +1,22 @@
 import { useState } from 'react'
 import { Eyebrow } from '../../../src/components/Eyebrow/Eyebrow.tsx'
 import { ArrowNarrowRightIcon } from '../../../src/components/icons/ArrowNarrowRightIcon.tsx'
-import { Users03Icon } from '../../../src/components/icons/Users03Icon.tsx'
-import { Microphone02Icon } from '../../../src/components/icons/Microphone02Icon.tsx'
-import { Bell01Icon } from '../../../src/components/icons/Bell01Icon.tsx'
-import { PackageIcon } from '../../../src/components/icons/PackageIcon.tsx'
-import { Home02Icon } from '../../../src/components/icons/Home02Icon.tsx'
-import { Trash03Icon } from '../../../src/components/icons/Trash03Icon.tsx'
 
 const BASE = import.meta.env.BASE_URL
 const TEAMBRIDGE_LOGO =
   'https://cdn.prod.website-files.com/67adea23aa73a53ff4afb197/67b499f67cace40b0939e859_teambridge%20logo%20main.svg'
 const ROBOT_ANIMATION = `${BASE}agents/nova.gif`
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Industry icons — strict order of preference:
-     1. An Alloy icon that semantically fits the industry (wrapped at 24px so
-        the IndustryCard's 44×44 chip and the ConfigCard's 24×24 chip both
-        render at the expected pixel sizes via parent CSS).
-     2. An inline stroke icon (currentColor, round caps, sw 1.5 at 24px),
-        used only when no Alloy icon represents the concept well — e.g.
-        healthcare's heart-pulse, security's shield, construction's hard hat.
-   ───────────────────────────────────────────────────────────────────────────── */
-
-// Wrap an Alloy icon to render at 24×24 by default (matches the chip sizes
-// our INDUSTRIES catalogue expects). The .cc-industry-mark CSS shrinks it
-// to 14px inside the small chip.
-const AlloyWrap = (Icon) => () => <Icon size={24} />
-
-
-const iconBase = {
-  width: 24,
-  height: 24,
-  viewBox: '0 0 24 24',
-  fill: 'none',
-  xmlns: 'http://www.w3.org/2000/svg',
-  strokeWidth: 1.5,
-  stroke: 'currentColor',
-  strokeLinecap: 'round',
-  strokeLinejoin: 'round',
-}
-
-const HealthcareIcon = () => (
-  <svg {...iconBase}>
-    <path d="M12 21s-8-5.2-8-11.5A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 8 3.5C20 15.8 12 21 12 21Z" />
-    <path d="M3.5 13h3.8l1.7-3 2.8 6 1.7-3h7" />
-  </svg>
-)
-
-// Staffing → Users03 (group of three people, the staffing/agency archetype)
-const StaffingIcon = AlloyWrap(Users03Icon)
-
-// Events & Venues → Microphone02 (stage / performance / event mark)
-const EventsIcon = AlloyWrap(Microphone02Icon)
-
-const SecurityIcon = () => (
-  <svg {...iconBase}>
-    <path d="M12 3 4 6v5.2c0 4.6 3.3 8.9 8 10.3 4.7-1.4 8-5.7 8-10.3V6l-8-3Z" />
-    <path d="m9 12 2 2 4-4" />
-  </svg>
-)
-
-// Light Industrial → Package (warehouse / logistics / shipping box)
-const LightIndustrialIcon = AlloyWrap(PackageIcon)
-
-const ConstructionIcon = () => (
-  <svg {...iconBase}>
-    <path d="M3 18h18" />
-    <path d="M5 18v-4a7 7 0 0 1 14 0v4" />
-    <path d="M10 7.2V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2.2" />
-    <path d="M12 11v3" />
-  </svg>
-)
-
-// Hospitality → Bell01 (the universal hotel / room-service bell)
-const HospitalityIcon = AlloyWrap(Bell01Icon)
-
-// Long Term Care → Home02 (in-home / assisted-living setting; closest
-// match in Alloy. No heart/hand-care icon exists in the set.)
-const LongTermCareIcon = AlloyWrap(Home02Icon)
-
-// Janitorial & Facilities → Trash03 (waste / cleaning; closest match
-// in Alloy. No spray-bottle or broom icon exists in the set.)
-const JanitorialIcon = AlloyWrap(Trash03Icon)
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   Industry catalogue
-   Colors pull from Alloy's semantic color families (e.g. --color-blue-bg-tertiary
-   / --color-blue-content-secondary), consistent with DataCard badge pattern.
-   ───────────────────────────────────────────────────────────────────────────── */
-
 export const INDUSTRIES = [
-  { id: 'healthcare',       name: 'Healthcare',          description: 'Nursing, clinical, allied health',      color: 'blue',   Icon: HealthcareIcon },
-  { id: 'staffing',         name: 'Staffing',            description: 'Agency placements and per-diem',        color: 'purple', Icon: StaffingIcon },
-  { id: 'events',           name: 'Events & Venues',     description: 'Stadiums, arenas, conferences',         color: 'pink',   Icon: EventsIcon },
-  { id: 'hospitality',      name: 'Hospitality',         description: 'Hotels, restaurants, guest services',   color: 'matcha', Icon: HospitalityIcon },
-  { id: 'long-term-care',   name: 'Long Term Care',      description: 'Skilled nursing, assisted living, home', color: 'green', Icon: LongTermCareIcon },
-  { id: 'security',         name: 'Security',            description: 'Guard services and site patrols',       color: 'slate',  Icon: SecurityIcon },
-  { id: 'janitorial',       name: 'Janitorial & Facilities', description: 'Cleaning, building services, maintenance', color: 'azure', Icon: JanitorialIcon },
-  { id: 'light-industrial', name: 'Light Industrial',    description: 'Warehousing, logistics, manufacturing', color: 'orange', Icon: LightIndustrialIcon },
-  { id: 'construction',     name: 'Construction',        description: 'Trades, job sites, project crews',      color: 'matcha', Icon: ConstructionIcon },
+  { id: 'healthcare',       name: 'Healthcare',          description: 'Credentialing, call-outs, float pools',         metric: '4 hr gap', status: 'Replacing' },
+  { id: 'staffing',         name: 'Staffing',            description: 'Placements, availability, first-shift readiness', metric: '18 fills', status: 'Active' },
+  { id: 'events',           name: 'Events & Venues',     description: 'Venue coverage, late changes, union rules',      metric: '612 crew', status: 'Live' },
+  { id: 'hospitality',      name: 'Hospitality',         description: 'Housekeeping, front desk, food service teams',    metric: '23 shifts', status: 'Covered' },
+  { id: 'long-term-care',   name: 'Long Term Care',      description: 'Facility staffing, certifications, compliance',   metric: '9 alerts', status: 'Cleared' },
+  { id: 'security',         name: 'Security',            description: 'Post coverage, patrols, site compliance',         metric: '31 posts', status: 'Monitoring' },
+  { id: 'janitorial',       name: 'Janitorial & Facilities', description: 'Building service schedules and route changes', metric: '7 sites', status: 'Ready' },
+  { id: 'light-industrial', name: 'Light Industrial',    description: 'Warehouse crews, attendance, overtime risk',      metric: '42 roles', status: 'Balanced' },
+  { id: 'construction',     name: 'Construction',        description: 'Trades, job sites, certifications, crews',        metric: '5 sites', status: 'Checked' },
 ]
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -111,7 +28,7 @@ export const INDUSTRIES = [
 function IndustryCard({ industry, onSelect }) {
   const [hover, setHover]     = useState(false)
   const [pressed, setPressed] = useState(false)
-  const { Icon, color, name, description, id } = industry
+  const { name, description, id, metric, status } = industry
 
   return (
     <button
@@ -138,23 +55,25 @@ function IndustryCard({ industry, onSelect }) {
         minHeight: 148,
       }}
     >
-      {/* Top row: colored icon badge + trailing arrow */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span
+        <div
           aria-hidden="true"
           style={{
-            display: 'inline-flex',
-            alignItems: 'center',
+            display: 'flex',
+            flexDirection: 'column',
             justifyContent: 'center',
-            width: 44,
-            height: 44,
+            gap: 2,
+            width: 92,
+            minHeight: 54,
+            padding: 'var(--space-2) var(--space-3)',
             borderRadius: 'var(--radius-md)',
-            background: `var(--color-${color}-bg-tertiary)`,
-            color:      `var(--color-${color}-content-secondary)`,
+            border: '1px solid var(--color-border-opaque)',
+            background: 'var(--color-bg-secondary)',
           }}
         >
-          <Icon />
-        </span>
+          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-content-tertiary)' }}>{metric}</span>
+          <strong style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--font-weight-medium)', color: 'var(--color-content-primary)' }}>{status}</strong>
+        </div>
         <span
           aria-hidden="true"
           style={{
@@ -258,7 +177,7 @@ export default function IndustrySelector({ onSelect = () => {} }) {
           >
             <div>
               <Eyebrow style={{ color: 'var(--color-content-tertiary)', marginBottom: 'var(--space-3)' }}>
-                Demo accounts
+                Live demo account
               </Eyebrow>
             <h1
               style={{
@@ -270,7 +189,7 @@ export default function IndustrySelector({ onSelect = () => {} }) {
                 color: 'var(--color-content-primary)',
               }}
             >
-              Choose an operating model.
+              Pick the workspace closest to your operation.
             </h1>
             <p
               style={{
@@ -281,8 +200,8 @@ export default function IndustrySelector({ onSelect = () => {} }) {
                 color: 'var(--color-content-tertiary)',
               }}
             >
-              We&rsquo;ll load realistic data for your shifts, your staff, and your workflows.
-              Pick an industry to begin.
+              Every account opens inside the same Teambridge product: realistic schedules,
+              staff, payroll, compliance, and AI agent activity tuned to the operating model.
             </p>
             </div>
             <div
@@ -312,10 +231,10 @@ export default function IndustrySelector({ onSelect = () => {} }) {
               />
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <span style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--color-content-primary)' }}>
-                  Nova is ready
+                  Nova is ready inside every account
                 </span>
                 <span style={{ fontSize: 'var(--text-xs)', lineHeight: 'var(--line-height-relaxed)', color: 'var(--color-content-tertiary)' }}>
-                  Each account opens with live staffing scenarios.
+                  Ask questions, run scenarios, or start the voice walkthrough once you enter.
                 </span>
               </div>
             </div>

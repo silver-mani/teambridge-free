@@ -1674,13 +1674,43 @@
 /* Industry display + mark */
 .cc-industry-mark {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 24px; height: 24px;
+  flex-direction: column;
+  min-width: 64px;
+  min-height: 44px;
+  padding: 6px 8px;
   border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-opaque);
+  background: var(--color-bg-secondary);
+  color: var(--color-content-primary);
   flex-shrink: 0;
+  line-height: 1.1;
+  text-align: left;
 }
 .cc-industry-mark > svg {
   width: 14px;
   height: 14px;
+}
+.cc-industry-mark--empty {
+  width: 24px;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
+}
+.cc-industry-metric,
+.cc-industry-status {
+  display: block;
+  width: 100%;
+}
+.cc-industry-metric {
+  color: var(--color-content-secondary);
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+}
+.cc-industry-status {
+  margin-top: 3px;
+  color: var(--color-content-primary);
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
 }
 
 .cc-industry-picker {
@@ -1690,7 +1720,7 @@
 }
 .cc-industry-opt {
   display: inline-flex; align-items: center; gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-2);
   background: var(--color-bg-secondary);
   border: 1px solid var(--color-border-opaque);
   border-radius: var(--radius-md);
