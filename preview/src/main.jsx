@@ -46,6 +46,23 @@ function setHash(path) {
   }
 }
 
+function readDemoAccessToken() {
+  try {
+    return new URLSearchParams(window.location.search).get('tb_demo_access')
+  } catch {
+    return null
+  }
+}
+
+function removeDemoAccessTokenFromUrl() {
+  try {
+    const url = new URL(window.location.href)
+    if (!url.searchParams.has('tb_demo_access')) return
+    url.searchParams.delete('tb_demo_access')
+    window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
+  } catch { /* ignore */ }
+}
+
 /**
  * App shell for the Teambridge Free sandbox.
  * The URL hash drives the screen — `#/` shows the industry picker, while
@@ -88,6 +105,59 @@ function App() {
       return false
     } catch { return false }
   })
+  const [accessChecked, setAccessChecked] = useState(() => {
+    try {
+      return !readDemoAccessToken() || sessionStorage.getItem('tb:lead') === '1'
+    } catch {
+      return true
+    }
+  })
+
+  useEffect(() => {
+    const token = readDemoAccessToken()
+    if (!token) {
+      setAccessChecked(true)
+      return
+    }
+
+    let cancelled = false
+    fetch('/api/verify-demo-access', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (cancelled) return
+        if (data?.valid) {
+          try {
+            sessionStorage.setItem('tb:lead', '1')
+            sessionStorage.setItem('tb:lead-data', JSON.stringify({
+              email: data.email,
+              source: data.source,
+              demoSessionId: data.demoSessionId,
+              verifiedByLanding: true,
+            }))
+          } catch { /* ignore */ }
+          setLeadCaptured(true)
+          trackDemoEvent('landing_demo_access_accepted', {
+            source: data.source,
+          })
+        } else {
+          trackDemoEvent('landing_demo_access_rejected')
+        }
+      })
+      .catch(() => {
+        if (!cancelled) trackDemoEvent('landing_demo_access_verify_failed')
+      })
+      .finally(() => {
+        if (cancelled) return
+        removeDemoAccessTokenFromUrl()
+        setAccessChecked(true)
+      })
+
+    return () => { cancelled = true }
+  }, [])
   const submitLead = (lead) => {
     const demo = getDemoSnapshot()
     try {
@@ -165,8 +235,7 @@ function App() {
   // The gate runs on every route except the front-of-funnel screens
   // (entry choice, demo picker, build flow). The build flow has its
   // own first-class signup capture in step 1.
-  const isFrontOfFunnel = !route || route.kind === 'demos' || route.kind === 'build'
-  const showGate = !!route && !isFrontOfFunnel && !leadCaptured
+  const showGate = accessChecked && !leadCaptured && route?.kind !== 'build'
 
   let view
   if (!route) {
@@ -227,6 +296,14 @@ function App() {
   return (
     <>
       {view}
+      {showGate && (
+        <LeadCaptureGate
+          sessionId={getDemoSnapshot().sessionId}
+          delayMs={0}
+          onShown={() => trackDemoEvent('lead_gate_shown', { immediate: true })}
+          onSubmit={submitLead}
+        />
+      )}
     </>
   )
 }

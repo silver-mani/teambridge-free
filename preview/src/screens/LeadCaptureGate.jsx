@@ -96,7 +96,7 @@ function classifyEmail(email) {
   if (PERSONAL_DOMAINS.has(domain)) return 'personal'
   return 'work'
 }
-export default function LeadCaptureGate({ onSubmit, onShown, sessionId }) {
+export default function LeadCaptureGate({ onSubmit, onShown, sessionId, delayMs = 3000 }) {
   const [visible, setVisible]   = useState(false)
   const [name, setName]         = useState('')
   const [company, setCompany]   = useState('')
@@ -104,14 +104,15 @@ export default function LeadCaptureGate({ onSubmit, onShown, sessionId }) {
   const [touched, setTouched]   = useState(false)
   const [emailAttempts, setEmailAttempts] = useState([])
 
-  // Pop after 3s so the operator gets a glimpse of the dashboard first.
+  // Pop after the configured delay. Direct demo visitors use 0ms so the
+  // gate appears immediately; approved landing visitors skip the gate.
   useEffect(() => {
     const t = setTimeout(() => {
       setVisible(true)
       onShown?.()
-    }, 3000)
+    }, delayMs)
     return () => clearTimeout(t)
-  }, [onShown])
+  }, [delayMs, onShown])
 
   // Lock body scroll while the gate is up so the blurred surface
   // can't be scrolled around behind the modal.
@@ -229,7 +230,7 @@ export default function LeadCaptureGate({ onSubmit, onShown, sessionId }) {
           <button
             type="submit"
             className="lead-gate-submit"
-            disabled={!valid}
+            disabled={!nameOk || !companyOk || email.trim().length === 0}
           >
             Continue to demo
           </button>
