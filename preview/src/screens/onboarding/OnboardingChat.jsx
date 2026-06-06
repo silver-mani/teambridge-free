@@ -5,6 +5,8 @@ import { ChevronDownIcon } from '../../../../src/components/icons/ChevronDownIco
 import { SearchSmIcon } from '../../../../src/components/icons/SearchSmIcon.tsx'
 import TeambridgeLogo from './TeambridgeLogo.jsx'
 
+const ROBOT_ANIMATION = `${import.meta.env.BASE_URL}agents/nova.gif`
+
 /* ──────────────────────────────────────────────────────────────────────
  * OnboardingChat — Nova's chat panel. Uses ITS OWN class names (no
  * inheritance from act1.css's .prompt-panel-* family) so the grid
@@ -214,10 +216,17 @@ export default function OnboardingChat({
       <div className="ob-chat-frame">
         <header className="ob-chat-head">
           <div className="ob-chat-title">
-            <span className="ob-chat-mark" aria-hidden="true">
-              <TeambridgeLogo size={16} />
+            <span className="ob-chat-avatar" aria-hidden="true">
+              <img src={ROBOT_ANIMATION} alt="" />
             </span>
-            <span>Teambridge AI</span>
+            <span className="ob-chat-title-copy">
+              <span>Nova</span>
+              <span>Teambridge specialist</span>
+            </span>
+          </div>
+          <div className="ob-chat-status" aria-hidden="true">
+            <TeambridgeLogo size={14} />
+            <span>Live setup</span>
           </div>
         </header>
 

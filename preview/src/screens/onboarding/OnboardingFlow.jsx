@@ -14,6 +14,8 @@ import { trackDemoEvent } from '../../lib/demoTracking.js'
 import '../act1.css'
 import './onboarding.css'
 
+const ROBOT_ANIMATION = `${import.meta.env.BASE_URL}agents/nova.gif`
+
 /* ──────────────────────────────────────────────────────────────────────
  * OnboardingFlow — `#/build` route.
  *
@@ -157,7 +159,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
 
   const [messages, setMessages] = useState(() => [
     { id: 'm0', from: 'nova', text:
-      "Welcome to Teambridge. Drop your company website below — I'll set up your account from what I learn." },
+      "I'll build a Teambridge workspace from your company website or a short description. Start with whichever is faster." },
   ])
   const researchTimersRef = useRef([])
   const typingTimersRef = useRef([])
@@ -399,6 +401,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
   const drawer = state === 'intake' ? (
     <IntakeDrawer
       mode={intakeMode}
+      onModeChange={setIntakeMode}
       value={intakeDraft}
       onChange={setIntakeDraft}
       onSubmit={handleIntakeSubmit}
@@ -422,13 +425,13 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     content = (
       <div className="ob-right ob-right--intake">
         <header className="ob-right-head">
-          <h1 className="ob-right-title">Your account</h1>
+          <h1 className="ob-right-title">Build your workspace</h1>
           <p className="ob-right-sub">
-            Your dashboard will appear here as you go.
+            Nova turns public company context into a working Teambridge account.
           </p>
         </header>
         <div className="ob-right-body">
-          <WireframeLoop />
+          <IntakePreview />
         </div>
       </div>
     )
@@ -441,7 +444,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
       <div className="ob-right">
         <header className="ob-right-head">
           <h1 className="ob-right-title">Your account</h1>
-          <p className="ob-right-sub">Filling in based on what we find.</p>
+          <p className="ob-right-sub">Filling in the workspace as Nova researches.</p>
         </header>
         <div className="ob-right-body">
           {config ? (
@@ -521,7 +524,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
       <div className="ob-right">
         <header className="ob-right-head">
           <h1 className="ob-right-title">{headTitle}</h1>
-          <p className="ob-right-sub">Step {stepNum} of 4 · Continue when ready.</p>
+          <p className="ob-right-sub">Step {stepNum} of 4. Review, adjust, then continue.</p>
         </header>
         <div className="ob-right-body">{stepCard}</div>
       </div>
@@ -546,8 +549,8 @@ export default function OnboardingFlow({ onExit, onComplete }) {
                 <span>Teambridge</span>
               </button>
               <div className="ob-demo-status" aria-label="Build progress">
-                <span className={state === 'intake' || state === 'research' ? 'is-active' : ''}>Research</span>
-                <span className={state === 'insights' || state === 'goals' || state === 'review' || state === 'agents' ? 'is-active' : ''}>Configure</span>
+                <span className={state === 'intake' || state === 'research' ? 'is-active' : state !== 'intake' ? 'is-done' : ''}>Research</span>
+                <span className={state === 'insights' || state === 'goals' || state === 'review' || state === 'agents' ? 'is-active' : state === 'launching' ? 'is-done' : ''}>Configure</span>
                 <span className={state === 'launching' ? 'is-active' : ''}>Launch</span>
               </div>
             </div>
@@ -563,7 +566,7 @@ export default function OnboardingFlow({ onExit, onComplete }) {
 }
 
 /* ─── Intake drawer — Claude-style bottom drawer for the URL prompt ─ */
-function IntakeDrawer({ mode, value, onChange, onSubmit }) {
+function IntakeDrawer({ mode, onModeChange, value, onChange, onSubmit }) {
   const ref = useRef(null)
   useEffect(() => { ref.current?.focus() }, [mode])
 
@@ -574,6 +577,9 @@ function IntakeDrawer({ mode, value, onChange, onSubmit }) {
   }
 
   const isUrl = mode === 'url'
+  const examples = isUrl
+    ? ['teambridge.com', 'levyrestaurants.com', 'allieduniversal.com']
+    : ['We staff 5 event venues across Texas.', 'We run 12 senior living communities.', 'We manage 800 warehouse associates.']
 
   return (
     <div className="ob-drawer" role="group" aria-label={isUrl ? 'Company URL' : 'Describe your team'}>
@@ -591,6 +597,27 @@ function IntakeDrawer({ mode, value, onChange, onSubmit }) {
               : 'A sentence or two is enough.'}
           </div>
         </div>
+      </div>
+
+      <div className="ob-intake-switch" role="tablist" aria-label="Intake type">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={isUrl}
+          className={`ob-intake-switch-btn ${isUrl ? 'is-active' : ''}`}
+          onClick={() => { onModeChange?.('url'); onChange('') }}
+        >
+          Website
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={!isUrl}
+          className={`ob-intake-switch-btn ${!isUrl ? 'is-active' : ''}`}
+          onClick={() => { onModeChange?.('free-text'); onChange('') }}
+        >
+          Description
+        </button>
       </div>
 
       <form className="ob-drawer-url-form" onSubmit={submit}>
@@ -616,6 +643,52 @@ function IntakeDrawer({ mode, value, onChange, onSubmit }) {
           </button>
         </div>
       </form>
+
+      <div className="ob-drawer-examples">
+        <span className="ob-drawer-examples-label">Try</span>
+        {examples.map(example => (
+          <button
+            key={example}
+            type="button"
+            className="ob-drawer-example"
+            onClick={() => onChange(example)}
+          >
+            {example}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function IntakePreview() {
+  return (
+    <div className="ob-intake-preview">
+      <div className="ob-intake-hero">
+        <div className="ob-intake-agent">
+          <img src={ROBOT_ANIMATION} alt="" />
+          <span className="ob-intake-agent-dot" />
+        </div>
+        <div className="ob-intake-hero-copy">
+          <span className="ob-intake-kicker">Workspace builder</span>
+          <strong>Nova prepares the account while you review each decision.</strong>
+        </div>
+      </div>
+      <div className="ob-intake-metrics" aria-hidden="true">
+        <div>
+          <span>Company shape</span>
+          <strong>Detected</strong>
+        </div>
+        <div>
+          <span>Locations</span>
+          <strong>Mapped</strong>
+        </div>
+        <div>
+          <span>Agents</span>
+          <strong>Recommended</strong>
+        </div>
+      </div>
+      <WireframeLoop />
     </div>
   )
 }
