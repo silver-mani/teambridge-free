@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
-import { TeambridgeAIIcon } from '../../../src/components/icons/TeambridgeAIIcon.tsx'
+
+const BASE = import.meta.env.BASE_URL
+const TEAMBRIDGE_LOGO =
+  'https://cdn.prod.website-files.com/67adea23aa73a53ff4afb197/67b499f67cace40b0939e859_teambridge%20logo%20main.svg'
+const ROBOT_ANIMATION = `${BASE}agents/nova.gif`
 
 /* ──────────────────────────────────────────────────────────────────────
  * LeadCaptureGate
@@ -173,68 +177,90 @@ export default function LeadCaptureGate({ onSubmit, onShown, sessionId, delayMs 
   return (
     <div className="lead-gate-backdrop" role="dialog" aria-modal="true" aria-labelledby="lead-gate-title">
       <div className="lead-gate-modal">
-        <div className="lead-gate-mark" aria-hidden="true">
-          <TeambridgeAIIcon size={20} />
+        <div className="lead-gate-visual" aria-hidden="true">
+          <div className="lead-gate-brand">
+            <img src={TEAMBRIDGE_LOGO} alt="" className="lead-gate-logo" />
+            <span>Live demo</span>
+          </div>
+          <div className="lead-gate-agent-card">
+            <div className="lead-gate-agent-frame">
+              <img src={ROBOT_ANIMATION} alt="" className="lead-gate-agent" />
+              <span className="lead-gate-live-dot" />
+            </div>
+            <div className="lead-gate-agent-copy">
+              <span className="lead-gate-agent-kicker">Specialist online</span>
+              <strong>Nova is ready to walk you through Teambridge.</strong>
+            </div>
+          </div>
+          <div className="lead-gate-preview-list">
+            <span>AI scheduling</span>
+            <span>Compliance monitoring</span>
+            <span>Live workforce actions</span>
+          </div>
         </div>
-        <h2 id="lead-gate-title" className="lead-gate-title">Continue your demo</h2>
-        <p className="lead-gate-sub">
-          Tell us a little about yourself so we can keep this demo working
-          for your team. We'll only use this to follow up if you ask us to.
-        </p>
+        <div className="lead-gate-panel">
+          <div className="lead-gate-mark" aria-hidden="true">
+            <img src={TEAMBRIDGE_LOGO} alt="" />
+          </div>
+          <h2 id="lead-gate-title" className="lead-gate-title">Continue your demo</h2>
+          <p className="lead-gate-sub">
+            Use a verified work email so we can keep the demo active for your team.
+          </p>
 
-        <form className="lead-gate-form" onSubmit={submit} noValidate>
-          <label className="lead-gate-field">
-            <span className="lead-gate-label">Your name</span>
-            <input
-              className={`lead-gate-input ${touched && !nameOk ? 'is-invalid' : ''}`}
-              type="text"
-              autoComplete="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Alex Rivera"
-              autoFocus
-            />
-          </label>
-          <label className="lead-gate-field">
-            <span className="lead-gate-label">Company</span>
-            <input
-              className={`lead-gate-input ${touched && !companyOk ? 'is-invalid' : ''}`}
-              type="text"
-              autoComplete="organization"
-              value={company}
-              onChange={(e) => setCompany(e.target.value)}
-              placeholder="e.g. Levi's Stadium Operations"
-            />
-          </label>
-          <label className="lead-gate-field">
-            <span className="lead-gate-label">Work email</span>
-            <input
-              className={`lead-gate-input ${touched && !emailOk ? 'is-invalid' : ''}`}
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="alex@yourcompany.com"
-            />
-            {touched && !emailOk && (
-              <span className="lead-gate-hint">
-                {email.trim().length === 0
-                  ? 'Work email required.'
-                  : classifyEmail(email) === 'disposable'
-                  ? "Temporary email addresses aren't allowed. Please use your work email."
-                  : "Please use your work email — we can't verify personal addresses."}
-              </span>
-            )}
-          </label>
+          <form className="lead-gate-form" onSubmit={submit} noValidate>
+            <label className="lead-gate-field">
+              <span className="lead-gate-label">Your name</span>
+              <input
+                className={`lead-gate-input ${touched && !nameOk ? 'is-invalid' : ''}`}
+                type="text"
+                autoComplete="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Alex Rivera"
+                autoFocus
+              />
+            </label>
+            <label className="lead-gate-field">
+              <span className="lead-gate-label">Company</span>
+              <input
+                className={`lead-gate-input ${touched && !companyOk ? 'is-invalid' : ''}`}
+                type="text"
+                autoComplete="organization"
+                value={company}
+                onChange={(e) => setCompany(e.target.value)}
+                placeholder="Levi's Stadium Operations"
+              />
+            </label>
+            <label className="lead-gate-field">
+              <span className="lead-gate-label">Work email</span>
+              <input
+                className={`lead-gate-input ${touched && !emailOk ? 'is-invalid' : ''}`}
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="alex@company.com"
+              />
+              {touched && !emailOk && (
+                <span className="lead-gate-hint">
+                  {email.trim().length === 0
+                    ? 'Work email required.'
+                    : classifyEmail(email) === 'disposable'
+                    ? "Temporary email addresses aren't allowed. Please use your work email."
+                    : "Please use your work email — we can't verify personal addresses."}
+                </span>
+              )}
+            </label>
 
-          <button
-            type="submit"
-            className="lead-gate-submit"
-            disabled={!nameOk || !companyOk || email.trim().length === 0}
-          >
-            Continue to demo
-          </button>
-        </form>
+            <button
+              type="submit"
+              className="lead-gate-submit"
+              disabled={!nameOk || !companyOk || email.trim().length === 0}
+            >
+              Continue to demo
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   )
