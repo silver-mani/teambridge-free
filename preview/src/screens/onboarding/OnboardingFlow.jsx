@@ -362,6 +362,12 @@ export default function OnboardingFlow({ onExit, onComplete }) {
     setState('launching')
     try {
       sessionStorage.setItem('tb:build-config', JSON.stringify(config))
+    } catch { /* ignore */ }
+    try {
+      localStorage.setItem('tb:build-config', JSON.stringify(config))
+      if (config?.industry) localStorage.setItem('tb:saved-workspace-route', `/${config.industry}`)
+    } catch { /* ignore */ }
+    try {
       sessionStorage.setItem('tb:fresh-launch', '1')
     } catch { /* ignore */ }
   }, [config, pushMessage])

@@ -56,13 +56,13 @@ export const INDUSTRY_VENUE_DEFAULTS = {
   ],
 }
 
-/* Read the build flow's saved config from sessionStorage. Returns
+/* Read the build flow's saved config from sessionStorage/localStorage. Returns
  * null when nothing's set or when the saved config is for a different
  * industry (operator went through build → routed elsewhere, or
  * visits the route directly). */
 export function getStoredBuildConfig(industryId) {
   try {
-    const raw = sessionStorage.getItem('tb:build-config')
+    const raw = sessionStorage.getItem('tb:build-config') || localStorage.getItem('tb:build-config')
     if (!raw) return null
     const config = JSON.parse(raw)
     if (!config?.industry || config.industry !== industryId) return null

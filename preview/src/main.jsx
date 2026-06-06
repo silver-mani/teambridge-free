@@ -16,8 +16,51 @@ const VALID_INDUSTRIES = new Set([
   'hospitality', 'long-term-care', 'janitorial',
 ])
 
+const STORAGE_KEYS = {
+  lead: 'tb:lead',
+  leadData: 'tb:lead-data',
+  buildConfig: 'tb:build-config',
+  savedWorkspaceRoute: 'tb:saved-workspace-route',
+}
+
+function readStored(key) {
+  try {
+    return sessionStorage.getItem(key) || localStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
+function writeStored(key, value) {
+  try { sessionStorage.setItem(key, value) } catch { /* ignore */ }
+  try { localStorage.setItem(key, value) } catch { /* ignore */ }
+}
+
+function hasStoredLeadOrWorkspace() {
+  return readStored(STORAGE_KEYS.lead) === '1' || Boolean(readStored(STORAGE_KEYS.buildConfig))
+}
+
+function getSavedWorkspaceRoute() {
+  const saved = readStored(STORAGE_KEYS.savedWorkspaceRoute)
+  if (!saved || typeof saved !== 'string' || !saved.startsWith('/')) return null
+  return parseHashString(saved)
+    ? saved
+    : null
+}
+
+function routeToHashPath(route) {
+  if (!route) return null
+  if (route.kind === 'industry') return route.view === 'overview' ? `/${route.industry}` : `/${route.industry}/${route.view}`
+  if (route.kind === 'sage') return route.view === 'dashboard' ? '/sage' : `/sage/${route.view}`
+  return null
+}
+
 function parseHash() {
-  const raw = (window.location.hash || '').replace(/^#/, '').replace(/^\//, '').trim()
+  return parseHashString(window.location.hash || '')
+}
+
+function parseHashString(input) {
+  const raw = String(input || '').replace(/^#/, '').replace(/^\//, '').trim()
   if (!raw) return null
   const segs = raw.split('/')
   // #/build → guided onboarding flow
@@ -74,6 +117,12 @@ function App() {
     initDemoBehaviorTracking()
     trackDemoEvent('session_started')
   }, [])
+
+  useEffect(() => {
+    if (route || !hasStoredLeadOrWorkspace()) return
+    const savedRoute = getSavedWorkspaceRoute()
+    if (savedRoute) setHash(savedRoute)
+  }, [route])
   // Cross-route flag for the OT-fix story arc. The CFO clicks Resolve OT
   // Crisis on the Sage dashboard → lands in workforce → runs Nova's
   // replacement flow. When the flow completes we flip this to true so
@@ -92,22 +141,22 @@ function App() {
   }
 
   // Lead capture — gate the demo behind a name / company / work-email
-  // form 3 seconds after the user lands inside any account. Persisted
-  // for the session so they don't see it again on every navigation.
+  // form before visitors can use an account. Persisted locally so a
+  // person who already completed the form can return to their saved
+  // workspace without being asked a second time.
   // Operators who came through the build flow are also exempt: they
   // already gave us their company URL on intake, so popping a second
   // capture on top of their freshly-built account reads as a bait-
   // and-switch. tb:build-config presence is the signal.
   const [leadCaptured, setLeadCaptured] = useState(() => {
     try {
-      if (sessionStorage.getItem('tb:lead') === '1') return true
-      if (sessionStorage.getItem('tb:build-config')) return true
+      if (hasStoredLeadOrWorkspace()) return true
       return false
     } catch { return false }
   })
   const [accessChecked, setAccessChecked] = useState(() => {
     try {
-      return !readDemoAccessToken() || sessionStorage.getItem('tb:lead') === '1'
+      return !readDemoAccessToken() || hasStoredLeadOrWorkspace()
     } catch {
       return true
     }
@@ -130,15 +179,13 @@ function App() {
       .then(data => {
         if (cancelled) return
         if (data?.valid) {
-          try {
-            sessionStorage.setItem('tb:lead', '1')
-            sessionStorage.setItem('tb:lead-data', JSON.stringify({
-              email: data.email,
-              source: data.source,
-              demoSessionId: data.demoSessionId,
-              verifiedByLanding: true,
-            }))
-          } catch { /* ignore */ }
+          writeStored(STORAGE_KEYS.lead, '1')
+          writeStored(STORAGE_KEYS.leadData, JSON.stringify({
+            email: data.email,
+            source: data.source,
+            demoSessionId: data.demoSessionId,
+            verifiedByLanding: true,
+          }))
           setLeadCaptured(true)
           trackDemoEvent('landing_demo_access_accepted', {
             source: data.source,
@@ -160,10 +207,10 @@ function App() {
   }, [])
   const submitLead = (lead) => {
     const demo = getDemoSnapshot()
-    try {
-      sessionStorage.setItem('tb:lead', '1')
-      sessionStorage.setItem('tb:lead-data', JSON.stringify(lead))
-    } catch { /* ignore */ }
+    writeStored(STORAGE_KEYS.lead, '1')
+    writeStored(STORAGE_KEYS.leadData, JSON.stringify(lead))
+    const savedRoute = routeToHashPath(route)
+    if (savedRoute) writeStored(STORAGE_KEYS.savedWorkspaceRoute, savedRoute)
     setLeadCaptured(true)
     trackDemoEvent('lead_gate_submitted', {
       company: lead.company,
@@ -232,6 +279,12 @@ function App() {
     })
   }, [route])
 
+  useEffect(() => {
+    if (!leadCaptured) return
+    const savedRoute = routeToHashPath(route)
+    if (savedRoute) writeStored(STORAGE_KEYS.savedWorkspaceRoute, savedRoute)
+  }, [leadCaptured, route])
+
   // The gate runs on every route except the front-of-funnel screens
   // (entry choice, demo picker, build flow). The build flow has its
   // own first-class signup capture in step 1.
@@ -255,6 +308,7 @@ function App() {
           // Drop them into the dashboard for the industry they picked.
           // If they didn't pick (unlikely), fall back to the demo picker.
           if (answers.industry && VALID_INDUSTRIES.has(answers.industry)) {
+            writeStored(STORAGE_KEYS.savedWorkspaceRoute, `/${answers.industry}`)
             setHash(`/${answers.industry}`)
           } else {
             setHash('/demos')
