@@ -3,6 +3,7 @@ import { TeambridgeAIIcon } from '../../../../src/components/icons/TeambridgeAII
 import { ArrowNarrowUpIcon } from '../../../../src/components/icons/ArrowNarrowUpIcon.tsx'
 import { INDUSTRIES } from '../IndustrySelector.jsx'
 import DashboardShell, { DEFAULT_NAV_GROUPS, DEFAULT_NAV_BOTTOM } from '../shell/DashboardShell.jsx'
+import TeambridgeLogo from './TeambridgeLogo.jsx'
 import OnboardingChat from './OnboardingChat.jsx'
 import ConfigCard, { ALL_FIELDS } from './ConfigCard.jsx'
 import { InsightsStep, GoalsStep, ReviewStep, AgentsStep } from './ReviewSteps.jsx'
@@ -532,6 +533,19 @@ export default function OnboardingFlow({ onExit, onComplete }) {
           navBottom={navBottom}
           onBrand={onExit}
           onSelectView={() => { /* locked */ }}
+          topBar={
+            <div className="ob-demo-topbar">
+              <button type="button" className="ob-demo-brand" onClick={onExit} aria-label="Back to demo start">
+                <TeambridgeLogo size={24} />
+                <span>Teambridge</span>
+              </button>
+              <div className="ob-demo-status" aria-label="Build progress">
+                <span className={state === 'intake' || state === 'research' ? 'is-active' : ''}>Research</span>
+                <span className={state === 'insights' || state === 'goals' || state === 'review' || state === 'agents' ? 'is-active' : ''}>Configure</span>
+                <span className={state === 'launching' ? 'is-active' : ''}>Launch</span>
+              </div>
+            </div>
+          }
           chat={chat}
           content={content}
           showLeftNav={false}

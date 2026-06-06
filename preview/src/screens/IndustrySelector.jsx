@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Eyebrow } from '../../../src/components/Eyebrow/Eyebrow.tsx'
-import { TeambridgeAIIcon } from '../../../src/components/icons/TeambridgeAIIcon.tsx'
 import { ArrowNarrowRightIcon } from '../../../src/components/icons/ArrowNarrowRightIcon.tsx'
 import { Users03Icon } from '../../../src/components/icons/Users03Icon.tsx'
 import { Microphone02Icon } from '../../../src/components/icons/Microphone02Icon.tsx'
@@ -8,6 +7,11 @@ import { Bell01Icon } from '../../../src/components/icons/Bell01Icon.tsx'
 import { PackageIcon } from '../../../src/components/icons/PackageIcon.tsx'
 import { Home02Icon } from '../../../src/components/icons/Home02Icon.tsx'
 import { Trash03Icon } from '../../../src/components/icons/Trash03Icon.tsx'
+
+const BASE = import.meta.env.BASE_URL
+const TEAMBRIDGE_LOGO =
+  'https://cdn.prod.website-files.com/67adea23aa73a53ff4afb197/67b499f67cace40b0939e859_teambridge%20logo%20main.svg'
+const ROBOT_ANIMATION = `${BASE}agents/nova.gif`
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Industry icons — strict order of preference:
@@ -207,13 +211,12 @@ export default function IndustrySelector({ onSelect = () => {} }) {
     <div
       style={{
         minHeight: '100vh',
-        background: 'var(--color-bg-primary)',
+        background: 'linear-gradient(180deg, var(--color-bg-primary) 0%, var(--color-bg-secondary) 100%)',
         fontFamily: 'var(--font-sans)',
         display: 'flex',
         flexDirection: 'column',
       }}
     >
-      {/* Brand lockup — kept small and quiet, like the real product */}
       <header
         style={{
           display: 'flex',
@@ -222,33 +225,17 @@ export default function IndustrySelector({ onSelect = () => {} }) {
           padding: 'var(--space-6) var(--space-8)',
         }}
       >
-        <span
+        <img
+          src={TEAMBRIDGE_LOGO}
+          alt="Teambridge"
           style={{
-            width: 28,
-            height: 28,
-            borderRadius: 'var(--radius-md)',
-            background: 'var(--color-bg-inverse-primary)',
-            color: 'var(--color-content-inverse-primary)',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            width: 166,
+            height: 'auto',
+            display: 'block',
           }}
-        >
-          <TeambridgeAIIcon size={16} />
-        </span>
-        <span
-          style={{
-            fontSize: 'var(--text-base)',
-            fontWeight: 'var(--font-weight-medium)',
-            color: 'var(--color-content-primary)',
-            letterSpacing: '-0.01em',
-          }}
-        >
-          Teambridge
-        </span>
+        />
       </header>
 
-      {/* Centered content column */}
       <main
         style={{
           flex: 1,
@@ -259,27 +246,36 @@ export default function IndustrySelector({ onSelect = () => {} }) {
           padding: 'var(--space-8) var(--space-6) var(--space-16)',
         }}
       >
-        <div style={{ width: '100%', maxWidth: 880 }}>
-          <div style={{ textAlign: 'center', marginBottom: 'var(--space-10)' }}>
-            <Eyebrow style={{ color: 'var(--color-content-tertiary)', marginBottom: 'var(--space-3)' }}>
-              Teambridge Access
-            </Eyebrow>
+        <div style={{ width: '100%', maxWidth: 1120 }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))',
+              gap: 'var(--space-8)',
+              alignItems: 'end',
+              marginBottom: 'var(--space-8)',
+            }}
+          >
+            <div>
+              <Eyebrow style={{ color: 'var(--color-content-tertiary)', marginBottom: 'var(--space-3)' }}>
+                Demo accounts
+              </Eyebrow>
             <h1
               style={{
                 margin: 0,
-                fontSize: 'var(--text-5xl)',
+                fontSize: 'clamp(36px, 5vw, 60px)',
                 fontWeight: 'var(--font-weight-regular)',
-                lineHeight: 'var(--line-height-snug)',
-                letterSpacing: '-0.02em',
+                lineHeight: 1.04,
+                letterSpacing: 0,
                 color: 'var(--color-content-primary)',
               }}
             >
-              Which world are you in?
+              Choose an operating model.
             </h1>
             <p
               style={{
-                margin: 'var(--space-4) auto 0',
-                maxWidth: 560,
+                margin: 'var(--space-4) 0 0',
+                maxWidth: 620,
                 fontSize: 'var(--text-base)',
                 lineHeight: 'var(--line-height-loose)',
                 color: 'var(--color-content-tertiary)',
@@ -288,30 +284,59 @@ export default function IndustrySelector({ onSelect = () => {} }) {
               We&rsquo;ll load realistic data for your shifts, your staff, and your workflows.
               Pick an industry to begin.
             </p>
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--space-3)',
+                minWidth: 260,
+                padding: 'var(--space-3)',
+                border: '1px solid var(--color-border-opaque)',
+                borderRadius: 'var(--radius-lg)',
+                background: 'var(--color-bg-primary)',
+                boxShadow: 'var(--shadow-below-sm)',
+              }}
+            >
+              <img
+                src={ROBOT_ANIMATION}
+                alt=""
+                aria-hidden="true"
+                style={{
+                  width: 54,
+                  height: 54,
+                  objectFit: 'cover',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--color-border-opaque)',
+                }}
+              />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <span style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--color-content-primary)' }}>
+                  Nova is ready
+                </span>
+                <span style={{ fontSize: 'var(--text-xs)', lineHeight: 'var(--line-height-relaxed)', color: 'var(--color-content-tertiary)' }}>
+                  Each account opens with live staffing scenarios.
+                </span>
+              </div>
+            </div>
           </div>
 
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
               gap: 'var(--space-4)',
+              padding: 'var(--space-4)',
+              border: '1px solid var(--color-border-opaque)',
+              borderRadius: 'var(--radius-xl)',
+              background: 'color-mix(in srgb, var(--color-bg-primary) 92%, transparent)',
+              boxShadow: 'var(--shadow-below-md)',
             }}
           >
             {INDUSTRIES.map(industry => (
               <IndustryCard key={industry.id} industry={industry} onSelect={onSelect} />
             ))}
           </div>
-
-          <p
-            style={{
-              margin: 'var(--space-10) 0 0',
-              textAlign: 'center',
-              fontSize: 'var(--text-xs)',
-              color: 'var(--color-content-tertiary)',
-            }}
-          >
-            One click. No signup. You can switch industries anytime.
-          </p>
         </div>
       </main>
     </div>

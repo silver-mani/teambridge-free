@@ -1,9 +1,13 @@
 import { useState } from 'react'
 import { Eyebrow } from '../../../src/components/Eyebrow/Eyebrow.tsx'
-import { TeambridgeAIIcon } from '../../../src/components/icons/TeambridgeAIIcon.tsx'
 import { ArrowNarrowRightIcon } from '../../../src/components/icons/ArrowNarrowRightIcon.tsx'
 import { SparkleIcon } from './onboarding/SparkleIcon.jsx'
 import { Grid01Icon } from '../../../src/components/icons/Grid01Icon.tsx'
+
+const BASE = import.meta.env.BASE_URL
+const TEAMBRIDGE_LOGO =
+  'https://cdn.prod.website-files.com/67adea23aa73a53ff4afb197/67b499f67cace40b0939e859_teambridge%20logo%20main.svg'
+const ROBOT_ANIMATION = `${BASE}agents/nova.gif`
 
 /* ──────────────────────────────────────────────────────────────────────
  * EntryChoice — first screen of the demo. Two paths:
@@ -106,7 +110,7 @@ export default function EntryChoice({ onBuild, onExplore }) {
     <div
       style={{
         minHeight: '100vh',
-        background: 'var(--color-bg-primary)',
+        background: 'linear-gradient(180deg, var(--color-bg-primary) 0%, var(--color-bg-secondary) 100%)',
         fontFamily: 'var(--font-sans)',
         display: 'flex',
         flexDirection: 'column',
@@ -120,27 +124,15 @@ export default function EntryChoice({ onBuild, onExplore }) {
           padding: 'var(--space-6) var(--space-8)',
         }}
       >
-        <span
+        <img
+          src={TEAMBRIDGE_LOGO}
+          alt="Teambridge"
           style={{
-            width: 28, height: 28,
-            borderRadius: 'var(--radius-md)',
-            background: 'var(--color-bg-inverse-primary)',
-            color: 'var(--color-content-inverse-primary)',
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            width: 166,
+            height: 'auto',
+            display: 'block',
           }}
-        >
-          <TeambridgeAIIcon size={16} />
-        </span>
-        <span
-          style={{
-            fontSize: 'var(--text-base)',
-            fontWeight: 'var(--font-weight-medium)',
-            color: 'var(--color-content-primary)',
-            letterSpacing: '-0.01em',
-          }}
-        >
-          Teambridge
-        </span>
+        />
       </header>
 
       <main
@@ -153,43 +145,82 @@ export default function EntryChoice({ onBuild, onExplore }) {
           padding: 'var(--space-8) var(--space-6) var(--space-16)',
         }}
       >
-        <div style={{ width: '100%', maxWidth: 920 }}>
-          <div style={{ textAlign: 'center', marginBottom: 'var(--space-10)' }}>
-            <Eyebrow style={{ color: 'var(--color-content-tertiary)', marginBottom: 'var(--space-3)' }}>
-              Welcome
+        <div
+          style={{
+            width: '100%',
+            maxWidth: 1120,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))',
+            gap: 'var(--space-8)',
+            alignItems: 'center',
+          }}
+        >
+          <section style={{ minWidth: 0 }}>
+            <Eyebrow style={{ color: 'var(--color-content-tertiary)', marginBottom: 'var(--space-4)' }}>
+              Interactive demo
             </Eyebrow>
             <h1
               style={{
                 margin: 0,
-                fontSize: 'var(--text-5xl)',
+                fontSize: 'clamp(42px, 6vw, 72px)',
                 fontWeight: 'var(--font-weight-regular)',
-                lineHeight: 'var(--line-height-snug)',
-                letterSpacing: '-0.02em',
+                lineHeight: 1.02,
+                letterSpacing: 0,
                 color: 'var(--color-content-primary)',
               }}
             >
-              How would you like to start?
+              Build or explore your Teambridge workspace.
             </h1>
             <p
               style={{
-                margin: 'var(--space-4) auto 0',
-                maxWidth: 560,
-                fontSize: 'var(--text-base)',
+                margin: 'var(--space-5) 0 0',
+                maxWidth: 520,
+                fontSize: 'var(--text-lg)',
                 lineHeight: 'var(--line-height-loose)',
                 color: 'var(--color-content-tertiary)',
               }}
             >
-              Spin up your own Teambridge account in a few questions, or step into a pre-built
-              account to see how it runs for teams like yours.
+              Start with a guided setup or drop into a ready-made account with realistic
+              scheduling, staffing, payroll, and agent workflows.
             </p>
-          </div>
+            <div
+              style={{
+                marginTop: 'var(--space-8)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--space-3)',
+                color: 'var(--color-content-secondary)',
+                fontSize: 'var(--text-sm)',
+              }}
+            >
+              <img
+                src={ROBOT_ANIMATION}
+                alt=""
+                aria-hidden="true"
+                style={{
+                  width: 52,
+                  height: 52,
+                  objectFit: 'cover',
+                  borderRadius: 'var(--radius-lg)',
+                  border: '1px solid var(--color-border-opaque)',
+                  background: 'var(--color-bg-primary)',
+                }}
+              />
+              <span>Nova keeps the setup moving while the workspace fills in.</span>
+            </div>
+          </section>
 
           <div
             className="entry-choice-grid"
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
               gap: 'var(--space-5)',
+              padding: 'var(--space-4)',
+              border: '1px solid var(--color-border-opaque)',
+              borderRadius: 'var(--radius-xl)',
+              background: 'color-mix(in srgb, var(--color-bg-primary) 92%, transparent)',
+              boxShadow: 'var(--shadow-below-lg)',
             }}
           >
             <ChoiceCard
@@ -209,17 +240,6 @@ export default function EntryChoice({ onBuild, onExplore }) {
               onClick={onExplore}
             />
           </div>
-
-          <p
-            style={{
-              margin: 'var(--space-10) 0 0',
-              textAlign: 'center',
-              fontSize: 'var(--text-xs)',
-              color: 'var(--color-content-tertiary)',
-            }}
-          >
-            You can switch between modes anytime.
-          </p>
         </div>
       </main>
     </div>
