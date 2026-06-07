@@ -177,6 +177,7 @@ function LeftNav({ industryLabel, brandUrl, view, onBrand, onAsk, onSelectView, 
       <button
         key={item.id}
         type="button"
+        data-demo-view={item.id}
         className={`act1-nav-item ${active ? 'act1-nav-item-active' : ''} ${item.ai ? 'act1-nav-item-ai' : ''}`}
         onClick={() => { trackDemoEvent('nav_clicked', { view: item.id, label: item.label }); onSelectView?.(item.id) }}
         aria-current={active ? 'page' : undefined}
@@ -4041,7 +4042,7 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
       view === 'overview' ? '' : `act1-root--${view}`,
       isMobileDual ? 'is-mobile-dual' : '',
       isMobileDual && mobileContentOpen ? 'mobile-content-open' : '',
-    ].filter(Boolean).join(' ')}>
+    ].filter(Boolean).join(' ')} data-demo-current-view={view}>
       <MobileTopBar
         industryLabel={data.label}
         view={view}

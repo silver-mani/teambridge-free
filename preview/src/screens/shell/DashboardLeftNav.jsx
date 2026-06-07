@@ -95,6 +95,7 @@ export default function DashboardLeftNav({
       <button
         key={item.id}
         type="button"
+        data-demo-view={item.id}
         className={[
           'act1-nav-item',
           active ? 'act1-nav-item-active' : '',

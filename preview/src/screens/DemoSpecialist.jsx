@@ -4,6 +4,77 @@ import { trackDemoEvent, getDemoSnapshot } from '../lib/demoTracking.js'
 const BASE = import.meta.env.BASE_URL
 const NOVA_AVATAR = `${BASE}agents/nova.gif`
 const WIDGET_SRC = 'https://unpkg.com/@elevenlabs/convai-widget-embed'
+const ACTION_SETTLE_MS = 750
+
+const DEMO_ACTIONS = {
+  intro: {
+    selector: ['.entry-build-panel', '.entry-product-preview--build'],
+    label: 'Build a workspace from company context',
+  },
+  ready_workspaces: {
+    selector: ['.entry-workspace-section'],
+    label: 'Ready-made workspace selector',
+  },
+  overview: {
+    view: 'overview',
+    selector: ['.activity-feed-inner', '.activity-feed', '.prompt-panel'],
+    label: 'Live agent activity and daily briefing',
+  },
+  schedule_gap: {
+    view: 'schedule',
+    selector: ['.schedule-canvas', '.schedule-grid', '.schedule'],
+    label: 'Coverage gaps and schedule changes',
+  },
+  shift_requests: {
+    view: 'shift-requests',
+    selector: ['.shift-requests-list', '.shift-request-card', '.shift-requests'],
+    label: 'Requests Nova can approve or route',
+  },
+  time_tracking: {
+    view: 'time-tracking',
+    selector: ['.time-tracking-map', '.time-tracking-rail', '.time-tracking'],
+    label: 'Live worker locations and attendance risk',
+  },
+  payroll: {
+    view: 'pay',
+    selector: ['.pay-stats', '.pay-table', '.pay'],
+    label: 'Payroll periods, approvals, and instant pay',
+  },
+  pay_review: {
+    view: 'review',
+    selector: ['.review-stats', '.review-card', '.review'],
+    label: 'Payroll exceptions Nova can clear',
+  },
+  people: {
+    view: 'people',
+    selector: ['.people-stats', '.people-table', '.people'],
+    label: 'Roster, credentials, and workforce records',
+  },
+  onboarding: {
+    view: 'onboarding',
+    selector: ['.onboarding-board', '.onboarding-tabs', '.onboarding'],
+    label: 'Onboarding pipeline and missing steps',
+  },
+  compliance: {
+    view: 'policies',
+    selector: ['.policies-grid', '.policies-main', '.policies'],
+    label: 'Compliance policies and guardrails',
+  },
+  agents: {
+    view: 'workflows',
+    selector: ['.wf-detail', '.wf-grid', '.wf'],
+    label: 'Teambridge AI agent workflows',
+  },
+  sage_overtime: {
+    selector: ['.sage-dashboard', '.sage-workforce', '.schedule', '.act1-root'],
+    label: 'Sage overtime handoff into Teambridge',
+  },
+  engage: {
+    view: 'engage',
+    selector: ['.engage-thread', '.engage-list', '.engage'],
+    label: 'Worker communication and follow-up',
+  },
+}
 
 function loadWidgetScript() {
   if (typeof document === 'undefined') return Promise.resolve()
@@ -44,6 +115,57 @@ function setHashPath(path) {
   }
 }
 
+function sleep(ms) {
+  return new Promise(resolve => window.setTimeout(resolve, ms))
+}
+
+function selectorsFor(value) {
+  if (Array.isArray(value)) return value.filter(Boolean)
+  return value ? [value] : []
+}
+
+function findFirst(selectors) {
+  for (const selector of selectorsFor(selectors)) {
+    const el = document.querySelector(selector)
+    if (el) return { el, selector }
+  }
+  return { el: null, selector: '' }
+}
+
+function waitForElement(selectors, timeoutMs = 3600) {
+  const started = Date.now()
+
+  return new Promise(resolve => {
+    const tick = () => {
+      const found = findFirst(selectors)
+      if (found.el || Date.now() - started >= timeoutMs) {
+        resolve(found)
+        return
+      }
+      window.setTimeout(tick, 120)
+    }
+
+    tick()
+  })
+}
+
+function normalizeActionName(action) {
+  const key = String(action || '').toLowerCase().trim().replace(/[\s-]+/g, '_')
+  if (DEMO_ACTIONS[key]) return key
+  if (key.includes('schedule') || key.includes('gap') || key.includes('shift')) return 'schedule_gap'
+  if (key.includes('request') || key.includes('swap')) return 'shift_requests'
+  if (key.includes('time') || key.includes('attendance') || key.includes('tracking')) return 'time_tracking'
+  if (key.includes('payroll') || key === 'pay') return 'payroll'
+  if (key.includes('exception') || key.includes('review')) return 'pay_review'
+  if (key.includes('people') || key.includes('roster') || key.includes('credential')) return 'people'
+  if (key.includes('onboard') || key.includes('hire')) return 'onboarding'
+  if (key.includes('compliance') || key.includes('policy')) return 'compliance'
+  if (key.includes('agent') || key.includes('workflow')) return 'agents'
+  if (key.includes('message') || key.includes('engage') || key.includes('communication')) return 'engage'
+  if (key.includes('workspace') || key.includes('vertical') || key.includes('industry')) return 'ready_workspaces'
+  return key || 'overview'
+}
+
 export function openDemoSpecialist(source = 'unknown') {
   if (typeof window === 'undefined') return
   window.dispatchEvent(new CustomEvent('tb:open-demo-specialist', { detail: { source } }))
@@ -76,6 +198,42 @@ function highlightSelector(selector, label) {
     el.removeAttribute('data-specialist-highlight')
   }, 5200)
   return { ok: true }
+}
+
+async function performDemoAction(action, options = {}) {
+  const key = normalizeActionName(action)
+  const config = DEMO_ACTIONS[key]
+  if (!config) return { ok: false, reason: 'unknown_action', action: key }
+
+  if (config.view) {
+    setHashPath(routeForView(config.view))
+    await sleep(options.settleMs || ACTION_SETTLE_MS)
+  }
+
+  const target = await waitForElement(config.selector)
+  if (!target.el) {
+    return {
+      ok: false,
+      reason: 'target_not_found',
+      action: key,
+      view: config.view || null,
+    }
+  }
+
+  if (config.clickSelector) {
+    const clickTarget = findFirst(config.clickSelector)
+    clickTarget.el?.click()
+    await sleep(220)
+  }
+
+  const result = highlightSelector(target.selector, options.label || config.label)
+  return {
+    ...result,
+    action: key,
+    view: config.view || null,
+    selector: target.selector,
+    label: options.label || config.label,
+  }
 }
 
 export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
@@ -182,17 +340,33 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
           trackDemoEvent('demo_specialist_tool_navigate', { view, path, conversationId })
           return { ok: true, path }
         },
-        runDemoScenario: ({ scenario }) => {
+        runDemoScenario: async ({ scenario }) => {
           const key = String(scenario || '').toLowerCase()
-          let path = routeForView('overview')
-          if (key.includes('schedule') || key.includes('shift')) path = routeForView('schedule')
-          if (key.includes('payroll') || key.includes('pay')) path = routeForView('pay')
-          if (key.includes('onboarding')) path = routeForView('onboarding')
-          if (key.includes('compliance') || key.includes('policy')) path = routeForView('policies')
-          if (key.includes('overtime') || key.includes('sage')) path = '/sage'
-          setHashPath(path)
-          trackDemoEvent('demo_specialist_tool_scenario', { scenario, path, conversationId })
-          return { ok: true, path }
+          if (key.includes('overtime') || key.includes('sage')) {
+            setHashPath('/sage')
+            await sleep(ACTION_SETTLE_MS)
+            const result = await performDemoAction('sage_overtime')
+            trackDemoEvent('demo_specialist_tool_scenario', { scenario, path: '/sage', ...result, conversationId })
+            return { ok: true, path: '/sage', ...result }
+          }
+
+          const action = normalizeActionName(scenario)
+          const result = await performDemoAction(action)
+          const path = DEMO_ACTIONS[result.action]?.view
+            ? routeForView(DEMO_ACTIONS[result.action].view)
+            : window.location.hash.replace(/^#/, '') || '/'
+          trackDemoEvent('demo_specialist_tool_scenario', { scenario, path, ...result, conversationId })
+          return { ok: result.ok, path, ...result }
+        },
+        performDemoAction: async ({ action, label }) => {
+          const result = await performDemoAction(action, { label })
+          trackDemoEvent('demo_specialist_tool_action', { action, label, ...result, conversationId })
+          return result
+        },
+        highlightDemoAreaByName: async ({ area, label }) => {
+          const result = await performDemoAction(area, { label })
+          trackDemoEvent('demo_specialist_tool_named_highlight', { area, label, ...result, conversationId })
+          return result
         },
         highlightDemoArea: ({ selector, label }) => {
           const result = highlightSelector(selector, label)
