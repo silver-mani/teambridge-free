@@ -274,6 +274,7 @@ function hideElevenLabsBranding(widget) {
     const style = document.createElement('style')
     style.setAttribute('data-teambridge-branding-cleanup', 'true')
     style.textContent = `
+      a[href*="elevenlabs.io/agents"],
       p:has(a[href*="elevenlabs.io/agents"]) {
         display: none !important;
       }
@@ -289,6 +290,8 @@ function hideElevenLabsBranding(widget) {
 
   for (const node of brandedNodes) {
     const container = node.closest('p') || node
+    node.style.setProperty('display', 'none', 'important')
+    node.setAttribute('aria-hidden', 'true')
     container.style.setProperty('display', 'none', 'important')
     container.setAttribute('aria-hidden', 'true')
   }
