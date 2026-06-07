@@ -697,7 +697,6 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
               default-expanded="true"
               avatar-image-url={NOVA_AVATAR}
               override-prompt={NOVA_RUNTIME_PROMPT}
-              override-first-message="Hi, I am Nova. I can guide the Teambridge demo and move the workspace on screen while we talk."
               action-text="Talk to Teambridge"
               start-call-text="Start voice demo"
               end-call-text="End demo"
