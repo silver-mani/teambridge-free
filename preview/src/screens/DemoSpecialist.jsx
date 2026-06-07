@@ -5,6 +5,12 @@ const BASE = import.meta.env.BASE_URL
 const NOVA_AVATAR = `${BASE}agents/nova.gif`
 const WIDGET_SRC = 'https://unpkg.com/@elevenlabs/convai-widget-embed'
 const ACTION_SETTLE_MS = 750
+const TRANSCRIPT_EVENTS = [
+  'elevenlabs-convai:message',
+  'elevenlabs-convai:transcript',
+  'elevenlabs-convai:user-transcript',
+  'elevenlabs-convai:agent-response',
+]
 
 const DEMO_ACTIONS = {
   intro: {
@@ -166,6 +172,52 @@ function normalizeActionName(action) {
   return key || 'overview'
 }
 
+function compactDetail(value, depth = 0) {
+  if (value === null || value === undefined) return undefined
+  if (typeof value === 'string') return value.slice(0, 1000)
+  if (typeof value === 'number' || typeof value === 'boolean') return value
+  if (depth > 2) return undefined
+  if (Array.isArray(value)) {
+    return value.slice(0, 6).map(item => compactDetail(item, depth + 1)).filter(item => item !== undefined)
+  }
+  if (typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value)
+        .slice(0, 18)
+        .map(([key, item]) => [key, compactDetail(item, depth + 1)])
+        .filter(([, item]) => item !== undefined)
+    )
+  }
+  return undefined
+}
+
+function transcriptFromDetail(detail) {
+  const candidates = [
+    detail?.text,
+    detail?.transcript,
+    detail?.message,
+    detail?.content,
+    detail?.response,
+    detail?.delta,
+    detail?.data?.text,
+    detail?.data?.transcript,
+    detail?.data?.message,
+  ]
+  const text = candidates.find(value => typeof value === 'string' && value.trim())
+  if (!text) return null
+  const speaker =
+    detail?.speaker ||
+    detail?.role ||
+    detail?.source ||
+    detail?.data?.speaker ||
+    detail?.data?.role ||
+    'Nova'
+  return {
+    text: String(text).trim().slice(0, 1800),
+    speaker: String(speaker || 'Nova').slice(0, 80),
+  }
+}
+
 export function openDemoSpecialist(source = 'unknown') {
   if (typeof window === 'undefined') return
   window.dispatchEvent(new CustomEvent('tb:open-demo-specialist', { detail: { source } }))
@@ -244,6 +296,7 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
   const [loading, setLoading] = useState(false)
   const widgetRef = useRef(null)
   const autoStartRef = useRef(false)
+  const transcriptSeenRef = useRef(new Set())
 
   const lead = useMemo(() => readJsonStorage('tb:lead-data') || {}, [enabled, route])
   const dynamicVariables = useMemo(() => {
@@ -392,7 +445,35 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
     }
 
     widget.addEventListener('elevenlabs-convai:call', handleCall)
-    return () => widget.removeEventListener('elevenlabs-convai:call', handleCall)
+    const handleTranscript = event => {
+      const line = transcriptFromDetail(event.detail)
+      const compact = compactDetail(event.detail)
+      if (!line) {
+        trackDemoEvent('demo_specialist_widget_event', {
+          eventName: event.type,
+          detail: compact,
+          conversationId,
+        })
+        return
+      }
+
+      const key = `${event.type}:${line.speaker}:${line.text}`
+      if (transcriptSeenRef.current.has(key)) return
+      transcriptSeenRef.current.add(key)
+      trackDemoEvent('demo_specialist_transcript', {
+        eventName: event.type,
+        speaker: line.speaker,
+        text: line.text,
+        conversationId,
+      })
+    }
+
+    TRANSCRIPT_EVENTS.forEach(eventName => widget.addEventListener(eventName, handleTranscript))
+
+    return () => {
+      widget.removeEventListener('elevenlabs-convai:call', handleCall)
+      TRANSCRIPT_EVENTS.forEach(eventName => widget.removeEventListener(eventName, handleTranscript))
+    }
   }, [conversationId, signedUrl])
 
   useEffect(() => {
