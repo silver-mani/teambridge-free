@@ -7,16 +7,23 @@ const WIDGET_SRC = 'https://unpkg.com/@elevenlabs/convai-widget-embed'
 
 function loadWidgetScript() {
   if (typeof document === 'undefined') return Promise.resolve()
-  if (document.querySelector(`script[src="${WIDGET_SRC}"]`)) return Promise.resolve()
+  if (customElements.get('elevenlabs-convai')) return Promise.resolve()
+
+  const ready = customElements
+    .whenDefined('elevenlabs-convai')
+    .then(() => undefined)
+
+  if (document.querySelector(`script[src="${WIDGET_SRC}"]`)) return ready
 
   return new Promise((resolve, reject) => {
     const script = document.createElement('script')
     script.src = WIDGET_SRC
     script.async = true
     script.type = 'text/javascript'
-    script.onload = resolve
+    script.onload = () => resolve()
     script.onerror = reject
     document.head.appendChild(script)
+    ready.then(resolve).catch(() => {})
   })
 }
 
