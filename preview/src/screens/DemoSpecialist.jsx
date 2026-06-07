@@ -529,6 +529,82 @@ function clickVisibleAcceptFallback() {
   return null
 }
 
+function dispatchSyntheticClick(target, x, y) {
+  if (!target) return false
+  if (typeof PointerEvent === 'function') {
+    target.dispatchEvent(new PointerEvent('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+      clientX: x,
+      clientY: y,
+      pointerId: 1,
+      pointerType: 'mouse',
+    }))
+  }
+  target.dispatchEvent(new MouseEvent('mousedown', {
+    bubbles: true,
+    cancelable: true,
+    clientX: x,
+    clientY: y,
+  }))
+  target.dispatchEvent(new MouseEvent('mouseup', {
+    bubbles: true,
+    cancelable: true,
+    clientX: x,
+    clientY: y,
+  }))
+  target.click?.()
+  if (typeof PointerEvent === 'function') {
+    target.dispatchEvent(new PointerEvent('pointerup', {
+      bubbles: true,
+      cancelable: true,
+      clientX: x,
+      clientY: y,
+      pointerId: 1,
+      pointerType: 'mouse',
+    }))
+  }
+  return true
+}
+
+function clickVisibleStartFallback(widget) {
+  const rect = widget?.getBoundingClientRect?.()
+  if (!rect || rect.width <= 0 || rect.height <= 0) return null
+
+  const points = [
+    [rect.left + rect.width / 2, rect.top + rect.height * 0.5],
+    [rect.left + rect.width / 2, rect.top + rect.height * 0.46],
+    [rect.left + rect.width / 2, rect.top + rect.height * 0.56],
+    [rect.right - 56, rect.bottom - 56],
+  ]
+
+  for (const [x, y] of points) {
+    const target = document.elementFromPoint(x, y)
+    if (!target) continue
+
+    const text = [
+      labelForControl(target),
+      target.textContent,
+      target.parentElement?.textContent,
+      target.closest?.('button, [role="button"]')?.textContent,
+    ].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim().toLowerCase()
+    const clickable = target.closest?.('button, [role="button"]') || target
+
+    if (
+      text.includes('start') ||
+      text.includes('call') ||
+      text.includes('talk') ||
+      text.includes('voice') ||
+      target.tagName === 'ELEVENLABS-CONVAI'
+    ) {
+      dispatchSyntheticClick(clickable, x, y)
+      return text || `viewport:${Math.round(x)},${Math.round(y)}`
+    }
+  }
+
+  return null
+}
+
 function shouldAskNovaAgent(eventName, line) {
   const text = String(line?.text || '').toLowerCase()
   const speaker = String(line?.speaker || '').toLowerCase()
@@ -1019,7 +1095,7 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
         label.includes('call') ||
         label.includes('talk') ||
         label.includes('voice demo')
-      ))
+      )) || clickVisibleStartFallback(widget)
 
       if (started) {
         trackDemoEvent('demo_specialist_auto_start_attempted', { attempts, label: started })
