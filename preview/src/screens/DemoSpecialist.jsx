@@ -315,9 +315,9 @@ function transcriptFromDetail(detail) {
   }
 }
 
-function queryWidgetDeep(widget, selector) {
+function queryDeep(rootLike, selector) {
   const roots = []
-  const firstRoot = widget?.shadowRoot || widget
+  const firstRoot = rootLike?.shadowRoot || rootLike
   if (!firstRoot) return []
 
   const visit = root => {
@@ -342,6 +342,10 @@ function queryWidgetDeep(widget, selector) {
     }
   }
   return found
+}
+
+function queryWidgetDeep(widget, selector) {
+  return queryDeep(widget, selector)
 }
 
 function hideElevenLabsBranding(widget) {
@@ -435,6 +439,20 @@ function labelForControl(control) {
 
 function clickWidgetControl(widget, predicate) {
   const controls = queryWidgetDeep(widget, 'button, [role="button"]')
+    .filter(control => {
+      const style = window.getComputedStyle(control)
+      return style.display !== 'none' && style.visibility !== 'hidden' && !control.disabled
+    })
+
+  const control = controls.find(item => predicate(labelForControl(item), item))
+  if (!control) return null
+
+  control.click()
+  return labelForControl(control) || 'unlabeled'
+}
+
+function clickGlobalConsentControl(predicate) {
+  const controls = queryDeep(document, 'button, [role="button"]')
     .filter(control => {
       const style = window.getComputedStyle(control)
       return style.display !== 'none' && style.visibility !== 'hidden' && !control.disabled
@@ -920,11 +938,11 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
       hideElevenLabsBranding(widget)
       cleanupElevenLabsTerms(widget)
 
-      const agreed = clickWidgetControl(widget, label => (
+      const agreed = clickGlobalConsentControl(label => (
         label === 'agree' ||
-        label.includes('agree') ||
-        label.includes('accept') ||
-        label.includes('continue')
+        label === 'accept' ||
+        label === 'i agree' ||
+        label === 'continue'
       ))
 
       if (agreed) {
