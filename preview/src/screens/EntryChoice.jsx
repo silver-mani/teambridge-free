@@ -10,7 +10,6 @@ import { PackageIcon } from '../../../src/components/icons/PackageIcon.tsx'
 import { HomeLineIcon } from '../../../src/components/icons/HomeLineIcon.tsx'
 import { ClipboardCheckIcon } from '../../../src/components/icons/ClipboardCheckIcon.tsx'
 import { Map01Icon } from '../../../src/components/icons/Map01Icon.tsx'
-import { openDemoSpecialist } from './DemoSpecialist.jsx'
 
 const BASE = import.meta.env.BASE_URL
 const TEAMBRIDGE_LOGO =
@@ -225,23 +224,6 @@ function AgentTeam() {
         </div>
       ))}
     </div>
-  )
-}
-
-function NovaVoiceIntro() {
-  return (
-    <button
-      type="button"
-      className="entry-voice-intro"
-      onClick={() => openDemoSpecialist('entry_intro')}
-    >
-      <img src={`${BASE}agents/nova.gif`} alt="" />
-      <span>
-        <strong>Nova can guide this demo</strong>
-        <small>Start a voice walkthrough for scheduling, staffing, compliance, payroll, and agents.</small>
-      </span>
-      <ArrowNarrowRightIcon size={16} />
-    </button>
   )
 }
 
@@ -529,7 +511,6 @@ export default function EntryChoice({ onBuild, onExplore, onSelectDemo }) {
               }}
             >
               <AgentTeam />
-              <NovaVoiceIntro />
             </div>
           </section>
 
