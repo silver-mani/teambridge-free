@@ -170,7 +170,7 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
       })
 
     return () => { cancelled = true }
-  }, [enabled, loading, open, signedUrl])
+  }, [enabled, open, signedUrl])
 
   useEffect(() => {
     const widget = widgetRef.current
