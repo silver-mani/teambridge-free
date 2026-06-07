@@ -8,15 +8,15 @@ const TEAMBRIDGE_LOGO =
 const ROBOT_ANIMATION = `${BASE}agents/nova.gif`
 
 export const INDUSTRIES = [
-  { id: 'healthcare',       name: 'Healthcare',          description: 'Credentialing, call-outs, float pools',         metric: '4 hr gap', status: 'Replacing' },
-  { id: 'staffing',         name: 'Staffing',            description: 'Placements, availability, first-shift readiness', metric: '18 fills', status: 'Active' },
-  { id: 'events',           name: 'Events & Venues',     description: 'Venue coverage, late changes, union rules',      metric: '612 crew', status: 'Live' },
-  { id: 'hospitality',      name: 'Hospitality',         description: 'Housekeeping, front desk, food service teams',    metric: '23 shifts', status: 'Covered' },
-  { id: 'long-term-care',   name: 'Long Term Care',      description: 'Facility staffing, certifications, compliance',   metric: '9 alerts', status: 'Cleared' },
-  { id: 'security',         name: 'Security',            description: 'Post coverage, patrols, site compliance',         metric: '31 posts', status: 'Monitoring' },
-  { id: 'janitorial',       name: 'Janitorial & Facilities', description: 'Building service schedules and route changes', metric: '7 sites', status: 'Ready' },
-  { id: 'light-industrial', name: 'Light Industrial',    description: 'Warehouse crews, attendance, overtime risk',      metric: '42 roles', status: 'Balanced' },
-  { id: 'construction',     name: 'Construction',        description: 'Trades, job sites, certifications, crews',        metric: '5 sites', status: 'Checked' },
+  { id: 'healthcare',       name: 'Healthcare',          description: 'Credentialing, call-outs, float pools',         metric: '4 hr gap', status: 'Replacing', scenario: ['Float pool', 'License check', 'OT guardrail'] },
+  { id: 'staffing',         name: 'Staffing',            description: 'Placements, availability, first-shift readiness', metric: '18 fills', status: 'Active', scenario: ['Open orders', 'Candidate match', 'First shift'] },
+  { id: 'events',           name: 'Events & Venues',     description: 'Venue coverage, late changes, union rules',      metric: '612 crew', status: 'Live', scenario: ['Concourse', 'Union rules', 'Late swap'] },
+  { id: 'hospitality',      name: 'Hospitality',         description: 'Housekeeping, front desk, food service teams',    metric: '23 shifts', status: 'Covered', scenario: ['Housekeeping', 'Front desk', 'Banquet pull'] },
+  { id: 'long-term-care',   name: 'Long Term Care',      description: 'Facility staffing, certifications, compliance',   metric: '9 alerts', status: 'Cleared', scenario: ['CNA coverage', 'Cert expiry', 'Care ratio'] },
+  { id: 'security',         name: 'Security',            description: 'Post coverage, patrols, site compliance',         metric: '31 posts', status: 'Monitoring', scenario: ['Post orders', 'Patrol route', 'Incident log'] },
+  { id: 'janitorial',       name: 'Janitorial & Facilities', description: 'Building service schedules and route changes', metric: '7 sites', status: 'Ready', scenario: ['Route board', 'Site supplies', 'QC follow-up'] },
+  { id: 'light-industrial', name: 'Light Industrial',    description: 'Warehouse crews, attendance, overtime risk',      metric: '42 roles', status: 'Balanced', scenario: ['Dock crew', 'Attendance', 'OT forecast'] },
+  { id: 'construction',     name: 'Construction',        description: 'Trades, job sites, certifications, crews',        metric: '5 sites', status: 'Checked', scenario: ['Site roster', 'Cert check', 'Crew move'] },
 ]
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -28,7 +28,7 @@ export const INDUSTRIES = [
 function IndustryCard({ industry, onSelect }) {
   const [hover, setHover]     = useState(false)
   const [pressed, setPressed] = useState(false)
-  const { name, description, id, metric, status } = industry
+  const { name, description, id, metric, status, scenario } = industry
 
   return (
     <button
@@ -92,7 +92,6 @@ function IndustryCard({ industry, onSelect }) {
         </span>
       </div>
 
-      {/* Copy */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
         <span
           style={{
@@ -115,7 +114,59 @@ function IndustryCard({ industry, onSelect }) {
           {description}
         </span>
       </div>
+
+      <div className="industry-card-workflow" aria-hidden="true">
+        {scenario.map((item, index) => (
+          <div key={item} className="industry-card-workflow-row">
+            <span className="industry-card-workflow-dot" />
+            <span>{item}</span>
+            <span className={`industry-card-workflow-bar industry-card-workflow-bar--${index + 1}`} />
+          </div>
+        ))}
+      </div>
     </button>
+  )
+}
+
+function WorkspacePreview() {
+  return (
+    <section className="industry-workspace-preview" aria-label="Demo workspace preview">
+      <div className="industry-workspace-topbar">
+        <span>Live workspace</span>
+        <strong>Staffing command center</strong>
+      </div>
+      <div className="industry-workspace-grid">
+        <div className="industry-workspace-panel industry-workspace-panel--schedule">
+          <div className="industry-workspace-panel-head">
+            <span>Schedule</span>
+            <strong>Coverage risk</strong>
+          </div>
+          <div className="industry-schedule-mini">
+            {Array.from({ length: 18 }).map((_, index) => (
+              <span key={index} className={index === 4 || index === 11 ? 'is-hot' : index % 5 === 0 ? 'is-soft' : ''} />
+            ))}
+          </div>
+        </div>
+        <div className="industry-workspace-panel">
+          <div className="industry-workspace-panel-head">
+            <span>Payroll</span>
+            <strong>Ready to approve</strong>
+          </div>
+          <div className="industry-payroll-mini">
+            <span style={{ width: '82%' }} />
+            <span style={{ width: '64%' }} />
+            <span style={{ width: '74%' }} />
+          </div>
+        </div>
+        <div className="industry-workspace-panel industry-workspace-panel--agent">
+          <img src={ROBOT_ANIMATION} alt="" />
+          <div>
+            <span>Nova</span>
+            <strong>Voice walkthrough ready</strong>
+          </div>
+        </div>
+      </div>
+    </section>
   )
 }
 
@@ -204,40 +255,7 @@ export default function IndustrySelector({ onSelect = () => {} }) {
               staff, payroll, compliance, and AI agent activity tuned to the operating model.
             </p>
             </div>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 'var(--space-3)',
-                minWidth: 260,
-                padding: 'var(--space-3)',
-                border: '1px solid var(--color-border-opaque)',
-                borderRadius: 'var(--radius-lg)',
-                background: 'var(--color-bg-primary)',
-                boxShadow: 'var(--shadow-below-sm)',
-              }}
-            >
-              <img
-                src={ROBOT_ANIMATION}
-                alt=""
-                aria-hidden="true"
-                style={{
-                  width: 54,
-                  height: 54,
-                  objectFit: 'cover',
-                  borderRadius: 'var(--radius-md)',
-                  border: '1px solid var(--color-border-opaque)',
-                }}
-              />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <span style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--color-content-primary)' }}>
-                  Nova is ready inside every account
-                </span>
-                <span style={{ fontSize: 'var(--text-xs)', lineHeight: 'var(--line-height-relaxed)', color: 'var(--color-content-tertiary)' }}>
-                  Ask questions, run scenarios, or start the voice walkthrough once you enter.
-                </span>
-              </div>
-            </div>
+            <WorkspacePreview />
           </div>
 
           <div
