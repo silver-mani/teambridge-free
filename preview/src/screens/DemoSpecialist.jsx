@@ -136,8 +136,14 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
     setLoading(true)
     setError('')
 
-    loadWidgetScript()
-      .then(() => fetch('/api/elevenlabs-signed-url', { headers: { accept: 'application/json' } }))
+    loadWidgetScript().catch(err => {
+      if (cancelled) return
+      trackDemoEvent('demo_specialist_widget_load_failed', {
+        error: String(err?.message || err),
+      })
+    })
+
+    fetch('/api/elevenlabs-signed-url', { headers: { accept: 'application/json' } })
       .then(async response => {
         const body = await response.json().catch(() => ({}))
         if (!response.ok) throw new Error(body?.error || 'Unable to start specialist')
