@@ -745,15 +745,17 @@ body {
   position: fixed;
   right: 20px;
   bottom: 20px;
-  z-index: 80;
+  z-index: 2147483000;
   display: block;
   font-family: var(--font-sans);
   color: var(--color-content-primary);
+  max-height: calc(100svh - 40px);
 }
 
 .demo-specialist-widget {
   width: min(420px, calc(100vw - 40px));
   display: block;
+  max-height: inherit;
 }
 
 .demo-specialist-state {
@@ -823,6 +825,7 @@ body {
     right: 12px;
     bottom: 12px;
     left: 12px;
+    max-height: calc(100svh - 24px);
   }
 
   .demo-specialist-widget {

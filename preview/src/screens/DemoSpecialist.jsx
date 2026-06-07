@@ -11,8 +11,6 @@ const TRANSCRIPT_EVENTS = [
   'elevenlabs-convai:user-transcript',
   'elevenlabs-convai:agent-response',
 ]
-const NOVA_TERMS_TEXT =
-  "Nova is an AI demo guide. Voice conversations may be recorded and processed by Teambridge and service providers to operate the demo. See Teambridge's Privacy Policy."
 const VALID_INDUSTRIES = new Set([
   'healthcare', 'staffing', 'events', 'security', 'light-industrial', 'construction',
   'hospitality', 'long-term-care', 'janitorial',
@@ -362,11 +360,13 @@ function cleanupElevenLabsTerms(widget) {
   if (!root) return false
 
   let changed = false
-  const nodes = Array.from(root.querySelectorAll('h1, h2, h3, h4, p, small, span, div'))
+  const nodes = Array.from(root.querySelectorAll('h1, h2, h3, h4, p, small'))
 
   for (const node of nodes) {
     const text = (node.textContent || '').replace(/\s+/g, ' ').trim()
     const lower = text.toLowerCase()
+    const isLongLegalCopy = text.length > 80
+    const isLeafCopy = node.children.length === 0 || node.querySelectorAll('a, button, [role="button"]').length === 0
 
     if (lower === 'terms and conditions') {
       node.style.setProperty('display', 'none', 'important')
@@ -384,8 +384,11 @@ function cleanupElevenLabsTerms(widget) {
       lower.includes('third-party service providers') ||
       lower.includes('privacy policy')
     ) {
-      node.textContent = NOVA_TERMS_TEXT
-      changed = true
+      if (isLongLegalCopy && isLeafCopy) {
+        node.style.setProperty('display', 'none', 'important')
+        node.setAttribute('aria-hidden', 'true')
+        changed = true
+      }
     }
   }
 
