@@ -240,6 +240,7 @@ function ChoiceCard({ kind, title, lede, action, onClick }) {
       onMouseDown={() => setPressed(true)}
       onMouseUp={() => setPressed(false)}
       className={`entry-choice-card entry-choice-card--${kind}`}
+      data-track-label={title}
       style={{
         textAlign: 'left',
         display: 'flex',
@@ -313,6 +314,7 @@ function WorkspaceCard({ workspace, active, onHover, onSelect }) {
       onMouseEnter={() => onHover(workspace)}
       onFocus={() => onHover(workspace)}
       data-active={active ? 'true' : 'false'}
+      data-track-label={`${workspace.name} workspace`}
     >
       <span className="entry-workspace-icon" aria-hidden="true"><Icon size={19} /></span>
       <span className="entry-workspace-name">{workspace.name}</span>

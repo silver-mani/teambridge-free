@@ -9,7 +9,7 @@ import SageWorkforceEmbed from './screens/sage/SageWorkforceEmbed.jsx'
 import LeadCaptureGate    from './screens/LeadCaptureGate.jsx'
 import OnboardingFlow     from './screens/onboarding/OnboardingFlow.jsx'
 import DemoSpecialist     from './screens/DemoSpecialist.jsx'
-import { getDemoSnapshot, initDemoBehaviorTracking, trackDemoEvent } from './lib/demoTracking.js'
+import { getDemoSnapshot, initDemoTracking, trackDemoEvent } from './lib/demoTracking.js'
 
 const VALID_INDUSTRIES = new Set([
   'healthcare', 'staffing', 'events', 'security', 'light-industrial', 'construction',
@@ -124,7 +124,7 @@ function removeDemoAccessTokenFromUrl() {
 function App() {
   const [route, setRoute] = useState(() => parseHash())
   useEffect(() => {
-    initDemoBehaviorTracking()
+    initDemoTracking()
     trackDemoEvent('session_started')
   }, [])
 

@@ -2,12 +2,12 @@ const SESSION_KEY = 'tb:demo-session-id'
 const LANDING_KEY = 'tb:demo-landing'
 const REFERRER_KEY = 'tb:demo-referrer'
 const START_KEY = 'tb:demo-start-at'
-const BEHAVIOR_INIT_KEY = '__teambridgeDemoBehaviorTracking'
+const DEMO_TRACKING_INIT_KEY = '__teambridgeDemoTracking'
 const HEARTBEAT_MS = 30000
 
-function safeStorage() {
+function safeSessionStorage() {
   try {
-    return window.localStorage
+    return window.sessionStorage
   } catch {
     return null
   }
@@ -22,7 +22,7 @@ function makeSessionId() {
 
 export function getDemoSessionId() {
   if (typeof window === 'undefined') return ''
-  const storage = safeStorage()
+  const storage = safeSessionStorage()
   if (!storage) return makeSessionId()
   let id = storage.getItem(SESSION_KEY)
   if (!id) {
@@ -50,13 +50,13 @@ export function getDemoSnapshot() {
     }
   }
 
-  const storage = safeStorage()
+  const storage = safeSessionStorage()
   const startedAtRaw = storage?.getItem(START_KEY)
   const startedAt = startedAtRaw ? Number(startedAtRaw) : undefined
-  const hash = (window.location.hash || '').replace(/^#\/?/, '')
+  const hash = (window.location.hash || '').replace(/^#\/?/, '').split('?')[0].split('#')[0]
   const parts = hash ? hash.split('/') : []
   const isSage = parts[0] === 'sage'
-  const industry = isSage ? 'events' : parts[0] || undefined
+  const industry = isSage ? 'events' : (parts[0] && parts[0] !== 'demos' ? parts[0] : undefined)
   const view = isSage ? (parts[1] || 'dashboard') : (parts[1] || (industry ? 'overview' : undefined))
 
   return {
@@ -101,6 +101,8 @@ export function trackDemoEvent(eventName, data = {}) {
 }
 
 function textForElement(element) {
+  const childLabel =
+    element.querySelector?.('[data-track-label], [data-track-title], h1, h2, h3, h4, strong')
   const explicit =
     element.getAttribute('data-track-label') ||
     element.getAttribute('aria-label') ||
@@ -108,7 +110,7 @@ function textForElement(element) {
     element.getAttribute('name') ||
     element.getAttribute('id') ||
     ''
-  const text = explicit || element.textContent || ''
+  const text = explicit || childLabel?.getAttribute?.('data-track-label') || childLabel?.textContent || element.textContent || ''
   return text.replace(/\s+/g, ' ').trim().slice(0, 140)
 }
 
@@ -165,9 +167,9 @@ function fieldData(element) {
   }
 }
 
-export function initDemoBehaviorTracking() {
-  if (typeof window === 'undefined' || window[BEHAVIOR_INIT_KEY]) return
-  window[BEHAVIOR_INIT_KEY] = true
+export function initDemoTracking() {
+  if (typeof window === 'undefined' || window[DEMO_TRACKING_INIT_KEY]) return
+  window[DEMO_TRACKING_INIT_KEY] = true
 
   const scrollThresholds = new Set([25, 50, 75, 90])
   const reachedByPath = new Map()
