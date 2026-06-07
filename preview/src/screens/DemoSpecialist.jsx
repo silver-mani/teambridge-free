@@ -266,6 +266,36 @@ function transcriptFromDetail(detail) {
   }
 }
 
+function hideElevenLabsBranding(widget) {
+  const root = widget?.shadowRoot
+  if (!root) return false
+
+  if (!root.querySelector('style[data-teambridge-branding-cleanup]')) {
+    const style = document.createElement('style')
+    style.setAttribute('data-teambridge-branding-cleanup', 'true')
+    style.textContent = `
+      p:has(a[href*="elevenlabs.io/agents"]) {
+        display: none !important;
+      }
+    `
+    root.appendChild(style)
+  }
+
+  const brandedNodes = Array.from(root.querySelectorAll('p, a, span, div')).filter(node => {
+    const text = (node.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase()
+    const href = node.getAttribute?.('href') || ''
+    return text === 'powered by elevenagents' || href.includes('elevenlabs.io/agents')
+  })
+
+  for (const node of brandedNodes) {
+    const container = node.closest('p') || node
+    container.style.setProperty('display', 'none', 'important')
+    container.setAttribute('aria-hidden', 'true')
+  }
+
+  return brandedNodes.length > 0
+}
+
 export function openDemoSpecialist(source = 'unknown') {
   if (typeof window === 'undefined') return
   window.dispatchEvent(new CustomEvent('tb:open-demo-specialist', { detail: { source } }))
@@ -620,6 +650,23 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
         window.clearInterval(timer)
       }
     }, 500)
+
+    return () => window.clearInterval(timer)
+  }, [open, signedUrl])
+
+  useEffect(() => {
+    if (!open || !signedUrl) return undefined
+
+    let attempts = 0
+    const timer = window.setInterval(() => {
+      attempts += 1
+      const hidden = hideElevenLabsBranding(widgetRef.current)
+      if (hidden && attempts >= 3) {
+        window.clearInterval(timer)
+      } else if (attempts >= 30) {
+        window.clearInterval(timer)
+      }
+    }, 300)
 
     return () => window.clearInterval(timer)
   }, [open, signedUrl])
