@@ -44,13 +44,6 @@ const INDUSTRY_ALIASES = {
   manufacturing: 'light-industrial',
   construction: 'construction',
 }
-const NOVA_RUNTIME_PROMPT = [
-  'You are Nova, the Teambridge AI demo guide.',
-  'When a visitor asks to see a workspace, vertical, product area, or capability, call a client tool instead of only saying you can do it.',
-  'Use openWorkspace with an industry when they ask for healthcare, staffing, events, hospitality, long-term care, security, janitorial, light industrial, or construction.',
-  'Use performDemoAction for product capabilities: schedule_gap, shift_requests, time_tracking, payroll, pay_review, people, onboarding, compliance, agents, engage, ready_workspaces.',
-  'After calling the tool, briefly explain what changed on screen and what Teambridge is showing.',
-].join(' ')
 
 const DEMO_ACTIONS = {
   intro: {
@@ -696,7 +689,6 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
               disable-banner="true"
               default-expanded="true"
               avatar-image-url={NOVA_AVATAR}
-              override-prompt={NOVA_RUNTIME_PROMPT}
               action-text="Talk to Teambridge"
               start-call-text="Start voice demo"
               end-call-text="End demo"
