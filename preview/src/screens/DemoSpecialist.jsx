@@ -465,6 +465,70 @@ function clickGlobalConsentControl(predicate) {
   return labelForControl(control) || 'unlabeled'
 }
 
+function clickVisibleAcceptFallback() {
+  const points = [
+    [window.innerWidth - 58, window.innerHeight - 58],
+    [window.innerWidth - 72, window.innerHeight - 62],
+    [window.innerWidth - 92, window.innerHeight - 58],
+    [window.innerWidth - 122, window.innerHeight - 58],
+    [Math.min(window.innerWidth - 58, 332), window.innerHeight - 58],
+  ]
+
+  for (const [x, y] of points) {
+    if (x < 0 || y < 0) continue
+    const target = document.elementFromPoint(x, y)
+    if (!target) continue
+
+    const label = labelForControl(target)
+    const text = [
+      label,
+      target.textContent,
+      target.parentElement?.textContent,
+      target.closest?.('button, [role="button"]')?.textContent,
+    ].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim().toLowerCase()
+
+    if (text.includes('accept') || text.includes('agree') || target.tagName === 'ELEVENLABS-CONVAI') {
+      const clickable = target.closest?.('button, [role="button"]') || target
+      if (typeof PointerEvent === 'function') {
+        clickable.dispatchEvent(new PointerEvent('pointerdown', {
+          bubbles: true,
+          cancelable: true,
+          clientX: x,
+          clientY: y,
+          pointerId: 1,
+          pointerType: 'mouse',
+        }))
+      }
+      clickable.dispatchEvent(new MouseEvent('mousedown', {
+        bubbles: true,
+        cancelable: true,
+        clientX: x,
+        clientY: y,
+      }))
+      clickable.dispatchEvent(new MouseEvent('mouseup', {
+        bubbles: true,
+        cancelable: true,
+        clientX: x,
+        clientY: y,
+      }))
+      clickable.click?.()
+      if (typeof PointerEvent === 'function') {
+        clickable.dispatchEvent(new PointerEvent('pointerup', {
+          bubbles: true,
+          cancelable: true,
+          clientX: x,
+          clientY: y,
+          pointerId: 1,
+          pointerType: 'mouse',
+        }))
+      }
+      return text || `viewport:${Math.round(x)},${Math.round(y)}`
+    }
+  }
+
+  return null
+}
+
 function shouldAskNovaAgent(eventName, line) {
   const text = String(line?.text || '').toLowerCase()
   const speaker = String(line?.speaker || '').toLowerCase()
@@ -943,7 +1007,7 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
         label === 'accept' ||
         label === 'i agree' ||
         label === 'continue'
-      ))
+      )) || clickVisibleAcceptFallback()
 
       if (agreed) {
         trackDemoEvent('demo_specialist_terms_auto_accepted', { attempts, label: agreed })
