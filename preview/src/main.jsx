@@ -3,7 +3,6 @@ import { createRoot } from 'react-dom/client'
 import { Analytics } from '@vercel/analytics/react'
 import './index.css'
 import EntryChoice        from './screens/EntryChoice.jsx'
-import IndustrySelector   from './screens/IndustrySelector.jsx'
 import Act1Dashboard      from './screens/Act1Dashboard.jsx'
 import SageDashboard      from './screens/sage/SageDashboard.jsx'
 import SageWorkforceEmbed from './screens/sage/SageWorkforceEmbed.jsx'
@@ -66,8 +65,8 @@ function parseHashString(input) {
   const segs = raw.split('/')
   // #/build → guided onboarding flow
   if (segs[0] === 'build') return { kind: 'build' }
-  // #/demos → existing industry picker (entry choice routes here)
-  if (segs[0] === 'demos') return { kind: 'demos' }
+  // Legacy route: the entry page now owns workspace selection.
+  if (segs[0] === 'demos') return null
   if (segs[0] === 'sage') {
     const sub = segs[1] || 'dashboard'
     const sageOk = new Set(['dashboard', 'workforce'])
@@ -109,7 +108,7 @@ function removeDemoAccessTokenFromUrl() {
 
 /**
  * App shell for the Teambridge Free sandbox.
- * The URL hash drives the screen — `#/` shows the industry picker, while
+ * The URL hash drives the screen — `#/` shows the entry page, while
  * `#/events`, `#/healthcare`, etc. deep-link straight into a dashboard.
  */
 function App() {
@@ -309,29 +308,24 @@ function App() {
   // links still gate immediately so pasted URLs cannot bypass capture.
   const showGate = accessChecked
     && !leadCaptured
-    && (pendingGate || (route && route.kind !== 'build' && route.kind !== 'demos'))
+    && (pendingGate || (route && route.kind !== 'build'))
 
   let view
   if (!route) {
     view = (
       <EntryChoice
         onBuild={() => setHash('/build')}
-        onExplore={() => setHash('/demos')}
+        onExplore={() => setHash('/')}
         onSelectDemo={(industry) => {
           trackDemoEvent('industry_selected_from_entry', { industry })
           requestWorkspaceAccess(`/${industry}`, 'preloaded_workspace', { industry })
         }}
       />
     )
-  } else if (route.kind === 'demos') {
-    view = <IndustrySelector onSelect={id => {
-      trackDemoEvent('industry_selected', { industry: id })
-      requestWorkspaceAccess(`/${id}`, 'preloaded_workspace', { industry: id })
-    }} />
   } else if (route.kind === 'build') {
     view = (
       <OnboardingFlow
-        onExit={() => setHash('/demos')}
+        onExit={() => setHash('/')}
         onComplete={(answers) => {
           // Drop them into the dashboard for the industry they picked.
           // If they didn't pick (unlikely), fall back to the demo picker.
@@ -340,7 +334,7 @@ function App() {
             writeStored(STORAGE_KEYS.savedWorkspaceRoute, destination)
             requestWorkspaceAccess(destination, 'built_workspace', { industry: answers.industry })
           } else {
-            setHash('/demos')
+            setHash('/')
           }
         }}
       />
@@ -369,7 +363,7 @@ function App() {
       <Act1Dashboard
         industryId={route.industry}
         view={route.view}
-        onBack={() => setHash('/demos')}
+        onBack={() => setHash('/')}
         onSelectView={(v) => setHash(v === 'overview' ? `/${route.industry}` : `/${route.industry}/${v}`)}
         onExplore={() => { /* Act 2 not built yet */ }}
       />
@@ -388,7 +382,7 @@ function App() {
         />
       )}
       <DemoSpecialist
-        enabled={accessChecked && (leadCaptured || !route || route.kind === 'demos') && (!route || route.kind === 'demos' || route.kind === 'industry' || route.kind === 'sage')}
+        enabled={accessChecked && (leadCaptured || !route) && (!route || route.kind === 'industry' || route.kind === 'sage')}
         route={route}
         autoOpen={!route}
       />

@@ -190,7 +190,7 @@ const DEMO_VERTICALS = [
 /* ──────────────────────────────────────────────────────────────────────
  * EntryChoice — first screen of the demo. Two paths:
  *   1. "Build your account"     → guided onboarding chat at #/build
- *   2. "Explore demo accounts"  → existing industry picker at #/demos
+ *   2. Ready-made workspace cards → gated workspace route
  * Keeps the brand lockup quiet, like the real product.
  * ────────────────────────────────────────────────────────────────────── */
 
