@@ -315,6 +315,35 @@ function transcriptFromDetail(detail) {
   }
 }
 
+function queryWidgetDeep(widget, selector) {
+  const roots = []
+  const firstRoot = widget?.shadowRoot || widget
+  if (!firstRoot) return []
+
+  const visit = root => {
+    if (!root || roots.includes(root)) return
+    roots.push(root)
+    const nodes = root.querySelectorAll ? Array.from(root.querySelectorAll('*')) : []
+    for (const node of nodes) {
+      if (node.shadowRoot) visit(node.shadowRoot)
+    }
+  }
+
+  visit(firstRoot)
+
+  const found = []
+  const seen = new Set()
+  for (const root of roots) {
+    const nodes = root.querySelectorAll ? Array.from(root.querySelectorAll(selector)) : []
+    for (const node of nodes) {
+      if (seen.has(node)) continue
+      seen.add(node)
+      found.push(node)
+    }
+  }
+  return found
+}
+
 function hideElevenLabsBranding(widget) {
   const root = widget?.shadowRoot
   if (!root) return false
@@ -332,7 +361,7 @@ function hideElevenLabsBranding(widget) {
     root.appendChild(style)
   }
 
-  const brandedNodes = Array.from(root.querySelectorAll('p, a, span, div, small')).filter(node => {
+  const brandedNodes = queryWidgetDeep(widget, 'p, a, span, div, small').filter(node => {
     const text = (node.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase()
     const href = node.getAttribute?.('href') || ''
     return (
@@ -360,7 +389,7 @@ function cleanupElevenLabsTerms(widget) {
   if (!root) return false
 
   let changed = false
-  const nodes = Array.from(root.querySelectorAll('h1, h2, h3, h4, p, small'))
+  const nodes = queryWidgetDeep(widget, 'h1, h2, h3, h4, p, small')
 
   for (const node of nodes) {
     const text = (node.textContent || '').replace(/\s+/g, ' ').trim()
@@ -405,10 +434,7 @@ function labelForControl(control) {
 }
 
 function clickWidgetControl(widget, predicate) {
-  const root = widget?.shadowRoot
-  if (!root) return null
-
-  const controls = Array.from(root.querySelectorAll('button, [role="button"]'))
+  const controls = queryWidgetDeep(widget, 'button, [role="button"]')
     .filter(control => {
       const style = window.getComputedStyle(control)
       return style.display !== 'none' && style.visibility !== 'hidden' && !control.disabled
