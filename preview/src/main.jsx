@@ -301,6 +301,10 @@ function App() {
       <EntryChoice
         onBuild={() => setHash('/build')}
         onExplore={() => setHash('/demos')}
+        onSelectDemo={(industry) => {
+          trackDemoEvent('industry_selected_from_entry', { industry })
+          setHash(`/${industry}`)
+        }}
       />
     )
   } else if (route.kind === 'demos') {
