@@ -11,6 +11,46 @@ const TRANSCRIPT_EVENTS = [
   'elevenlabs-convai:user-transcript',
   'elevenlabs-convai:agent-response',
 ]
+const VALID_INDUSTRIES = new Set([
+  'healthcare', 'staffing', 'events', 'security', 'light-industrial', 'construction',
+  'hospitality', 'long-term-care', 'janitorial',
+])
+const INDUSTRY_ALIASES = {
+  healthcare: 'healthcare',
+  health: 'healthcare',
+  staffing: 'staffing',
+  agency: 'staffing',
+  events: 'events',
+  event: 'events',
+  venues: 'events',
+  venue: 'events',
+  hospitality: 'hospitality',
+  hotel: 'hospitality',
+  hotels: 'hospitality',
+  restaurant: 'hospitality',
+  restaurants: 'hospitality',
+  'long-term-care': 'long-term-care',
+  longtermcare: 'long-term-care',
+  ltc: 'long-term-care',
+  care: 'long-term-care',
+  security: 'security',
+  janitorial: 'janitorial',
+  facilities: 'janitorial',
+  facility: 'janitorial',
+  cleaning: 'janitorial',
+  industrial: 'light-industrial',
+  warehouse: 'light-industrial',
+  logistics: 'light-industrial',
+  manufacturing: 'light-industrial',
+  construction: 'construction',
+}
+const NOVA_RUNTIME_PROMPT = [
+  'You are Nova, the Teambridge AI demo guide.',
+  'When a visitor asks to see a workspace, vertical, product area, or capability, call a client tool instead of only saying you can do it.',
+  'Use openWorkspace with an industry when they ask for healthcare, staffing, events, hospitality, long-term care, security, janitorial, light industrial, or construction.',
+  'Use performDemoAction for product capabilities: schedule_gap, shift_requests, time_tracking, payroll, pay_review, people, onboarding, compliance, agents, engage, ready_workspaces.',
+  'After calling the tool, briefly explain what changed on screen and what Teambridge is showing.',
+].join(' ')
 
 const DEMO_ACTIONS = {
   intro: {
@@ -121,6 +161,13 @@ function setHashPath(path) {
   }
 }
 
+function normalizeIndustry(value) {
+  const raw = String(value || '').toLowerCase().trim()
+  const dashed = raw.replace(/[\s_]+/g, '-')
+  if (VALID_INDUSTRIES.has(dashed)) return dashed
+  return INDUSTRY_ALIASES[dashed] || INDUSTRY_ALIASES[dashed.replace(/-/g, '')] || null
+}
+
 function sleep(ms) {
   return new Promise(resolve => window.setTimeout(resolve, ms))
 }
@@ -158,6 +205,7 @@ function waitForElement(selectors, timeoutMs = 3600) {
 function normalizeActionName(action) {
   const key = String(action || '').toLowerCase().trim().replace(/[\s-]+/g, '_')
   if (DEMO_ACTIONS[key]) return key
+  if (normalizeIndustry(action)) return 'open_workspace'
   if (key.includes('schedule') || key.includes('gap') || key.includes('shift')) return 'schedule_gap'
   if (key.includes('request') || key.includes('swap')) return 'shift_requests'
   if (key.includes('time') || key.includes('attendance') || key.includes('tracking')) return 'time_tracking'
@@ -224,6 +272,9 @@ export function openDemoSpecialist(source = 'unknown') {
 }
 
 function routeForView(view) {
+  const requestedIndustry = normalizeIndustry(view)
+  if (requestedIndustry) return `/${requestedIndustry}`
+
   const snapshot = getDemoSnapshot()
   const currentIndustry = snapshot.industry && snapshot.industry !== 'demos'
     ? snapshot.industry
@@ -253,6 +304,33 @@ function highlightSelector(selector, label) {
 }
 
 async function performDemoAction(action, options = {}) {
+  const requestedIndustry = normalizeIndustry(options.industry || action)
+  if (requestedIndustry) {
+    setHashPath(`/${requestedIndustry}`)
+    await sleep(options.settleMs || ACTION_SETTLE_MS)
+    const target = await waitForElement(['.activity-feed-inner', '.prompt-panel', '.act1-root'])
+    if (!target.el) {
+      return {
+        ok: false,
+        reason: 'target_not_found',
+        action: 'open_workspace',
+        industry: requestedIndustry,
+        view: 'overview',
+      }
+    }
+
+    const label = options.label || `${requestedIndustry.replace(/-/g, ' ')} workspace`
+    const result = highlightSelector(target.selector, label)
+    return {
+      ...result,
+      action: 'open_workspace',
+      industry: requestedIndustry,
+      view: 'overview',
+      selector: target.selector,
+      label,
+    }
+  }
+
   const key = normalizeActionName(action)
   const config = DEMO_ACTIONS[key]
   if (!config) return { ok: false, reason: 'unknown_action', action: key }
@@ -308,6 +386,8 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
       industry: snapshot.industry || 'unknown',
       demo_view: snapshot.view || 'overview',
       demo_session_id: snapshot.sessionId,
+      available_workspaces: 'healthcare, staffing, events, hospitality, long-term-care, security, janitorial, light-industrial, construction',
+      available_demo_actions: 'schedule_gap, shift_requests, time_tracking, payroll, pay_review, people, onboarding, compliance, agents, engage, ready_workspaces',
     })
   }, [lead, route])
 
@@ -386,12 +466,48 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
       const detail = event.detail
       if (!detail) return
       detail.config = detail.config || {}
+      const openWorkspaceTool = async ({ industry, workspace, vertical, label } = {}) => {
+        const requested = industry || workspace || vertical
+        const result = await performDemoAction(requested || 'healthcare', { label })
+        const path = result.industry ? `/${result.industry}` : window.location.hash.replace(/^#/, '') || '/'
+        trackDemoEvent('demo_specialist_tool_open_workspace', {
+          industry: requested,
+          workspace,
+          vertical,
+          path,
+          ...result,
+          conversationId,
+        })
+        return { ok: result.ok, path, ...result }
+      }
+      const showCapabilityTool = async ({ capability, action, label } = {}) => {
+        const requested = capability || action
+        const result = await performDemoAction(requested || 'overview', { label })
+        trackDemoEvent('demo_specialist_tool_show_capability', {
+          capability,
+          action,
+          ...result,
+          conversationId,
+        })
+        return result
+      }
       detail.config.clientTools = {
+        openWorkspace: openWorkspaceTool,
+        openDemoWorkspace: openWorkspaceTool,
+        showWorkspace: openWorkspaceTool,
+        showHealthcareWorkspace: () => openWorkspaceTool({ industry: 'healthcare', label: 'Healthcare workspace' }),
+        showStaffingWorkspace: () => openWorkspaceTool({ industry: 'staffing', label: 'Staffing workspace' }),
+        showEventsWorkspace: () => openWorkspaceTool({ industry: 'events', label: 'Events workspace' }),
+        showHospitalityWorkspace: () => openWorkspaceTool({ industry: 'hospitality', label: 'Hospitality workspace' }),
+        showSecurityWorkspace: () => openWorkspaceTool({ industry: 'security', label: 'Security workspace' }),
+        showConstructionWorkspace: () => openWorkspaceTool({ industry: 'construction', label: 'Construction workspace' }),
+        showCapability: showCapabilityTool,
         navigateToDemoView: ({ view }) => {
           const path = routeForView(view)
           setHashPath(path)
           trackDemoEvent('demo_specialist_tool_navigate', { view, path, conversationId })
-          return { ok: true, path }
+          const industry = normalizeIndustry(view)
+          return { ok: true, path, industry: industry || undefined }
         },
         runDemoScenario: async ({ scenario }) => {
           const key = String(scenario || '').toLowerCase()
@@ -527,8 +643,11 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
               server-location="us"
               variant="expanded"
               dismissible="true"
+              disable-banner="true"
               default-expanded="true"
               avatar-image-url={NOVA_AVATAR}
+              override-prompt={NOVA_RUNTIME_PROMPT}
+              override-first-message="Hi, I am Nova. I can guide the Teambridge demo and move the workspace on screen while we talk."
               action-text="Talk to Teambridge"
               start-call-text="Start voice demo"
               end-call-text="End demo"
