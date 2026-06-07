@@ -85,6 +85,7 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const widgetRef = useRef(null)
+  const autoStartRef = useRef(false)
 
   const lead = useMemo(() => readJsonStorage('tb:lead-data') || {}, [enabled, route])
   const dynamicVariables = useMemo(() => {
@@ -115,15 +116,9 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
 
   useEffect(() => {
     if (!enabled || !autoOpen) return undefined
-    let alreadyShown = false
-    try {
-      alreadyShown = sessionStorage.getItem('tb:nova-entry-hello-shown') === '1'
-    } catch { /* ignore */ }
-    if (alreadyShown) return undefined
 
     const timer = window.setTimeout(() => {
       setOpen(true)
-      try { sessionStorage.setItem('tb:nova-entry-hello-shown', '1') } catch { /* ignore */ }
       trackDemoEvent('demo_specialist_auto_opened', { source: 'entry_page' })
     }, 900)
 
@@ -226,68 +221,69 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
     return () => widget.removeEventListener('elevenlabs-convai:call', handleCall)
   }, [conversationId, signedUrl])
 
+  useEffect(() => {
+    if (!open || !signedUrl || autoStartRef.current) return undefined
+    autoStartRef.current = true
+
+    let attempts = 0
+    const timer = window.setInterval(() => {
+      attempts += 1
+      const widget = widgetRef.current
+      const root = widget?.shadowRoot
+      const controls = root ? Array.from(root.querySelectorAll('button, [role="button"]')) : []
+      const start = controls.find(control => {
+        const label = [
+          control.getAttribute('aria-label'),
+          control.getAttribute('title'),
+          control.textContent,
+        ].filter(Boolean).join(' ').toLowerCase()
+        return label.includes('start') || label.includes('call')
+      })
+
+      if (start) {
+        start.click()
+        trackDemoEvent('demo_specialist_auto_start_attempted', { attempts })
+        window.clearInterval(timer)
+      } else if (attempts >= 12) {
+        trackDemoEvent('demo_specialist_auto_start_unavailable', { attempts })
+        window.clearInterval(timer)
+      }
+    }, 500)
+
+    return () => window.clearInterval(timer)
+  }, [open, signedUrl])
+
   if (!enabled) return null
 
   return (
     <div className={`demo-specialist ${open ? 'is-open' : ''}`}>
       {open && (
-        <section className="demo-specialist-panel" aria-label="Teambridge AI demo specialist">
-          <header className="demo-specialist-head">
-            <img src={NOVA_AVATAR} alt="" className="demo-specialist-avatar" />
-            <div className="demo-specialist-title">
-              <strong>Teambridge specialist</strong>
-              <span>{conversationId ? 'Live voice demo' : 'Voice walkthrough'}</span>
+        <section className="demo-specialist-widget" aria-label="Teambridge AI demo specialist">
+          {loading && <div className="demo-specialist-state">Connecting Nova...</div>}
+          {error && (
+            <div className="demo-specialist-state demo-specialist-state--error">
+              {error}
             </div>
-            <button type="button" className="demo-specialist-close" onClick={() => setOpen(false)} aria-label="Close specialist">
-              x
-            </button>
-          </header>
-
-          <div className="demo-specialist-body">
-            <div className="demo-specialist-greeting">
-              <strong>Hello, I am Nova.</strong>
-              <span>I can walk you through how Teambridge runs scheduling, staffing, onboarding, compliance, payroll, and AI agent workflows.</span>
-            </div>
-            {loading && <div className="demo-specialist-state">Connecting Nova...</div>}
-            {error && (
-              <div className="demo-specialist-state demo-specialist-state--error">
-                {error}
-              </div>
-            )}
-            {signedUrl && (
-              <elevenlabs-convai
-                ref={widgetRef}
-                signed-url={signedUrl}
-                variant="expanded"
-                dismissible="false"
-                avatar-image-url={NOVA_AVATAR}
-                action-text="Talk to Teambridge"
-                start-call-text="Start voice demo"
-                end-call-text="End demo"
-                listening-text="Listening..."
-                speaking-text="Nova is speaking"
-                dynamic-variables={dynamicVariables}
-              />
-            )}
-          </div>
+          )}
+          {signedUrl && (
+            <elevenlabs-convai
+              ref={widgetRef}
+              signed-url={signedUrl}
+              server-location="us"
+              variant="expanded"
+              dismissible="true"
+              default-expanded="true"
+              avatar-image-url={NOVA_AVATAR}
+              action-text="Talk to Teambridge"
+              start-call-text="Start voice demo"
+              end-call-text="End demo"
+              listening-text="Listening..."
+              speaking-text="Nova is speaking"
+              dynamic-variables={dynamicVariables}
+            />
+          )}
         </section>
       )}
-
-      <button
-        type="button"
-        className="demo-specialist-launcher"
-        onClick={() => {
-          setOpen(next => !next)
-          trackDemoEvent('demo_specialist_launcher_clicked', { open: !open })
-        }}
-        aria-expanded={open}
-      >
-        <img src={NOVA_AVATAR} alt="" />
-        <span>
-          <strong>Specialist</strong>
-          <small>Voice demo</small>
-        </span>
-      </button>
     </div>
   )
 }
