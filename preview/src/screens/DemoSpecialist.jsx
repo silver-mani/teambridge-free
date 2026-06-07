@@ -418,6 +418,46 @@ function clickWidgetControl(widget, predicate) {
   return labelForControl(control) || 'unlabeled'
 }
 
+function shouldAskNovaAgent(eventName, line) {
+  const text = String(line?.text || '').toLowerCase()
+  const speaker = String(line?.speaker || '').toLowerCase()
+  if (!text || text.length < 4) return false
+
+  const isUser =
+    eventName.includes('user') ||
+    speaker.includes('user') ||
+    speaker.includes('visitor') ||
+    speaker.includes('human')
+  const isAgentToolLeak =
+    eventName.includes('agent') &&
+    /(?:openworkspace|opendemoworkspace|showworkspace|performdemoaction|rundemoscenario|navigatetodemoview|highlightdemoarea)/i.test(text)
+
+  if (isAgentToolLeak) return true
+  if (!isUser) return false
+
+  return /(?:show|open|go to|take me|walk|explain|demo|workspace|health|staffing|event|hospitality|care|security|facilit|industrial|construction|schedule|shift|coverage|payroll|pay|people|roster|credential|onboard|compliance|policy|agent|workflow|message|communication)/i.test(text)
+}
+
+async function requestNovaAgentActions({ line, eventName, conversationId }) {
+  const response = await fetch('/api/nova-agent', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      text: line.text,
+      speaker: line.speaker,
+      eventName,
+      conversationId,
+      snapshot: getDemoSnapshot(),
+    }),
+  })
+
+  const body = await response.json().catch(() => ({}))
+  if (!response.ok) {
+    throw new Error(body?.message || body?.error || 'Nova agent request failed')
+  }
+  return body
+}
+
 export function openDemoSpecialist(source = 'unknown') {
   if (typeof window === 'undefined') return
   window.dispatchEvent(new CustomEvent('tb:open-demo-specialist', { detail: { source } }))
@@ -528,6 +568,7 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
   const autoStartRef = useRef(false)
   const transcriptSeenRef = useRef(new Set())
   const spokenToolFallbackRef = useRef(new Set())
+  const novaAgentSeenRef = useRef(new Set())
 
   const lead = useMemo(() => readJsonStorage('tb:lead-data') || {}, [enabled, route])
   const dynamicVariables = useMemo(() => {
@@ -744,30 +785,87 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
         event.type.includes('agent')
       const fallback = shouldInspect ? spokenToolAction(line.text) : null
 
-      if (!fallback) return
+      if (fallback) {
+        const fallbackKey = `${fallback.kind}:${fallback.value}:${line.text.slice(0, 120)}`
+        if (!spokenToolFallbackRef.current.has(fallbackKey)) {
+          spokenToolFallbackRef.current.add(fallbackKey)
 
-      const fallbackKey = `${fallback.kind}:${fallback.value}:${line.text.slice(0, 120)}`
-      if (spokenToolFallbackRef.current.has(fallbackKey)) return
-      spokenToolFallbackRef.current.add(fallbackKey)
+          performDemoAction(fallback.value, { label: fallback.label })
+            .then(result => {
+              trackDemoEvent('demo_specialist_spoken_tool_fallback', {
+                kind: fallback.kind,
+                value: fallback.value,
+                label: fallback.label,
+                ok: result.ok,
+                reason: result.reason,
+                action: result.action,
+                industry: result.industry,
+                view: result.view,
+                conversationId,
+              })
+            })
+            .catch(err => {
+              trackDemoEvent('demo_specialist_spoken_tool_fallback_failed', {
+                kind: fallback.kind,
+                value: fallback.value,
+                error: String(err?.message || err),
+                conversationId,
+              })
+            })
+        }
+      }
 
-      performDemoAction(fallback.value, { label: fallback.label })
-        .then(result => {
-          trackDemoEvent('demo_specialist_spoken_tool_fallback', {
-            kind: fallback.kind,
-            value: fallback.value,
-            label: fallback.label,
-            ok: result.ok,
-            reason: result.reason,
-            action: result.action,
-            industry: result.industry,
-            view: result.view,
+      if (!shouldAskNovaAgent(event.type, line)) return
+
+      if (fallback) {
+        trackDemoEvent('nova_agent_orchestration_skipped', {
+          reason: 'spoken_tool_fallback_already_handled',
+          eventName: event.type,
+          speaker: line.speaker,
+          text: line.text,
+          conversationId,
+        })
+        return
+      }
+
+      const agentKey = `${event.type}:${line.speaker}:${line.text.slice(0, 220)}`
+      if (novaAgentSeenRef.current.has(agentKey)) return
+      novaAgentSeenRef.current.add(agentKey)
+
+      requestNovaAgentActions({ line, eventName: event.type, conversationId })
+        .then(async body => {
+          const actions = Array.isArray(body.actions) ? body.actions.slice(0, 3) : []
+          trackDemoEvent('nova_agent_orchestration_result', {
+            eventName: event.type,
+            speaker: line.speaker,
+            text: line.text,
+            intent: body.intent,
+            confidence: body.confidence,
+            actionCount: actions.length,
+            rationale: body.rationale,
             conversationId,
           })
+
+          for (const action of actions) {
+            const result = await performDemoAction(action.value, { label: action.label })
+            trackDemoEvent('nova_agent_action_executed', {
+              kind: action.kind,
+              value: action.value,
+              label: action.label,
+              ok: result.ok,
+              reason: result.reason,
+              action: result.action,
+              industry: result.industry,
+              view: result.view,
+              conversationId,
+            })
+          }
         })
         .catch(err => {
-          trackDemoEvent('demo_specialist_spoken_tool_fallback_failed', {
-            kind: fallback.kind,
-            value: fallback.value,
+          trackDemoEvent('nova_agent_orchestration_failed', {
+            eventName: event.type,
+            speaker: line.speaker,
+            text: line.text,
             error: String(err?.message || err),
             conversationId,
           })

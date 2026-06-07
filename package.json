@@ -10,9 +10,19 @@
     "./styles/*": "./src/styles/*",
     "./tokens/*": "./src/tokens/*"
   },
-  "keywords": ["design-system", "react", "typescript", "teambridge"],
+  "keywords": [
+    "design-system",
+    "react",
+    "typescript",
+    "teambridge"
+  ],
   "peerDependencies": {
     "react": ">=18.0.0",
     "react-dom": ">=18.0.0"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.81",
+    "ai": "^6.0.197",
+    "zod": "^4.4.3"
   }
 }
