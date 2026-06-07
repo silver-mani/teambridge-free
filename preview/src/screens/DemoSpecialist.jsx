@@ -11,7 +11,6 @@ const TRANSCRIPT_EVENTS = [
   'elevenlabs-convai:user-transcript',
   'elevenlabs-convai:agent-response',
 ]
-const NOVA_TERMS_TITLE = 'Voice demo notice'
 const NOVA_TERMS_TEXT =
   "Nova is an AI demo guide. Voice conversations may be recorded and processed by Teambridge and service providers to operate the demo. See Teambridge's Privacy Policy."
 const VALID_INDUSTRIES = new Set([
@@ -327,17 +326,24 @@ function hideElevenLabsBranding(widget) {
     style.setAttribute('data-teambridge-branding-cleanup', 'true')
     style.textContent = `
       a[href*="elevenlabs.io/agents"],
-      p:has(a[href*="elevenlabs.io/agents"]) {
+      p:has(a[href*="elevenlabs.io/agents"]),
+      [href*="elevenlabs.io/agents"] {
         display: none !important;
       }
     `
     root.appendChild(style)
   }
 
-  const brandedNodes = Array.from(root.querySelectorAll('p, a, span, div')).filter(node => {
+  const brandedNodes = Array.from(root.querySelectorAll('p, a, span, div, small')).filter(node => {
     const text = (node.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase()
     const href = node.getAttribute?.('href') || ''
-    return text === 'powered by elevenagents' || href.includes('elevenlabs.io/agents')
+    return (
+      text === 'powered by elevenagents' ||
+      text === 'powered by eleven agents' ||
+      text.includes('powered by eleven') ||
+      text.includes('elevenagents') ||
+      href.includes('elevenlabs.io/agents')
+    )
   })
 
   for (const node of brandedNodes) {
@@ -351,19 +357,20 @@ function hideElevenLabsBranding(widget) {
   return brandedNodes.length > 0
 }
 
-function customizeElevenLabsTerms(widget) {
+function cleanupElevenLabsTerms(widget) {
   const root = widget?.shadowRoot
   if (!root) return false
 
   let changed = false
-  const nodes = Array.from(root.querySelectorAll('h1, h2, h3, h4, p'))
+  const nodes = Array.from(root.querySelectorAll('h1, h2, h3, h4, p, small, span, div'))
 
   for (const node of nodes) {
     const text = (node.textContent || '').replace(/\s+/g, ' ').trim()
     const lower = text.toLowerCase()
 
     if (lower === 'terms and conditions') {
-      node.textContent = NOVA_TERMS_TITLE
+      node.style.setProperty('display', 'none', 'important')
+      node.setAttribute('aria-hidden', 'true')
       changed = true
       continue
     }
@@ -371,7 +378,11 @@ function customizeElevenLabsTerms(widget) {
     if (
       lower.includes('by clicking "agree,"') ||
       lower.includes('by clicking “agree,”') ||
-      lower.includes('if you do not wish to have your conversations recorded')
+      lower.includes('each time i interact with this ai agent') ||
+      lower.includes('consent to the recording') ||
+      lower.includes('if you do not wish to have your conversations recorded') ||
+      lower.includes('third-party service providers') ||
+      lower.includes('privacy policy')
     ) {
       node.textContent = NOVA_TERMS_TEXT
       changed = true
@@ -379,6 +390,32 @@ function customizeElevenLabsTerms(widget) {
   }
 
   return changed
+}
+
+function labelForControl(control) {
+  return [
+    control.getAttribute('aria-label'),
+    control.getAttribute('title'),
+    control.getAttribute('data-testid'),
+    control.textContent,
+  ].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim().toLowerCase()
+}
+
+function clickWidgetControl(widget, predicate) {
+  const root = widget?.shadowRoot
+  if (!root) return null
+
+  const controls = Array.from(root.querySelectorAll('button, [role="button"]'))
+    .filter(control => {
+      const style = window.getComputedStyle(control)
+      return style.display !== 'none' && style.visibility !== 'hidden' && !control.disabled
+    })
+
+  const control = controls.find(item => predicate(labelForControl(item), item))
+  if (!control) return null
+
+  control.click()
+  return labelForControl(control) || 'unlabeled'
 }
 
 export function openDemoSpecialist(source = 'unknown') {
@@ -753,22 +790,32 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
     const timer = window.setInterval(() => {
       attempts += 1
       const widget = widgetRef.current
-      const root = widget?.shadowRoot
-      const controls = root ? Array.from(root.querySelectorAll('button, [role="button"]')) : []
-      const start = controls.find(control => {
-        const label = [
-          control.getAttribute('aria-label'),
-          control.getAttribute('title'),
-          control.textContent,
-        ].filter(Boolean).join(' ').toLowerCase()
-        return label.includes('start') || label.includes('call')
-      })
+      hideElevenLabsBranding(widget)
+      cleanupElevenLabsTerms(widget)
 
-      if (start) {
-        start.click()
-        trackDemoEvent('demo_specialist_auto_start_attempted', { attempts })
+      const agreed = clickWidgetControl(widget, label => (
+        label === 'agree' ||
+        label.includes('agree') ||
+        label.includes('accept') ||
+        label.includes('continue')
+      ))
+
+      if (agreed) {
+        trackDemoEvent('demo_specialist_terms_auto_accepted', { attempts, label: agreed })
+        return
+      }
+
+      const started = clickWidgetControl(widget, label => (
+        label.includes('start') ||
+        label.includes('call') ||
+        label.includes('talk') ||
+        label.includes('voice demo')
+      ))
+
+      if (started) {
+        trackDemoEvent('demo_specialist_auto_start_attempted', { attempts, label: started })
         window.clearInterval(timer)
-      } else if (attempts >= 12) {
+      } else if (attempts >= 24) {
         trackDemoEvent('demo_specialist_auto_start_unavailable', { attempts })
         window.clearInterval(timer)
       }
@@ -784,7 +831,7 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
     const timer = window.setInterval(() => {
       attempts += 1
       hideElevenLabsBranding(widgetRef.current)
-      customizeElevenLabsTerms(widgetRef.current)
+      cleanupElevenLabsTerms(widgetRef.current)
       if (attempts >= 120) {
         window.clearInterval(timer)
       }
