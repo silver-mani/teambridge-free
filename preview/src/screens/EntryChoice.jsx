@@ -5,7 +5,13 @@ import { ArrowNarrowRightIcon } from '../../../src/components/icons/ArrowNarrowR
 const BASE = import.meta.env.BASE_URL
 const TEAMBRIDGE_LOGO =
   'https://cdn.prod.website-files.com/67adea23aa73a53ff4afb197/67b499f67cace40b0939e859_teambridge%20logo%20main.svg'
-const ROBOT_ANIMATION = `${BASE}agents/nova.gif`
+const AGENTS = [
+  { name: 'Nova', src: `${BASE}agents/nova.gif` },
+  { name: 'Atlas', src: `${BASE}agents/atlas.gif` },
+  { name: 'Iris', src: `${BASE}agents/iris.gif` },
+  { name: 'Leo', src: `${BASE}agents/leo.gif` },
+  { name: 'Sofia', src: `${BASE}agents/sofia.gif` },
+]
 
 /* ──────────────────────────────────────────────────────────────────────
  * EntryChoice — first screen of the demo. Two paths:
@@ -18,7 +24,11 @@ function ProductPreview({ kind }) {
   if (kind === 'build') {
     return (
       <div className="entry-product-preview entry-product-preview--build" aria-hidden="true">
-        <img src={ROBOT_ANIMATION} alt="" />
+        <div className="entry-agent-stack">
+          {AGENTS.slice(0, 3).map(agent => (
+            <img key={agent.name} src={agent.src} alt="" />
+          ))}
+        </div>
         <div>
           <span>Company found</span>
           <strong>Workspace being built</strong>
@@ -28,10 +38,28 @@ function ProductPreview({ kind }) {
   }
 
   return (
-    <div className="entry-product-preview entry-product-preview--demo" aria-hidden="true">
+    <div className="entry-product-preview entry-product-preview--demo entry-product-preview--agents" aria-hidden="true">
       <div><span>Coverage</span><strong>Resolved</strong></div>
       <div><span>Payroll</span><strong>Ready</strong></div>
       <div><span>Agents</span><strong>Live</strong></div>
+      <div className="entry-agent-roster">
+        {AGENTS.map(agent => (
+          <img key={agent.name} src={agent.src} alt="" />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function AgentTeam() {
+  return (
+    <div className="entry-agent-team" aria-label="Teambridge demo agents">
+      {AGENTS.map(agent => (
+        <div key={agent.name} className="entry-agent-team-member">
+          <img src={agent.src} alt="" />
+          <span>{agent.name}</span>
+        </div>
+      ))}
     </div>
   )
 }
@@ -55,7 +83,7 @@ function ChoiceCard({ kind, title, lede, action, onClick }) {
         flexDirection: 'column',
         gap: 'var(--space-6)',
         padding: 'var(--space-8)',
-        background: 'var(--color-bg-primary)',
+        background: 'color-mix(in srgb, var(--color-bg-primary) 96%, var(--color-content-primary))',
         border: `1px solid ${hover ? 'var(--color-border-selected)' : 'var(--color-border-opaque)'}`,
         borderRadius: 'var(--radius-lg)',
         cursor: 'pointer',
@@ -85,7 +113,7 @@ function ChoiceCard({ kind, title, lede, action, onClick }) {
             fontSize: 'var(--text-base)',
             fontWeight: 'var(--font-weight-regular)',
             lineHeight: 'var(--line-height-loose)',
-            color: 'var(--color-content-tertiary)',
+            color: 'var(--color-content-secondary)',
           }}
         >
           {lede}
@@ -116,7 +144,7 @@ export default function EntryChoice({ onBuild, onExplore }) {
     <div
       style={{
         minHeight: '100vh',
-        background: 'linear-gradient(180deg, var(--color-bg-primary) 0%, var(--color-bg-secondary) 100%)',
+        background: 'linear-gradient(180deg, var(--color-bg-primary) 0%, color-mix(in srgb, var(--color-bg-secondary) 86%, var(--color-content-primary)) 100%)',
         fontFamily: 'var(--font-sans)',
         display: 'flex',
         flexDirection: 'column',
@@ -183,7 +211,7 @@ export default function EntryChoice({ onBuild, onExplore }) {
                 maxWidth: 520,
                 fontSize: 'var(--text-lg)',
                 lineHeight: 'var(--line-height-loose)',
-                color: 'var(--color-content-tertiary)',
+                color: 'var(--color-content-secondary)',
               }}
             >
               Let Nova build a workspace from your company context, or open a realistic
@@ -193,26 +221,12 @@ export default function EntryChoice({ onBuild, onExplore }) {
               style={{
                 marginTop: 'var(--space-8)',
                 display: 'flex',
-                alignItems: 'center',
-                gap: 'var(--space-3)',
-                color: 'var(--color-content-secondary)',
-                fontSize: 'var(--text-sm)',
+                flexDirection: 'column',
+                gap: 'var(--space-4)',
               }}
             >
-              <img
-                src={ROBOT_ANIMATION}
-                alt=""
-                aria-hidden="true"
-                style={{
-                  width: 52,
-                  height: 52,
-                  objectFit: 'cover',
-                  borderRadius: 'var(--radius-lg)',
-                  border: '1px solid var(--color-border-opaque)',
-                  background: 'var(--color-bg-primary)',
-                }}
-              />
-              <span>Nova stays with the demo and can walk the product with voice once you are inside.</span>
+              <AgentTeam />
+              <span className="entry-agent-note">Nova and the agent team stay with the demo and can walk the product with voice once you are inside.</span>
             </div>
           </section>
 
@@ -225,7 +239,7 @@ export default function EntryChoice({ onBuild, onExplore }) {
               padding: 'var(--space-4)',
               border: '1px solid var(--color-border-opaque)',
               borderRadius: 'var(--radius-xl)',
-              background: 'color-mix(in srgb, var(--color-bg-primary) 92%, transparent)',
+              background: 'color-mix(in srgb, var(--color-bg-primary) 96%, var(--color-content-primary))',
               boxShadow: 'var(--shadow-below-lg)',
             }}
           >

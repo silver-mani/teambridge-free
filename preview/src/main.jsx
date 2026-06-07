@@ -289,7 +289,11 @@ function App() {
   // The gate runs on every route except the front-of-funnel screens
   // (entry choice, demo picker, build flow). The build flow has its
   // own first-class signup capture in step 1.
-  const showGate = accessChecked && !leadCaptured && route?.kind !== 'build'
+  const showGate = accessChecked
+    && !leadCaptured
+    && route
+    && route.kind !== 'build'
+    && route.kind !== 'demos'
 
   let view
   if (!route) {
