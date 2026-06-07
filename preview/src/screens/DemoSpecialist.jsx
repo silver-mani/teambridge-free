@@ -216,6 +216,62 @@ function normalizeActionName(action) {
   return key || 'overview'
 }
 
+function spokenToolAction(text) {
+  const raw = String(text || '').trim()
+  if (!raw) return null
+
+  const lower = raw.toLowerCase()
+  const looksLikeTool =
+    /(?:openworkspace|opendemoworkspace|showworkspace|show[a-z]+workspace|performdemoaction|rundemoscenario|navigatetodemoview|highlightdemoarea)/i.test(raw) ||
+    /(?:tool|function|command|call|run)\s*[:(]/i.test(raw) ||
+    /(?:\{|\()\s*["']?(?:industry|workspace|vertical|action|capability|view|scenario)["']?\s*[:=]/i.test(raw)
+
+  if (!looksLikeTool) return null
+
+  for (const [alias, industry] of Object.entries(INDUSTRY_ALIASES)) {
+    const readable = alias.replace(/-/g, ' ')
+    if (lower.includes(alias) || lower.includes(readable)) {
+      return {
+        kind: 'workspace',
+        value: industry,
+        label: `${industry.replace(/-/g, ' ')} workspace`,
+      }
+    }
+  }
+
+  for (const [key, config] of Object.entries(DEMO_ACTIONS)) {
+    const readable = key.replace(/_/g, ' ')
+    if (lower.includes(key) || lower.includes(readable)) {
+      return {
+        kind: 'action',
+        value: key,
+        label: config.label,
+      }
+    }
+  }
+
+  if (lower.includes('schedule')) {
+    return { kind: 'action', value: 'schedule_gap', label: DEMO_ACTIONS.schedule_gap.label }
+  }
+  if (lower.includes('payroll') || lower.includes('pay ')) {
+    return { kind: 'action', value: 'payroll', label: DEMO_ACTIONS.payroll.label }
+  }
+  if (lower.includes('people') || lower.includes('worker') || lower.includes('staff')) {
+    return { kind: 'action', value: 'people', label: DEMO_ACTIONS.people.label }
+  }
+  if (lower.includes('onboarding')) {
+    return { kind: 'action', value: 'onboarding', label: DEMO_ACTIONS.onboarding.label }
+  }
+  if (lower.includes('compliance')) {
+    return { kind: 'action', value: 'compliance', label: DEMO_ACTIONS.compliance.label }
+  }
+  if (lower.includes('agent')) {
+    return { kind: 'action', value: 'agents', label: DEMO_ACTIONS.agents.label }
+  }
+
+  return null
+}
+
 function compactDetail(value, depth = 0) {
   if (value === null || value === undefined) return undefined
   if (typeof value === 'string') return value.slice(0, 1000)
@@ -434,6 +490,7 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
   const widgetRef = useRef(null)
   const autoStartRef = useRef(false)
   const transcriptSeenRef = useRef(new Set())
+  const spokenToolFallbackRef = useRef(new Set())
 
   const lead = useMemo(() => readJsonStorage('tb:lead-data') || {}, [enabled, route])
   const dynamicVariables = useMemo(() => {
@@ -641,6 +698,43 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
         text: line.text,
         conversationId,
       })
+
+      const speaker = String(line.speaker || '').toLowerCase()
+      const shouldInspect =
+        speaker.includes('nova') ||
+        speaker.includes('agent') ||
+        speaker.includes('assistant') ||
+        event.type.includes('agent')
+      const fallback = shouldInspect ? spokenToolAction(line.text) : null
+
+      if (!fallback) return
+
+      const fallbackKey = `${fallback.kind}:${fallback.value}:${line.text.slice(0, 120)}`
+      if (spokenToolFallbackRef.current.has(fallbackKey)) return
+      spokenToolFallbackRef.current.add(fallbackKey)
+
+      performDemoAction(fallback.value, { label: fallback.label })
+        .then(result => {
+          trackDemoEvent('demo_specialist_spoken_tool_fallback', {
+            kind: fallback.kind,
+            value: fallback.value,
+            label: fallback.label,
+            ok: result.ok,
+            reason: result.reason,
+            action: result.action,
+            industry: result.industry,
+            view: result.view,
+            conversationId,
+          })
+        })
+        .catch(err => {
+          trackDemoEvent('demo_specialist_spoken_tool_fallback_failed', {
+            kind: fallback.kind,
+            value: fallback.value,
+            error: String(err?.message || err),
+            conversationId,
+          })
+        })
     }
 
     TRANSCRIPT_EVENTS.forEach(eventName => widget.addEventListener(eventName, handleTranscript))
