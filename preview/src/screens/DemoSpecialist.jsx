@@ -9,7 +9,11 @@ const TRANSCRIPT_EVENTS = [
   'elevenlabs-convai:message',
   'elevenlabs-convai:transcript',
   'elevenlabs-convai:user-transcript',
+  'elevenlabs-convai:user_transcript',
   'elevenlabs-convai:agent-response',
+  'elevenlabs-convai:agent_response',
+  'elevenlabs-convai:audio',
+  'elevenlabs-convai:event',
 ]
 const VALID_INDUSTRIES = new Set([
   'healthcare', 'staffing', 'events', 'security', 'light-industrial', 'construction',
@@ -213,6 +217,49 @@ function normalizeActionName(action) {
   return key || 'overview'
 }
 
+function actionFromDemoText(text) {
+  const raw = String(text || '').trim()
+  if (!raw) return null
+  const lower = raw.toLowerCase()
+
+  for (const [alias, industry] of Object.entries(INDUSTRY_ALIASES)) {
+    const readable = alias.replace(/-/g, ' ')
+    if (lower.includes(alias) || lower.includes(readable)) {
+      return {
+        kind: 'workspace',
+        value: industry,
+        label: `${industry.replace(/-/g, ' ')} workspace`,
+      }
+    }
+  }
+
+  const actionHints = [
+    ['schedule_gap', ['schedule', 'scheduling', 'coverage', 'gap', 'open shift', 'fill shift', 'call out', 'call-out']],
+    ['shift_requests', ['request', 'swap', 'shift request', 'approve request']],
+    ['time_tracking', ['time tracking', 'attendance', 'clock', 'punch', 'location']],
+    ['payroll', ['payroll', 'pay approval', 'instant pay', 'pay period', 'wage']],
+    ['pay_review', ['pay review', 'exception', 'payroll exception']],
+    ['people', ['people', 'roster', 'staff', 'worker', 'employee', 'credential']],
+    ['onboarding', ['onboard', 'onboarding', 'new hire', 'paperwork']],
+    ['compliance', ['compliance', 'policy', 'certification', 'certificate', 'license']],
+    ['agents', ['agent', 'automation', 'workflow', 'ai action']],
+    ['engage', ['message', 'communication', 'notify', 'sms', 'texting']],
+    ['ready_workspaces', ['workspace', 'vertical', 'industry', 'demo account', 'preloaded']],
+  ]
+
+  for (const [action, hints] of actionHints) {
+    if (hints.some(hint => lower.includes(hint))) {
+      return {
+        kind: 'action',
+        value: action,
+        label: DEMO_ACTIONS[action]?.label || action.replace(/_/g, ' '),
+      }
+    }
+  }
+
+  return null
+}
+
 function spokenToolAction(text) {
   const raw = String(text || '').trim()
   if (!raw) return null
@@ -225,16 +272,8 @@ function spokenToolAction(text) {
 
   if (!looksLikeTool) return null
 
-  for (const [alias, industry] of Object.entries(INDUSTRY_ALIASES)) {
-    const readable = alias.replace(/-/g, ' ')
-    if (lower.includes(alias) || lower.includes(readable)) {
-      return {
-        kind: 'workspace',
-        value: industry,
-        label: `${industry.replace(/-/g, ' ')} workspace`,
-      }
-    }
-  }
+  const directAction = actionFromDemoText(raw)
+  if (directAction) return directAction
 
   for (const [key, config] of Object.entries(DEMO_ACTIONS)) {
     const readable = key.replace(/_/g, ' ')
@@ -296,15 +335,31 @@ function transcriptFromDetail(detail) {
     detail?.content,
     detail?.response,
     detail?.delta,
+    detail?.user_transcript,
+    detail?.agent_response,
+    detail?.user_transcription_event?.user_transcript,
+    detail?.agent_response_event?.agent_response,
+    detail?.conversation_transcript,
     detail?.data?.text,
     detail?.data?.transcript,
     detail?.data?.message,
+    detail?.data?.user_transcript,
+    detail?.data?.agent_response,
+    detail?.data?.user_transcription_event?.user_transcript,
+    detail?.data?.agent_response_event?.agent_response,
   ]
   const text = candidates.find(value => typeof value === 'string' && value.trim())
   if (!text) return null
+  const inferredSpeaker =
+    detail?.type === 'user_transcript' || detail?.user_transcription_event || detail?.data?.user_transcription_event
+      ? 'user'
+      : detail?.type === 'agent_response' || detail?.agent_response_event || detail?.data?.agent_response_event
+        ? 'Nova'
+        : undefined
   const speaker =
     detail?.speaker ||
     detail?.role ||
+    inferredSpeaker ||
     detail?.source ||
     detail?.data?.speaker ||
     detail?.data?.role ||
@@ -605,6 +660,19 @@ function clickVisibleStartFallback(widget) {
   return null
 }
 
+function latestWidgetInputText(widget) {
+  const fields = queryWidgetDeep(widget, 'textarea, input[type="text"], [contenteditable="true"]')
+    .filter(field => {
+      const style = window.getComputedStyle(field)
+      return style.display !== 'none' && style.visibility !== 'hidden'
+    })
+
+  const field = fields[fields.length - 1]
+  if (!field) return ''
+  if ('value' in field) return String(field.value || '').trim()
+  return String(field.textContent || '').trim()
+}
+
 function shouldAskNovaAgent(eventName, line) {
   const text = String(line?.text || '').toLowerCase()
   const speaker = String(line?.speaker || '').toLowerCase()
@@ -612,6 +680,7 @@ function shouldAskNovaAgent(eventName, line) {
 
   const isUser =
     eventName.includes('user') ||
+    eventName.includes('user_transcript') ||
     speaker.includes('user') ||
     speaker.includes('visitor') ||
     speaker.includes('human')
@@ -623,6 +692,17 @@ function shouldAskNovaAgent(eventName, line) {
   if (!isUser) return false
 
   return /(?:show|open|go to|take me|walk|explain|demo|workspace|health|staffing|event|hospitality|care|security|facilit|industrial|construction|schedule|shift|coverage|payroll|pay|people|roster|credential|onboard|compliance|policy|agent|workflow|message|communication)/i.test(text)
+}
+
+function shouldTryLocalDemoAction(eventName, line) {
+  const speaker = String(line?.speaker || '').toLowerCase()
+  return (
+    eventName.includes('user') ||
+    eventName.includes('user_transcript') ||
+    speaker.includes('user') ||
+    speaker.includes('visitor') ||
+    speaker.includes('human')
+  )
 }
 
 async function requestNovaAgentActions({ line, eventName, conversationId }) {
@@ -941,6 +1021,44 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
       }
     }
 
+    const runLocalActionFromText = (text, source) => {
+      const action = actionFromDemoText(text)
+      if (!action) return false
+
+      const actionKey = `${source}:${action.kind}:${action.value}:${String(text).slice(0, 160)}`
+      if (novaAgentSeenRef.current.has(actionKey)) return true
+      novaAgentSeenRef.current.add(actionKey)
+
+      performDemoAction(action.value, { label: action.label })
+        .then(result => {
+          trackDemoEvent('nova_agent_local_action_executed', {
+            source,
+            kind: action.kind,
+            value: action.value,
+            label: action.label,
+            text,
+            ok: result.ok,
+            reason: result.reason,
+            action: result.action,
+            industry: result.industry,
+            view: result.view,
+            conversationId,
+          })
+        })
+        .catch(err => {
+          trackDemoEvent('nova_agent_local_action_failed', {
+            source,
+            kind: action.kind,
+            value: action.value,
+            text,
+            error: String(err?.message || err),
+            conversationId,
+          })
+        })
+
+      return true
+    }
+
     widget.addEventListener('elevenlabs-convai:call', handleCall)
     const handleTranscript = event => {
       const line = transcriptFromDetail(event.detail)
@@ -1015,6 +1133,42 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
         return
       }
 
+      const localAction = shouldTryLocalDemoAction(event.type, line)
+        ? actionFromDemoText(line.text)
+        : null
+
+      if (localAction) {
+        const localKey = `${localAction.kind}:${localAction.value}:${line.text.slice(0, 160)}`
+        if (!novaAgentSeenRef.current.has(localKey)) {
+          novaAgentSeenRef.current.add(localKey)
+          performDemoAction(localAction.value, { label: localAction.label })
+            .then(result => {
+              trackDemoEvent('nova_agent_local_action_executed', {
+                kind: localAction.kind,
+                value: localAction.value,
+                label: localAction.label,
+                text: line.text,
+                ok: result.ok,
+                reason: result.reason,
+                action: result.action,
+                industry: result.industry,
+                view: result.view,
+                conversationId,
+              })
+            })
+            .catch(err => {
+              trackDemoEvent('nova_agent_local_action_failed', {
+                kind: localAction.kind,
+                value: localAction.value,
+                text: line.text,
+                error: String(err?.message || err),
+                conversationId,
+              })
+            })
+        }
+        return
+      }
+
       const agentKey = `${event.type}:${line.speaker}:${line.text.slice(0, 220)}`
       if (novaAgentSeenRef.current.has(agentKey)) return
       novaAgentSeenRef.current.add(agentKey)
@@ -1059,11 +1213,33 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
         })
     }
 
-    TRANSCRIPT_EVENTS.forEach(eventName => widget.addEventListener(eventName, handleTranscript))
+    const handleWidgetKeydown = event => {
+      if (event.key !== 'Enter' || event.shiftKey || event.metaKey || event.ctrlKey || event.altKey) return
+      const text = latestWidgetInputText(widget)
+      if (text) runLocalActionFromText(text, 'widget_text_enter')
+    }
+
+    const handleWidgetClick = event => {
+      const label = labelForControl(event.target || {})
+      if (!label.includes('send') && !label.includes('submit')) return
+      const text = latestWidgetInputText(widget)
+      if (text) runLocalActionFromText(text, 'widget_text_submit')
+    }
+
+    const transcriptTargets = [widget, window, document]
+    TRANSCRIPT_EVENTS.forEach(eventName => {
+      transcriptTargets.forEach(target => target.addEventListener(eventName, handleTranscript))
+    })
+    widget.addEventListener('keydown', handleWidgetKeydown, true)
+    widget.addEventListener('click', handleWidgetClick, true)
 
     return () => {
       widget.removeEventListener('elevenlabs-convai:call', handleCall)
-      TRANSCRIPT_EVENTS.forEach(eventName => widget.removeEventListener(eventName, handleTranscript))
+      TRANSCRIPT_EVENTS.forEach(eventName => {
+        transcriptTargets.forEach(target => target.removeEventListener(eventName, handleTranscript))
+      })
+      widget.removeEventListener('keydown', handleWidgetKeydown, true)
+      widget.removeEventListener('click', handleWidgetClick, true)
     }
   }, [conversationId, signedUrl])
 
@@ -1146,6 +1322,8 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
               dismissible="true"
               disable-banner="true"
               default-expanded="true"
+              transcript-enabled="true"
+              text-input-enabled="true"
               avatar-image-url={NOVA_AVATAR}
               action-text="Talk to Teambridge"
               start-call-text="Start voice demo"
