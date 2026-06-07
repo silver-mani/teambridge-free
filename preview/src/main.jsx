@@ -59,6 +59,16 @@ function parseHash() {
   return parseHashString(window.location.hash || '')
 }
 
+function isLegacyDemosHash() {
+  return String(window.location.hash || '').replace(/^#/, '').replace(/^\//, '').trim() === 'demos'
+}
+
+function clearLegacyDemosHash() {
+  if (!isLegacyDemosHash()) return false
+  window.history.replaceState({}, '', `${window.location.pathname}${window.location.search}`)
+  return true
+}
+
 function parseHashString(input) {
   const raw = String(input || '').replace(/^#/, '').replace(/^\//, '').trim()
   if (!raw) return null
@@ -270,7 +280,14 @@ function App() {
   }
 
   useEffect(() => {
-    const sync = () => setRoute(parseHash())
+    clearLegacyDemosHash()
+    const sync = () => {
+      if (clearLegacyDemosHash()) {
+        setRoute(null)
+        return
+      }
+      setRoute(parseHash())
+    }
     window.addEventListener('hashchange', sync)
     return () => window.removeEventListener('hashchange', sync)
   }, [])
