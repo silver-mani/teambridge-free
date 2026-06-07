@@ -11,6 +11,9 @@ const TRANSCRIPT_EVENTS = [
   'elevenlabs-convai:user-transcript',
   'elevenlabs-convai:agent-response',
 ]
+const NOVA_TERMS_TITLE = 'Voice demo notice'
+const NOVA_TERMS_TEXT =
+  "Nova is an AI demo guide. Voice conversations may be recorded and processed by Teambridge and service providers to operate the demo. See Teambridge's Privacy Policy."
 const VALID_INDUSTRIES = new Set([
   'healthcare', 'staffing', 'events', 'security', 'light-industrial', 'construction',
   'hospitality', 'long-term-care', 'janitorial',
@@ -290,6 +293,36 @@ function hideElevenLabsBranding(widget) {
   }
 
   return brandedNodes.length > 0
+}
+
+function customizeElevenLabsTerms(widget) {
+  const root = widget?.shadowRoot
+  if (!root) return false
+
+  let changed = false
+  const nodes = Array.from(root.querySelectorAll('h1, h2, h3, h4, p'))
+
+  for (const node of nodes) {
+    const text = (node.textContent || '').replace(/\s+/g, ' ').trim()
+    const lower = text.toLowerCase()
+
+    if (lower === 'terms and conditions') {
+      node.textContent = NOVA_TERMS_TITLE
+      changed = true
+      continue
+    }
+
+    if (
+      lower.includes('by clicking "agree,"') ||
+      lower.includes('by clicking “agree,”') ||
+      lower.includes('if you do not wish to have your conversations recorded')
+    ) {
+      node.textContent = NOVA_TERMS_TEXT
+      changed = true
+    }
+  }
+
+  return changed
 }
 
 export function openDemoSpecialist(source = 'unknown') {
@@ -656,13 +689,12 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
     let attempts = 0
     const timer = window.setInterval(() => {
       attempts += 1
-      const hidden = hideElevenLabsBranding(widgetRef.current)
-      if (hidden && attempts >= 3) {
-        window.clearInterval(timer)
-      } else if (attempts >= 30) {
+      hideElevenLabsBranding(widgetRef.current)
+      customizeElevenLabsTerms(widgetRef.current)
+      if (attempts >= 120) {
         window.clearInterval(timer)
       }
-    }, 300)
+    }, 500)
 
     return () => window.clearInterval(timer)
   }, [open, signedUrl])
