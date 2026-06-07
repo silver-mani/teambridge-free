@@ -37,6 +37,11 @@ function setHashPath(path) {
   }
 }
 
+export function openDemoSpecialist(source = 'unknown') {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new CustomEvent('tb:open-demo-specialist', { detail: { source } }))
+}
+
 function routeForView(view) {
   const snapshot = getDemoSnapshot()
   const currentIndustry = snapshot.industry && snapshot.industry !== 'demos'
@@ -66,7 +71,7 @@ function highlightSelector(selector, label) {
   return { ok: true }
 }
 
-export default function DemoSpecialist({ enabled, route }) {
+export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
   const [open, setOpen] = useState(false)
   const [signedUrl, setSignedUrl] = useState('')
   const [conversationId, setConversationId] = useState('')
@@ -86,6 +91,37 @@ export default function DemoSpecialist({ enabled, route }) {
       demo_session_id: snapshot.sessionId,
     })
   }, [lead, route])
+
+  useEffect(() => {
+    if (!enabled) return undefined
+
+    const handleOpen = event => {
+      setOpen(true)
+      trackDemoEvent('demo_specialist_open_requested', {
+        source: event?.detail?.source || 'unknown',
+      })
+    }
+
+    window.addEventListener('tb:open-demo-specialist', handleOpen)
+    return () => window.removeEventListener('tb:open-demo-specialist', handleOpen)
+  }, [enabled])
+
+  useEffect(() => {
+    if (!enabled || !autoOpen) return undefined
+    let alreadyShown = false
+    try {
+      alreadyShown = sessionStorage.getItem('tb:nova-entry-hello-shown') === '1'
+    } catch { /* ignore */ }
+    if (alreadyShown) return undefined
+
+    const timer = window.setTimeout(() => {
+      setOpen(true)
+      try { sessionStorage.setItem('tb:nova-entry-hello-shown', '1') } catch { /* ignore */ }
+      trackDemoEvent('demo_specialist_auto_opened', { source: 'entry_page' })
+    }, 900)
+
+    return () => window.clearTimeout(timer)
+  }, [enabled, autoOpen])
 
   useEffect(() => {
     if (!enabled || !open || signedUrl || loading) return
@@ -187,7 +223,7 @@ export default function DemoSpecialist({ enabled, route }) {
             <img src={NOVA_AVATAR} alt="" className="demo-specialist-avatar" />
             <div className="demo-specialist-title">
               <strong>Teambridge specialist</strong>
-              <span>{conversationId ? 'Live voice demo' : 'Karumi-style walkthrough'}</span>
+              <span>{conversationId ? 'Live voice demo' : 'Voice walkthrough'}</span>
             </div>
             <button type="button" className="demo-specialist-close" onClick={() => setOpen(false)} aria-label="Close specialist">
               x
@@ -195,6 +231,10 @@ export default function DemoSpecialist({ enabled, route }) {
           </header>
 
           <div className="demo-specialist-body">
+            <div className="demo-specialist-greeting">
+              <strong>Hello, I am Nova.</strong>
+              <span>I can walk you through how Teambridge runs scheduling, staffing, onboarding, compliance, payroll, and AI agent workflows.</span>
+            </div>
             {loading && <div className="demo-specialist-state">Connecting Nova...</div>}
             {error && (
               <div className="demo-specialist-state demo-specialist-state--error">

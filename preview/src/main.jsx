@@ -38,7 +38,7 @@ function writeStored(key, value) {
 }
 
 function hasStoredLeadOrWorkspace() {
-  return readStored(STORAGE_KEYS.lead) === '1' || Boolean(readStored(STORAGE_KEYS.buildConfig))
+  return readStored(STORAGE_KEYS.lead) === '1'
 }
 
 function getSavedWorkspaceRoute() {
@@ -145,10 +145,9 @@ function App() {
   // form before visitors can use an account. Persisted locally so a
   // person who already completed the form can return to their saved
   // workspace without being asked a second time.
-  // Operators who came through the build flow are also exempt: they
-  // already gave us their company URL on intake, so popping a second
-  // capture on top of their freshly-built account reads as a bait-
-  // and-switch. tb:build-config presence is the signal.
+  // Building a workspace saves company context, but it does not count
+  // as lead capture. The work-email gate appears when the visitor is
+  // ready to enter that built or preloaded account.
   const [leadCaptured, setLeadCaptured] = useState(() => {
     try {
       if (hasStoredLeadOrWorkspace()) return true
@@ -162,6 +161,7 @@ function App() {
       return true
     }
   })
+  const [pendingGate, setPendingGate] = useState(null)
 
   useEffect(() => {
     const token = readDemoAccessToken()
@@ -210,13 +210,18 @@ function App() {
     const demo = getDemoSnapshot()
     writeStored(STORAGE_KEYS.lead, '1')
     writeStored(STORAGE_KEYS.leadData, JSON.stringify(lead))
-    const savedRoute = routeToHashPath(route)
+    const savedRoute = pendingGate?.destination || routeToHashPath(route)
     if (savedRoute) writeStored(STORAGE_KEYS.savedWorkspaceRoute, savedRoute)
     setLeadCaptured(true)
+    setPendingGate(null)
     trackDemoEvent('lead_gate_submitted', {
       company: lead.company,
       timeInDemoMs: demo.timeInDemoMs,
+      gateIntent: pendingGate?.intent,
     })
+    if (savedRoute && (!route || routeToHashPath(route) !== savedRoute)) {
+      setHash(savedRoute)
+    }
 
     // Mirror to /api/capture-lead so the signup lands in the same Convex
     // `leads` table + HubSpot CRM as /book-demo on www.teambridge.com.
@@ -233,9 +238,9 @@ function App() {
           pageUrl: window.location.href,
           referrer: document.referrer || undefined,
           demoSessionId: demo.sessionId,
-          industry: demo.industry,
+          industry: pendingGate?.metadata?.industry || demo.industry,
           view: demo.view,
-          route: demo.route,
+          route: pendingGate?.destination || demo.route,
           path: demo.path,
           landingPage: demo.landingPage,
           timeInDemoMs: demo.timeInDemoMs,
@@ -286,14 +291,25 @@ function App() {
     if (savedRoute) writeStored(STORAGE_KEYS.savedWorkspaceRoute, savedRoute)
   }, [leadCaptured, route])
 
-  // The gate runs on every route except the front-of-funnel screens
-  // (entry choice, demo picker, build flow). The build flow has its
-  // own first-class signup capture in step 1.
+  const requestWorkspaceAccess = (destination, intent, metadata = {}) => {
+    if (leadCaptured) {
+      setHash(destination)
+      return
+    }
+    setPendingGate({ destination, intent, metadata })
+    setHash(destination)
+    trackDemoEvent('lead_gate_requested', {
+      intent,
+      destination,
+      ...metadata,
+    })
+  }
+
+  // The gate runs when a visitor selects a workspace path. Direct deep
+  // links still gate immediately so pasted URLs cannot bypass capture.
   const showGate = accessChecked
     && !leadCaptured
-    && route
-    && route.kind !== 'build'
-    && route.kind !== 'demos'
+    && (pendingGate || (route && route.kind !== 'build' && route.kind !== 'demos'))
 
   let view
   if (!route) {
@@ -303,12 +319,15 @@ function App() {
         onExplore={() => setHash('/demos')}
         onSelectDemo={(industry) => {
           trackDemoEvent('industry_selected_from_entry', { industry })
-          setHash(`/${industry}`)
+          requestWorkspaceAccess(`/${industry}`, 'preloaded_workspace', { industry })
         }}
       />
     )
   } else if (route.kind === 'demos') {
-    view = <IndustrySelector onSelect={id => { trackDemoEvent('industry_selected', { industry: id }); setHash(`/${id}`) }} />
+    view = <IndustrySelector onSelect={id => {
+      trackDemoEvent('industry_selected', { industry: id })
+      requestWorkspaceAccess(`/${id}`, 'preloaded_workspace', { industry: id })
+    }} />
   } else if (route.kind === 'build') {
     view = (
       <OnboardingFlow
@@ -317,8 +336,9 @@ function App() {
           // Drop them into the dashboard for the industry they picked.
           // If they didn't pick (unlikely), fall back to the demo picker.
           if (answers.industry && VALID_INDUSTRIES.has(answers.industry)) {
-            writeStored(STORAGE_KEYS.savedWorkspaceRoute, `/${answers.industry}`)
-            setHash(`/${answers.industry}`)
+            const destination = `/${answers.industry}`
+            writeStored(STORAGE_KEYS.savedWorkspaceRoute, destination)
+            requestWorkspaceAccess(destination, 'built_workspace', { industry: answers.industry })
           } else {
             setHash('/demos')
           }
@@ -368,8 +388,9 @@ function App() {
         />
       )}
       <DemoSpecialist
-        enabled={accessChecked && leadCaptured && route && (route.kind === 'industry' || route.kind === 'sage')}
+        enabled={accessChecked && (leadCaptured || !route || route.kind === 'demos') && (!route || route.kind === 'demos' || route.kind === 'industry' || route.kind === 'sage')}
         route={route}
+        autoOpen={!route}
       />
     </>
   )

@@ -10,6 +10,7 @@ import { PackageIcon } from '../../../src/components/icons/PackageIcon.tsx'
 import { HomeLineIcon } from '../../../src/components/icons/HomeLineIcon.tsx'
 import { ClipboardCheckIcon } from '../../../src/components/icons/ClipboardCheckIcon.tsx'
 import { Map01Icon } from '../../../src/components/icons/Map01Icon.tsx'
+import { openDemoSpecialist } from './DemoSpecialist.jsx'
 
 const BASE = import.meta.env.BASE_URL
 const TEAMBRIDGE_LOGO =
@@ -30,8 +31,6 @@ const DEMO_VERTICALS = [
     description: 'Venues, concessions, ushers, security, and game-day crew.',
     scenario: 'A late call-out opens two gates before doors. Teambridge finds eligible crew, checks venue rules, and sends replacement offers in order.',
     outcome: 'Coverage gaps that used to take hours move into a managed queue in minutes.',
-    metricValue: '14',
-    metricLabel: 'admin hrs/week recovered',
     agent: 'Iris',
     notifications: [
       { label: 'Coverage', text: 'Gate 12 call-out detected. Eligible crew offers sent.' },
@@ -42,7 +41,6 @@ const DEMO_VERTICALS = [
     ],
     media: 'https://d2xsxph8kpxj0f.cloudfront.net/310519663438319799/c5ZwntDqPXFYWKSLZiNAbR/events-hero-video_b2e6cc04.mp4',
     mediaType: 'video',
-    source: 'Live events page',
     Icon: Microphone02Icon,
   },
   {
@@ -51,8 +49,6 @@ const DEMO_VERTICALS = [
     description: 'Credentialed clinicians, float pools, facilities, and shift coverage.',
     scenario: 'An overnight gap appears. Teambridge filters by credential, location, overtime risk, and facility rules before contacting the best-fit staff.',
     outcome: 'Schedulers keep coverage moving without risking compliance.',
-    metricValue: '4 hr',
-    metricLabel: 'gap handled before escalation',
     agent: 'Nova',
     notifications: [
       { label: 'Credentialing', text: 'RN license verified before overnight shift offer.' },
@@ -63,7 +59,6 @@ const DEMO_VERTICALS = [
     ],
     media: 'https://d2xsxph8kpxj0f.cloudfront.net/310519663438319799/c5ZwntDqPXFYWKSLZiNAbR/healthcare-hero_153814e6.mp4',
     mediaType: 'video',
-    source: 'Healthcare page',
     Icon: ClipboardCheckIcon,
   },
   {
@@ -72,8 +67,6 @@ const DEMO_VERTICALS = [
     description: 'Orders, candidate availability, placements, and first-shift readiness.',
     scenario: 'A customer opens urgent orders across multiple sites. Teambridge matches available workers, stages onboarding tasks, and flags missing first-shift steps.',
     outcome: 'Recruiters see the ready placements first instead of chasing disconnected spreadsheets.',
-    metricValue: '18',
-    metricLabel: 'qualified fills staged',
     agent: 'Atlas',
     notifications: [
       { label: 'New order', text: 'Urgent customer order matched to available workers.' },
@@ -84,7 +77,6 @@ const DEMO_VERTICALS = [
     ],
     media: 'https://d2xsxph8kpxj0f.cloudfront.net/310519663438319799/c5ZwntDqPXFYWKSLZiNAbR/staffing-hero_c77bf259.mp4',
     mediaType: 'video',
-    source: 'Staffing page',
     Icon: Users03Icon,
   },
   {
@@ -93,8 +85,6 @@ const DEMO_VERTICALS = [
     description: 'Housekeeping, front desk, food service, and room-turn labor.',
     scenario: 'Checkout volume spikes while two housekeepers call out. Teambridge reshuffles room turns, suggests coverage, and keeps managers focused on guest impact.',
     outcome: 'Frontline leaders see where service is at risk before the lobby feels it.',
-    metricValue: '23',
-    metricLabel: 'shifts protected',
     agent: 'Leo',
     notifications: [
       { label: 'Housekeeping', text: 'Room-turn schedule rebalanced after call-outs.' },
@@ -104,7 +94,6 @@ const DEMO_VERTICALS = [
     ],
     media: 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=1600&h=900&fit=crop',
     mediaType: 'image',
-    source: 'Teambridge industry visual style',
     Icon: Bell01Icon,
   },
   {
@@ -113,8 +102,6 @@ const DEMO_VERTICALS = [
     description: 'Facility staffing, care ratios, certifications, and compliance.',
     scenario: 'A nurse call-out risks a care-ratio miss. Teambridge checks certifications, availability, and overtime exposure before recommending replacements.',
     outcome: 'Administrators can solve the staffing issue and document the compliance trail together.',
-    metricValue: '9',
-    metricLabel: 'compliance alerts cleared',
     agent: 'Sofia',
     notifications: [
       { label: 'Care ratio', text: 'Facility ratio risk detected before the shift starts.' },
@@ -125,7 +112,6 @@ const DEMO_VERTICALS = [
     ],
     media: 'https://d2xsxph8kpxj0f.cloudfront.net/310519663438319799/c5ZwntDqPXFYWKSLZiNAbR/ltc-hero-v2_0b908655.mp4',
     mediaType: 'video',
-    source: 'Long-term care page',
     Icon: Home02Icon,
   },
   {
@@ -134,8 +120,6 @@ const DEMO_VERTICALS = [
     description: 'Posts, patrol routes, site coverage, incidents, and compliance logs.',
     scenario: 'A post opens during a patrol window. Teambridge detects the gap, recommends an eligible guard, and keeps the incident and coverage trail together.',
     outcome: 'Operations teams reduce uncovered posts without losing audit context.',
-    metricValue: '31',
-    metricLabel: 'posts monitored in one view',
     agent: 'Atlas',
     notifications: [
       { label: 'Post coverage', text: 'Night shift no-show detected. Replacement dispatched.' },
@@ -147,7 +131,6 @@ const DEMO_VERTICALS = [
     ],
     media: 'https://d2xsxph8kpxj0f.cloudfront.net/310519663438319799/c5ZwntDqPXFYWKSLZiNAbR/security-hero_577878cd.mp4',
     mediaType: 'video',
-    source: 'Security page',
     Icon: Map01Icon,
   },
   {
@@ -156,8 +139,6 @@ const DEMO_VERTICALS = [
     description: 'Cleaning routes, building services, supplies, and quality checks.',
     scenario: 'A site adds an evening clean and a route falls behind. Teambridge adjusts the route, queues the right team, and tracks follow-up work.',
     outcome: 'Supervisors can protect service quality across sites without constant manual routing.',
-    metricValue: '7',
-    metricLabel: 'sites routed before the shift',
     agent: 'Leo',
     notifications: [
       { label: 'Route change', text: 'Evening clean added and routed to the right team.' },
@@ -167,7 +148,6 @@ const DEMO_VERTICALS = [
     ],
     media: 'https://images.unsplash.com/photo-1582139329536-e7284fece509?w=1600&h=900&fit=crop',
     mediaType: 'image',
-    source: 'Teambridge service-ops visual style',
     Icon: Trash03Icon,
   },
   {
@@ -176,8 +156,6 @@ const DEMO_VERTICALS = [
     description: 'Warehouse crews, attendance, overtime risk, and dock coverage.',
     scenario: 'A warehouse shift starts short. Teambridge checks availability, role fit, attendance risk, and overtime before balancing coverage.',
     outcome: 'Managers get a practical staffing plan while the floor is still moving.',
-    metricValue: '42',
-    metricLabel: 'roles balanced',
     agent: 'Iris',
     notifications: [
       { label: 'Attendance', text: 'Warehouse shift risk detected before clock-in.' },
@@ -188,7 +166,6 @@ const DEMO_VERTICALS = [
     ],
     media: 'https://d2xsxph8kpxj0f.cloudfront.net/310519663438319799/c5ZwntDqPXFYWKSLZiNAbR/light-industrial-hero_9952384c.mp4',
     mediaType: 'video',
-    source: 'Light industrial page',
     Icon: PackageIcon,
   },
   {
@@ -197,8 +174,6 @@ const DEMO_VERTICALS = [
     description: 'Job sites, trades, certifications, crews, and project coverage.',
     scenario: 'A crew mix changes before a pour. Teambridge checks site needs, trade coverage, safety certs, and availability in one flow.',
     outcome: 'Superintendents see which sites are covered and which crews need action.',
-    metricValue: '5',
-    metricLabel: 'sites checked for readiness',
     agent: 'Nova',
     notifications: [
       { label: 'Site readiness', text: 'Crew mix checked before the morning pour.' },
@@ -209,7 +184,6 @@ const DEMO_VERTICALS = [
     ],
     media: 'https://d2xsxph8kpxj0f.cloudfront.net/310519663438319799/c5ZwntDqPXFYWKSLZiNAbR/construction-hero_4df1e170.mp4',
     mediaType: 'video',
-    source: 'Construction page',
     Icon: HomeLineIcon,
   },
 ]
@@ -251,6 +225,23 @@ function AgentTeam() {
         </div>
       ))}
     </div>
+  )
+}
+
+function NovaVoiceIntro() {
+  return (
+    <button
+      type="button"
+      className="entry-voice-intro"
+      onClick={() => openDemoSpecialist('entry_intro')}
+    >
+      <img src={`${BASE}agents/nova.gif`} alt="" />
+      <span>
+        <strong>Nova can guide this demo</strong>
+        <small>Start a voice walkthrough for scheduling, staffing, compliance, payroll, and agents.</small>
+      </span>
+      <ArrowNarrowRightIcon size={16} />
+    </button>
   )
 }
 
@@ -351,16 +342,6 @@ function WorkspaceCard({ workspace, active, onHover, onSelect }) {
   )
 }
 
-function MetricAgent({ agentName }) {
-  const agent = AGENTS.find(item => item.name === agentName) || AGENTS[0]
-
-  return (
-    <span className="entry-metric-agent" aria-hidden="true">
-      <img src={agent.src} alt="" />
-    </span>
-  )
-}
-
 function PhoneNotifications({ workspace }) {
   const notifications = workspace.notifications || []
   const [index, setIndex] = useState(0)
@@ -446,18 +427,10 @@ function WorkspaceCollection({ onSelect }) {
               aria-hidden="true"
             />
           )}
-          <div className="entry-workspace-detail-content">
-            <MetricAgent agentName={active.agent} />
-            <div>
-              <span>{active.source}</span>
-              <strong>
-                <b>{active.metricValue}</b>
-                {active.metricLabel}
-              </strong>
-            </div>
+          <div className="entry-workspace-detail-top">
+            <PhoneNotifications workspace={active} />
           </div>
           <div className="entry-workspace-detail-copy">
-            <PhoneNotifications workspace={active} />
             <h3>{active.name} workspace</h3>
             <p>{active.scenario}</p>
             <p>{active.outcome}</p>
@@ -556,7 +529,7 @@ export default function EntryChoice({ onBuild, onExplore, onSelectDemo }) {
               }}
             >
               <AgentTeam />
-              <span className="entry-agent-note">Nova and the agent team stay with the demo and can walk the product with voice once you are inside.</span>
+              <NovaVoiceIntro />
             </div>
           </section>
 

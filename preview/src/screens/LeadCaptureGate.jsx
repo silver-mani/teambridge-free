@@ -7,9 +7,9 @@ const ROBOT_ANIMATION = `${BASE}agents/nova.gif`
 
 /* ──────────────────────────────────────────────────────────────────────
  * LeadCaptureGate
- *   Blur-backed modal that pops 3 seconds after the user lands inside
- *   any account. Asks for name + company + work email before letting
- *   them poke around the demo. Submission is persisted for the session
+ *   Blur-backed modal that opens when a selected or built account is
+ *   ready. Asks for contact context before letting them poke around
+ *   the demo. Submission is persisted for the session
  *   (App owns the storage) so they don't see this again on every
  *   navigation. There is no dismiss-without-submitting affordance —
  *   the gate is the gate.
@@ -100,10 +100,17 @@ function classifyEmail(email) {
   if (PERSONAL_DOMAINS.has(domain)) return 'personal'
   return 'work'
 }
-export default function LeadCaptureGate({ onSubmit, onShown, sessionId, delayMs = 3000 }) {
+
+function companyFromEmail(email) {
+  const domain = email.trim().toLowerCase().split('@')[1] || ''
+  const root = domain.split('.')[0] || ''
+  return root
+    ? root.replace(/[-_]+/g, ' ').replace(/\b\w/g, char => char.toUpperCase())
+    : ''
+}
+
+export default function LeadCaptureGate({ onSubmit, onShown, sessionId, delayMs = 3000, title = 'Your workspace is ready', subtitle = 'Tell us where to save it so Nova can keep your walkthrough, product context, and follow-up notes together.' }) {
   const [visible, setVisible]   = useState(false)
-  const [name, setName]         = useState('')
-  const [company, setCompany]   = useState('')
   const [email, setEmail]       = useState('')
   const [touched, setTouched]   = useState(false)
   const [emailAttempts, setEmailAttempts] = useState([])
@@ -129,15 +136,11 @@ export default function LeadCaptureGate({ onSubmit, onShown, sessionId, delayMs 
 
   if (!visible) return null
 
-  const nameOk    = name.trim().length >= 2
-  const companyOk = company.trim().length >= 2
   const emailOk   = classifyEmail(email) === 'work'
-  const valid     = nameOk && companyOk && emailOk
 
   const submit = (e) => {
     e.preventDefault()
     setTouched(true)
-    if (!nameOk || !companyOk) return
 
     const quality = classifyEmail(email)
     if (quality !== 'work') {
@@ -166,8 +169,8 @@ export default function LeadCaptureGate({ onSubmit, onShown, sessionId, delayMs 
     }
 
     onSubmit({
-      name: name.trim(),
-      company: company.trim(),
+      name: '',
+      company: companyFromEmail(email),
       email: email.trim().toLowerCase(),
       emailQuality: 'work',
       emailAttempts,
@@ -182,57 +185,34 @@ export default function LeadCaptureGate({ onSubmit, onShown, sessionId, delayMs 
             <img src={TEAMBRIDGE_LOGO} alt="" className="lead-gate-logo" />
             <span>Live demo</span>
           </div>
-          <div className="lead-gate-agent-card">
-            <div className="lead-gate-agent-frame">
-              <img src={ROBOT_ANIMATION} alt="" className="lead-gate-agent" />
-              <span className="lead-gate-live-dot" />
+          <div className="lead-gate-unlock-card">
+            <div className="lead-gate-unlock-head">
+              <img src={ROBOT_ANIMATION} alt="" />
+              <div>
+                <span>Specialist online</span>
+                <strong>Nova prepared this workspace for your session.</strong>
+              </div>
             </div>
-            <div className="lead-gate-agent-copy">
-              <span className="lead-gate-agent-kicker">Specialist online</span>
-              <strong>Nova is ready to walk you through Teambridge.</strong>
+            <div className="lead-gate-unlock-preview">
+              <span>Schedule loaded</span>
+              <span>Compliance rules attached</span>
+              <span>Agent actions ready</span>
             </div>
           </div>
-          <div className="lead-gate-preview-list">
-            <span>AI scheduling</span>
-            <span>Compliance monitoring</span>
-            <span>Live workforce actions</span>
-          </div>
+          <p className="lead-gate-visual-note">We use this to save the workspace and connect your questions to the right product context.</p>
         </div>
         <div className="lead-gate-panel">
           <div className="lead-gate-mark" aria-hidden="true">
             <img src={TEAMBRIDGE_LOGO} alt="" />
           </div>
-          <h2 id="lead-gate-title" className="lead-gate-title">Continue your demo</h2>
+          <h2 id="lead-gate-title" className="lead-gate-title">{title}</h2>
           <p className="lead-gate-sub">
-            Use a verified work email so we can keep the demo active for your team.
+            {subtitle}
           </p>
 
           <form className="lead-gate-form" onSubmit={submit} noValidate>
             <label className="lead-gate-field">
-              <span className="lead-gate-label">Your name</span>
-              <input
-                className={`lead-gate-input ${touched && !nameOk ? 'is-invalid' : ''}`}
-                type="text"
-                autoComplete="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Alex Rivera"
-                autoFocus
-              />
-            </label>
-            <label className="lead-gate-field">
-              <span className="lead-gate-label">Company</span>
-              <input
-                className={`lead-gate-input ${touched && !companyOk ? 'is-invalid' : ''}`}
-                type="text"
-                autoComplete="organization"
-                value={company}
-                onChange={(e) => setCompany(e.target.value)}
-                placeholder="Levi's Stadium Operations"
-              />
-            </label>
-            <label className="lead-gate-field">
-              <span className="lead-gate-label">Work email</span>
+              <span className="lead-gate-label">Email</span>
               <input
                 className={`lead-gate-input ${touched && !emailOk ? 'is-invalid' : ''}`}
                 type="email"
@@ -240,14 +220,15 @@ export default function LeadCaptureGate({ onSubmit, onShown, sessionId, delayMs 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="alex@company.com"
+                autoFocus
               />
               {touched && !emailOk && (
                 <span className="lead-gate-hint">
                   {email.trim().length === 0
-                    ? 'Work email required.'
+                    ? 'Email required.'
                     : classifyEmail(email) === 'disposable'
-                    ? "Temporary email addresses aren't allowed. Please use your work email."
-                    : "Please use your work email — we can't verify personal addresses."}
+                    ? "Temporary addresses can't unlock a saved workspace."
+                    : 'Use your company address so the workspace can stay attached to your organization.'}
                 </span>
               )}
             </label>
@@ -255,9 +236,9 @@ export default function LeadCaptureGate({ onSubmit, onShown, sessionId, delayMs 
             <button
               type="submit"
               className="lead-gate-submit"
-              disabled={!nameOk || !companyOk || email.trim().length === 0}
+              disabled={email.trim().length === 0}
             >
-              Continue to demo
+              Start Demo Now
             </button>
           </form>
         </div>
