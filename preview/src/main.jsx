@@ -36,6 +36,15 @@ function writeStored(key, value) {
   try { localStorage.setItem(key, value) } catch { /* ignore */ }
 }
 
+function readStoredJson(key) {
+  try {
+    const raw = readStored(key)
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
 function hasStoredLeadOrWorkspace() {
   return readStored(STORAGE_KEYS.lead) === '1'
 }
@@ -170,6 +179,7 @@ function App() {
       return true
     }
   })
+  const [leadData, setLeadData] = useState(() => readStoredJson(STORAGE_KEYS.leadData) || {})
   const [pendingGate, setPendingGate] = useState(null)
 
   useEffect(() => {
@@ -190,12 +200,14 @@ function App() {
         if (cancelled) return
         if (data?.valid) {
           writeStored(STORAGE_KEYS.lead, '1')
-          writeStored(STORAGE_KEYS.leadData, JSON.stringify({
+          const verifiedLead = {
             email: data.email,
             source: data.source,
             demoSessionId: data.demoSessionId,
             verifiedByLanding: true,
-          }))
+          }
+          writeStored(STORAGE_KEYS.leadData, JSON.stringify(verifiedLead))
+          setLeadData(verifiedLead)
           setLeadCaptured(true)
           trackDemoEvent('landing_demo_access_accepted', {
             source: data.source,
@@ -219,6 +231,7 @@ function App() {
     const demo = getDemoSnapshot()
     writeStored(STORAGE_KEYS.lead, '1')
     writeStored(STORAGE_KEYS.leadData, JSON.stringify(lead))
+    setLeadData(lead)
     const savedRoute = pendingGate?.destination || routeToHashPath(route)
     if (savedRoute) writeStored(STORAGE_KEYS.savedWorkspaceRoute, savedRoute)
     setLeadCaptured(true)
@@ -405,9 +418,10 @@ function App() {
         />
       )}
       <DemoSpecialist
-        enabled={accessChecked && !showGate}
+        enabled={accessChecked}
         route={route}
-        autoOpen={accessChecked && !showGate}
+        autoOpen={accessChecked}
+        leadData={leadData}
       />
     </>
   )

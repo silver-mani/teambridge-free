@@ -1199,7 +1199,7 @@ async function performDemoAction(action, options = {}) {
   }
 }
 
-export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
+export default function DemoSpecialist({ enabled, route, autoOpen = false, leadData = null }) {
   const [open, setOpen] = useState(false)
   const [signedUrl, setSignedUrl] = useState('')
   const [openAISecret, setOpenAISecret] = useState('')
@@ -1214,7 +1214,7 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
   const spokenToolFallbackRef = useRef(new Set())
   const novaAgentSeenRef = useRef(new Set())
 
-  const lead = useMemo(() => readJsonStorage('tb:lead-data') || {}, [enabled, route])
+  const lead = useMemo(() => leadData || readJsonStorage('tb:lead-data') || {}, [leadData, enabled, route])
   const dynamicVariables = useMemo(() => {
     const snapshot = getDemoSnapshot()
     return JSON.stringify({
