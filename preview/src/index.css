@@ -837,16 +837,20 @@ body {
 .nova-realtime-form {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: var(--space-2);
-  padding: var(--space-2);
-  border: 1px solid var(--color-border-opaque);
-  border-radius: var(--radius-lg);
+  align-items: center;
+  gap: var(--space-1);
+  padding: 6px;
+  border: 1px solid color-mix(in srgb, var(--color-border-opaque) 82%, transparent);
+  border-radius: 18px;
   background: var(--color-bg-primary);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
 }
 
 .nova-realtime-form input {
   min-width: 0;
+  height: 40px;
   border: 0;
+  padding: 0 var(--space-3);
   background: transparent;
   color: var(--color-content-primary);
   font: inherit;
@@ -855,15 +859,36 @@ body {
 }
 
 .nova-realtime-form button {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
   border: 0;
   border-radius: 999px;
   background: var(--color-content-primary);
   color: var(--color-bg-primary);
   font: inherit;
-  font-size: var(--text-sm);
+  font-size: 20px;
   font-weight: var(--font-weight-semibold);
-  padding: 0 var(--space-4);
+  line-height: 1;
+  padding: 0;
   cursor: pointer;
+  transition: transform 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
+}
+
+.nova-realtime-form button:hover {
+  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--color-content-primary) 88%, white);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.18);
+}
+
+.nova-realtime-form button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-content-primary) 28%, transparent);
+  outline-offset: 2px;
+}
+
+.nova-realtime-form button span {
+  transform: translateY(-1px);
 }
 
 .demo-specialist-highlight {

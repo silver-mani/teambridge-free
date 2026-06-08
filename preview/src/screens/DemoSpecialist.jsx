@@ -1066,7 +1066,9 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
           placeholder="Ask Nova to open healthcare..."
           aria-label="Ask Nova"
         />
-        <button type="submit" aria-label="Send to Nova">Send</button>
+        <button type="submit" aria-label="Send to Nova">
+          <span aria-hidden="true">↑</span>
+        </button>
       </form>
     </div>
   )
