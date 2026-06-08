@@ -3,6 +3,7 @@ import { trackDemoEvent, getDemoSnapshot } from '../lib/demoTracking.js'
 
 const BASE = import.meta.env.BASE_URL
 const NOVA_AVATAR = `${BASE}agents/nova.gif`
+const BOOK_DEMO_URL = 'https://www.teambridge.com/book-demo/schedule'
 const WIDGET_SRC = 'https://unpkg.com/@elevenlabs/convai-widget-embed'
 const ACTION_SETTLE_MS = 750
 const TRANSCRIPT_EVENTS = [
@@ -768,6 +769,14 @@ function formatLeadContext(leadContext = {}) {
   return parts.join('; ')
 }
 
+function bookingUrlForLead(leadContext = {}) {
+  const url = new URL(BOOK_DEMO_URL)
+  if (leadContext.email) url.searchParams.set('email', leadContext.email)
+  const name = leadContext.company || leadContext.name || leadContext.firstName
+  if (name) url.searchParams.set('name', name)
+  return url.toString()
+}
+
 function OpenAIRealtimeNova({
   clientSecret,
   model,
@@ -897,7 +906,7 @@ function OpenAIRealtimeNova({
         const result = await performDemoAction(args.capability || 'overview')
         output = { ...result, ok: result.ok }
       } else if (name === 'requestMeeting') {
-        window.open('https://www.teambridge.com/book-demo/schedule', '_blank', 'noopener,noreferrer')
+        window.open(bookingUrlForLead(leadContext), '_blank', 'noopener,noreferrer')
         output = { ok: true, reason: args.reason || 'meeting_requested' }
       }
 
@@ -1221,6 +1230,15 @@ function OpenAIRealtimeNova({
     })
   }
 
+  const openBooking = () => {
+    window.open(bookingUrlForLead(leadContext), '_blank', 'noopener,noreferrer')
+    trackDemoEvent('nova_book_demo_clicked', {
+      conversationId,
+      source: 'nova_mini',
+      hasEmail: Boolean(leadContext?.email),
+    })
+  }
+
   useEffect(() => () => stopSession(), [])
 
   useEffect(() => {
@@ -1239,6 +1257,14 @@ function OpenAIRealtimeNova({
           aria-label={!peerRef.current ? 'Start Nova' : micEnabled ? 'Stop Nova' : 'Enable microphone'}
         >
           {!peerRef.current ? 'Call' : micEnabled ? 'End' : 'Talk'}
+        </button>
+        <button
+          type="button"
+          className="nova-book-button"
+          onClick={openBooking}
+          aria-label="Schedule a Teambridge meeting"
+        >
+          Book
         </button>
       </div>
     </div>
@@ -1652,7 +1678,7 @@ export default function DemoSpecialist({
         },
         requestMeeting: ({ reason }) => {
           trackDemoEvent('demo_specialist_meeting_requested', { reason, conversationId })
-          window.open('https://www.teambridge.com/book-demo/schedule', '_blank', 'noopener,noreferrer')
+          window.open(bookingUrlForLead(lead), '_blank', 'noopener,noreferrer')
           return { ok: true }
         },
       }
