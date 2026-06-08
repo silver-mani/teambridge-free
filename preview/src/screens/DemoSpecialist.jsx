@@ -779,7 +779,6 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
   const audioRef = useRef(null)
   const micSenderRef = useRef(null)
   const micStreamRef = useRef(null)
-  const pendingMicStreamRef = useRef(null)
   const micAudioContextRef = useRef(null)
   const micMeterTimerRef = useRef(null)
   const functionCallsRef = useRef(new Map())
@@ -835,33 +834,6 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
       responseActiveRef.current = false
       pendingResponseRef.current = event
     }
-  }
-
-  const attachMicStream = async stream => {
-    micStreamRef.current?.getTracks?.().forEach(track => track.stop())
-    micStreamRef.current = stream
-    const [track] = stream.getAudioTracks()
-    await micSenderRef.current?.replaceTrack(track)
-    startMicMeter(stream)
-    setMicEnabled(true)
-    setMicActivity('listening')
-    setStatus('Nova is listening')
-    trackDemoEvent('nova_realtime_microphone_enabled', { conversationId })
-  }
-
-  const attachPendingMicStream = () => {
-    const stream = pendingMicStreamRef.current
-    if (!stream) return
-    pendingMicStreamRef.current = null
-    attachMicStream(stream).catch(err => {
-      const message = String(err?.message || err)
-      setError('Microphone access was not enabled. You can still type below.')
-      setMicActivity('idle')
-      trackDemoEvent('nova_realtime_microphone_failed', {
-        error: message,
-        conversationId,
-      })
-    })
   }
 
   const executeToolCall = async ({ name, arguments: rawArguments, call_id: callId }) => {
@@ -985,9 +957,7 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
 
     if (payload.type === 'response.done') {
       responseActiveRef.current = false
-      const hadPendingMic = Boolean(pendingMicStreamRef.current)
-      attachPendingMicStream()
-      setStatus(micEnabled || hadPendingMic ? 'Nova is listening' : 'Tap Talk to respond')
+      setStatus(micEnabled ? 'Nova is listening' : 'Tap Talk to respond')
       window.setTimeout(flushPendingResponse, 60)
     }
 
@@ -1108,7 +1078,6 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
   const stopSession = () => {
     channelRef.current?.close()
     micStreamRef.current?.getTracks?.().forEach(track => track.stop())
-    pendingMicStreamRef.current?.getTracks?.().forEach(track => track.stop())
     stopMicMeter()
     peerRef.current?.getSenders?.().forEach(sender => sender.track?.stop())
     peerRef.current?.close()
@@ -1116,7 +1085,6 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
     channelRef.current = null
     micSenderRef.current = null
     micStreamRef.current = null
-    pendingMicStreamRef.current = null
     responseActiveRef.current = false
     pendingResponseRef.current = null
     executedToolCallsRef.current.clear()
@@ -1167,15 +1135,14 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
     setStatus('Requesting microphone...')
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      if (responseActiveRef.current) {
-        pendingMicStreamRef.current?.getTracks?.().forEach(track => track.stop())
-        pendingMicStreamRef.current = stream
-        setMicActivity('idle')
-        setStatus('Nova will listen after this sentence')
-        trackDemoEvent('nova_realtime_microphone_deferred', { conversationId })
-        return
-      }
-      await attachMicStream(stream)
+      micStreamRef.current = stream
+      const [track] = stream.getAudioTracks()
+      await micSenderRef.current?.replaceTrack(track)
+      startMicMeter(stream)
+      setMicEnabled(true)
+      setMicActivity('listening')
+      setStatus('Nova is listening')
+      trackDemoEvent('nova_realtime_microphone_enabled', { conversationId })
     } catch (err) {
       const message = String(err?.message || err)
       setStatus('Nova is speaking')
