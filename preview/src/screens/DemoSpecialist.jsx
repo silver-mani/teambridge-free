@@ -782,6 +782,9 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
   const micAudioContextRef = useRef(null)
   const micMeterTimerRef = useRef(null)
   const functionCallsRef = useRef(new Map())
+  const executedToolCallsRef = useRef(new Set())
+  const responseActiveRef = useRef(false)
+  const pendingResponseRef = useRef(null)
   const companyContext = formatLeadContext(leadContext)
 
   const introInstructions = [
@@ -805,7 +808,40 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
     return true
   }
 
+  const createRealtimeResponse = response => {
+    const event = { type: 'response.create', response }
+    if (responseActiveRef.current) {
+      pendingResponseRef.current = event
+      return false
+    }
+
+    responseActiveRef.current = true
+    const sent = sendEvent(event)
+    if (!sent) {
+      responseActiveRef.current = false
+      pendingResponseRef.current = event
+    }
+    return sent
+  }
+
+  const flushPendingResponse = () => {
+    if (responseActiveRef.current || !pendingResponseRef.current) return
+    const event = pendingResponseRef.current
+    pendingResponseRef.current = null
+    responseActiveRef.current = true
+    const sent = sendEvent(event)
+    if (!sent) {
+      responseActiveRef.current = false
+      pendingResponseRef.current = event
+    }
+  }
+
   const executeToolCall = async ({ name, arguments: rawArguments, call_id: callId }) => {
+    if (callId) {
+      if (executedToolCallsRef.current.has(callId)) return
+      executedToolCallsRef.current.add(callId)
+    }
+
     let args = {}
     try {
       args = typeof rawArguments === 'string' ? JSON.parse(rawArguments || '{}') : (rawArguments || {})
@@ -865,16 +901,13 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
           output: JSON.stringify(output),
         },
       })
-      sendEvent({
-        type: 'response.create',
-        response: {
-          output_modalities: ['audio'],
-          instructions: output.ok
-            ? 'Briefly tell the visitor what changed and offer one useful next area to inspect.'
-            : output.reason === 'lead_gate_required'
-            ? 'Explain that you cannot open or change the workspace until the work email form is completed. Ask the visitor to enter their work email in the visible form, and reassure them it saves the workspace and connects the walkthrough to the right organization.'
-            : 'Briefly say you could not complete that action and ask what they want to see next.',
-        },
+      createRealtimeResponse({
+        output_modalities: ['audio'],
+        instructions: output.ok
+          ? 'Briefly tell the visitor what changed and offer one useful next area to inspect.'
+          : output.reason === 'lead_gate_required'
+          ? 'Explain that you cannot open or change the workspace until the work email form is completed. Ask the visitor to enter their work email in the visible form, and reassure them it saves the workspace and connects the walkthrough to the right organization.'
+          : 'Briefly say you could not complete that action and ask what they want to see next.',
       })
     }
   }
@@ -896,6 +929,13 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
 
     if (payload.type === 'error') {
       const message = payload.error?.message || payload.message || 'Nova realtime error'
+      if (/active response in progress/i.test(message)) {
+        responseActiveRef.current = true
+        window.setTimeout(() => {
+          responseActiveRef.current = false
+          flushPendingResponse()
+        }, 1200)
+      }
       setError(message)
       setStatus('Nova is ready')
       trackDemoEvent('nova_realtime_event_error', {
@@ -907,6 +947,7 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
     }
 
     if (payload.type === 'response.created') {
+      responseActiveRef.current = true
       setStatus('Nova is thinking...')
     }
 
@@ -915,7 +956,9 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
     }
 
     if (payload.type === 'response.done') {
+      responseActiveRef.current = false
       setStatus(micEnabled ? 'Nova is listening' : 'Tap Talk to respond')
+      window.setTimeout(flushPendingResponse, 60)
     }
 
     if (payload.type === 'input_audio_buffer.speech_started') {
@@ -990,12 +1033,9 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
       channel.onmessage = handleRealtimeEvent
       channel.onopen = () => {
         setStatus('Nova is speaking')
-        sendEvent({
-          type: 'response.create',
-          response: {
-            output_modalities: ['audio'],
-            instructions: introInstructions,
-          },
+        createRealtimeResponse({
+          output_modalities: ['audio'],
+          instructions: introInstructions,
         })
         trackDemoEvent('nova_realtime_connected', { model, conversationId })
       }
@@ -1045,6 +1085,9 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
     channelRef.current = null
     micSenderRef.current = null
     micStreamRef.current = null
+    responseActiveRef.current = false
+    pendingResponseRef.current = null
+    executedToolCallsRef.current.clear()
     setMicEnabled(false)
     setMicActivity('idle')
     setStatus('Nova is ready')
@@ -1142,14 +1185,11 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
         content: [{ type: 'input_text', text: value }],
       },
     })
-    sendEvent({
-      type: 'response.create',
-      response: {
-        output_modalities: ['audio'],
-        instructions: accessGranted
-          ? undefined
-          : 'Tell the visitor you can guide them, but opening or changing the workspace is locked until they complete the visible work email form. Ask them to enter their work email so you can save the workspace and tailor the walkthrough.',
-      },
+    createRealtimeResponse({
+      output_modalities: ['audio'],
+      instructions: accessGranted
+        ? undefined
+        : 'Tell the visitor you can guide them, but opening or changing the workspace is locked until they complete the visible work email form. Ask them to enter their work email so you can save the workspace and tailor the walkthrough.',
     })
   }
 
