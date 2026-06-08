@@ -730,7 +730,24 @@ export function openDemoSpecialist(source = 'unknown') {
   window.dispatchEvent(new CustomEvent('tb:open-demo-specialist', { detail: { source } }))
 }
 
-function OpenAIRealtimeNova({ clientSecret, model, conversationId }) {
+function formatLeadContext(leadContext = {}) {
+  const research = leadContext.domainResearch || {}
+  const parts = []
+  if (leadContext.company) parts.push(`company: ${leadContext.company}`)
+  if (leadContext.submittedDomain) parts.push(`domain: ${leadContext.submittedDomain}`)
+  if (research.industry) parts.push(`researched industry: ${String(research.industry).replace(/-/g, ' ')}`)
+  if (research.summary) parts.push(`research summary: ${research.summary}`)
+  if (Array.isArray(research.roles) && research.roles.length) parts.push(`likely roles: ${research.roles.slice(0, 4).join(', ')}`)
+  if (Array.isArray(research.locations) && research.locations.length) {
+    parts.push(`likely locations: ${research.locations.slice(0, 3).map(location => location.name || location.city).filter(Boolean).join(', ')}`)
+  }
+  if (Array.isArray(research.goals) && research.goals.length) {
+    parts.push(`likely priorities: ${research.goals.slice(0, 3).map(goal => goal.label || goal).filter(Boolean).join(', ')}`)
+  }
+  return parts.join('; ')
+}
+
+function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext }) {
   const [status, setStatus] = useState('Connecting Nova...')
   const [error, setError] = useState('')
   const [text, setText] = useState('')
@@ -738,11 +755,17 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId }) {
   const channelRef = useRef(null)
   const audioRef = useRef(null)
   const functionCallsRef = useRef(new Map())
+  const companyContext = formatLeadContext(leadContext)
 
   const introInstructions = [
     'Start speaking now.',
     'Say: "Hi, I am Nova, your Teambridge demo guide."',
-    'Then explain in two short sentences that Teambridge helps teams fill shifts, monitor compliance, manage onboarding, payroll, and workforce issues from one live workspace.',
+    companyContext
+      ? `Use this visitor context without overclaiming: ${companyContext}.`
+      : 'No company domain context is available yet.',
+    companyContext
+      ? 'Explain in two short sentences how Teambridge would help this specific operation based on that context.'
+      : 'Explain in two short sentences that Teambridge helps teams fill shifts, monitor compliance, manage onboarding, payroll, and workforce issues from one live workspace.',
     'Tell the visitor they can ask you to open a healthcare, staffing, hospitality, security, construction, facilities, events, long-term care, or industrial workspace, or ask you to show scheduling, payroll, onboarding, compliance, agents, or messaging.',
     'End with one clear question: "What would you like me to open first?"',
   ].join(' ')
@@ -1619,6 +1642,7 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
               clientSecret={openAISecret}
               model={openAIModel}
               conversationId={conversationId}
+              leadContext={lead}
             />
           )}
           {provider !== 'openai' && signedUrl && (

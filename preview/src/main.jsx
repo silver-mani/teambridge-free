@@ -225,6 +225,8 @@ function App() {
     setPendingGate(null)
     trackDemoEvent('lead_gate_submitted', {
       company: lead.company,
+      domain: lead.submittedDomain,
+      contactInputType: lead.contactInputType,
       timeInDemoMs: demo.timeInDemoMs,
       gateIntent: pendingGate?.intent,
     })
@@ -244,6 +246,10 @@ function App() {
           name: lead.name,
           company: lead.company,
           email: lead.email,
+          submittedDomain: lead.submittedDomain,
+          submittedContact: lead.submittedContact,
+          contactInputType: lead.contactInputType,
+          domainResearch: lead.domainResearch,
           pageUrl: window.location.href,
           referrer: document.referrer || undefined,
           demoSessionId: demo.sessionId,
@@ -399,9 +405,9 @@ function App() {
         />
       )}
       <DemoSpecialist
-        enabled={accessChecked}
+        enabled={accessChecked && !showGate}
         route={route}
-        autoOpen={accessChecked}
+        autoOpen={accessChecked && !showGate}
       />
     </>
   )

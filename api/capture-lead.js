@@ -72,6 +72,10 @@ export default async function handler(req, res) {
     name,
     company,
     email,
+    submittedDomain,
+    submittedContact,
+    contactInputType,
+    domainResearch,
     pageUrl,
     referrer,
     demoSessionId,
@@ -84,7 +88,18 @@ export default async function handler(req, res) {
     emailQuality,
     emailAttempts,
   } = body || {};
-  if (!email || typeof email !== "string") {
+  const normalizedDomain =
+    typeof submittedDomain === "string"
+      ? submittedDomain.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/.*$/, "")
+      : "";
+  const captureEmail =
+    email && typeof email === "string"
+      ? email
+      : normalizedDomain
+      ? `demo@${normalizedDomain}`
+      : "";
+
+  if (!captureEmail) {
     return res.status(400).json({ error: "email_required" });
   }
 
@@ -102,7 +117,7 @@ export default async function handler(req, res) {
     path: "leads:capture",
     format: "json",
     args: {
-      email,
+      email: captureEmail,
       source: SOURCE,
       firstName: firstName || undefined,
       lastName: lastName || undefined,
@@ -130,6 +145,10 @@ export default async function handler(req, res) {
         ...(route ? [{ key: "demo_route", value: String(route) }] : []),
         ...(path ? [{ key: "demo_path", value: String(path) }] : []),
         ...(demoSessionId ? [{ key: "demo_session_id", value: String(demoSessionId) }] : []),
+        ...(normalizedDomain ? [{ key: "submitted_domain", value: normalizedDomain }] : []),
+        ...(submittedContact ? [{ key: "submitted_contact", value: String(submittedContact).slice(0, 120) }] : []),
+        ...(contactInputType ? [{ key: "contact_input_type", value: String(contactInputType) }] : []),
+        ...(domainResearch?.summary ? [{ key: "domain_research_summary", value: String(domainResearch.summary).slice(0, 300) }] : []),
       ],
     },
   };
@@ -149,7 +168,7 @@ export default async function handler(req, res) {
   // the extra friction.
   const hubspotBody = {
     fields: [
-      { objectTypeId: "0-1", name: "email",             value: email },
+      { objectTypeId: "0-1", name: "email",             value: captureEmail },
       // Phone accepted as a free-text field; an obvious placeholder
       // is safer than empty string because HubSpot treats "" as
       // missing on a required field.
@@ -219,7 +238,7 @@ export default async function handler(req, res) {
         args: Object.fromEntries(
           Object.entries({
             sessionId: demoSessionId,
-            email,
+            email: captureEmail,
             firstName: firstName || undefined,
             lastName: lastName || undefined,
             company: company || undefined,

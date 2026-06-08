@@ -9734,6 +9734,32 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   height: auto;
   display: block;
 }
+.lead-gate-nova-note {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  margin: 8px 0 2px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--color-border-opaque) 72%, transparent);
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.82), rgba(255,255,255,0.56)),
+    color-mix(in srgb, var(--color-bg-secondary) 82%, transparent);
+  box-shadow: 0 14px 32px rgba(15, 17, 20, 0.08);
+}
+.lead-gate-nova-note img {
+  width: 42px;
+  height: 42px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+.lead-gate-nova-note p {
+  margin: 0;
+  color: var(--color-content-secondary);
+  font-size: 13px;
+  line-height: 1.4;
+}
 .lead-gate-title {
   margin: 10px 0 0;
   font-size: 26px;
