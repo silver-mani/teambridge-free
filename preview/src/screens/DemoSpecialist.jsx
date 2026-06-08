@@ -3,8 +3,6 @@ import { trackDemoEvent, getDemoSnapshot } from '../lib/demoTracking.js'
 
 const BASE = import.meta.env.BASE_URL
 const NOVA_AVATAR = `${BASE}agents/nova.gif`
-const NOVA_DISPLAY_SIZE_KEY = 'tb:nova-display-size'
-const NOVA_DISPLAY_SIZES = new Set(['full', 'compact', 'bubble'])
 const WIDGET_SRC = 'https://unpkg.com/@elevenlabs/convai-widget-embed'
 const ACTION_SETTLE_MS = 750
 const TRANSCRIPT_EVENTS = [
@@ -1243,47 +1241,6 @@ function OpenAIRealtimeNova({
           {!peerRef.current ? 'Call' : micEnabled ? 'End' : 'Talk'}
         </button>
       </div>
-      <div className="nova-realtime-status">{status}</div>
-      {micEnabled && micActivity === 'hearing' && (
-        <div className="nova-realtime-mic is-hearing" aria-live="polite">
-          <span className="nova-realtime-mic-dot" aria-hidden="true" />
-          <span>Hearing you</span>
-        </div>
-      )}
-      {error && <div className="nova-realtime-error">{error}</div>}
-      <form className="nova-realtime-form" onSubmit={submitText}>
-        <input
-          value={text}
-          onChange={event => setText(event.target.value)}
-          placeholder="Ask Nova to open healthcare..."
-          aria-label="Ask Nova"
-        />
-        <button type="submit" aria-label="Send to Nova">
-          <span aria-hidden="true">↑</span>
-        </button>
-      </form>
-    </div>
-  )
-}
-
-function NovaSizeControls({ size, onSizeChange }) {
-  return (
-    <div className="demo-specialist-size-controls" aria-label="Nova display size">
-      {[
-        { value: 'full', label: 'Full' },
-        { value: 'compact', label: 'Compact' },
-        { value: 'bubble', label: 'Mini' },
-      ].map(option => (
-        <button
-          key={option.value}
-          type="button"
-          className={size === option.value ? 'is-active' : ''}
-          onClick={() => onSizeChange(option.value)}
-          aria-pressed={size === option.value}
-        >
-          {option.label}
-        </button>
-      ))}
     </div>
   )
 }
@@ -1416,14 +1373,6 @@ export default function DemoSpecialist({
   onRequireWorkspaceAccess,
 }) {
   const [open, setOpen] = useState(false)
-  const [displaySize, setDisplaySize] = useState(() => {
-    try {
-      const saved = localStorage.getItem(NOVA_DISPLAY_SIZE_KEY)
-      return NOVA_DISPLAY_SIZES.has(saved) ? saved : 'compact'
-    } catch {
-      return 'compact'
-    }
-  })
   const [voiceUnlocked, setVoiceUnlocked] = useState(false)
   const [signedUrl, setSignedUrl] = useState('')
   const [openAISecret, setOpenAISecret] = useState('')
@@ -1453,12 +1402,6 @@ export default function DemoSpecialist({
       available_demo_actions: 'build_workspace, schedule_gap, shift_requests, time_tracking, payroll, pay_review, people, onboarding, compliance, agents, engage, ready_workspaces',
     })
   }, [lead, route])
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(NOVA_DISPLAY_SIZE_KEY, displaySize)
-    } catch { /* ignore */ }
-  }, [displaySize])
 
   useEffect(() => {
     if (!enabled) return undefined
@@ -2036,10 +1979,9 @@ export default function DemoSpecialist({
   if (!enabled) return null
 
   return (
-    <div className={`demo-specialist ${open ? 'is-open' : ''} demo-specialist--${displaySize}`}>
+    <div className={`demo-specialist ${open ? 'is-open' : ''}`}>
       {open && (
         <section className="demo-specialist-widget" aria-label="Teambridge AI demo specialist">
-          <NovaSizeControls size={displaySize} onSizeChange={setDisplaySize} />
           {loading && <div className="demo-specialist-state">Connecting Nova...</div>}
           {error && (
             <div className="demo-specialist-state demo-specialist-state--error">
