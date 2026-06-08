@@ -772,7 +772,6 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext }
   const [status, setStatus] = useState('Connecting Nova...')
   const [error, setError] = useState('')
   const [text, setText] = useState('')
-  const [introText, setIntroText] = useState('')
   const peerRef = useRef(null)
   const channelRef = useRef(null)
   const audioRef = useRef(null)
@@ -804,7 +803,6 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext }
   }
 
   const speakFallbackIntro = () => {
-    setIntroText(fallbackIntro)
     try {
       const synth = window.speechSynthesis
       if (!synth || synth.speaking) return
@@ -935,7 +933,7 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext }
   const startSession = async () => {
     if (!clientSecret || peerRef.current) return
     setError('')
-    setStatus('Connecting Nova...')
+    setStatus('Nova is saying hello...')
     speakFallbackIntro()
 
     try {
@@ -968,8 +966,7 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext }
       channelRef.current = channel
       channel.onmessage = handleRealtimeEvent
       channel.onopen = () => {
-        setStatus('Nova is listening')
-        setIntroText(fallbackIntro)
+        setStatus('Nova is speaking')
         sendEvent({
           type: 'response.create',
           response: {
@@ -1065,7 +1062,6 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext }
           {peerRef.current ? 'End' : 'Call'}
         </button>
       </div>
-      {introText && <div className="nova-realtime-intro">{introText}</div>}
       <div className="nova-realtime-status">{status}</div>
       {error && <div className="nova-realtime-error">{error}</div>}
       <form className="nova-realtime-form" onSubmit={submitText}>

@@ -827,16 +827,6 @@ body {
   text-align: center;
 }
 
-.nova-realtime-intro {
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid color-mix(in srgb, var(--color-border-opaque) 68%, transparent);
-  border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--color-bg-secondary) 82%, white);
-  color: var(--color-content-primary);
-  font-size: var(--text-sm);
-  line-height: var(--line-height-snug);
-}
-
 .nova-realtime-error {
   color: var(--color-red-content-secondary);
   font-size: var(--text-xs);
