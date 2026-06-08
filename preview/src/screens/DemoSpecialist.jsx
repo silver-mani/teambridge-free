@@ -868,7 +868,7 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
       sendEvent({
         type: 'response.create',
         response: {
-          modalities: ['audio', 'text'],
+          output_modalities: ['audio'],
           instructions: output.ok
             ? 'Briefly tell the visitor what changed and offer one useful next area to inspect.'
             : output.reason === 'lead_gate_required'
@@ -993,7 +993,7 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
         sendEvent({
           type: 'response.create',
           response: {
-            modalities: ['audio', 'text'],
+            output_modalities: ['audio'],
             instructions: introInstructions,
           },
         })
@@ -1145,7 +1145,7 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
     sendEvent({
       type: 'response.create',
       response: {
-        modalities: ['audio', 'text'],
+        output_modalities: ['audio'],
         instructions: accessGranted
           ? undefined
           : 'Tell the visitor you can guide them, but opening or changing the workspace is locked until they complete the visible work email form. Ask them to enter their work email so you can save the workspace and tailor the walkthrough.',
