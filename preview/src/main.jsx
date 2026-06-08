@@ -399,7 +399,7 @@ function App() {
         />
       )}
       <DemoSpecialist
-        enabled={accessChecked && (leadCaptured || !route) && (!route || route.kind === 'industry' || route.kind === 'sage')}
+        enabled={accessChecked}
         route={route}
         autoOpen={!route}
       />
