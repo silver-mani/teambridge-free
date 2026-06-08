@@ -739,6 +739,14 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId }) {
   const audioRef = useRef(null)
   const functionCallsRef = useRef(new Map())
 
+  const introInstructions = [
+    'Start speaking now.',
+    'Say: "Hi, I am Nova, your Teambridge demo guide."',
+    'Then explain in two short sentences that Teambridge helps teams fill shifts, monitor compliance, manage onboarding, payroll, and workforce issues from one live workspace.',
+    'Tell the visitor they can ask you to open a healthcare, staffing, hospitality, security, construction, facilities, events, long-term care, or industrial workspace, or ask you to show scheduling, payroll, onboarding, compliance, agents, or messaging.',
+    'End with one clear question: "What would you like me to open first?"',
+  ].join(' ')
+
   const sendEvent = event => {
     const channel = channelRef.current
     if (!channel || channel.readyState !== 'open') return false
@@ -872,6 +880,7 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId }) {
       audioRef.current = audio
       peer.ontrack = event => {
         audio.srcObject = event.streams[0]
+        audio.play?.().catch(() => {})
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -886,7 +895,7 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId }) {
           type: 'response.create',
           response: {
             modalities: ['audio', 'text'],
-            instructions: 'Say hello in one sentence and tell the visitor you can open workspaces and show product areas.',
+            instructions: introInstructions,
           },
         })
         trackDemoEvent('nova_realtime_connected', { model, conversationId })
