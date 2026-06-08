@@ -1171,10 +1171,10 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
         </button>
       </div>
       <div className="nova-realtime-status">{status}</div>
-      {micEnabled && (
-        <div className={`nova-realtime-mic ${micActivity === 'hearing' ? 'is-hearing' : ''}`} aria-live="polite">
+      {micEnabled && micActivity === 'hearing' && (
+        <div className="nova-realtime-mic is-hearing" aria-live="polite">
           <span className="nova-realtime-mic-dot" aria-hidden="true" />
-          <span>{micActivity === 'hearing' ? 'Hearing you' : 'Mic on'}</span>
+          <span>Hearing you</span>
         </div>
       )}
       {error && <div className="nova-realtime-error">{error}</div>}
