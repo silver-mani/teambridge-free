@@ -423,6 +423,8 @@ function App() {
         autoOpen={accessChecked}
         leadData={leadData}
         accessGranted={!showGate}
+        leadCaptured={leadCaptured}
+        onRequireWorkspaceAccess={(destination, intent, metadata) => requestWorkspaceAccess(destination, intent, metadata)}
       />
     </>
   )

@@ -768,7 +768,16 @@ function formatLeadContext(leadContext = {}) {
   return parts.join('; ')
 }
 
-function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, accessGranted = true, autoStart = false }) {
+function OpenAIRealtimeNova({
+  clientSecret,
+  model,
+  conversationId,
+  leadContext,
+  accessGranted = true,
+  workspaceAccessGranted = true,
+  requestWorkspaceAccess,
+  autoStart = false,
+}) {
   const [status, setStatus] = useState('Connecting Nova...')
   const [error, setError] = useState('')
   const [text, setText] = useState('')
@@ -796,9 +805,15 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
     companyContext
       ? 'Explain in two short sentences how Teambridge would help this specific operation based on that context.'
       : 'Explain in two short sentences that Teambridge helps teams fill shifts, monitor compliance, manage onboarding, payroll, and workforce issues from one live workspace.',
-    'Offer two clear paths: build a workspace from their company website or short description, or open a ready-made workspace by vertical.',
-    'Tell the visitor they can say "build my workspace" or ask you to open healthcare, staffing, hospitality, security, construction, facilities, events, long-term care, or industrial.',
-    'End with one clear question: "Should I build your workspace or open a ready-made one?"',
+    workspaceAccessGranted
+      ? 'Offer two clear paths: build a workspace from their company website or short description, or open a ready-made workspace by vertical.'
+      : 'Explain that ready-made workspaces are available, but before opening one you will ask them to complete the visible work email form so the workspace can be saved and tailored to their organization.',
+    workspaceAccessGranted
+      ? 'Tell the visitor they can say "build my workspace" or ask you to open healthcare, staffing, hospitality, security, construction, facilities, events, long-term care, or industrial.'
+      : 'Tell the visitor they can choose a workspace, then complete the work email form to continue the walkthrough.',
+    workspaceAccessGranted
+      ? 'End with one clear question: "Should I build your workspace or open a ready-made one?"'
+      : 'End with one clear question: "Which workspace should I prepare for you?"',
   ].join(' ')
 
   const sendEvent = event => {
@@ -851,7 +866,17 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
 
     let output = { ok: false, reason: 'unknown_tool' }
     try {
-      if (!accessGranted && ['openWorkspace', 'buildWorkspace', 'showCapability'].includes(name)) {
+      if (!workspaceAccessGranted && name === 'openWorkspace') {
+        const requestedIndustry = normalizeIndustry(args.industry || 'healthcare') || 'healthcare'
+        requestWorkspaceAccess?.(`/${requestedIndustry}`, 'nova_open_workspace', { industry: requestedIndustry })
+        output = {
+          ok: false,
+          reason: 'lead_gate_required',
+          required: 'work_email',
+          industry: requestedIndustry,
+          message: 'The workspace is prepared behind the form. Ask the visitor to complete the work email form before continuing the walkthrough.',
+        }
+      } else if (!workspaceAccessGranted && ['showCapability'].includes(name)) {
         output = {
           ok: false,
           reason: 'lead_gate_required',
@@ -906,7 +931,7 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
         instructions: output.ok
           ? 'Briefly tell the visitor what changed and offer one useful next area to inspect.'
           : output.reason === 'lead_gate_required'
-          ? 'Explain that you cannot open or change the workspace until the work email form is completed. Ask the visitor to enter their work email in the visible form, and reassure them it saves the workspace and connects the walkthrough to the right organization.'
+          ? 'Say that the workspace is ready behind the form, but the visitor needs to complete the work email form before you continue the walkthrough. Do not explain the workspace yet. Reassure them it saves the workspace and connects the walkthrough to the right organization.'
           : 'Briefly say you could not complete that action and ask what they want to see next.',
       })
     }
@@ -1162,14 +1187,17 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
     setText('')
 
     const local = actionFromDemoText(value)
-    if (local && accessGranted) {
+    if (local && workspaceAccessGranted) {
       performDemoAction(local.value, { label: local.label })
       trackDemoEvent('nova_realtime_text_local_action', {
         value: local.value,
         kind: local.kind,
         conversationId,
       })
-    } else if (local && !accessGranted) {
+    } else if (local && !workspaceAccessGranted) {
+      if (local.kind === 'industry') {
+        requestWorkspaceAccess?.(`/${local.value}`, 'nova_text_workspace', { industry: local.value })
+      }
       trackDemoEvent('nova_realtime_text_action_blocked_by_gate', {
         value: local.value,
         kind: local.kind,
@@ -1187,9 +1215,9 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
     })
     createRealtimeResponse({
       output_modalities: ['audio'],
-      instructions: accessGranted
+      instructions: accessGranted && workspaceAccessGranted
         ? undefined
-        : 'Tell the visitor you can guide them, but opening or changing the workspace is locked until they complete the visible work email form. Ask them to enter their work email so you can save the workspace and tailor the walkthrough.',
+        : 'Tell the visitor the workspace is ready behind the form, but they need to complete the visible work email form before you continue the walkthrough. Do not explain the workspace yet. Reassure them it saves the workspace and tailors the walkthrough to their organization.',
     })
   }
 
@@ -1354,7 +1382,15 @@ async function performDemoAction(action, options = {}) {
   }
 }
 
-export default function DemoSpecialist({ enabled, route, autoOpen = false, leadData = null, accessGranted = true }) {
+export default function DemoSpecialist({
+  enabled,
+  route,
+  autoOpen = false,
+  leadData = null,
+  accessGranted = true,
+  leadCaptured = false,
+  onRequireWorkspaceAccess,
+}) {
   const [open, setOpen] = useState(false)
   const [voiceUnlocked, setVoiceUnlocked] = useState(false)
   const [signedUrl, setSignedUrl] = useState('')
@@ -1978,6 +2014,8 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false, leadD
               conversationId={conversationId}
               leadContext={lead}
               accessGranted={accessGranted}
+              workspaceAccessGranted={leadCaptured}
+              requestWorkspaceAccess={onRequireWorkspaceAccess}
               autoStart={voiceUnlocked}
             />
           )}
