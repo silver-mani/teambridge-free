@@ -103,7 +103,6 @@ export default async function handler(req, res) {
           type: 'realtime',
           model: MODEL,
           instructions,
-          voice: process.env.OPENAI_REALTIME_VOICE || 'marin',
           tools: toolDefinitions,
           tool_choice: 'auto',
         },
