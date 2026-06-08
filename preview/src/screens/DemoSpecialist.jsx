@@ -915,9 +915,13 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId }) {
       })
     } catch (err) {
       setStatus('Nova is ready')
-      setError(String(err?.message || err))
+      const message = String(err?.message || err)
+      const friendly = /not supported|permission|denied|mediaDevices|getUserMedia/i.test(message)
+        ? 'Voice needs microphone access. You can still type a command below.'
+        : message
+      setError(friendly)
       trackDemoEvent('nova_realtime_failed', {
-        error: String(err?.message || err),
+        error: message,
         conversationId,
       })
     }
