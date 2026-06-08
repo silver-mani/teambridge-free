@@ -3,7 +3,7 @@
  *
  * Requires OPENAI_API_KEY in the Vercel environment. */
 
-const MODEL = process.env.OPENAI_REALTIME_MODEL || 'gpt-4o-realtime-preview'
+const MODEL = process.env.OPENAI_REALTIME_MODEL || 'gpt-realtime-2'
 
 const toolDefinitions = [
   {

@@ -895,7 +895,7 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId }) {
       const offer = await peer.createOffer()
       await peer.setLocalDescription(offer)
 
-      const response = await fetch(`https://api.openai.com/v1/realtime?model=${encodeURIComponent(model || 'gpt-4o-realtime-preview')}`, {
+      const response = await fetch('https://api.openai.com/v1/realtime/calls', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${clientSecret}`,
@@ -1158,7 +1158,7 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
         const id = `openai_${Date.now()}_${Math.random().toString(36).slice(2)}`
         setConversationId(id)
         setOpenAISecret(realtimeBody.clientSecret)
-        setOpenAIModel(realtimeBody.model || 'gpt-4o-realtime-preview')
+        setOpenAIModel(realtimeBody.model || 'gpt-realtime-2')
         setProvider('openai')
         trackDemoEvent('demo_specialist_ready', {
           provider: 'openai_realtime',
