@@ -730,6 +730,263 @@ export function openDemoSpecialist(source = 'unknown') {
   window.dispatchEvent(new CustomEvent('tb:open-demo-specialist', { detail: { source } }))
 }
 
+function OpenAIRealtimeNova({ clientSecret, model, conversationId }) {
+  const [status, setStatus] = useState('Connecting Nova...')
+  const [error, setError] = useState('')
+  const [text, setText] = useState('')
+  const peerRef = useRef(null)
+  const channelRef = useRef(null)
+  const audioRef = useRef(null)
+  const functionCallsRef = useRef(new Map())
+
+  const sendEvent = event => {
+    const channel = channelRef.current
+    if (!channel || channel.readyState !== 'open') return false
+    channel.send(JSON.stringify(event))
+    return true
+  }
+
+  const executeToolCall = async ({ name, arguments: rawArguments, call_id: callId }) => {
+    let args = {}
+    try {
+      args = typeof rawArguments === 'string' ? JSON.parse(rawArguments || '{}') : (rawArguments || {})
+    } catch {
+      args = {}
+    }
+
+    let output = { ok: false, reason: 'unknown_tool' }
+    try {
+      if (name === 'openWorkspace') {
+        const result = await performDemoAction(args.industry || 'healthcare', {
+          label: `${String(args.industry || 'healthcare').replace(/-/g, ' ')} workspace`,
+        })
+        output = { ...result, ok: result.ok }
+      } else if (name === 'showCapability') {
+        const result = await performDemoAction(args.capability || 'overview')
+        output = { ...result, ok: result.ok }
+      } else if (name === 'requestMeeting') {
+        window.open('https://www.teambridge.com/book-demo/schedule', '_blank', 'noopener,noreferrer')
+        output = { ok: true, reason: args.reason || 'meeting_requested' }
+      }
+
+      trackDemoEvent('nova_realtime_tool_executed', {
+        name,
+        args,
+        output,
+        conversationId,
+      })
+    } catch (err) {
+      output = { ok: false, error: String(err?.message || err) }
+      trackDemoEvent('nova_realtime_tool_failed', {
+        name,
+        args,
+        error: output.error,
+        conversationId,
+      })
+    }
+
+    if (callId) {
+      sendEvent({
+        type: 'conversation.item.create',
+        item: {
+          type: 'function_call_output',
+          call_id: callId,
+          output: JSON.stringify(output),
+        },
+      })
+      sendEvent({
+        type: 'response.create',
+        response: {
+          modalities: ['audio', 'text'],
+          instructions: output.ok
+            ? 'Briefly tell the visitor what changed and offer one useful next area to inspect.'
+            : 'Briefly say you could not complete that action and ask what they want to see next.',
+        },
+      })
+    }
+  }
+
+  const handleRealtimeEvent = event => {
+    let payload
+    try {
+      payload = JSON.parse(event.data)
+    } catch {
+      return
+    }
+
+    if (payload.type === 'response.audio_transcript.done' || payload.type === 'response.output_text.done') {
+      trackDemoEvent('nova_realtime_transcript', {
+        text: payload.transcript || payload.text || '',
+        conversationId,
+      })
+    }
+
+    if (payload.type === 'response.function_call_arguments.delta') {
+      const id = payload.call_id || payload.item_id
+      if (!id) return
+      const current = functionCallsRef.current.get(id) || {
+        name: payload.name,
+        arguments: '',
+        call_id: payload.call_id,
+      }
+      current.arguments += payload.delta || ''
+      current.name = payload.name || current.name
+      current.call_id = payload.call_id || current.call_id
+      functionCallsRef.current.set(id, current)
+      return
+    }
+
+    if (payload.type === 'response.function_call_arguments.done') {
+      const id = payload.call_id || payload.item_id
+      const current = functionCallsRef.current.get(id) || {}
+      functionCallsRef.current.delete(id)
+      executeToolCall({
+        name: payload.name || current.name,
+        arguments: payload.arguments || current.arguments,
+        call_id: payload.call_id || current.call_id || id,
+      })
+      return
+    }
+
+    const item = payload.item
+    if (payload.type === 'response.output_item.done' && item?.type === 'function_call') {
+      executeToolCall({
+        name: item.name,
+        arguments: item.arguments,
+        call_id: item.call_id,
+      })
+    }
+  }
+
+  const startSession = async () => {
+    if (!clientSecret || peerRef.current) return
+    setError('')
+    setStatus('Connecting Nova...')
+
+    try {
+      const peer = new RTCPeerConnection()
+      peerRef.current = peer
+
+      const audio = document.createElement('audio')
+      audio.autoplay = true
+      audioRef.current = audio
+      peer.ontrack = event => {
+        audio.srcObject = event.streams[0]
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      stream.getTracks().forEach(track => peer.addTrack(track, stream))
+
+      const channel = peer.createDataChannel('oai-events')
+      channelRef.current = channel
+      channel.onmessage = handleRealtimeEvent
+      channel.onopen = () => {
+        setStatus('Nova is listening')
+        sendEvent({
+          type: 'response.create',
+          response: {
+            modalities: ['audio', 'text'],
+            instructions: 'Say hello in one sentence and tell the visitor you can open workspaces and show product areas.',
+          },
+        })
+        trackDemoEvent('nova_realtime_connected', { model, conversationId })
+      }
+
+      const offer = await peer.createOffer()
+      await peer.setLocalDescription(offer)
+
+      const response = await fetch(`https://api.openai.com/v1/realtime?model=${encodeURIComponent(model || 'gpt-4o-realtime-preview')}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${clientSecret}`,
+          'Content-Type': 'application/sdp',
+        },
+        body: offer.sdp,
+      })
+
+      if (!response.ok) {
+        const detail = await response.text().catch(() => '')
+        throw new Error(detail || `Realtime connection failed (${response.status})`)
+      }
+
+      await peer.setRemoteDescription({
+        type: 'answer',
+        sdp: await response.text(),
+      })
+    } catch (err) {
+      setStatus('Nova is ready')
+      setError(String(err?.message || err))
+      trackDemoEvent('nova_realtime_failed', {
+        error: String(err?.message || err),
+        conversationId,
+      })
+    }
+  }
+
+  const stopSession = () => {
+    channelRef.current?.close()
+    peerRef.current?.getSenders?.().forEach(sender => sender.track?.stop())
+    peerRef.current?.close()
+    peerRef.current = null
+    channelRef.current = null
+    setStatus('Nova is ready')
+  }
+
+  const submitText = event => {
+    event.preventDefault()
+    const value = text.trim()
+    if (!value) return
+    setText('')
+
+    const local = actionFromDemoText(value)
+    if (local) {
+      performDemoAction(local.value, { label: local.label })
+      trackDemoEvent('nova_realtime_text_local_action', {
+        value: local.value,
+        kind: local.kind,
+        conversationId,
+      })
+    }
+
+    sendEvent({
+      type: 'conversation.item.create',
+      item: {
+        type: 'message',
+        role: 'user',
+        content: [{ type: 'input_text', text: value }],
+      },
+    })
+    sendEvent({ type: 'response.create', response: { modalities: ['audio', 'text'] } })
+  }
+
+  useEffect(() => {
+    startSession()
+    return () => stopSession()
+  }, [clientSecret])
+
+  return (
+    <div className="nova-realtime-panel">
+      <div className="nova-realtime-avatar">
+        <img src={NOVA_AVATAR} alt="" />
+        <button type="button" onClick={peerRef.current ? stopSession : startSession} aria-label={peerRef.current ? 'Stop Nova' : 'Start Nova'}>
+          {peerRef.current ? 'End' : 'Call'}
+        </button>
+      </div>
+      <div className="nova-realtime-status">{status}</div>
+      {error && <div className="nova-realtime-error">{error}</div>}
+      <form className="nova-realtime-form" onSubmit={submitText}>
+        <input
+          value={text}
+          onChange={event => setText(event.target.value)}
+          placeholder="Ask Nova to open healthcare..."
+          aria-label="Ask Nova"
+        />
+        <button type="submit" aria-label="Send to Nova">Send</button>
+      </form>
+    </div>
+  )
+}
+
 function routeForView(view) {
   const requestedIndustry = normalizeIndustry(view)
   if (requestedIndustry) return `/${requestedIndustry}`
@@ -828,6 +1085,9 @@ async function performDemoAction(action, options = {}) {
 export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
   const [open, setOpen] = useState(false)
   const [signedUrl, setSignedUrl] = useState('')
+  const [openAISecret, setOpenAISecret] = useState('')
+  const [openAIModel, setOpenAIModel] = useState('')
+  const [provider, setProvider] = useState('')
   const [conversationId, setConversationId] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -878,33 +1138,61 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
   }, [enabled, autoOpen])
 
   useEffect(() => {
-    if (!enabled || !open || signedUrl || loading) return
+    if (!enabled || !open || signedUrl || openAISecret || loading) return
     let cancelled = false
     setLoading(true)
     setError('')
 
-    loadWidgetScript().catch(err => {
-      if (cancelled) return
-      trackDemoEvent('demo_specialist_widget_load_failed', {
-        error: String(err?.message || err),
-      })
-    })
+    const start = async () => {
+      const realtimeResponse = await fetch('/api/openai-realtime-token', {
+        method: 'POST',
+        headers: { accept: 'application/json' },
+      }).catch(err => ({ ok: false, status: 0, json: async () => ({ error: String(err?.message || err) }) }))
 
-    fetch('/api/elevenlabs-signed-url', { headers: { accept: 'application/json' } })
-      .then(async response => {
-        const body = await response.json().catch(() => ({}))
-        if (!response.ok) throw new Error(body?.error || 'Unable to start specialist')
-        return body
-      })
-      .then(body => {
-        if (cancelled) return
-        setSignedUrl(body.signedUrl || '')
-        setConversationId(body.conversationId || '')
+      const realtimeBody = await realtimeResponse.json().catch(() => ({}))
+      if (!cancelled && realtimeResponse.ok && realtimeBody.clientSecret) {
+        const id = `openai_${Date.now()}_${Math.random().toString(36).slice(2)}`
+        setConversationId(id)
+        setOpenAISecret(realtimeBody.clientSecret)
+        setOpenAIModel(realtimeBody.model || 'gpt-4o-realtime-preview')
+        setProvider('openai')
         trackDemoEvent('demo_specialist_ready', {
-          conversationId: body.conversationId,
-          agentId: body.agentId,
+          provider: 'openai_realtime',
+          conversationId: id,
+          model: realtimeBody.model,
+        })
+        return
+      }
+
+      trackDemoEvent('demo_specialist_openai_unavailable', {
+        status: realtimeResponse.status,
+        error: realtimeBody?.error || realtimeBody?.detail || realtimeBody?.message,
+      })
+
+      await loadWidgetScript().catch(err => {
+        if (cancelled) return
+        trackDemoEvent('demo_specialist_widget_load_failed', {
+          error: String(err?.message || err),
         })
       })
+
+      const elevenResponse = await fetch('/api/elevenlabs-signed-url', {
+        headers: { accept: 'application/json' },
+      })
+      const elevenBody = await elevenResponse.json().catch(() => ({}))
+      if (!elevenResponse.ok) throw new Error(elevenBody?.error || 'Unable to start specialist')
+      if (cancelled) return
+      setSignedUrl(elevenBody.signedUrl || '')
+      setConversationId(elevenBody.conversationId || '')
+      setProvider('elevenlabs')
+      trackDemoEvent('demo_specialist_ready', {
+        provider: 'elevenlabs',
+        conversationId: elevenBody.conversationId,
+        agentId: elevenBody.agentId,
+      })
+    }
+
+    start()
       .catch(err => {
         if (cancelled) return
         setError(String(err?.message || err))
@@ -917,7 +1205,7 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
       })
 
     return () => { cancelled = true }
-  }, [enabled, open, signedUrl])
+  }, [enabled, open, signedUrl, openAISecret])
 
   useEffect(() => {
     const widget = widgetRef.current
@@ -1313,7 +1601,14 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
               {error}
             </div>
           )}
-          {signedUrl && (
+          {provider === 'openai' && openAISecret && (
+            <OpenAIRealtimeNova
+              clientSecret={openAISecret}
+              model={openAIModel}
+              conversationId={conversationId}
+            />
+          )}
+          {provider !== 'openai' && signedUrl && (
             <elevenlabs-convai
               ref={widgetRef}
               signed-url={signedUrl}
