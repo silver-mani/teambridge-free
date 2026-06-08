@@ -27,6 +27,18 @@ const toolDefinitions = [
   },
   {
     type: 'function',
+    name: 'buildWorkspace',
+    description: 'Open the guided Teambridge build flow so Nova can create a workspace from a company website or short company description.',
+    parameters: {
+      type: 'object',
+      properties: {
+        reason: { type: 'string' },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    type: 'function',
     name: 'showCapability',
     description: 'Navigate to or highlight a Teambridge demo capability.',
     parameters: {
@@ -69,6 +81,8 @@ or product area, call the matching tool immediately. Do not say code, JSON, func
 names, selectors, or implementation details.
 
 Use tools aggressively for demo navigation:
+- build my workspace, create my workspace, start with my company, company
+  website, website, domain, describe my company -> buildWorkspace
 - healthcare, staffing, events, hospitality, long-term-care, security, janitorial,
   light-industrial, construction -> openWorkspace
 - schedule, coverage, open shifts -> showCapability schedule_gap

@@ -54,6 +54,10 @@ const DEMO_ACTIONS = {
     selector: ['.entry-build-panel', '.entry-product-preview--build'],
     label: 'Build a workspace from company context',
   },
+  build_workspace: {
+    selector: ['.ob-root', '.ob-right-title', '.entry-build-panel'],
+    label: 'Build my workspace from company context',
+  },
   ready_workspaces: {
     selector: ['.entry-workspace-section'],
     label: 'Ready-made workspace selector',
@@ -203,6 +207,7 @@ function normalizeActionName(action) {
   const key = String(action || '').toLowerCase().trim().replace(/[\s-]+/g, '_')
   if (DEMO_ACTIONS[key]) return key
   if (normalizeIndustry(action)) return 'open_workspace'
+  if (key.includes('build') || key.includes('create') || key.includes('company') || key.includes('website') || key.includes('domain')) return 'build_workspace'
   if (key.includes('schedule') || key.includes('gap') || key.includes('shift')) return 'schedule_gap'
   if (key.includes('request') || key.includes('swap')) return 'shift_requests'
   if (key.includes('time') || key.includes('attendance') || key.includes('tracking')) return 'time_tracking'
@@ -221,6 +226,22 @@ function actionFromDemoText(text) {
   const raw = String(text || '').trim()
   if (!raw) return null
   const lower = raw.toLowerCase()
+
+  if (
+    lower.includes('build my workspace') ||
+    lower.includes('create my workspace') ||
+    lower.includes('start with my company') ||
+    lower.includes('my company') ||
+    lower.includes('company website') ||
+    lower.includes('use my website') ||
+    lower.includes('my domain')
+  ) {
+    return {
+      kind: 'action',
+      value: 'build_workspace',
+      label: DEMO_ACTIONS.build_workspace.label,
+    }
+  }
 
   for (const [alias, industry] of Object.entries(INDUSTRY_ALIASES)) {
     const readable = alias.replace(/-/g, ' ')
@@ -244,7 +265,7 @@ function actionFromDemoText(text) {
     ['compliance', ['compliance', 'policy', 'certification', 'certificate', 'license']],
     ['agents', ['agent', 'automation', 'workflow', 'ai action']],
     ['engage', ['message', 'communication', 'notify', 'sms', 'texting']],
-    ['ready_workspaces', ['workspace', 'vertical', 'industry', 'demo account', 'preloaded']],
+    ['ready_workspaces', ['ready-made workspace', 'preloaded workspace', 'vertical', 'industry', 'demo account', 'preloaded']],
   ]
 
   for (const [action, hints] of actionHints) {
@@ -751,11 +772,15 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext }
   const [status, setStatus] = useState('Connecting Nova...')
   const [error, setError] = useState('')
   const [text, setText] = useState('')
+  const [introText, setIntroText] = useState('')
   const peerRef = useRef(null)
   const channelRef = useRef(null)
   const audioRef = useRef(null)
   const functionCallsRef = useRef(new Map())
   const companyContext = formatLeadContext(leadContext)
+  const fallbackIntro = leadContext?.company
+    ? `Hi, I am Nova, your Teambridge demo guide. I found ${leadContext.company}, so I can tailor this walkthrough to your operation. I can build a workspace from your company context, or open a ready-made workspace by vertical. Which path should we start with?`
+    : 'Hi, I am Nova, your Teambridge demo guide. I can build a workspace from your company website or description, or open a ready-made workspace by vertical. Which path should we start with?'
 
   const introInstructions = [
     'Start speaking now.',
@@ -766,8 +791,9 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext }
     companyContext
       ? 'Explain in two short sentences how Teambridge would help this specific operation based on that context.'
       : 'Explain in two short sentences that Teambridge helps teams fill shifts, monitor compliance, manage onboarding, payroll, and workforce issues from one live workspace.',
-    'Tell the visitor they can ask you to open a healthcare, staffing, hospitality, security, construction, facilities, events, long-term care, or industrial workspace, or ask you to show scheduling, payroll, onboarding, compliance, agents, or messaging.',
-    'End with one clear question: "What would you like me to open first?"',
+    'Offer two clear paths: build a workspace from their company website or short description, or open a ready-made workspace by vertical.',
+    'Tell the visitor they can say "build my workspace" or ask you to open healthcare, staffing, hospitality, security, construction, facilities, events, long-term care, or industrial.',
+    'End with one clear question: "Should I build your workspace or open a ready-made one?"',
   ].join(' ')
 
   const sendEvent = event => {
@@ -775,6 +801,18 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext }
     if (!channel || channel.readyState !== 'open') return false
     channel.send(JSON.stringify(event))
     return true
+  }
+
+  const speakFallbackIntro = () => {
+    setIntroText(fallbackIntro)
+    try {
+      const synth = window.speechSynthesis
+      if (!synth || synth.speaking) return
+      const utterance = new SpeechSynthesisUtterance(fallbackIntro)
+      utterance.rate = 0.96
+      utterance.pitch = 1.02
+      synth.speak(utterance)
+    } catch { /* browser speech fallback is best-effort */ }
   }
 
   const executeToolCall = async ({ name, arguments: rawArguments, call_id: callId }) => {
@@ -790,6 +828,11 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext }
       if (name === 'openWorkspace') {
         const result = await performDemoAction(args.industry || 'healthcare', {
           label: `${String(args.industry || 'healthcare').replace(/-/g, ' ')} workspace`,
+        })
+        output = { ...result, ok: result.ok }
+      } else if (name === 'buildWorkspace') {
+        const result = await performDemoAction('build_workspace', {
+          label: 'Build my workspace',
         })
         output = { ...result, ok: result.ok }
       } else if (name === 'showCapability') {
@@ -893,6 +936,7 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext }
     if (!clientSecret || peerRef.current) return
     setError('')
     setStatus('Connecting Nova...')
+    speakFallbackIntro()
 
     try {
       const peer = new RTCPeerConnection()
@@ -906,14 +950,26 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext }
         audio.play?.().catch(() => {})
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      stream.getTracks().forEach(track => peer.addTrack(track, stream))
+      peer.addTransceiver('audio', { direction: 'recvonly' })
+      const stream = await Promise.race([
+        navigator.mediaDevices?.getUserMedia
+          ? navigator.mediaDevices.getUserMedia({ audio: true })
+          : Promise.reject(new Error('mediaDevices_unavailable')),
+        new Promise(resolve => window.setTimeout(() => resolve(null), 1300)),
+      ]).catch(() => null)
+      if (stream) {
+        stream.getTracks().forEach(track => peer.addTrack(track, stream))
+      } else {
+        setStatus('Nova is introducing herself')
+        setError('Allow microphone access when prompted to talk back. You can also type below.')
+      }
 
       const channel = peer.createDataChannel('oai-events')
       channelRef.current = channel
       channel.onmessage = handleRealtimeEvent
       channel.onopen = () => {
         setStatus('Nova is listening')
+        setIntroText(fallbackIntro)
         sendEvent({
           type: 'response.create',
           response: {
@@ -960,6 +1016,7 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext }
   }
 
   const stopSession = () => {
+    try { window.speechSynthesis?.cancel() } catch { /* ignore */ }
     channelRef.current?.close()
     peerRef.current?.getSenders?.().forEach(sender => sender.track?.stop())
     peerRef.current?.close()
@@ -1008,6 +1065,7 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext }
           {peerRef.current ? 'End' : 'Call'}
         </button>
       </div>
+      {introText && <div className="nova-realtime-intro">{introText}</div>}
       <div className="nova-realtime-status">{status}</div>
       {error && <div className="nova-realtime-error">{error}</div>}
       <form className="nova-realtime-form" onSubmit={submitText}>
@@ -1087,6 +1145,29 @@ async function performDemoAction(action, options = {}) {
   const config = DEMO_ACTIONS[key]
   if (!config) return { ok: false, reason: 'unknown_action', action: key }
 
+  if (key === 'build_workspace') {
+    setHashPath('/build')
+    await sleep(options.settleMs || ACTION_SETTLE_MS)
+    const target = await waitForElement(config.selector)
+    if (!target.el) {
+      return {
+        ok: false,
+        reason: 'target_not_found',
+        action: key,
+        view: 'build',
+      }
+    }
+
+    const result = highlightSelector(target.selector, options.label || config.label)
+    return {
+      ...result,
+      action: key,
+      view: 'build',
+      selector: target.selector,
+      label: options.label || config.label,
+    }
+  }
+
   if (config.view) {
     setHashPath(routeForView(config.view))
     await sleep(options.settleMs || ACTION_SETTLE_MS)
@@ -1144,7 +1225,7 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
       demo_view: snapshot.view || 'overview',
       demo_session_id: snapshot.sessionId,
       available_workspaces: 'healthcare, staffing, events, hospitality, long-term-care, security, janitorial, light-industrial, construction',
-      available_demo_actions: 'schedule_gap, shift_requests, time_tracking, payroll, pay_review, people, onboarding, compliance, agents, engage, ready_workspaces',
+      available_demo_actions: 'build_workspace, schedule_gap, shift_requests, time_tracking, payroll, pay_review, people, onboarding, compliance, agents, engage, ready_workspaces',
     })
   }, [lead, route])
 
@@ -1276,7 +1357,18 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false }) {
         })
         return result
       }
+      const buildWorkspaceTool = async ({ label } = {}) => {
+        const result = await performDemoAction('build_workspace', { label: label || 'Build my workspace' })
+        trackDemoEvent('demo_specialist_tool_build_workspace', {
+          ...result,
+          conversationId,
+        })
+        return result
+      }
       detail.config.clientTools = {
+        buildWorkspace: buildWorkspaceTool,
+        buildMyWorkspace: buildWorkspaceTool,
+        startWithMyCompany: buildWorkspaceTool,
         openWorkspace: openWorkspaceTool,
         openDemoWorkspace: openWorkspaceTool,
         showWorkspace: openWorkspaceTool,
