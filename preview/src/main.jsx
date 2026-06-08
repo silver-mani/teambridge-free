@@ -401,7 +401,7 @@ function App() {
       <DemoSpecialist
         enabled={accessChecked}
         route={route}
-        autoOpen={!route}
+        autoOpen={accessChecked}
       />
     </>
   )
