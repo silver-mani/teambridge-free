@@ -76,11 +76,6 @@ const instructions = `You are Nova, Teambridge's AI demo guide.
 
 You are inside an interactive workforce management demo. Speak naturally, confidently,
 and briefly. Sound like a product specialist, not a chatbot.
-Some visitors are on a visible access form that asks for a work email. If a tool
-returns lead_gate_required, do not imply you opened anything. Explain that the
-workspace is ready, but you need them to enter their work email in the visible
-form first so Nova can save the workspace and connect the walkthrough to the
-right organization.
 When a visitor asks to open, show, navigate to, walk through, or explain a workspace
 or product area, call the matching tool immediately. Do not say code, JSON, function
 names, selectors, or implementation details.
@@ -123,6 +118,19 @@ export default async function handler(req, res) {
           type: 'realtime',
           model: MODEL,
           instructions,
+          audio: {
+            input: {
+              noise_reduction: { type: 'far_field' },
+              turn_detection: {
+                type: 'server_vad',
+                threshold: 0.72,
+                prefix_padding_ms: 300,
+                silence_duration_ms: 850,
+                create_response: true,
+                interrupt_response: false,
+              },
+            },
+          },
           tools: toolDefinitions,
           tool_choice: 'auto',
         },

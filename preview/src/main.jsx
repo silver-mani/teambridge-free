@@ -8,7 +8,7 @@ import SageDashboard      from './screens/sage/SageDashboard.jsx'
 import SageWorkforceEmbed from './screens/sage/SageWorkforceEmbed.jsx'
 import LeadCaptureGate    from './screens/LeadCaptureGate.jsx'
 import OnboardingFlow     from './screens/onboarding/OnboardingFlow.jsx'
-import DemoSpecialist     from './screens/DemoSpecialist.jsx'
+import DemoSpecialist from './screens/DemoSpecialist.jsx'
 import { getDemoSnapshot, initDemoTracking, trackDemoEvent } from './lib/demoTracking.js'
 
 const VALID_INDUSTRIES = new Set([
@@ -422,7 +422,6 @@ function App() {
         route={route}
         autoOpen={accessChecked}
         leadData={leadData}
-        accessGranted={!showGate}
       />
     </>
   )

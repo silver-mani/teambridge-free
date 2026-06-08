@@ -214,22 +214,10 @@ function ProductPreview({ kind }) {
   return null
 }
 
-function AgentTeam() {
-  return (
-    <div className="entry-agent-team" aria-label="Teambridge demo agents">
-      {AGENTS.map(agent => (
-        <div key={agent.name} className="entry-agent-team-member">
-          <img src={agent.src} alt="" />
-          <span>{agent.name}</span>
-        </div>
-      ))}
-    </div>
-  )
-}
-
 function ChoiceCard({ kind, title, lede, action, onClick }) {
   const [hover, setHover]     = useState(false)
   const [pressed, setPressed] = useState(false)
+  const isBuild = kind === 'build'
 
   return (
     <button
@@ -244,9 +232,11 @@ function ChoiceCard({ kind, title, lede, action, onClick }) {
       style={{
         textAlign: 'left',
         display: 'flex',
-        flexDirection: 'column',
+        flexDirection: isBuild ? 'row' : 'column',
+        flexWrap: isBuild ? 'wrap' : 'nowrap',
+        alignItems: isBuild ? 'center' : 'stretch',
         gap: 'var(--space-6)',
-        padding: 'var(--space-8)',
+        padding: isBuild ? 'var(--space-6)' : 'var(--space-8)',
         background: 'color-mix(in srgb, var(--color-bg-primary) 96%, var(--color-content-primary))',
         border: `1px solid ${hover ? 'var(--color-border-selected)' : 'var(--color-border-opaque)'}`,
         borderRadius: 'var(--radius-lg)',
@@ -255,12 +245,20 @@ function ChoiceCard({ kind, title, lede, action, onClick }) {
         boxShadow: hover ? 'var(--shadow-below-md)' : 'none',
         transform: pressed ? 'translateY(0)' : hover ? 'translateY(-2px)' : 'translateY(0)',
         fontFamily: 'var(--font-sans)',
-        minHeight: 280,
+        minHeight: isBuild ? 188 : 280,
       }}
     >
       <ProductPreview kind={kind} />
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', flex: 1 }}>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 'var(--space-2)',
+          flex: isBuild ? '1 1 360px' : 1,
+          maxWidth: isBuild ? 540 : undefined,
+        }}
+      >
         <span
           style={{
             fontSize: 'var(--text-2xl)',
@@ -294,6 +292,8 @@ function ChoiceCard({ kind, title, lede, action, onClick }) {
           fontWeight: 'var(--font-weight-medium)',
           transition: 'color 160ms ease, transform 160ms ease',
           transform: hover ? 'translateX(2px)' : 'translateX(0)',
+          flex: isBuild ? '0 0 100%' : undefined,
+          justifyContent: isBuild ? 'flex-end' : undefined,
         }}
       >
         {action}
@@ -373,12 +373,15 @@ function WorkspaceCollection({ onSelect }) {
     <section className="entry-workspace-section" aria-labelledby="ready-workspaces-title">
       <div className="entry-workspace-section-head">
         <div>
-          <Eyebrow style={{ color: 'var(--color-content-tertiary)', marginBottom: 'var(--space-2)' }}>
-            Ready-made workspaces
+          <Eyebrow style={{ color: 'var(--color-content-tertiary)', marginBottom: 'var(--space-4)' }}>
+            Teambridge demo
           </Eyebrow>
-          <h2 id="ready-workspaces-title">Open a preloaded workspace by vertical.</h2>
+          <h2 id="ready-workspaces-title">Start with a workspace that feels like yours.</h2>
+          <p>
+            Let Nova build a workspace from your company context, or open a realistic
+            industry account with scheduling, payroll, onboarding, compliance, and agents already running.
+          </p>
         </div>
-        <p>Realistic staff, schedules, payroll, workflows, and agent activity are already loaded.</p>
       </div>
       <div className="entry-workspace-shell">
         <div className="entry-workspace-row">
@@ -465,77 +468,28 @@ export default function EntryChoice({ onBuild, onExplore, onSelectDemo }) {
           padding: 'var(--space-8) var(--space-6) var(--space-16)',
         }}
       >
+        <WorkspaceCollection onSelect={onSelectDemo || (() => onExplore())} />
         <div
-          className="entry-hero-layout"
+          className="entry-build-panel"
           style={{
             width: '100%',
-            maxWidth: 1120,
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))',
-            gap: 'var(--space-8)',
-            alignItems: 'center',
+            maxWidth: 1280,
+            marginTop: 'var(--space-8)',
+            padding: 'var(--space-4)',
+            border: '1px solid var(--color-border-opaque)',
+            borderRadius: 'var(--radius-xl)',
+            background: 'color-mix(in srgb, var(--color-bg-primary) 96%, var(--color-content-primary))',
+            boxShadow: 'var(--shadow-below-lg)',
           }}
         >
-          <section style={{ minWidth: 0 }}>
-            <Eyebrow style={{ color: 'var(--color-content-tertiary)', marginBottom: 'var(--space-4)' }}>
-              Teambridge demo
-            </Eyebrow>
-            <h1
-              style={{
-                margin: 0,
-                fontSize: 'clamp(42px, 6vw, 72px)',
-                fontWeight: 'var(--font-weight-regular)',
-                lineHeight: 1.02,
-                letterSpacing: 0,
-                color: 'var(--color-content-primary)',
-              }}
-            >
-              Start with a workspace that feels like yours.
-            </h1>
-            <p
-              style={{
-                margin: 'var(--space-5) 0 0',
-                maxWidth: 520,
-                fontSize: 'var(--text-lg)',
-                lineHeight: 'var(--line-height-loose)',
-                color: 'var(--color-content-secondary)',
-              }}
-            >
-              Let Nova build a workspace from your company context, or open a realistic
-              industry account with scheduling, payroll, onboarding, compliance, and agents already running.
-            </p>
-            <div
-              style={{
-                marginTop: 'var(--space-8)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 'var(--space-4)',
-              }}
-            >
-              <AgentTeam />
-            </div>
-          </section>
-
-          <div
-            className="entry-build-panel"
-            style={{
-              padding: 'var(--space-4)',
-              border: '1px solid var(--color-border-opaque)',
-              borderRadius: 'var(--radius-xl)',
-              background: 'color-mix(in srgb, var(--color-bg-primary) 96%, var(--color-content-primary))',
-              boxShadow: 'var(--shadow-below-lg)',
-            }}
-          >
-            <ChoiceCard
-              kind="build"
-              title="Build my workspace"
-              lede="Give Nova your website or a short description. It fills in locations, roles, goals, policies, and the first set of Teambridge agents."
-              action="Start with my company"
-              onClick={onBuild}
-            />
-          </div>
+          <ChoiceCard
+            kind="build"
+            title="Build my workspace"
+            lede="Give Nova your website or a short description. It fills in locations, roles, goals, policies, and the first set of Teambridge agents."
+            action="Start with my company"
+            onClick={onBuild}
+          />
         </div>
-        <WorkspaceCollection onSelect={onSelectDemo || (() => onExplore())} />
       </main>
     </div>
   )
