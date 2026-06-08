@@ -777,9 +777,6 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext }
   const audioRef = useRef(null)
   const functionCallsRef = useRef(new Map())
   const companyContext = formatLeadContext(leadContext)
-  const fallbackIntro = leadContext?.company
-    ? `Hi, I am Nova, your Teambridge demo guide. I found ${leadContext.company}, so I can tailor this walkthrough to your operation. I can build a workspace from your company context, or open a ready-made workspace by vertical. Which path should we start with?`
-    : 'Hi, I am Nova, your Teambridge demo guide. I can build a workspace from your company website or description, or open a ready-made workspace by vertical. Which path should we start with?'
 
   const introInstructions = [
     'Start speaking now.',
@@ -800,17 +797,6 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext }
     if (!channel || channel.readyState !== 'open') return false
     channel.send(JSON.stringify(event))
     return true
-  }
-
-  const speakFallbackIntro = () => {
-    try {
-      const synth = window.speechSynthesis
-      if (!synth || synth.speaking) return
-      const utterance = new SpeechSynthesisUtterance(fallbackIntro)
-      utterance.rate = 0.96
-      utterance.pitch = 1.02
-      synth.speak(utterance)
-    } catch { /* browser speech fallback is best-effort */ }
   }
 
   const executeToolCall = async ({ name, arguments: rawArguments, call_id: callId }) => {
@@ -934,7 +920,6 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext }
     if (!clientSecret || peerRef.current) return
     setError('')
     setStatus('Nova is saying hello...')
-    speakFallbackIntro()
 
     try {
       const peer = new RTCPeerConnection()
@@ -949,18 +934,6 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext }
       }
 
       peer.addTransceiver('audio', { direction: 'recvonly' })
-      const stream = await Promise.race([
-        navigator.mediaDevices?.getUserMedia
-          ? navigator.mediaDevices.getUserMedia({ audio: true })
-          : Promise.reject(new Error('mediaDevices_unavailable')),
-        new Promise(resolve => window.setTimeout(() => resolve(null), 1300)),
-      ]).catch(() => null)
-      if (stream) {
-        stream.getTracks().forEach(track => peer.addTrack(track, stream))
-      } else {
-        setStatus('Nova is introducing herself')
-        setError('Allow microphone access when prompted to talk back. You can also type below.')
-      }
 
       const channel = peer.createDataChannel('oai-events')
       channelRef.current = channel
@@ -1013,7 +986,6 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext }
   }
 
   const stopSession = () => {
-    try { window.speechSynthesis?.cancel() } catch { /* ignore */ }
     channelRef.current?.close()
     peerRef.current?.getSenders?.().forEach(sender => sender.track?.stop())
     peerRef.current?.close()
