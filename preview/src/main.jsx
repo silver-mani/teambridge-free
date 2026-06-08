@@ -79,8 +79,11 @@ function clearLegacyDemosHash() {
 }
 
 function TalkToTeamCta({ leadData }) {
+  const [open, setOpen] = useState(false)
+  const bookingUrl = bookingUrlForLead(leadData || {})
+
   const openBooking = () => {
-    window.open(bookingUrlForLead(leadData || {}), '_blank', 'noopener,noreferrer')
+    setOpen(true)
     trackDemoEvent('demo_talk_to_team_clicked', {
       source: 'persistent_demo_cta',
       hasEmail: Boolean(leadData?.email),
@@ -88,9 +91,35 @@ function TalkToTeamCta({ leadData }) {
   }
 
   return (
-    <button type="button" className="demo-talk-team-cta" onClick={openBooking}>
-      Talk to team
-    </button>
+    <>
+      <button type="button" className="demo-talk-team-cta" onClick={openBooking}>
+        Talk to team
+      </button>
+      {open && (
+        <div className="demo-booking-modal" role="dialog" aria-modal="true" aria-label="Schedule a Teambridge meeting">
+          <div className="demo-booking-panel">
+            <div className="demo-booking-head">
+              <div>
+                <span>Teambridge team</span>
+                <strong>Pick a time to talk</strong>
+              </div>
+              <button type="button" onClick={() => setOpen(false)} aria-label="Close booking">
+                ×
+              </button>
+            </div>
+            <iframe
+              title="Schedule a Teambridge meeting"
+              src={bookingUrl}
+              loading="lazy"
+              referrerPolicy="strict-origin-when-cross-origin"
+            />
+            <a className="demo-booking-fallback" href={bookingUrl} target="_blank" rel="noreferrer">
+              Open scheduler in a new tab
+            </a>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
