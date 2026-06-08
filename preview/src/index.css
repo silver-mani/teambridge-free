@@ -758,6 +758,38 @@ body {
   max-height: inherit;
 }
 
+.demo-specialist-size-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 8px auto;
+  padding: 4px;
+  border: 1px solid color-mix(in srgb, var(--color-border-opaque) 72%, transparent);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+  backdrop-filter: blur(18px);
+}
+
+.demo-specialist-size-controls button {
+  min-width: 0;
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-content-secondary);
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}
+
+.demo-specialist-size-controls button.is-active {
+  background: var(--color-content-primary);
+  color: var(--color-bg-primary);
+}
+
 .demo-specialist-state {
   padding: var(--space-4);
   border: 1px solid var(--color-border-opaque);
@@ -785,6 +817,89 @@ body {
   background: rgba(255, 255, 255, 0.92);
   box-shadow: 0 24px 80px rgba(15, 23, 42, 0.18);
   backdrop-filter: blur(24px);
+}
+
+.demo-specialist--compact .demo-specialist-widget {
+  width: min(340px, calc(100vw - 40px));
+}
+
+.demo-specialist--compact .nova-realtime-panel {
+  width: min(320px, calc(100vw - 40px));
+  min-height: 260px;
+  grid-template-rows: auto auto auto;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: 18px;
+}
+
+.demo-specialist--compact .nova-realtime-avatar img {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.14);
+}
+
+.demo-specialist--compact .nova-realtime-avatar button {
+  right: -18px;
+  bottom: -8px;
+  height: 34px;
+  min-width: 44px;
+  padding: 0 10px;
+  font-size: var(--text-xs);
+}
+
+.demo-specialist--compact .nova-realtime-status {
+  font-size: var(--text-xs);
+}
+
+.demo-specialist--bubble .demo-specialist-widget {
+  width: 176px;
+}
+
+.demo-specialist--bubble .demo-specialist-size-controls {
+  margin-bottom: 6px;
+}
+
+.demo-specialist--bubble .demo-specialist-size-controls button {
+  height: 24px;
+  padding: 0 8px;
+  font-size: 10px;
+}
+
+.demo-specialist--bubble .nova-realtime-panel {
+  width: 176px;
+  min-height: 0;
+  grid-template-rows: auto auto;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 18px;
+}
+
+.demo-specialist--bubble .nova-realtime-avatar img {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.14);
+}
+
+.demo-specialist--bubble .nova-realtime-avatar button {
+  right: -36px;
+  bottom: 5px;
+  height: 32px;
+  min-width: 48px;
+  padding: 0 10px;
+  font-size: 11px;
+}
+
+.demo-specialist--bubble .nova-realtime-status {
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.demo-specialist--bubble .nova-realtime-form,
+.demo-specialist--bubble .nova-realtime-mic,
+.demo-specialist--bubble .nova-realtime-error {
+  display: none;
 }
 
 .nova-realtime-avatar {
@@ -988,5 +1103,26 @@ body {
 
   .demo-specialist-widget {
     width: 100%;
+  }
+
+  .demo-specialist--compact {
+    left: auto;
+  }
+
+  .demo-specialist--compact .demo-specialist-widget {
+    width: min(320px, calc(100vw - 24px));
+  }
+
+  .demo-specialist--compact .nova-realtime-panel {
+    width: min(320px, calc(100vw - 24px));
+  }
+
+  .demo-specialist--bubble {
+    left: auto;
+  }
+
+  .demo-specialist--bubble .demo-specialist-widget,
+  .demo-specialist--bubble .nova-realtime-panel {
+    width: 176px;
   }
 }
