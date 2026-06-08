@@ -772,9 +772,12 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
   const [status, setStatus] = useState('Connecting Nova...')
   const [error, setError] = useState('')
   const [text, setText] = useState('')
+  const [micEnabled, setMicEnabled] = useState(false)
   const peerRef = useRef(null)
   const channelRef = useRef(null)
   const audioRef = useRef(null)
+  const micSenderRef = useRef(null)
+  const micStreamRef = useRef(null)
   const functionCallsRef = useRef(new Map())
   const companyContext = formatLeadContext(leadContext)
 
@@ -942,7 +945,8 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
         audio.play?.().catch(() => {})
       }
 
-      peer.addTransceiver('audio', { direction: 'recvonly' })
+      const audioTransceiver = peer.addTransceiver('audio', { direction: 'sendrecv' })
+      micSenderRef.current = audioTransceiver.sender
 
       const channel = peer.createDataChannel('oai-events')
       channelRef.current = channel
@@ -996,11 +1000,38 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
 
   const stopSession = () => {
     channelRef.current?.close()
+    micStreamRef.current?.getTracks?.().forEach(track => track.stop())
     peerRef.current?.getSenders?.().forEach(sender => sender.track?.stop())
     peerRef.current?.close()
     peerRef.current = null
     channelRef.current = null
+    micSenderRef.current = null
+    micStreamRef.current = null
+    setMicEnabled(false)
     setStatus('Nova is ready')
+  }
+
+  const enableMic = async () => {
+    if (!peerRef.current || micEnabled) return
+    setError('')
+    setStatus('Requesting microphone...')
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      micStreamRef.current = stream
+      const [track] = stream.getAudioTracks()
+      await micSenderRef.current?.replaceTrack(track)
+      setMicEnabled(true)
+      setStatus('Nova is listening')
+      trackDemoEvent('nova_realtime_microphone_enabled', { conversationId })
+    } catch (err) {
+      const message = String(err?.message || err)
+      setStatus('Nova is speaking')
+      setError('Microphone access was not enabled. You can still type below.')
+      trackDemoEvent('nova_realtime_microphone_failed', {
+        error: message,
+        conversationId,
+      })
+    }
   }
 
   const submitText = event => {
@@ -1053,8 +1084,12 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
     <div className="nova-realtime-panel">
       <div className="nova-realtime-avatar">
         <img src={NOVA_AVATAR} alt="" />
-        <button type="button" onClick={peerRef.current ? stopSession : startSession} aria-label={peerRef.current ? 'Stop Nova' : 'Start Nova'}>
-          {peerRef.current ? 'End' : 'Call'}
+        <button
+          type="button"
+          onClick={!peerRef.current ? startSession : micEnabled ? stopSession : enableMic}
+          aria-label={!peerRef.current ? 'Start Nova' : micEnabled ? 'Stop Nova' : 'Enable microphone'}
+        >
+          {!peerRef.current ? 'Call' : micEnabled ? 'End' : 'Talk'}
         </button>
       </div>
       <div className="nova-realtime-status">{status}</div>
