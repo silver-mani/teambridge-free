@@ -422,6 +422,7 @@ function App() {
         route={route}
         autoOpen={accessChecked}
         leadData={leadData}
+        accessGranted={!showGate}
       />
     </>
   )

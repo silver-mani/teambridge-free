@@ -112,11 +112,6 @@ function normalizeDomain(value) {
     .replace(/[^a-z0-9.-]/g, '')
 }
 
-function isLikelyDomain(value) {
-  const domain = normalizeDomain(value)
-  return /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/.test(domain)
-}
-
 function companyFromDomain(domain) {
   const root = domain.split('.')[0] || ''
   return root
@@ -124,13 +119,9 @@ function companyFromDomain(domain) {
     : ''
 }
 
-function syntheticEmailForDomain(domain) {
-  return `demo@${domain}`
-}
-
-export default function LeadCaptureGate({ onSubmit, onShown, sessionId, delayMs = 3000, title = 'Your workspace is ready', subtitle = 'Share a work email or company domain so Nova can save the workspace, research the organization, and keep the walkthrough relevant to your operation.' }) {
+export default function LeadCaptureGate({ onSubmit, onShown, sessionId, delayMs = 3000, title = 'Your workspace is ready', subtitle = 'Use a verified work email so Nova can save this workspace, connect your walkthrough to the right organization, and keep your follow-up notes together.' }) {
   const [visible, setVisible]   = useState(false)
-  const [contact, setContact]   = useState('')
+  const [email, setEmail]       = useState('')
   const [touched, setTouched]   = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [emailAttempts, setEmailAttempts] = useState([])
@@ -156,28 +147,19 @@ export default function LeadCaptureGate({ onSubmit, onShown, sessionId, delayMs 
 
   if (!visible) return null
 
-  const domain = normalizeDomain(contact)
-  const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.trim().toLowerCase())
-  const contactOk = isEmail
-    ? classifyEmail(contact) === 'work'
-    : isLikelyDomain(contact) && !PERSONAL_DOMAINS.has(domain) && !DISPOSABLE_DOMAINS.has(domain)
-  const displayQuality = isEmail
-    ? classifyEmail(contact)
-    : DISPOSABLE_DOMAINS.has(domain)
-    ? 'disposable'
-    : PERSONAL_DOMAINS.has(domain) || !isLikelyDomain(contact)
-    ? 'personal'
-    : 'domain'
+  const domain = normalizeDomain(email)
+  const emailQuality = classifyEmail(email)
+  const emailOk = emailQuality === 'work'
 
   const submit = async (e) => {
     e.preventDefault()
     setTouched(true)
     if (submitting) return
 
-    if (!contactOk) {
+    if (!emailOk) {
       const attempt = {
-        email: contact.trim().toLowerCase(),
-        quality: displayQuality,
+        email: email.trim().toLowerCase(),
+        quality: emailQuality,
         blockedAt: Date.now(),
       }
       setEmailAttempts(prev => [...prev, attempt])
@@ -190,7 +172,7 @@ export default function LeadCaptureGate({ onSubmit, onShown, sessionId, delayMs 
           body: JSON.stringify({
             sessionId,
             attemptedEmail: attempt.email,
-            emailQuality: displayQuality,
+            emailQuality,
             userAgent: navigator.userAgent,
           }),
           keepalive: true,
@@ -210,11 +192,11 @@ export default function LeadCaptureGate({ onSubmit, onShown, sessionId, delayMs 
     onSubmit({
       name: '',
       company: domainResearch?.companyName || companyFromDomain(domain),
-      email: isEmail ? contact.trim().toLowerCase() : syntheticEmailForDomain(domain),
+      email: email.trim().toLowerCase(),
       submittedDomain: domain,
-      submittedContact: contact.trim().toLowerCase(),
-      contactInputType: isEmail ? 'email' : 'domain',
-      emailQuality: isEmail ? 'work' : 'domain',
+      submittedContact: email.trim().toLowerCase(),
+      contactInputType: 'email',
+      emailQuality: 'work',
       emailAttempts,
       domainResearch,
     })
@@ -242,7 +224,7 @@ export default function LeadCaptureGate({ onSubmit, onShown, sessionId, delayMs 
               <span>Agent actions ready</span>
             </div>
           </div>
-          <p className="lead-gate-visual-note">Nova uses your company context to make the walkthrough specific to your team, not generic demo data.</p>
+          <p className="lead-gate-visual-note">Nova uses your work email domain to keep the walkthrough specific to your team, not generic demo data.</p>
         </div>
         <div className="lead-gate-panel">
           <div className="lead-gate-mark" aria-hidden="true">
@@ -250,7 +232,7 @@ export default function LeadCaptureGate({ onSubmit, onShown, sessionId, delayMs 
           </div>
           <div className="lead-gate-nova-note">
             <img src={ROBOT_ANIMATION} alt="" />
-            <p>Before I open it, share a work email or company domain. I use it to save this workspace and tailor the walkthrough to the operation I find.</p>
+            <p>Before I open it, add your work email. I use it to save this workspace and tailor the walkthrough to the organization I find.</p>
           </div>
           <h2 id="lead-gate-title" className="lead-gate-title">{title}</h2>
           <p className="lead-gate-sub">
@@ -259,23 +241,23 @@ export default function LeadCaptureGate({ onSubmit, onShown, sessionId, delayMs 
 
           <form className="lead-gate-form" onSubmit={submit} noValidate>
             <label className="lead-gate-field">
-              <span className="lead-gate-label">Work email or company domain</span>
+              <span className="lead-gate-label">Work email</span>
               <input
-                className={`lead-gate-input ${touched && !contactOk ? 'is-invalid' : ''}`}
-                type="text"
+                className={`lead-gate-input ${touched && !emailOk ? 'is-invalid' : ''}`}
+                type="email"
                 autoComplete="email"
-                value={contact}
-                onChange={(e) => setContact(e.target.value)}
-                placeholder="alex@company.com or company.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="alex@company.com"
                 autoFocus
               />
-              {touched && !contactOk && (
+              {touched && !emailOk && (
                 <span className="lead-gate-hint">
-                  {contact.trim().length === 0
-                    ? 'Work email or company domain required.'
-                    : displayQuality === 'disposable'
+                  {email.trim().length === 0
+                    ? 'Work email required.'
+                    : emailQuality === 'disposable'
                     ? "Temporary addresses can't unlock a saved workspace."
-                    : 'Use a company address or domain so Nova can attach the workspace to the right organization.'}
+                    : 'Use a company email so Nova can attach the workspace to the right organization.'}
                 </span>
               )}
             </label>
@@ -283,7 +265,7 @@ export default function LeadCaptureGate({ onSubmit, onShown, sessionId, delayMs 
             <button
               type="submit"
               className="lead-gate-submit"
-              disabled={contact.trim().length === 0 || submitting}
+              disabled={email.trim().length === 0 || submitting}
             >
               {submitting ? 'Researching workspace...' : 'Start Demo Now'}
             </button>

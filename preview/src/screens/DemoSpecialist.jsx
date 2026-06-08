@@ -768,7 +768,7 @@ function formatLeadContext(leadContext = {}) {
   return parts.join('; ')
 }
 
-function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext }) {
+function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, accessGranted = true }) {
   const [status, setStatus] = useState('Connecting Nova...')
   const [error, setError] = useState('')
   const [text, setText] = useState('')
@@ -783,7 +783,7 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext }
     'Say: "Hi, I am Nova, your Teambridge demo guide."',
     companyContext
       ? `Use this visitor context without overclaiming: ${companyContext}.`
-      : 'No company domain context is available yet.',
+      : 'No work email context is available yet.',
     companyContext
       ? 'Explain in two short sentences how Teambridge would help this specific operation based on that context.'
       : 'Explain in two short sentences that Teambridge helps teams fill shifts, monitor compliance, manage onboarding, payroll, and workforce issues from one live workspace.',
@@ -809,7 +809,14 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext }
 
     let output = { ok: false, reason: 'unknown_tool' }
     try {
-      if (name === 'openWorkspace') {
+      if (!accessGranted && ['openWorkspace', 'buildWorkspace', 'showCapability'].includes(name)) {
+        output = {
+          ok: false,
+          reason: 'lead_gate_required',
+          required: 'work_email',
+          message: 'Ask the visitor to fill the work email form before opening or changing the workspace.',
+        }
+      } else if (name === 'openWorkspace') {
         const result = await performDemoAction(args.industry || 'healthcare', {
           label: `${String(args.industry || 'healthcare').replace(/-/g, ' ')} workspace`,
         })
@@ -858,6 +865,8 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext }
           modalities: ['audio', 'text'],
           instructions: output.ok
             ? 'Briefly tell the visitor what changed and offer one useful next area to inspect.'
+            : output.reason === 'lead_gate_required'
+            ? 'Explain that you cannot open or change the workspace until the work email form is completed. Ask the visitor to enter their work email in the visible form, and reassure them it saves the workspace and connects the walkthrough to the right organization.'
             : 'Briefly say you could not complete that action and ask what they want to see next.',
         },
       })
@@ -1001,9 +1010,15 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext }
     setText('')
 
     const local = actionFromDemoText(value)
-    if (local) {
+    if (local && accessGranted) {
       performDemoAction(local.value, { label: local.label })
       trackDemoEvent('nova_realtime_text_local_action', {
+        value: local.value,
+        kind: local.kind,
+        conversationId,
+      })
+    } else if (local && !accessGranted) {
+      trackDemoEvent('nova_realtime_text_action_blocked_by_gate', {
         value: local.value,
         kind: local.kind,
         conversationId,
@@ -1018,7 +1033,15 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext }
         content: [{ type: 'input_text', text: value }],
       },
     })
-    sendEvent({ type: 'response.create', response: { modalities: ['audio', 'text'] } })
+    sendEvent({
+      type: 'response.create',
+      response: {
+        modalities: ['audio', 'text'],
+        instructions: accessGranted
+          ? undefined
+          : 'Tell the visitor you can guide them, but opening or changing the workspace is locked until they complete the visible work email form. Ask them to enter their work email so you can save the workspace and tailor the walkthrough.',
+      },
+    })
   }
 
   useEffect(() => {
@@ -1167,7 +1190,7 @@ async function performDemoAction(action, options = {}) {
   }
 }
 
-export default function DemoSpecialist({ enabled, route, autoOpen = false, leadData = null }) {
+export default function DemoSpecialist({ enabled, route, autoOpen = false, leadData = null, accessGranted = true }) {
   const [open, setOpen] = useState(false)
   const [signedUrl, setSignedUrl] = useState('')
   const [openAISecret, setOpenAISecret] = useState('')
@@ -1300,8 +1323,24 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false, leadD
       const detail = event.detail
       if (!detail) return
       detail.config = detail.config || {}
+      const leadGateRequired = (source, details = {}) => {
+        const result = {
+          ok: false,
+          reason: 'lead_gate_required',
+          required: 'work_email',
+          message: 'The visible work email form must be completed before Nova can open or change the workspace.',
+        }
+        trackDemoEvent('demo_specialist_action_blocked_by_gate', {
+          source,
+          ...details,
+          ...result,
+          conversationId,
+        })
+        return result
+      }
       const openWorkspaceTool = async ({ industry, workspace, vertical, label } = {}) => {
         const requested = industry || workspace || vertical
+        if (!accessGranted) return leadGateRequired('open_workspace_tool', { industry: requested, workspace, vertical })
         const result = await performDemoAction(requested || 'healthcare', { label })
         const path = result.industry ? `/${result.industry}` : window.location.hash.replace(/^#/, '') || '/'
         trackDemoEvent('demo_specialist_tool_open_workspace', {
@@ -1316,6 +1355,7 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false, leadD
       }
       const showCapabilityTool = async ({ capability, action, label } = {}) => {
         const requested = capability || action
+        if (!accessGranted) return leadGateRequired('show_capability_tool', { capability, action })
         const result = await performDemoAction(requested || 'overview', { label })
         trackDemoEvent('demo_specialist_tool_show_capability', {
           capability,
@@ -1326,6 +1366,7 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false, leadD
         return result
       }
       const buildWorkspaceTool = async ({ label } = {}) => {
+        if (!accessGranted) return leadGateRequired('build_workspace_tool')
         const result = await performDemoAction('build_workspace', { label: label || 'Build my workspace' })
         trackDemoEvent('demo_specialist_tool_build_workspace', {
           ...result,
@@ -1348,6 +1389,7 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false, leadD
         showConstructionWorkspace: () => openWorkspaceTool({ industry: 'construction', label: 'Construction workspace' }),
         showCapability: showCapabilityTool,
         navigateToDemoView: ({ view }) => {
+          if (!accessGranted) return leadGateRequired('navigate_tool', { view })
           const path = routeForView(view)
           setHashPath(path)
           trackDemoEvent('demo_specialist_tool_navigate', { view, path, conversationId })
@@ -1355,6 +1397,7 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false, leadD
           return { ok: true, path, industry: industry || undefined }
         },
         runDemoScenario: async ({ scenario }) => {
+          if (!accessGranted) return leadGateRequired('scenario_tool', { scenario })
           const key = String(scenario || '').toLowerCase()
           if (key.includes('overtime') || key.includes('sage')) {
             setHashPath('/sage')
@@ -1373,11 +1416,13 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false, leadD
           return { ok: result.ok, path, ...result }
         },
         performDemoAction: async ({ action, label }) => {
+          if (!accessGranted) return leadGateRequired('action_tool', { action, label })
           const result = await performDemoAction(action, { label })
           trackDemoEvent('demo_specialist_tool_action', { action, label, ...result, conversationId })
           return result
         },
         highlightDemoAreaByName: async ({ area, label }) => {
+          if (!accessGranted) return leadGateRequired('named_highlight_tool', { area, label })
           const result = await performDemoAction(area, { label })
           trackDemoEvent('demo_specialist_tool_named_highlight', { area, label, ...result, conversationId })
           return result
@@ -1408,6 +1453,16 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false, leadD
     const runLocalActionFromText = (text, source) => {
       const action = actionFromDemoText(text)
       if (!action) return false
+      if (!accessGranted) {
+        trackDemoEvent('nova_agent_local_action_blocked_by_gate', {
+          source,
+          kind: action.kind,
+          value: action.value,
+          text,
+          conversationId,
+        })
+        return true
+      }
 
       const actionKey = `${source}:${action.kind}:${action.value}:${String(text).slice(0, 160)}`
       if (novaAgentSeenRef.current.has(actionKey)) return true
@@ -1475,6 +1530,15 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false, leadD
       const fallback = shouldInspect ? spokenToolAction(line.text) : null
 
       if (fallback) {
+        if (!accessGranted) {
+          trackDemoEvent('demo_specialist_spoken_tool_fallback_blocked_by_gate', {
+            kind: fallback.kind,
+            value: fallback.value,
+            label: fallback.label,
+            conversationId,
+          })
+          return
+        }
         const fallbackKey = `${fallback.kind}:${fallback.value}:${line.text.slice(0, 120)}`
         if (!spokenToolFallbackRef.current.has(fallbackKey)) {
           spokenToolFallbackRef.current.add(fallbackKey)
@@ -1522,6 +1586,16 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false, leadD
         : null
 
       if (localAction) {
+        if (!accessGranted) {
+          trackDemoEvent('nova_agent_local_action_blocked_by_gate', {
+            kind: localAction.kind,
+            value: localAction.value,
+            label: localAction.label,
+            text: line.text,
+            conversationId,
+          })
+          return
+        }
         const localKey = `${localAction.kind}:${localAction.value}:${line.text.slice(0, 160)}`
         if (!novaAgentSeenRef.current.has(localKey)) {
           novaAgentSeenRef.current.add(localKey)
@@ -1572,6 +1646,15 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false, leadD
           })
 
           for (const action of actions) {
+            if (!accessGranted) {
+              trackDemoEvent('nova_agent_action_blocked_by_gate', {
+                kind: action.kind,
+                value: action.value,
+                label: action.label,
+                conversationId,
+              })
+              continue
+            }
             const result = await performDemoAction(action.value, { label: action.label })
             trackDemoEvent('nova_agent_action_executed', {
               kind: action.kind,
@@ -1625,7 +1708,7 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false, leadD
       widget.removeEventListener('keydown', handleWidgetKeydown, true)
       widget.removeEventListener('click', handleWidgetClick, true)
     }
-  }, [conversationId, signedUrl])
+  }, [conversationId, signedUrl, accessGranted])
 
   useEffect(() => {
     if (!open || !signedUrl || autoStartRef.current) return undefined
@@ -1703,6 +1786,7 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false, leadD
               model={openAIModel}
               conversationId={conversationId}
               leadContext={lead}
+              accessGranted={accessGranted}
             />
           )}
           {provider !== 'openai' && signedUrl && (

@@ -88,18 +88,15 @@ export default async function handler(req, res) {
     emailQuality,
     emailAttempts,
   } = body || {};
+  const captureEmail = email && typeof email === "string" ? email.trim().toLowerCase() : "";
   const normalizedDomain =
-    typeof submittedDomain === "string"
+    typeof submittedDomain === "string" && submittedDomain
       ? submittedDomain.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/.*$/, "")
-      : "";
-  const captureEmail =
-    email && typeof email === "string"
-      ? email
-      : normalizedDomain
-      ? `demo@${normalizedDomain}`
+      : captureEmail.includes("@")
+      ? captureEmail.split("@").pop()
       : "";
 
-  if (!captureEmail) {
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(captureEmail)) {
     return res.status(400).json({ error: "email_required" });
   }
 
