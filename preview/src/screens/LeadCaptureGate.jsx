@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { deriveConfig } from './onboarding/urlMatcher.js'
 
 const BASE = import.meta.env.BASE_URL
 const TEAMBRIDGE_LOGO =
@@ -182,23 +181,16 @@ export default function LeadCaptureGate({ onSubmit, onShown, sessionId, delayMs 
     }
 
     setSubmitting(true)
-    let domainResearch = null
-    try {
-      domainResearch = await deriveConfig(`https://${domain}`, { fromFreeText: false })
-    } catch {
-      domainResearch = null
-    }
-
     onSubmit({
       name: '',
-      company: domainResearch?.companyName || companyFromDomain(domain),
+      company: companyFromDomain(domain),
       email: email.trim().toLowerCase(),
       submittedDomain: domain,
       submittedContact: email.trim().toLowerCase(),
       contactInputType: 'email',
       emailQuality: 'work',
       emailAttempts,
-      domainResearch,
+      domainResearch: null,
     })
   }
 
@@ -267,7 +259,7 @@ export default function LeadCaptureGate({ onSubmit, onShown, sessionId, delayMs 
               className="lead-gate-submit"
               disabled={email.trim().length === 0 || submitting}
             >
-              {submitting ? 'Researching workspace...' : 'Start Demo Now'}
+              {submitting ? 'Opening workspace...' : 'Start Demo Now'}
             </button>
           </form>
         </div>
