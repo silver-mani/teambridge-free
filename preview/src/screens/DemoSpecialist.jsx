@@ -773,11 +773,14 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
   const [error, setError] = useState('')
   const [text, setText] = useState('')
   const [micEnabled, setMicEnabled] = useState(false)
+  const [micActivity, setMicActivity] = useState('idle')
   const peerRef = useRef(null)
   const channelRef = useRef(null)
   const audioRef = useRef(null)
   const micSenderRef = useRef(null)
   const micStreamRef = useRef(null)
+  const micAudioContextRef = useRef(null)
+  const micMeterTimerRef = useRef(null)
   const functionCallsRef = useRef(new Map())
   const companyContext = formatLeadContext(leadContext)
 
@@ -891,6 +894,40 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
       })
     }
 
+    if (payload.type === 'error') {
+      const message = payload.error?.message || payload.message || 'Nova realtime error'
+      setError(message)
+      setStatus('Nova is ready')
+      trackDemoEvent('nova_realtime_event_error', {
+        error: message,
+        code: payload.error?.code,
+        conversationId,
+      })
+      return
+    }
+
+    if (payload.type === 'response.created') {
+      setStatus('Nova is thinking...')
+    }
+
+    if (payload.type === 'response.audio.delta' || payload.type === 'response.audio_transcript.delta') {
+      setStatus('Nova is speaking')
+    }
+
+    if (payload.type === 'response.done') {
+      setStatus(micEnabled ? 'Nova is listening' : 'Tap Talk to respond')
+    }
+
+    if (payload.type === 'input_audio_buffer.speech_started') {
+      setMicActivity('hearing')
+      setStatus('Nova hears you')
+    }
+
+    if (payload.type === 'input_audio_buffer.speech_stopped') {
+      setMicActivity('listening')
+      setStatus('Nova is thinking...')
+    }
+
     if (payload.type === 'response.function_call_arguments.delta') {
       const id = payload.call_id || payload.item_id
       if (!id) return
@@ -1001,6 +1038,7 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
   const stopSession = () => {
     channelRef.current?.close()
     micStreamRef.current?.getTracks?.().forEach(track => track.stop())
+    stopMicMeter()
     peerRef.current?.getSenders?.().forEach(sender => sender.track?.stop())
     peerRef.current?.close()
     peerRef.current = null
@@ -1008,7 +1046,44 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
     micSenderRef.current = null
     micStreamRef.current = null
     setMicEnabled(false)
+    setMicActivity('idle')
     setStatus('Nova is ready')
+  }
+
+  const stopMicMeter = () => {
+    if (micMeterTimerRef.current) {
+      window.clearInterval(micMeterTimerRef.current)
+      micMeterTimerRef.current = null
+    }
+    micAudioContextRef.current?.close?.().catch?.(() => {})
+    micAudioContextRef.current = null
+  }
+
+  const startMicMeter = stream => {
+    stopMicMeter()
+    try {
+      const AudioContextCtor = window.AudioContext || window.webkitAudioContext
+      if (!AudioContextCtor) return
+      const audioContext = new AudioContextCtor()
+      const source = audioContext.createMediaStreamSource(stream)
+      const analyser = audioContext.createAnalyser()
+      analyser.fftSize = 512
+      source.connect(analyser)
+      const data = new Uint8Array(analyser.fftSize)
+      micAudioContextRef.current = audioContext
+      micMeterTimerRef.current = window.setInterval(() => {
+        analyser.getByteTimeDomainData(data)
+        let sum = 0
+        for (let i = 0; i < data.length; i += 1) {
+          const centered = (data[i] - 128) / 128
+          sum += centered * centered
+        }
+        const rms = Math.sqrt(sum / data.length)
+        setMicActivity(rms > 0.035 ? 'hearing' : 'listening')
+      }, 120)
+    } catch {
+      setMicActivity('listening')
+    }
   }
 
   const enableMic = async () => {
@@ -1020,13 +1095,16 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
       micStreamRef.current = stream
       const [track] = stream.getAudioTracks()
       await micSenderRef.current?.replaceTrack(track)
+      startMicMeter(stream)
       setMicEnabled(true)
+      setMicActivity('listening')
       setStatus('Nova is listening')
       trackDemoEvent('nova_realtime_microphone_enabled', { conversationId })
     } catch (err) {
       const message = String(err?.message || err)
       setStatus('Nova is speaking')
       setError('Microphone access was not enabled. You can still type below.')
+      setMicActivity('idle')
       trackDemoEvent('nova_realtime_microphone_failed', {
         error: message,
         conversationId,
@@ -1093,6 +1171,12 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
         </button>
       </div>
       <div className="nova-realtime-status">{status}</div>
+      {micEnabled && (
+        <div className={`nova-realtime-mic ${micActivity === 'hearing' ? 'is-hearing' : ''}`} aria-live="polite">
+          <span className="nova-realtime-mic-dot" aria-hidden="true" />
+          <span>{micActivity === 'hearing' ? 'Hearing you' : 'Mic on'}</span>
+        </div>
+      )}
       {error && <div className="nova-realtime-error">{error}</div>}
       <form className="nova-realtime-form" onSubmit={submitText}>
         <input
