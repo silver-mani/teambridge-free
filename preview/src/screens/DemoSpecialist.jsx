@@ -957,7 +957,7 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
 
     if (payload.type === 'response.done') {
       responseActiveRef.current = false
-      setStatus(micEnabled ? 'Nova is listening' : 'Ask Nova anything below')
+      setStatus(micEnabled ? 'Nova is listening' : 'Tap Talk to respond')
       window.setTimeout(flushPendingResponse, 60)
     }
 
@@ -1205,8 +1205,21 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
     <div className="nova-realtime-panel">
       <div className="nova-realtime-avatar">
         <img src={NOVA_AVATAR} alt="" />
+        <button
+          type="button"
+          onClick={!peerRef.current ? startSession : micEnabled ? stopSession : enableMic}
+          aria-label={!peerRef.current ? 'Start Nova' : micEnabled ? 'Stop Nova' : 'Enable microphone'}
+        >
+          {!peerRef.current ? 'Call' : micEnabled ? 'End' : 'Talk'}
+        </button>
       </div>
       <div className="nova-realtime-status">{status}</div>
+      {micEnabled && micActivity === 'hearing' && (
+        <div className="nova-realtime-mic is-hearing" aria-live="polite">
+          <span className="nova-realtime-mic-dot" aria-hidden="true" />
+          <span>Hearing you</span>
+        </div>
+      )}
       {error && <div className="nova-realtime-error">{error}</div>}
       <form className="nova-realtime-form" onSubmit={submitText}>
         <input
