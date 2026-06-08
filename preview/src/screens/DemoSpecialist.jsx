@@ -769,7 +769,7 @@ function formatLeadContext(leadContext = {}) {
   return parts.join('; ')
 }
 
-function bookingUrlForLead(leadContext = {}) {
+export function bookingUrlForLead(leadContext = {}) {
   const url = new URL(BOOK_DEMO_URL)
   if (leadContext.email) url.searchParams.set('email', leadContext.email)
   const name = leadContext.company || leadContext.name || leadContext.firstName
@@ -1230,15 +1230,6 @@ function OpenAIRealtimeNova({
     })
   }
 
-  const openBooking = () => {
-    window.open(bookingUrlForLead(leadContext), '_blank', 'noopener,noreferrer')
-    trackDemoEvent('nova_book_demo_clicked', {
-      conversationId,
-      source: 'nova_mini',
-      hasEmail: Boolean(leadContext?.email),
-    })
-  }
-
   useEffect(() => () => stopSession(), [])
 
   useEffect(() => {
@@ -1257,14 +1248,6 @@ function OpenAIRealtimeNova({
           aria-label={!peerRef.current ? 'Start Nova' : micEnabled ? 'Stop Nova' : 'Enable microphone'}
         >
           {!peerRef.current ? 'Call' : micEnabled ? 'End' : 'Talk'}
-        </button>
-        <button
-          type="button"
-          className="nova-book-button"
-          onClick={openBooking}
-          aria-label="Schedule a Teambridge meeting"
-        >
-          Book
         </button>
       </div>
     </div>

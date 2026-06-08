@@ -8,7 +8,7 @@ import SageDashboard      from './screens/sage/SageDashboard.jsx'
 import SageWorkforceEmbed from './screens/sage/SageWorkforceEmbed.jsx'
 import LeadCaptureGate    from './screens/LeadCaptureGate.jsx'
 import OnboardingFlow     from './screens/onboarding/OnboardingFlow.jsx'
-import DemoSpecialist     from './screens/DemoSpecialist.jsx'
+import DemoSpecialist, { bookingUrlForLead } from './screens/DemoSpecialist.jsx'
 import { getDemoSnapshot, initDemoTracking, trackDemoEvent } from './lib/demoTracking.js'
 
 const VALID_INDUSTRIES = new Set([
@@ -76,6 +76,22 @@ function clearLegacyDemosHash() {
   if (!isLegacyDemosHash()) return false
   window.history.replaceState({}, '', `${window.location.pathname}${window.location.search}`)
   return true
+}
+
+function TalkToTeamCta({ leadData }) {
+  const openBooking = () => {
+    window.open(bookingUrlForLead(leadData || {}), '_blank', 'noopener,noreferrer')
+    trackDemoEvent('demo_talk_to_team_clicked', {
+      source: 'persistent_demo_cta',
+      hasEmail: Boolean(leadData?.email),
+    })
+  }
+
+  return (
+    <button type="button" className="demo-talk-team-cta" onClick={openBooking}>
+      Talk to team
+    </button>
+  )
 }
 
 function parseHashString(input) {
@@ -426,6 +442,7 @@ function App() {
         leadCaptured={leadCaptured}
         onRequireWorkspaceAccess={(destination, intent, metadata) => requestWorkspaceAccess(destination, intent, metadata)}
       />
+      <TalkToTeamCta leadData={leadData} />
     </>
   )
 }
