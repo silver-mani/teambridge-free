@@ -768,7 +768,7 @@ function formatLeadContext(leadContext = {}) {
   return parts.join('; ')
 }
 
-function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, accessGranted = true }) {
+function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, accessGranted = true, autoStart = false }) {
   const [status, setStatus] = useState('Connecting Nova...')
   const [error, setError] = useState('')
   const [text, setText] = useState('')
@@ -1193,10 +1193,13 @@ function OpenAIRealtimeNova({ clientSecret, model, conversationId, leadContext, 
     })
   }
 
+  useEffect(() => () => stopSession(), [])
+
   useEffect(() => {
+    if (!autoStart) return
     startSession()
     return () => stopSession()
-  }, [clientSecret])
+  }, [autoStart, clientSecret])
 
   return (
     <div className="nova-realtime-panel">
@@ -1353,6 +1356,7 @@ async function performDemoAction(action, options = {}) {
 
 export default function DemoSpecialist({ enabled, route, autoOpen = false, leadData = null, accessGranted = true }) {
   const [open, setOpen] = useState(false)
+  const [voiceUnlocked, setVoiceUnlocked] = useState(false)
   const [signedUrl, setSignedUrl] = useState('')
   const [openAISecret, setOpenAISecret] = useState('')
   const [openAIModel, setOpenAIModel] = useState('')
@@ -1362,6 +1366,7 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false, leadD
   const [loading, setLoading] = useState(false)
   const widgetRef = useRef(null)
   const autoStartRef = useRef(false)
+  const voiceUnlockedRef = useRef(false)
   const transcriptSeenRef = useRef(new Set())
   const spokenToolFallbackRef = useRef(new Set())
   const novaAgentSeenRef = useRef(new Set())
@@ -1394,6 +1399,31 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false, leadD
     window.addEventListener('tb:open-demo-specialist', handleOpen)
     return () => window.removeEventListener('tb:open-demo-specialist', handleOpen)
   }, [enabled])
+
+  useEffect(() => {
+    if (!enabled || voiceUnlocked) return undefined
+
+    const unlockVoice = event => {
+      if (voiceUnlockedRef.current) return
+      voiceUnlockedRef.current = true
+      setVoiceUnlocked(true)
+      setOpen(true)
+      trackDemoEvent('demo_specialist_audio_unlocked', {
+        source: event?.type || 'unknown',
+        target: event?.target?.tagName?.toLowerCase?.() || 'unknown',
+      })
+    }
+
+    window.addEventListener('pointerdown', unlockVoice, { capture: true, once: true })
+    window.addEventListener('keydown', unlockVoice, { capture: true, once: true })
+    window.addEventListener('touchstart', unlockVoice, { capture: true, once: true, passive: true })
+
+    return () => {
+      window.removeEventListener('pointerdown', unlockVoice, { capture: true })
+      window.removeEventListener('keydown', unlockVoice, { capture: true })
+      window.removeEventListener('touchstart', unlockVoice, { capture: true })
+    }
+  }, [enabled, voiceUnlocked])
 
   useEffect(() => {
     if (!enabled || !autoOpen) return undefined
@@ -1948,6 +1978,7 @@ export default function DemoSpecialist({ enabled, route, autoOpen = false, leadD
               conversationId={conversationId}
               leadContext={lead}
               accessGranted={accessGranted}
+              autoStart={voiceUnlocked}
             />
           )}
           {provider !== 'openai' && signedUrl && (
