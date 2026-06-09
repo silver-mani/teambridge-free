@@ -745,10 +745,78 @@ body {
 }
 
 .demo-specialist-widget {
+  position: relative;
   width: 100%;
   min-height: 0;
   display: flex;
   pointer-events: auto;
+}
+
+/* Collapse control — lets the operator dismiss the panel so it never traps
+   the product behind it (critical on mobile, where the panel is a sheet). */
+.demo-specialist-collapse {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-full, 999px);
+  background: var(--color-bg-primary);
+  color: var(--color-content-secondary);
+  cursor: pointer;
+  transition: color 140ms ease, border-color 140ms ease, background 140ms ease;
+}
+
+.demo-specialist-collapse:hover {
+  color: var(--color-content-primary);
+  border-color: var(--color-border-selected);
+}
+
+/* Collapsed state — the fixed wrapper shrinks to the launcher so taps pass
+   through to the dashboard everywhere else. */
+.demo-specialist.is-collapsed {
+  top: auto;
+  bottom: 16px;
+  left: auto;
+  right: 16px;
+  width: auto;
+  height: auto;
+  padding: 0;
+}
+
+.demo-specialist-launcher {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 8px 14px 8px 8px;
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-full, 999px);
+  background: var(--color-bg-primary);
+  color: var(--color-content-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  box-shadow: var(--shadow-below-lg);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+
+.demo-specialist-launcher:hover {
+  transform: translateY(-1px);
+}
+
+.demo-specialist-launcher img {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full, 999px);
+  object-fit: cover;
 }
 
 .demo-specialist-state {
@@ -1022,6 +1090,27 @@ body {
   color: var(--color-bg-primary);
 }
 
+/* Live transcription caret — only shown on the streaming Nova line so the
+   sidebar visibly transcribes in step with her voice. */
+.nova-realtime-caret {
+  display: none;
+}
+
+.nova-realtime-line.is-streaming .nova-realtime-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: var(--color-content-tertiary);
+  animation: nova-caret-blink 1s steps(2, start) infinite;
+}
+
+@keyframes nova-caret-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
 @keyframes nova-mic-pulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.55); }
@@ -1042,6 +1131,65 @@ body {
 
 .nova-realtime-actions--split {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* Guided-tour progress bar — shows the current stop + N/total and gives the
+   visitor pause/resume/end control while the tour auto-advances. */
+.nova-tour-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+  padding: 8px 10px;
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-md, 10px);
+  background: color-mix(in srgb, var(--color-bg-primary) 92%, var(--color-content-primary));
+}
+
+.nova-tour-bar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.nova-tour-bar-progress {
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-secondary);
+  letter-spacing: 0.01em;
+}
+
+.nova-tour-bar-label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-content-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nova-tour-bar-controls {
+  display: inline-flex;
+  gap: 6px;
+  flex: none;
+}
+
+.nova-tour-bar-controls button {
+  padding: 5px 10px;
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-full, 999px);
+  background: var(--color-bg-primary);
+  color: var(--color-content-primary);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: border-color 140ms ease, color 140ms ease;
+}
+
+.nova-tour-bar-controls button:hover {
+  border-color: var(--color-border-selected);
 }
 
 .nova-tour-guide-button,

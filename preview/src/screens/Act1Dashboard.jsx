@@ -1861,29 +1861,43 @@ function buildUserBriefing(industryId, periodId, personId) {
   }
 }
 
+/* Resolve the briefing object for a given view + industry. Returns the
+   briefing directly (not a map keyed by industry).
+
+   Per-view briefing maps (schedule, people, pay-home, etc.) only cover some
+   industries — events is the most complete. When the active industry has no
+   view-specific briefing, we fall back to THAT INDUSTRY'S home briefing, never
+   another vertical's data. (Previously the fallback was `set.events`, which
+   leaked events content — Gate 3, Harbor Theater — into healthcare, security,
+   and every other workspace.) */
 function briefingFor(view, industryId, paySubRoute) {
-  if (view === 'schedule')        return SCHEDULE_BRIEFING
-  if (view === 'people')          return PEOPLE_BRIEFING
-  if (view === 'time-tracking')   return TIME_TRACKING_BRIEFING
-  if (view === 'shift-requests')  return SHIFT_REQUESTS_BRIEFING
-  if (view === 'timesheets')      return TIMESHEETS_BRIEFING
-  if (view === 'review')          return REVIEW_BRIEFING
-  if (view === 'onboarding')      return ONBOARDING_BRIEFING
+  // Pay sub-screens build a briefing for the specific industry on the fly,
+  // so they're already correct — return them straight through.
   if (view === 'pay') {
     if (paySubRoute?.screen === 'user' && paySubRoute.periodId && paySubRoute.personId) {
-      return { events: buildUserBriefing(industryId, paySubRoute.periodId, paySubRoute.personId) }
+      return buildUserBriefing(industryId, paySubRoute.periodId, paySubRoute.personId)
     }
     if (paySubRoute?.screen === 'period' && paySubRoute.periodId) {
-      return { events: buildPeriodBriefing(industryId, paySubRoute.periodId) }
+      return buildPeriodBriefing(industryId, paySubRoute.periodId)
     }
-    return PAY_HOME_BRIEFING
+    return PAY_HOME_BRIEFING[industryId] ?? BRIEFING[industryId] ?? BRIEFING.events
   }
-  return BRIEFING
+
+  const set =
+    view === 'schedule'       ? SCHEDULE_BRIEFING :
+    view === 'people'         ? PEOPLE_BRIEFING :
+    view === 'time-tracking'  ? TIME_TRACKING_BRIEFING :
+    view === 'shift-requests' ? SHIFT_REQUESTS_BRIEFING :
+    view === 'timesheets'     ? TIMESHEETS_BRIEFING :
+    view === 'review'         ? REVIEW_BRIEFING :
+    view === 'onboarding'     ? ONBOARDING_BRIEFING :
+    BRIEFING
+
+  return set[industryId] ?? BRIEFING[industryId] ?? BRIEFING.events
 }
 
 function DailyBriefing({ industryId, view = 'overview', paySubRoute, briefKey, onAction }) {
-  const set = briefingFor(view, industryId, paySubRoute)
-  const brief = set[industryId] ?? set.events ?? BRIEFING.events
+  const brief = briefingFor(view, industryId, paySubRoute)
   const hasSituations = Array.isArray(brief.situations)
 
   return (
@@ -3315,8 +3329,7 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
     lastBriefKeyRef.current = briefKey
     if (briefKey === prev) return
     if (messages.length === 0) return  // empty state already renders the briefing
-    const set = briefingFor(view, industryId, paySubRoute)
-    const brief = set[industryId] ?? set.events
+    const brief = briefingFor(view, industryId, paySubRoute)
     if (!brief?.situations?.length) return
     setMessages(prev => [
       ...prev,
@@ -3430,7 +3443,7 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
       const r = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ messages: apiMessages }),
+        body: JSON.stringify({ messages: apiMessages, industry: industryId }),
       })
       if (r.ok) {
         const data = await r.json()
@@ -3439,7 +3452,7 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
     } catch (_) { /* network error, fall through */ }
 
     if (!replyText) {
-      replyText = "I'm offline from the live AI right now, but here's where I'd start: check the open role for Saturday, roster changes in the last hour, and any credentialing still in-flight. Nova can handle this when you're ready — set ANTHROPIC_API_KEY on the Vercel deploy for real answers."
+      replyText = "I can't reach the live assistant this second — give it another try in a moment. In the meantime, the activity feed on the right shows what the agents are working on right now."
     }
 
     const followup = detectFollowup(replyText)
@@ -3649,8 +3662,7 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
   // On the Schedule page, follow-up chips mirror the schedule briefing's
   // action prompts instead of the home canned suggestions. On overview (and
   // any other view) we fall back to the industry's PROMPT_SUGGESTIONS.
-  const viewBriefingSet = briefingFor(view, industryId, paySubRoute)
-  const viewBrief = viewBriefingSet[industryId] ?? viewBriefingSet.events
+  const viewBrief = briefingFor(view, industryId, paySubRoute)
   const chipPool = (view === 'overview' || !viewBrief?.situations?.length)
     ? (suggestions ?? [])
     : viewBrief.situations.map(s => s.action).filter(Boolean).map(a => ({ label: a.prompt }))
