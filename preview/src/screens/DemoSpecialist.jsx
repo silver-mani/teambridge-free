@@ -801,7 +801,9 @@ const TOUR_STOPS = [
 ]
 
 const TOUR_QUESTION_TEXT = 'Any questions on this before I keep going?'
-const TOUR_QUESTION_PAUSE_MS = 5200
+const TRANSCRIPT_REVEAL_MS_PER_CHAR = 45
+const TOUR_AFTER_NARRATION_PAUSE_MS = 900
+const TOUR_QUESTION_PAUSE_MS = 9000
 
 function OpenAIRealtimeNova({
   clientSecret,
@@ -825,6 +827,7 @@ function OpenAIRealtimeNova({
   const tourAdvanceTimerRef = useRef(null)
   const tourPhaseRef = useRef('idle')
   const pendingTourStartRef = useRef(false)
+  const transcriptRevealTimerRef = useRef(null)
   const audioCtxRef = useRef(null)
   const peerRef = useRef(null)
   const channelRef = useRef(null)
@@ -868,34 +871,86 @@ function OpenAIRealtimeNova({
     })
   }
 
-  // Append a chunk of Nova's streaming speech to her live transcript line,
-  // creating the line on the first delta. This is what makes the sidebar
-  // transcribe in real time, in step with her voice.
+  const clearNovaRevealTimer = () => {
+    if (transcriptRevealTimerRef.current) {
+      window.clearInterval(transcriptRevealTimerRef.current)
+      transcriptRevealTimerRef.current = null
+    }
+  }
+
+  const ensureNovaStreamLine = () => {
+    if (novaStreamRef.current.id) return novaStreamRef.current.id
+    const newId = `${Date.now()}_${Math.random().toString(36).slice(2)}`
+    novaStreamRef.current.id = newId
+    setTranscript(prev => [
+      ...prev,
+      { id: newId, speaker: 'Nova', text: '', at: Date.now(), streaming: true },
+    ].slice(-80))
+    return newId
+  }
+
+  const estimateRemainingTranscriptMs = () => {
+    const stream = novaStreamRef.current
+    const remaining = Math.max(0, String(stream.target || '').length - String(stream.text || '').length)
+    return remaining * TRANSCRIPT_REVEAL_MS_PER_CHAR
+  }
+
+  const scheduleNovaReveal = () => {
+    if (transcriptRevealTimerRef.current) return
+    transcriptRevealTimerRef.current = window.setInterval(() => {
+      const stream = novaStreamRef.current
+      const target = String(stream.target || '')
+      const displayed = String(stream.text || '')
+      const id = stream.id
+
+      if (!id || (!target && !stream.done)) {
+        clearNovaRevealTimer()
+        return
+      }
+
+      if (displayed.length < target.length) {
+        const next = target.slice(0, displayed.length + 1)
+        novaStreamRef.current = { ...stream, text: next }
+        setTranscript(prev => prev.map(line => (line.id === id ? { ...line, text: next, streaming: true } : line)))
+        return
+      }
+
+      if (stream.done) {
+        clearNovaRevealTimer()
+        setTranscript(prev => prev.map(line => (line.id === id ? { ...line, text: target, streaming: false } : line)))
+        novaStreamRef.current = { id: null, text: '', target: '', done: false }
+      }
+    }, TRANSCRIPT_REVEAL_MS_PER_CHAR)
+  }
+
+  // Buffer Nova's transcript and reveal it at a speaking pace. Realtime
+  // transcript deltas can arrive ahead of audio playback; showing them
+  // immediately makes the sidebar feel disconnected from the voice.
   const appendNovaStream = delta => {
     const chunk = String(delta || '')
     if (!chunk) return
-    novaStreamRef.current.text += chunk
-    const text = novaStreamRef.current.text
-    setTranscript(prev => {
-      const id = novaStreamRef.current.id
-      if (id) {
-        return prev.map(line => (line.id === id ? { ...line, text } : line))
-      }
-      const newId = `${Date.now()}_${Math.random().toString(36).slice(2)}`
-      novaStreamRef.current.id = newId
-      return [
-        ...prev,
-        { id: newId, speaker: 'Nova', text, at: Date.now(), streaming: true },
-      ].slice(-80)
-    })
+    ensureNovaStreamLine()
+    novaStreamRef.current.target = `${novaStreamRef.current.target || ''}${chunk}`
+    scheduleNovaReveal()
   }
 
-  // Finalize the streaming line with the authoritative transcript. Falls back
-  // to addTranscript when no streaming line exists (e.g. text-only responses).
+  // Finalize the streaming line with the authoritative transcript, but keep the
+  // reveal paced instead of dumping the full sentence ahead of the voice.
   const finalizeNovaStream = finalText => {
-    const text = String(finalText || novaStreamRef.current.text || '').trim()
-    const id = novaStreamRef.current.id
-    novaStreamRef.current = { id: null, text: '' }
+    const text = String(finalText || novaStreamRef.current.target || novaStreamRef.current.text || '').trim()
+    if (!text) return
+    ensureNovaStreamLine()
+    novaStreamRef.current.target = text
+    novaStreamRef.current.done = true
+    scheduleNovaReveal()
+  }
+
+  const finishNovaStreamNow = () => {
+    const stream = novaStreamRef.current
+    const text = String(stream.target || stream.text || '').trim()
+    const id = stream.id
+    clearNovaRevealTimer()
+    novaStreamRef.current = { id: null, text: '', target: '', done: false }
     if (!text) return
     if (id) {
       setTranscript(prev => prev.map(line => (line.id === id ? { ...line, text, streaming: false } : line)))
@@ -987,6 +1042,10 @@ function OpenAIRealtimeNova({
   }
 
   const executeToolCall = async ({ name, arguments: rawArguments, call_id: callId }) => {
+    if (tourRef.current.active && !tourRef.current.paused) {
+      return
+    }
+
     if (callId) {
       if (executedToolCallsRef.current.has(callId)) return
       executedToolCallsRef.current.add(callId)
@@ -1106,7 +1165,8 @@ function OpenAIRealtimeNova({
     if (payload.type === 'response.created') {
       responseActiveRef.current = true
       // Fresh response — start a new streaming transcript line.
-      novaStreamRef.current = { id: null, text: '' }
+      clearNovaRevealTimer()
+      novaStreamRef.current = { id: null, text: '', target: '', done: false }
       setStatus('Nova is thinking...')
     }
 
@@ -1138,17 +1198,23 @@ function OpenAIRealtimeNova({
         setStatus(`Guided tour · ${Math.min(t.index + 1, TOUR_STOPS.length)} / ${TOUR_STOPS.length}`)
         clearTourAdvance()
         if (tourPhaseRef.current === 'narrating') {
-          if (t.index + 1 >= TOUR_STOPS.length) {
-            finishTour()
-          } else {
-            askTourQuestion()
-          }
-        } else if (tourPhaseRef.current === 'question') {
-          tourPhaseRef.current = 'waiting'
           tourAdvanceTimerRef.current = window.setTimeout(() => {
             tourAdvanceTimerRef.current = null
+            if (!tourRef.current.active || tourRef.current.paused || tourPhaseRef.current !== 'narrating') return
+            if (tourRef.current.index + 1 >= TOUR_STOPS.length) {
+              finishTour()
+            } else {
+              askTourQuestion()
+            }
+          }, estimateRemainingTranscriptMs() + TOUR_AFTER_NARRATION_PAUSE_MS)
+        } else if (tourPhaseRef.current === 'question') {
+          tourPhaseRef.current = 'waiting'
+          setStatus('Nova is waiting for your question')
+          tourAdvanceTimerRef.current = window.setTimeout(() => {
+            tourAdvanceTimerRef.current = null
+            if (!tourRef.current.active || tourRef.current.paused || tourPhaseRef.current !== 'waiting') return
             runTourStep(tourRef.current.index + 1)
-          }, TOUR_QUESTION_PAUSE_MS)
+          }, estimateRemainingTranscriptMs() + TOUR_QUESTION_PAUSE_MS)
         }
       } else {
         setStatus(micEnabled ? 'Nova is listening' : 'Tap Talk to respond')
@@ -1294,6 +1360,8 @@ function OpenAIRealtimeNova({
     pendingTourStartRef.current = false
     tourPhaseRef.current = 'idle'
     clearTourAdvance()
+    clearNovaRevealTimer()
+    novaStreamRef.current = { id: null, text: '', target: '', done: false }
     setTourState({ active: false, paused: false, index: 0 })
     executedToolCallsRef.current.clear()
     setMicEnabled(false)
@@ -1479,7 +1547,7 @@ function OpenAIRealtimeNova({
     }
     responseActiveRef.current = false
     pendingResponseRef.current = null
-    finalizeNovaStream(novaStreamRef.current.text)
+    finishNovaStreamNow()
   }
 
   // Soft two-note cue (Web Audio) so the tour start feels like something
@@ -1533,6 +1601,7 @@ function OpenAIRealtimeNova({
     setStatus('Nova is checking in')
     createRealtimeResponse({
       output_modalities: ['audio'],
+      tool_choice: 'none',
       instructions: `Say exactly: "${TOUR_QUESTION_TEXT}"`,
     })
   }
@@ -1553,6 +1622,7 @@ function OpenAIRealtimeNova({
     } catch { /* navigation best-effort; still narrate */ }
     createRealtimeResponse({
       output_modalities: ['audio'],
+      tool_choice: 'none',
       instructions: tourInstructionsFor(index),
     })
   }
@@ -1564,6 +1634,7 @@ function OpenAIRealtimeNova({
     trackDemoEvent('nova_guided_tour_finished', { conversationId })
     createRealtimeResponse({
       output_modalities: ['audio'],
+      tool_choice: 'none',
       instructions: 'You just finished the guided tour. In one short, warm sentence, invite the visitor to explore, ask a deeper question, or talk to the team. Do not summarize the tour.',
     })
   }
