@@ -1349,19 +1349,20 @@ body {
   z-index: 2147483001;
   display: grid;
   place-items: center;
-  padding: 24px;
+  padding: 32px;
   background: rgba(15, 23, 42, 0.42);
   backdrop-filter: blur(14px);
 }
 
 .demo-booking-panel {
-  width: min(980px, 100%);
-  height: min(780px, calc(100svh - 48px));
+  width: min(1120px, calc(100vw - 64px));
+  height: min(820px, calc(100svh - 64px));
+  min-height: 620px;
   display: grid;
   grid-template-rows: auto 1fr auto;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.26);
-  border-radius: 18px;
+  border-radius: 8px;
   background: var(--color-bg-primary);
   box-shadow: 0 32px 90px rgba(15, 23, 42, 0.34);
 }
@@ -1393,12 +1394,13 @@ body {
 .demo-booking-head button {
   width: 36px;
   height: 36px;
+  flex: 0 0 36px;
   border: 0;
-  border-radius: 999px;
+  border-radius: 8px;
   background: var(--color-bg-secondary);
   color: var(--color-content-primary);
   font: inherit;
-  font-size: 24px;
+  font-size: 22px;
   line-height: 1;
   cursor: pointer;
 }
@@ -1496,7 +1498,9 @@ body {
   }
 
   .demo-booking-panel {
+    width: calc(100vw - 20px);
     height: calc(100svh - 20px);
-    border-radius: 14px;
+    min-height: 0;
+    border-radius: 8px;
   }
 }

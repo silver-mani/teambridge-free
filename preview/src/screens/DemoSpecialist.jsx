@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { trackDemoEvent, getDemoSnapshot } from '../lib/demoTracking.js'
 
 const BASE = import.meta.env.BASE_URL
@@ -1673,7 +1674,7 @@ function OpenAIRealtimeNova({
     createRealtimeResponse({
       output_modalities: ['audio'],
       tool_choice: 'none',
-      instructions: 'You just finished the guided tour. In one short, warm sentence, invite the visitor to explore, ask a deeper question, or talk to the team. Do not summarize the tour.',
+      instructions: 'You just finished the guided tour. In one short, warm sentence, say you can answer questions, go deeper on any workflow, or help book a meeting with the Teambridge team. Do not summarize the tour.',
     })
   }
 
@@ -1820,7 +1821,7 @@ function OpenAIRealtimeNova({
           Send
         </button>
       </form>
-      {bookingOpen && (
+      {bookingOpen && typeof document !== 'undefined' && createPortal((
         <div className="demo-booking-modal" role="dialog" aria-modal="true" aria-label="Schedule a Teambridge meeting">
           <div className="demo-booking-panel">
             <div className="demo-booking-head">
@@ -1829,7 +1830,7 @@ function OpenAIRealtimeNova({
                 <strong>Pick a time to talk</strong>
               </div>
               <button type="button" onClick={() => setBookingOpen(false)} aria-label="Close booking">
-                Close
+                ×
               </button>
             </div>
             <iframe
@@ -1843,7 +1844,7 @@ function OpenAIRealtimeNova({
             </a>
           </div>
         </div>
-      )}
+      ), document.body)}
     </div>
   )
 }
