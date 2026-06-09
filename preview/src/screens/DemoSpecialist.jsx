@@ -783,22 +783,25 @@ export function bookingUrlForLead(leadContext = {}) {
 // auto-advancing between them.
 const TOUR_STOPS = [
   { action: 'overview', label: 'Command center',
-    points: 'the live activity feed where the AI agents are already resolving coverage, and the daily briefing of what actually needs you' },
+    script: "This is the command center. The feed shows what Teambridge is already handling, and the briefing keeps the important items at the top instead of making you hunt for them." },
   { action: 'schedule_gap', label: 'Schedule & coverage',
-    points: 'an open shift gap and how Teambridge auto-finds qualified replacements, ranked by proximity, hours, and past performance' },
+    script: "Here is scheduling and coverage. When a shift opens up, Teambridge finds qualified replacements and ranks them by fit, availability, hours, and past reliability." },
   { action: 'shift_requests', label: 'Shift requests',
-    points: 'the swaps and time-off requests Nova can approve or route automatically against your rules' },
+    script: "This is where swap and time-off requests land. Clean requests can clear automatically, and anything risky gets routed with the reason already attached." },
   { action: 'people', label: 'People & credentials',
-    points: 'the roster with live credential and certification status, so expirations get caught before they become call-outs' },
+    script: "Here is the roster. Credentials, certifications, roles, and work status stay live, so expiring items get caught before they create coverage problems." },
   { action: 'onboarding', label: 'Onboarding',
-    points: 'how a new hire moves through onboarding steps automatically until they are shift-ready' },
+    script: "Onboarding turns a new hire into someone ready to work. Forms, checks, reminders, and handoffs move forward without a manager chasing each step." },
   { action: 'payroll', label: 'Pay',
-    points: 'worked hours flowing straight into payroll with overtime and premiums already calculated' },
+    script: "Pay brings time, premiums, overtime, and approvals together before payroll closes. Managers see the exceptions, not a spreadsheet full of guesses." },
   { action: 'compliance', label: 'Compliance',
-    points: 'the labor rules and policies Teambridge enforces automatically, with an audit trail behind every action' },
+    script: "Compliance keeps the rules visible. Policies, documents, and labor checks are enforced as work happens, with an audit trail behind every decision." },
   { action: 'agents', label: 'AI agents',
-    points: 'the agent workflows quietly running the operation, and how an operator can adjust what they do' },
+    script: "These are the AI agents behind the scenes. They handle coverage, reminders, checks, and escalations, while operators keep control over scope and approvals." },
 ]
+
+const TOUR_QUESTION_TEXT = 'Any questions on this before I keep going?'
+const TOUR_QUESTION_PAUSE_MS = 5200
 
 function OpenAIRealtimeNova({
   clientSecret,
@@ -820,6 +823,7 @@ function OpenAIRealtimeNova({
   // closure) always reads the current step without going stale.
   const tourRef = useRef({ active: false, index: 0, paused: false })
   const tourAdvanceTimerRef = useRef(null)
+  const tourPhaseRef = useRef('idle')
   const pendingTourStartRef = useRef(false)
   const audioCtxRef = useRef(null)
   const peerRef = useRef(null)
@@ -1126,16 +1130,26 @@ function OpenAIRealtimeNova({
     if (payload.type === 'response.done') {
       responseActiveRef.current = false
       window.setTimeout(flushPendingResponse, 60)
-      // Guided tour: once Nova finishes narrating a stop, pause briefly so the
-      // visitor can absorb (or interject), then advance to the next stop.
+      // Guided tour: Nova narrates a section, asks a quick check-in, then
+      // continues automatically after a short pause unless the visitor speaks
+      // or types.
       const t = tourRef.current
       if (t.active && !t.paused) {
         setStatus(`Guided tour · ${Math.min(t.index + 1, TOUR_STOPS.length)} / ${TOUR_STOPS.length}`)
         clearTourAdvance()
-        tourAdvanceTimerRef.current = window.setTimeout(() => {
-          tourAdvanceTimerRef.current = null
-          runTourStep(tourRef.current.index + 1)
-        }, 2200)
+        if (tourPhaseRef.current === 'narrating') {
+          if (t.index + 1 >= TOUR_STOPS.length) {
+            finishTour()
+          } else {
+            askTourQuestion()
+          }
+        } else if (tourPhaseRef.current === 'question') {
+          tourPhaseRef.current = 'waiting'
+          tourAdvanceTimerRef.current = window.setTimeout(() => {
+            tourAdvanceTimerRef.current = null
+            runTourStep(tourRef.current.index + 1)
+          }, TOUR_QUESTION_PAUSE_MS)
+        }
       } else {
         setStatus(micEnabled ? 'Nova is listening' : 'Tap Talk to respond')
       }
@@ -1278,6 +1292,7 @@ function OpenAIRealtimeNova({
     pendingResponseRef.current = null
     pendingTypedPromptRef.current = null
     pendingTourStartRef.current = false
+    tourPhaseRef.current = 'idle'
     clearTourAdvance()
     setTourState({ active: false, paused: false, index: 0 })
     executedToolCallsRef.current.clear()
@@ -1494,28 +1509,32 @@ function OpenAIRealtimeNova({
     } catch { /* sound is non-essential */ }
   }
 
-  // Build the spoken directive for a given stop. Stop 0 carries the crafted
-  // greeting (with a soft "Alright —" lead so a clipped first instant never
-  // eats a real word); later stops keep momentum and never re-greet.
+  // Build the spoken directive for a given stop. The tour should sound like a
+  // product specialist walking beside the visitor, not a screen reader listing
+  // numbered steps.
   const tourInstructionsFor = index => {
-    const total = TOUR_STOPS.length
     const stop = TOUR_STOPS[index]
     const isFirst = index === 0
-    const isLast = index + 1 >= total
-    const lead = isFirst
-      ? `Alright — I'm Nova, your Teambridge guide. Give me about two minutes and I'll walk you through how Teambridge runs your team from one place. We're starting at your ${stop.label.toLowerCase()}.`
-      : `Stop ${index + 1} of ${total}: you're now looking at ${stop.label}.`
+    const script = isFirst
+      ? `Alright, I am Nova. I will give you a quick feel for how Teambridge runs workforce operations from one live workspace. ${stop.script}`
+      : stop.script
     return [
       isFirst
-        ? 'You are Nova, starting a guided product tour. Speak warmly and confidently — conversational, unhurried but energetic, never a flat feature readout.'
-        : 'You are Nova, mid guided tour. Keep the momentum, warm and concise. Do not greet again.',
-      `Say, in your own natural words: ${lead}`,
-      `Then, in one or two short sentences, point out ${stop.points}.`,
-      isLast
-        ? "Then say that's the quick tour."
-        : 'Then say, in a few words, that you\'ll move to the next area — do not ask permission.',
-      'Keep the whole turn under about 40 words.',
+        ? 'You are Nova, starting a guided product tour. Speak warmly and confidently, like a concise product specialist.'
+        : 'You are Nova, continuing a guided product tour. Do not greet again.',
+      'Do not say "stop", "step", "screen", "moving to", or any count like "2 of 8".',
+      'Do not ask a question in this turn; the app will ask the check-in separately.',
+      `Say this naturally, preserving the meaning and keeping it under 35 words: "${script}"`,
     ].filter(Boolean).join(' ')
+  }
+
+  const askTourQuestion = () => {
+    tourPhaseRef.current = 'question'
+    setStatus('Nova is checking in')
+    createRealtimeResponse({
+      output_modalities: ['audio'],
+      instructions: `Say exactly: "${TOUR_QUESTION_TEXT}"`,
+    })
   }
 
   // Open the screen for a stop, then have Nova narrate it. Called to start the
@@ -1527,6 +1546,7 @@ function OpenAIRealtimeNova({
     }
     const stop = TOUR_STOPS[index]
     setTourState({ active: true, index, paused: false })
+    tourPhaseRef.current = 'narrating'
     setStatus('Nova is speaking')
     try {
       await performDemoAction(stop.action, { label: stop.label })
@@ -1539,11 +1559,12 @@ function OpenAIRealtimeNova({
 
   const finishTour = () => {
     clearTourAdvance()
+    tourPhaseRef.current = 'finishing'
     setTourState({ active: false, paused: false, index: 0 })
     trackDemoEvent('nova_guided_tour_finished', { conversationId })
     createRealtimeResponse({
       output_modalities: ['audio'],
-      instructions: 'You just finished the guided tour. In one short, warm sentence, invite the visitor to explore anything themselves, ask you to go deeper on any area, or talk to the team.',
+      instructions: 'You just finished the guided tour. In one short, warm sentence, invite the visitor to explore, ask a deeper question, or talk to the team. Do not summarize the tour.',
     })
   }
 
@@ -1553,6 +1574,7 @@ function OpenAIRealtimeNova({
     if (!tourRef.current.active || tourRef.current.paused) return
     clearTourAdvance()
     cancelActiveResponse()
+    tourPhaseRef.current = 'paused'
     setTourState({ paused: true })
     setStatus('Tour paused')
     trackDemoEvent('nova_guided_tour_paused', { reason, index: tourRef.current.index })
@@ -1560,6 +1582,7 @@ function OpenAIRealtimeNova({
 
   const resumeTour = () => {
     if (!tourRef.current.active) return
+    clearTourAdvance()
     setTourState({ paused: false })
     trackDemoEvent('nova_guided_tour_resumed', { index: tourRef.current.index })
     runTourStep(tourRef.current.index + 1)
@@ -1568,12 +1591,14 @@ function OpenAIRealtimeNova({
   const endTour = () => {
     clearTourAdvance()
     cancelActiveResponse()
+    tourPhaseRef.current = 'idle'
     setTourState({ active: false, paused: false, index: 0 })
     setStatus(micEnabled ? 'Nova is listening' : 'Tap Talk or type below')
     trackDemoEvent('nova_guided_tour_ended', { conversationId })
   }
 
   const startGuidedTour = () => {
+    if (tourRef.current.active || pendingTourStartRef.current) return
     setError('')
     playTourChime()
     addTranscript('You', 'Start guided tour', { source: 'guided_tour' })
