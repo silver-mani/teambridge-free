@@ -974,17 +974,12 @@ function OpenAIRealtimeNova({
   }
 
   const introInstructions = [
-    'Start speaking now.',
+    'Start speaking now. Keep this very brief: about three short sentences, under twelve seconds. Do not list industries or features.',
     'Say: "Hi, I am Nova, your Teambridge demo guide."',
     companyContext
-      ? `Use this visitor context without overclaiming: ${companyContext}.`
-      : 'No visitor context is available yet.',
-    companyContext
-      ? 'Explain in two short sentences how Teambridge would help this specific operation based on that context.'
-      : 'Explain in two short sentences that Teambridge helps teams fill shifts, monitor compliance, manage onboarding, payroll, and workforce issues from one live workspace.',
-    'Offer two clear paths: build a workspace from their company website or short description, or open a ready-made workspace by vertical.',
-    'Tell the visitor they can say "build my workspace" or ask you to open healthcare, staffing, hospitality, security, construction, facilities, events, long-term care, or industrial.',
-    'End with one clear question: "Should I build your workspace or open a ready-made one?"',
+      ? `Add one short sentence on how Teambridge helps this operation, using this context without overclaiming: ${companyContext}.`
+      : 'Add one short sentence: Teambridge fills shifts, tracks compliance, and runs onboarding and payroll from one live workspace.',
+    'End with one question: "Want me to build your workspace from your company, or open a ready-made one?"',
   ].join(' ')
 
   const sendEvent = event => {
