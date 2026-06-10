@@ -52,6 +52,35 @@ function splitName(full) {
   };
 }
 
+function compact(obj) {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined)
+  );
+}
+
+async function postConvexMutation(body) {
+  const response = await fetch(`${CONVEX_URL}/api/mutation`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const text = await response.text();
+  let payload = {};
+  try {
+    payload = text ? JSON.parse(text) : {};
+  } catch {
+    payload = { raw: text };
+  }
+
+  if (!response.ok) {
+    throw new Error(`Convex ${response.status}: ${text.slice(0, 300)}`);
+  }
+  if (payload?.status === "error") {
+    throw new Error(`Convex error: ${String(payload.errorMessage || payload.error || text).slice(0, 300)}`);
+  }
+  return payload;
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
@@ -85,6 +114,7 @@ export default async function handler(req, res) {
     path,
     landingPage,
     timeInDemoMs,
+    sessionId,
     emailQuality,
     emailAttempts,
   } = body || {};
@@ -110,10 +140,51 @@ export default async function handler(req, res) {
   const ipAddress = getClientIp(req.headers);
   const userAgent = req.headers["user-agent"];
 
+  const convexArgs = {
+    email: captureEmail,
+    source: SOURCE,
+    firstName: firstName || undefined,
+    lastName: lastName || undefined,
+    company: company || undefined,
+    pageUrl: pageUrl || undefined,
+    pageName: "Free Tier Demo Signup",
+    referrer: referrer || undefined,
+    userAgent,
+    country,
+    city,
+    region,
+    ipTimezone,
+    ipAddress,
+    demoSessionId: demoSessionId || undefined,
+    sessionId: sessionId || demoSessionId || undefined,
+    emailQuality: typeof emailQuality === 'string' ? emailQuality : undefined,
+    emailAttempts: Array.isArray(emailAttempts) ? emailAttempts.slice(0, 20) : undefined,
+    industry: industry || undefined,
+    firstTouchLandingPage: landingPage || undefined,
+    firstTouchReferrer: referrer || undefined,
+    sessionDurationMs:
+      typeof timeInDemoMs === "number" ? Math.max(0, timeInDemoMs) : undefined,
+    extraFields: [
+      ...(industry ? [{ key: "demo_industry", value: String(industry) }] : []),
+      ...(view ? [{ key: "demo_view", value: String(view) }] : []),
+      ...(route ? [{ key: "demo_route", value: String(route) }] : []),
+      ...(path ? [{ key: "demo_path", value: String(path) }] : []),
+      ...(demoSessionId ? [{ key: "demo_session_id", value: String(demoSessionId) }] : []),
+      ...(normalizedDomain ? [{ key: "submitted_domain", value: normalizedDomain }] : []),
+      ...(submittedContact ? [{ key: "submitted_contact", value: String(submittedContact).slice(0, 120) }] : []),
+      ...(contactInputType ? [{ key: "contact_input_type", value: String(contactInputType) }] : []),
+      ...(domainResearch?.summary ? [{ key: "domain_research_summary", value: String(domainResearch.summary).slice(0, 300) }] : []),
+    ],
+  };
   const convexBody = {
     path: "leads:capture",
     format: "json",
-    args: {
+    args: compact(convexArgs),
+  };
+  const minimalConvexBody = {
+    path: "leads:capture",
+    format: "json",
+    args: compact({
       email: captureEmail,
       source: SOURCE,
       firstName: firstName || undefined,
@@ -131,28 +202,8 @@ export default async function handler(req, res) {
       demoSessionId: demoSessionId || undefined,
       emailQuality: typeof emailQuality === 'string' ? emailQuality : undefined,
       emailAttempts: Array.isArray(emailAttempts) ? emailAttempts.slice(0, 20) : undefined,
-      industry: industry || undefined,
-      firstTouchLandingPage: landingPage || undefined,
-      firstTouchReferrer: referrer || undefined,
-      sessionDurationMs:
-        typeof timeInDemoMs === "number" ? Math.max(0, timeInDemoMs) : undefined,
-      extraFields: [
-        ...(industry ? [{ key: "demo_industry", value: String(industry) }] : []),
-        ...(view ? [{ key: "demo_view", value: String(view) }] : []),
-        ...(route ? [{ key: "demo_route", value: String(route) }] : []),
-        ...(path ? [{ key: "demo_path", value: String(path) }] : []),
-        ...(demoSessionId ? [{ key: "demo_session_id", value: String(demoSessionId) }] : []),
-        ...(normalizedDomain ? [{ key: "submitted_domain", value: normalizedDomain }] : []),
-        ...(submittedContact ? [{ key: "submitted_contact", value: String(submittedContact).slice(0, 120) }] : []),
-        ...(contactInputType ? [{ key: "contact_input_type", value: String(contactInputType) }] : []),
-        ...(domainResearch?.summary ? [{ key: "domain_research_summary", value: String(domainResearch.summary).slice(0, 300) }] : []),
-      ],
-    },
+    }),
   };
-  // Drop undefined values — Convex validators are strict about extras.
-  convexBody.args = Object.fromEntries(
-    Object.entries(convexBody.args).filter(([, v]) => v !== undefined)
-  );
 
   // The HubSpot form 23a819f9-… is the same one /book-demo on
   // www.teambridge.com posts to. That form has `phone` and
@@ -192,16 +243,9 @@ export default async function handler(req, res) {
   };
 
   const [convexResult, hubspotResult] = await Promise.allSettled([
-    fetch(`${CONVEX_URL}/api/mutation`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(convexBody),
-    }).then(async r => {
-      if (!r.ok) {
-        const text = await r.text();
-        throw new Error(`Convex ${r.status}: ${text.slice(0, 300)}`);
-      }
-      return r.json().catch(() => ({}));
+    postConvexMutation(convexBody).catch(async err => {
+      console.error("[capture-lead] Convex rich capture failed, retrying minimal capture:", err);
+      return await postConvexMutation(minimalConvexBody);
     }),
 
     fetch(HUBSPOT_FORM_URL, {
@@ -225,7 +269,7 @@ export default async function handler(req, res) {
       undefined;
   }
 
-  if (demoSessionId) {
+  if (demoSessionId && leadId) {
     await fetch(`${CONVEX_URL}/api/mutation`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -258,5 +302,9 @@ export default async function handler(req, res) {
     errors.push({ which: "hubspot", error: String(hubspotResult.reason) });
   }
 
-  return res.status(200).json({ ok: errors.length < 2, errors });
+  return res.status(convexResult.status === "rejected" ? 502 : 200).json({
+    ok: convexResult.status === "fulfilled",
+    leadId,
+    errors,
+  });
 }

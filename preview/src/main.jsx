@@ -264,6 +264,7 @@ function App() {
       pageUrl: window.location.href,
       referrer: document.referrer || undefined,
       demoSessionId: demo.sessionId,
+      sessionId: demo.sessionId,
       industry: pendingGate?.metadata?.industry || demo.industry,
       view: demo.view,
       route: pendingGate?.destination || demo.route,
