@@ -801,7 +801,18 @@ const TOUR_STOPS = [
     script: "The AI agents behind the scenes. They handle coverage, reminders, and escalations while you keep control over approvals." },
 ]
 
-const TOUR_QUESTION_TEXT = 'Any questions on this before I keep going?'
+// Varied check-in lines between tour stops so Nova never repeats the same
+// prompt twice. Indexed by the stop just narrated (see askTourQuestion).
+const TOUR_CHECK_INS = [
+  'Want me to keep going, or dig into this one?',
+  'I can go deeper here, or move on — your call.',
+  'Anything you want to explore before we continue?',
+  'Good to keep moving, or want a closer look?',
+  'Questions on this, or shall I continue?',
+  "I'll head to the next area unless you want to pause here.",
+  'Make sense so far? Happy to slow down on anything.',
+]
+const tourCheckInFor = index => TOUR_CHECK_INS[index % TOUR_CHECK_INS.length]
 const TRANSCRIPT_REVEAL_MS_PER_CHAR = 45
 const TOUR_AFTER_NARRATION_PAUSE_MS = 900
 const TOUR_QUESTION_PAUSE_MS = 9000
@@ -1641,7 +1652,7 @@ function OpenAIRealtimeNova({
     createRealtimeResponse({
       output_modalities: ['audio'],
       tool_choice: 'none',
-      instructions: `Say exactly: "${TOUR_QUESTION_TEXT}"`,
+      instructions: `Say exactly: "${tourCheckInFor(tourRef.current.index)}"`,
     })
   }
 
