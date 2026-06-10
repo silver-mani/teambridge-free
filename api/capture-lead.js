@@ -237,7 +237,7 @@ export default async function handler(req, res) {
         : []),
     ],
     context: {
-      pageUri: pageUrl || "https://teambridge-free.vercel.app/",
+      pageUri: pageUrl || "https://demo.teambridge.com/",
       pageName: "Free Tier Demo Signup",
     },
   };
