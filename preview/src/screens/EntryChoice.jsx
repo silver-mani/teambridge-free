@@ -378,8 +378,8 @@ function WorkspaceCollection({ onSelect }) {
           </Eyebrow>
           <h2 id="ready-workspaces-title">Start with a workspace that feels like yours.</h2>
           <p>
-            Let Nova build a workspace from your company context, or open a realistic
-            industry account with scheduling, payroll, onboarding, compliance, and agents already running.
+            Open a realistic industry account with scheduling, payroll, onboarding,
+            compliance, and agents already running.
           </p>
         </div>
       </div>
@@ -469,27 +469,6 @@ export default function EntryChoice({ onBuild, onExplore, onSelectDemo }) {
         }}
       >
         <WorkspaceCollection onSelect={onSelectDemo || (() => onExplore())} />
-        <div
-          className="entry-build-panel"
-          style={{
-            width: '100%',
-            maxWidth: 1280,
-            marginTop: 'var(--space-8)',
-            padding: 'var(--space-4)',
-            border: '1px solid var(--color-border-opaque)',
-            borderRadius: 'var(--radius-xl)',
-            background: 'color-mix(in srgb, var(--color-bg-primary) 96%, var(--color-content-primary))',
-            boxShadow: 'var(--shadow-below-lg)',
-          }}
-        >
-          <ChoiceCard
-            kind="build"
-            title="Build my workspace"
-            lede="Give Nova your website or a short description. It fills in locations, roles, goals, policies, and the first set of Teambridge agents."
-            action="Start with my company"
-            onClick={onBuild}
-          />
-        </div>
       </main>
     </div>
   )

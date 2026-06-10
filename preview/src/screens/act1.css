@@ -9768,7 +9768,7 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
 }
 .lead-gate-nova-note {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
   align-items: center;
   margin: 8px 0 2px;

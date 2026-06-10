@@ -153,12 +153,18 @@ export default function LeadCaptureGate({ onSubmit, onShown, sessionId, delayMs 
   }, [delayMs, onShown])
 
   // Lock body scroll while the gate is up so the blurred surface
-  // can't be scrolled around behind the modal.
+  // can't be scrolled around behind the modal. Also flag the body so the
+  // Nova specialist rail hides — the email gate is a blocking entry step
+  // and the rail must not overlap it (it sits at a near-max z-index).
   useEffect(() => {
     if (!visible) return
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prev }
+    document.body.classList.add('lead-gate-open')
+    return () => {
+      document.body.style.overflow = prev
+      document.body.classList.remove('lead-gate-open')
+    }
   }, [visible])
 
   if (!visible) return null
@@ -282,7 +288,6 @@ export default function LeadCaptureGate({ onSubmit, onShown, sessionId, delayMs 
             <img src={TEAMBRIDGE_LOGO} alt="" />
           </div>
           <div className="lead-gate-nova-note">
-            <img src={ROBOT_ANIMATION} alt="" />
             <p>Before we start, add your work email. I use it to tailor the demo to your organization and keep your session together.</p>
           </div>
           <h2 id="lead-gate-title" className="lead-gate-title">{title}</h2>
