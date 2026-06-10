@@ -1763,10 +1763,16 @@ function OpenAIRealtimeNova({
           <img src={NOVA_AVATAR} alt="" />
           <button
             type="button"
+            className={`nova-mic-toggle ${micEnabled ? 'is-on' : ''}`}
             onClick={toggleVoice}
             aria-label={micEnabled ? 'End voice with Nova' : 'Talk to Nova'}
+            title={micEnabled ? 'End voice' : 'Talk to Nova'}
           >
-            {micEnabled ? 'End' : 'Talk'}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="9" y="2.5" width="6" height="11" rx="3" stroke="currentColor" strokeWidth="2" />
+              <path d="M5.5 11a6.5 6.5 0 0 0 13 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              <path d="M12 17.5V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
           </button>
         </div>
         <div className="nova-realtime-status">

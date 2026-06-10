@@ -29,6 +29,17 @@ body {
     box-sizing: border-box;
     padding-right: var(--demo-specialist-rail-width);
   }
+  /* While the email gate is up, drop the rail's reserved gutter so the
+     blocking modal can use the full width. */
+  body.lead-gate-open #root {
+    padding-right: 0;
+  }
+}
+
+/* The email gate is a blocking entry step; hide the Nova rail underneath it
+   so the two never overlap (the rail otherwise paints at a near-max z-index). */
+body.lead-gate-open .demo-specialist {
+  display: none !important;
 }
 
 .entry-product-preview {
@@ -879,18 +890,30 @@ body {
   left: 50%;
   bottom: -10px;
   transform: translateX(-50%);
+  display: grid;
+  place-items: center;
+  width: 30px;
   height: 30px;
-  min-width: 46px;
-  padding: 0 10px;
+  min-width: 0;
+  padding: 0;
   border: 1px solid rgba(255, 255, 255, 0.48);
   border-radius: 999px;
   background: var(--color-content-primary);
   color: var(--color-bg-primary);
-  font: inherit;
-  font-size: var(--text-xs);
-  font-weight: var(--font-weight-semibold);
   cursor: pointer;
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.24);
+  transition: background-color 140ms ease, transform 140ms ease, border-color 140ms ease;
+}
+
+.nova-realtime-avatar button:hover {
+  transform: translateX(-50%) translateY(-1px);
+}
+
+/* Active call state — the mic toggle turns into a clear "live / tap to end"
+   affordance. */
+.nova-realtime-avatar button.nova-mic-toggle.is-on {
+  background: var(--color-error-fill, #e5484d);
+  border-color: color-mix(in srgb, #fff 42%, transparent);
 }
 
 .nova-realtime-status,
