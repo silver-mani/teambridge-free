@@ -316,6 +316,38 @@
   justify-content: flex-end;
   margin-bottom: var(--space-2);
 }
+
+/* Tap-to-hear narration bar for the home cancellation scene. Sits above
+   the chat; the visual scene plays regardless, this just adds Nova's voice
+   on demand (browsers block audio autoplay before a user gesture). */
+.scene-narration {
+  margin-bottom: var(--space-2);
+}
+.scene-narration-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 10px;
+  border: 1px solid var(--color-border-opaque);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gradient-ai-start, #7c5cff) 6%, var(--color-bg-primary));
+  color: var(--color-content-primary);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, transform 120ms ease;
+}
+.scene-narration-btn:hover:not(:disabled) {
+  border-color: var(--color-border-selected);
+  transform: translateY(-1px);
+}
+.scene-narration-btn:disabled { cursor: default; opacity: 0.7; }
+.scene-narration-btn.is-playing {
+  border-color: var(--color-border-selected);
+  background: color-mix(in srgb, var(--gradient-ai-start, #7c5cff) 12%, var(--color-bg-primary));
+}
+.scene-narration-icon { font-size: 13px; line-height: 1; }
 .prompt-panel-clear {
   display: inline-flex;
   align-items: center;

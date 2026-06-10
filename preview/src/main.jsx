@@ -8,7 +8,8 @@ import SageDashboard      from './screens/sage/SageDashboard.jsx'
 import SageWorkforceEmbed from './screens/sage/SageWorkforceEmbed.jsx'
 import LeadCaptureGate    from './screens/LeadCaptureGate.jsx'
 import OnboardingFlow     from './screens/onboarding/OnboardingFlow.jsx'
-import DemoSpecialist, { bookingUrlForLead } from './screens/DemoSpecialist.jsx'
+import DemoSpecialist from './screens/DemoSpecialist.jsx'
+import { deriveConfig } from './screens/onboarding/urlMatcher.js'
 import { getDemoSnapshot, initDemoTracking, trackDemoEvent } from './lib/demoTracking.js'
 
 const VALID_INDUSTRIES = new Set([
@@ -76,51 +77,6 @@ function clearLegacyDemosHash() {
   if (!isLegacyDemosHash()) return false
   window.history.replaceState({}, '', `${window.location.pathname}${window.location.search}`)
   return true
-}
-
-function TalkToTeamCta({ leadData }) {
-  const [open, setOpen] = useState(false)
-  const bookingUrl = bookingUrlForLead(leadData || {})
-
-  const openBooking = () => {
-    setOpen(true)
-    trackDemoEvent('demo_talk_to_team_clicked', {
-      source: 'persistent_demo_cta',
-      hasEmail: Boolean(leadData?.email),
-    })
-  }
-
-  return (
-    <>
-      <button type="button" className="demo-talk-team-cta" onClick={openBooking}>
-        Talk to team
-      </button>
-      {open && (
-        <div className="demo-booking-modal" role="dialog" aria-modal="true" aria-label="Schedule a Teambridge meeting">
-          <div className="demo-booking-panel">
-            <div className="demo-booking-head">
-              <div>
-                <span>Teambridge team</span>
-                <strong>Pick a time to talk</strong>
-              </div>
-              <button type="button" onClick={() => setOpen(false)} aria-label="Close booking">
-                ×
-              </button>
-            </div>
-            <iframe
-              title="Schedule a Teambridge meeting"
-              src={bookingUrl}
-              loading="lazy"
-              referrerPolicy="strict-origin-when-cross-origin"
-            />
-            <a className="demo-booking-fallback" href={bookingUrl} target="_blank" rel="noreferrer">
-              Open scheduler in a new tab
-            </a>
-          </div>
-        </div>
-      )}
-    </>
-  )
 }
 
 function parseHashString(input) {
@@ -294,52 +250,76 @@ function App() {
 
     // Mirror to /api/capture-lead so the signup lands in the same Convex
     // `leads` table + HubSpot CRM as /book-demo on www.teambridge.com.
-    // We log success / failure to the console so the wiring is easy to
-    // verify from DevTools without having to dig through CRMs.
-    try {
-      fetch('/api/capture-lead', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: lead.name,
-          company: lead.company,
-          email: lead.email,
-          submittedDomain: lead.submittedDomain,
-          submittedContact: lead.submittedContact,
-          contactInputType: lead.contactInputType,
-          domainResearch: lead.domainResearch,
-          pageUrl: window.location.href,
-          referrer: document.referrer || undefined,
-          demoSessionId: demo.sessionId,
-          industry: pendingGate?.metadata?.industry || demo.industry,
-          view: demo.view,
-          route: pendingGate?.destination || demo.route,
-          path: demo.path,
-          landingPage: demo.landingPage,
-          timeInDemoMs: demo.timeInDemoMs,
-          emailQuality: lead.emailQuality,
-          emailAttempts: lead.emailAttempts,
-        }),
-        keepalive: true,
-      })
-        .then(async (r) => {
-          let body = null
-          try { body = await r.json() } catch { /* tolerated */ }
-          if (!r.ok) {
-            console.error('[capture-lead] non-2xx', r.status, body)
-            return
-          }
-          if (body && Array.isArray(body.errors) && body.errors.length) {
-            console.error('[capture-lead] upstream errors', body.errors)
-            return
-          }
-          console.info('[capture-lead] ok', body ?? {})
+    // `leads.capture` upserts by email, so we post once immediately (reliable,
+    // even on a fast bounce) and again after background company research
+    // resolves — the second post patches the same lead, never a duplicate.
+    const buildCaptureBody = (extra = {}) => ({
+      name: lead.name,
+      company: lead.company,
+      email: lead.email,
+      submittedDomain: lead.submittedDomain,
+      submittedContact: lead.submittedContact,
+      contactInputType: lead.contactInputType,
+      domainResearch: lead.domainResearch,
+      pageUrl: window.location.href,
+      referrer: document.referrer || undefined,
+      demoSessionId: demo.sessionId,
+      sessionId: demo.sessionId,
+      industry: pendingGate?.metadata?.industry || demo.industry,
+      view: demo.view,
+      route: pendingGate?.destination || demo.route,
+      path: demo.path,
+      landingPage: demo.landingPage,
+      timeInDemoMs: demo.timeInDemoMs,
+      emailQuality: lead.emailQuality,
+      emailAttempts: lead.emailAttempts,
+      ...extra,
+    })
+
+    const postCaptureLead = (extra, tag = '') => {
+      try {
+        fetch('/api/capture-lead', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(buildCaptureBody(extra)),
+          keepalive: true,
         })
-        .catch((err) => {
-          console.error('[capture-lead] request failed', err)
+          .then(async (r) => {
+            let body = null
+            try { body = await r.json() } catch { /* tolerated */ }
+            if (!r.ok) {
+              console.error(`[capture-lead${tag}] non-2xx`, r.status, body)
+              return
+            }
+            if (body && Array.isArray(body.errors) && body.errors.length) {
+              console.error(`[capture-lead${tag}] upstream errors`, body.errors)
+              return
+            }
+            console.info(`[capture-lead${tag}] ok`, body ?? {})
+          })
+          .catch((err) => {
+            console.error(`[capture-lead${tag}] request failed`, err)
+          })
+      } catch (err) {
+        console.error(`[capture-lead${tag}] threw before fetch`, err)
+      }
+    }
+
+    // 1) Capture immediately with the domain-derived company name.
+    postCaptureLead({})
+
+    // 2) Research the company in the background and patch the lead with the
+    //    richer result. Never blocks the visitor — they're already inside.
+    if (lead.submittedDomain) {
+      deriveConfig(`https://${lead.submittedDomain}`, { fromFreeText: false })
+        .then((research) => {
+          if (!research) return
+          postCaptureLead(
+            { company: research.companyName || lead.company, domainResearch: research },
+            ':enrich',
+          )
         })
-    } catch (err) {
-      console.error('[capture-lead] threw before fetch', err)
+        .catch(() => { /* enrichment is best-effort */ })
     }
   }
 
@@ -385,11 +365,10 @@ function App() {
     })
   }
 
-  // The gate runs when a visitor selects a workspace path. Direct deep
-  // links still gate immediately so pasted URLs cannot bypass capture.
-  const showGate = accessChecked
-    && !leadCaptured
-    && (pendingGate || (route && route.kind !== 'build'))
+  // The gate runs at the entrance — as soon as a visitor lands, before they
+  // pick or build a workspace. Once captured it never shows again. Direct
+  // deep links remain gated too, so pasted URLs can't bypass capture.
+  const showGate = accessChecked && !leadCaptured
 
   let view
   if (!route) {
@@ -458,6 +437,8 @@ function App() {
         <LeadCaptureGate
           sessionId={getDemoSnapshot().sessionId}
           delayMs={0}
+          title="Start your live Teambridge demo"
+          subtitle="Add your work email to step inside. Nova uses it to tailor the demo to your organization and keep your session and follow-up together."
           onShown={() => trackDemoEvent('lead_gate_shown', { immediate: true })}
           onSubmit={submitLead}
         />
@@ -467,11 +448,7 @@ function App() {
         route={route}
         autoOpen={accessChecked}
         leadData={leadData}
-        accessGranted={!showGate}
-        leadCaptured={leadCaptured}
-        onRequireWorkspaceAccess={(destination, intent, metadata) => requestWorkspaceAccess(destination, intent, metadata)}
       />
-      <TalkToTeamCta leadData={leadData} />
     </>
   )
 }

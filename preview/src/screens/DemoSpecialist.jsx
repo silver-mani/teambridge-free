@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { trackDemoEvent, getDemoSnapshot } from '../lib/demoTracking.js'
 
 const BASE = import.meta.env.BASE_URL
@@ -777,21 +778,58 @@ export function bookingUrlForLead(leadContext = {}) {
   return url.toString()
 }
 
+// Ordered itinerary for the guided tour. Each stop opens a real screen
+// (reusing performDemoAction keys) and gives Nova concrete talking points so
+// the narration is specific, not vague. The driver below walks these in order,
+// auto-advancing between them.
+const TOUR_STOPS = [
+  { action: 'overview', label: 'Command center',
+    script: "This is the command center — the feed shows what Teambridge is already handling, with the important items kept at the top." },
+  { action: 'schedule_gap', label: 'Schedule & coverage',
+    script: "Scheduling and coverage. When a shift opens, Teambridge finds qualified replacements and ranks them by fit." },
+  { action: 'shift_requests', label: 'Shift requests',
+    script: "Swap and time-off requests land here. Clean ones clear automatically; anything risky gets routed with the reason attached." },
+  { action: 'people', label: 'People & credentials',
+    script: "The roster — credentials, certs, and work status stay live, so expiring items get caught before they cause gaps." },
+  { action: 'onboarding', label: 'Onboarding',
+    script: "Onboarding moves a new hire to ready-to-work. Forms, checks, and reminders advance without a manager chasing each step." },
+  { action: 'payroll', label: 'Pay',
+    script: "Pay pulls time, premiums, overtime, and approvals together before payroll closes. Managers see only the exceptions." },
+  { action: 'compliance', label: 'Compliance',
+    script: "Compliance keeps the rules visible — policies and labor checks are enforced as work happens, with an audit trail behind each decision." },
+  { action: 'agents', label: 'AI agents',
+    script: "The AI agents behind the scenes. They handle coverage, reminders, and escalations while you keep control over approvals." },
+]
+
+const TOUR_QUESTION_TEXT = 'Any questions on this before I keep going?'
+const TRANSCRIPT_REVEAL_MS_PER_CHAR = 45
+const TOUR_AFTER_NARRATION_PAUSE_MS = 900
+const TOUR_QUESTION_PAUSE_MS = 9000
+
 function OpenAIRealtimeNova({
   clientSecret,
   model,
   conversationId,
   leadContext,
-  accessGranted = true,
-  workspaceAccessGranted = true,
-  requestWorkspaceAccess,
   autoStart = false,
 }) {
-  const [status, setStatus] = useState('Connecting Nova...')
+  const [status, setStatus] = useState('Tap Call or type below')
   const [error, setError] = useState('')
   const [text, setText] = useState('')
+  const [transcript, setTranscript] = useState([])
+  const [bookingOpen, setBookingOpen] = useState(false)
   const [micEnabled, setMicEnabled] = useState(false)
   const [micActivity, setMicActivity] = useState('idle')
+  const [tour, setTour] = useState({ active: false, index: 0, paused: false })
+  const transcriptRef = useRef(null)
+  // Mirror tour state in a ref so the realtime event handler (a stable
+  // closure) always reads the current step without going stale.
+  const tourRef = useRef({ active: false, index: 0, paused: false })
+  const tourAdvanceTimerRef = useRef(null)
+  const tourPhaseRef = useRef('idle')
+  const pendingTourStartRef = useRef(false)
+  const transcriptRevealTimerRef = useRef(null)
+  const audioCtxRef = useRef(null)
   const peerRef = useRef(null)
   const channelRef = useRef(null)
   const audioRef = useRef(null)
@@ -803,26 +841,139 @@ function OpenAIRealtimeNova({
   const executedToolCallsRef = useRef(new Set())
   const responseActiveRef = useRef(false)
   const pendingResponseRef = useRef(null)
+  const pendingTypedPromptRef = useRef(null)
+  const pendingMicStartRef = useRef(false)
+  const pendingMicStreamRef = useRef(null)
+  // Tracks the in-progress Nova transcript line so we can stream her words
+  // into the sidebar live as she speaks, then finalize when she's done.
+  const novaStreamRef = useRef({ id: null, text: '' })
   const companyContext = formatLeadContext(leadContext)
+  const bookingUrl = bookingUrlForLead(leadContext || {})
+
+  useEffect(() => {
+    if (!transcriptRef.current) return
+    transcriptRef.current.scrollTop = transcriptRef.current.scrollHeight
+  }, [transcript])
+
+  const addTranscript = (speaker, value, meta = {}) => {
+    const content = String(value || '').trim()
+    if (!content) return
+    setTranscript(prev => {
+      const last = prev[prev.length - 1]
+      if (last && last.speaker === speaker && last.text === content) return prev
+      return [
+        ...prev,
+        {
+          id: `${Date.now()}_${Math.random().toString(36).slice(2)}`,
+          speaker,
+          text: content,
+          at: Date.now(),
+          ...meta,
+        },
+      ].slice(-80)
+    })
+  }
+
+  const clearNovaRevealTimer = () => {
+    if (transcriptRevealTimerRef.current) {
+      window.clearInterval(transcriptRevealTimerRef.current)
+      transcriptRevealTimerRef.current = null
+    }
+  }
+
+  const ensureNovaStreamLine = () => {
+    if (novaStreamRef.current.id) return novaStreamRef.current.id
+    const newId = `${Date.now()}_${Math.random().toString(36).slice(2)}`
+    novaStreamRef.current.id = newId
+    setTranscript(prev => [
+      ...prev,
+      { id: newId, speaker: 'Nova', text: '', at: Date.now(), streaming: true },
+    ].slice(-80))
+    return newId
+  }
+
+  const estimateRemainingTranscriptMs = () => {
+    const stream = novaStreamRef.current
+    const remaining = Math.max(0, String(stream.target || '').length - String(stream.text || '').length)
+    return remaining * TRANSCRIPT_REVEAL_MS_PER_CHAR
+  }
+
+  const scheduleNovaReveal = () => {
+    if (transcriptRevealTimerRef.current) return
+    transcriptRevealTimerRef.current = window.setInterval(() => {
+      const stream = novaStreamRef.current
+      const target = String(stream.target || '')
+      const displayed = String(stream.text || '')
+      const id = stream.id
+
+      if (!id || (!target && !stream.done)) {
+        clearNovaRevealTimer()
+        return
+      }
+
+      if (displayed.length < target.length) {
+        const next = target.slice(0, displayed.length + 1)
+        novaStreamRef.current = { ...stream, text: next }
+        setTranscript(prev => prev.map(line => (line.id === id ? { ...line, text: next, streaming: true } : line)))
+        return
+      }
+
+      if (stream.done) {
+        clearNovaRevealTimer()
+        setTranscript(prev => prev.map(line => (line.id === id ? { ...line, text: target, streaming: false } : line)))
+        novaStreamRef.current = { id: null, text: '', target: '', done: false }
+      }
+    }, TRANSCRIPT_REVEAL_MS_PER_CHAR)
+  }
+
+  // Buffer Nova's transcript and reveal it at a speaking pace. Realtime
+  // transcript deltas can arrive ahead of audio playback; showing them
+  // immediately makes the sidebar feel disconnected from the voice.
+  const appendNovaStream = delta => {
+    const chunk = String(delta || '')
+    if (!chunk) return
+    ensureNovaStreamLine()
+    novaStreamRef.current.target = `${novaStreamRef.current.target || ''}${chunk}`
+    scheduleNovaReveal()
+  }
+
+  // Finalize the streaming line with the authoritative transcript, but keep the
+  // reveal paced instead of dumping the full sentence ahead of the voice.
+  const finalizeNovaStream = finalText => {
+    const text = String(finalText || novaStreamRef.current.target || novaStreamRef.current.text || '').trim()
+    if (!text) return
+    ensureNovaStreamLine()
+    novaStreamRef.current.target = text
+    novaStreamRef.current.done = true
+    scheduleNovaReveal()
+  }
+
+  const finishNovaStreamNow = () => {
+    const stream = novaStreamRef.current
+    const text = String(stream.target || stream.text || '').trim()
+    const id = stream.id
+    clearNovaRevealTimer()
+    novaStreamRef.current = { id: null, text: '', target: '', done: false }
+    if (!text) return
+    if (id) {
+      setTranscript(prev => prev.map(line => (line.id === id ? { ...line, text, streaming: false } : line)))
+      return
+    }
+    addTranscript('Nova', text)
+  }
 
   const introInstructions = [
     'Start speaking now.',
     'Say: "Hi, I am Nova, your Teambridge demo guide."',
     companyContext
       ? `Use this visitor context without overclaiming: ${companyContext}.`
-      : 'No work email context is available yet.',
+      : 'No visitor context is available yet.',
     companyContext
       ? 'Explain in two short sentences how Teambridge would help this specific operation based on that context.'
       : 'Explain in two short sentences that Teambridge helps teams fill shifts, monitor compliance, manage onboarding, payroll, and workforce issues from one live workspace.',
-    workspaceAccessGranted
-      ? 'Offer two clear paths: build a workspace from their company website or short description, or open a ready-made workspace by vertical.'
-      : 'Explain that ready-made workspaces are available, but before opening one you will ask them to complete the visible work email form so the workspace can be saved and tailored to their organization.',
-    workspaceAccessGranted
-      ? 'Tell the visitor they can say "build my workspace" or ask you to open healthcare, staffing, hospitality, security, construction, facilities, events, long-term care, or industrial.'
-      : 'Tell the visitor they can choose a workspace, then complete the work email form to continue the walkthrough.',
-    workspaceAccessGranted
-      ? 'End with one clear question: "Should I build your workspace or open a ready-made one?"'
-      : 'End with one clear question: "Which workspace should I prepare for you?"',
+    'Offer two clear paths: build a workspace from their company website or short description, or open a ready-made workspace by vertical.',
+    'Tell the visitor they can say "build my workspace" or ask you to open healthcare, staffing, hospitality, security, construction, facilities, events, long-term care, or industrial.',
+    'End with one clear question: "Should I build your workspace or open a ready-made one?"',
   ].join(' ')
 
   const sendEvent = event => {
@@ -860,7 +1011,44 @@ function OpenAIRealtimeNova({
     }
   }
 
+  const sendTypedPromptToRealtime = prompt => {
+    const value = String(prompt?.text || '').trim()
+    if (!value) return false
+
+    const sent = sendEvent({
+      type: 'conversation.item.create',
+      item: {
+        type: 'message',
+        role: 'user',
+        content: [{ type: 'input_text', text: value }],
+      },
+    })
+    if (!sent) return false
+
+    const localLabel = prompt?.localLabel
+    const customInstructions = prompt?.instructions
+    createRealtimeResponse({
+      output_modalities: ['audio'],
+      instructions: localLabel
+        ? `The browser already opened ${localLabel}. Respond out loud with one short sentence saying what changed, then offer one useful next area.`
+        : customInstructions || 'Respond out loud to the visitor typed prompt. If they asked to show or open a workspace or capability, call the matching tool immediately before explaining.',
+    })
+    return true
+  }
+
+  const flushPendingTypedPrompt = () => {
+    const pending = pendingTypedPromptRef.current
+    if (!pending) return
+    if (sendTypedPromptToRealtime(pending)) {
+      pendingTypedPromptRef.current = null
+    }
+  }
+
   const executeToolCall = async ({ name, arguments: rawArguments, call_id: callId }) => {
+    if (tourRef.current.active && !tourRef.current.paused) {
+      return
+    }
+
     if (callId) {
       if (executedToolCallsRef.current.has(callId)) return
       executedToolCallsRef.current.add(callId)
@@ -875,24 +1063,7 @@ function OpenAIRealtimeNova({
 
     let output = { ok: false, reason: 'unknown_tool' }
     try {
-      if (!workspaceAccessGranted && name === 'openWorkspace') {
-        const requestedIndustry = normalizeIndustry(args.industry || 'healthcare') || 'healthcare'
-        requestWorkspaceAccess?.(`/${requestedIndustry}`, 'nova_open_workspace', { industry: requestedIndustry })
-        output = {
-          ok: false,
-          reason: 'lead_gate_required',
-          required: 'work_email',
-          industry: requestedIndustry,
-          message: 'The workspace is prepared behind the form. Ask the visitor to complete the work email form before continuing the walkthrough.',
-        }
-      } else if (!workspaceAccessGranted && ['showCapability'].includes(name)) {
-        output = {
-          ok: false,
-          reason: 'lead_gate_required',
-          required: 'work_email',
-          message: 'Ask the visitor to fill the work email form before opening or changing the workspace.',
-        }
-      } else if (name === 'openWorkspace') {
+      if (name === 'openWorkspace') {
         const result = await performDemoAction(args.industry || 'healthcare', {
           label: `${String(args.industry || 'healthcare').replace(/-/g, ' ')} workspace`,
         })
@@ -906,7 +1077,7 @@ function OpenAIRealtimeNova({
         const result = await performDemoAction(args.capability || 'overview')
         output = { ...result, ok: result.ok }
       } else if (name === 'requestMeeting') {
-        window.open(bookingUrlForLead(leadContext), '_blank', 'noopener,noreferrer')
+        setBookingOpen(true)
         output = { ok: true, reason: args.reason || 'meeting_requested' }
       }
 
@@ -939,8 +1110,6 @@ function OpenAIRealtimeNova({
         output_modalities: ['audio'],
         instructions: output.ok
           ? 'Briefly tell the visitor what changed and offer one useful next area to inspect.'
-          : output.reason === 'lead_gate_required'
-          ? 'Say that the workspace is ready behind the form, but the visitor needs to complete the work email form before you continue the walkthrough. Do not explain the workspace yet. Reassure them it saves the workspace and connects the walkthrough to the right organization.'
           : 'Briefly say you could not complete that action and ask what they want to see next.',
       })
     }
@@ -954,9 +1123,25 @@ function OpenAIRealtimeNova({
       return
     }
 
-    if (payload.type === 'response.audio_transcript.done' || payload.type === 'response.output_text.done') {
+    if (payload.type === 'conversation.item.input_audio_transcription.completed') {
+      addTranscript('You', payload.transcript || '')
+      trackDemoEvent('nova_realtime_user_transcript', {
+        text: payload.transcript || '',
+        conversationId,
+      })
+    }
+
+    // gpt-realtime emits `output_audio_transcript`; older models use
+    // `audio_transcript`. Handle both so the sidebar transcript always fills.
+    if (
+      payload.type === 'response.output_audio_transcript.done' ||
+      payload.type === 'response.audio_transcript.done' ||
+      payload.type === 'response.output_text.done'
+    ) {
+      const finalText = payload.transcript || payload.text || ''
+      finalizeNovaStream(finalText)
       trackDemoEvent('nova_realtime_transcript', {
-        text: payload.transcript || payload.text || '',
+        text: finalText,
         conversationId,
       })
     }
@@ -982,22 +1167,68 @@ function OpenAIRealtimeNova({
 
     if (payload.type === 'response.created') {
       responseActiveRef.current = true
+      // Fresh response — start a new streaming transcript line.
+      clearNovaRevealTimer()
+      novaStreamRef.current = { id: null, text: '', target: '', done: false }
       setStatus('Nova is thinking...')
     }
 
-    if (payload.type === 'response.audio.delta' || payload.type === 'response.audio_transcript.delta') {
+    // Spoken words stream in as transcript deltas — append them live so the
+    // sidebar transcribes in step with Nova's voice. gpt-realtime sends
+    // `output_audio_transcript.delta`; older models `audio_transcript.delta`.
+    // (Raw audio byte deltas carry no text, so they only update status below.)
+    if (
+      payload.type === 'response.output_audio_transcript.delta' ||
+      payload.type === 'response.audio_transcript.delta' ||
+      payload.type === 'response.output_text.delta'
+    ) {
+      setStatus('Nova is speaking')
+      appendNovaStream(payload.delta)
+    }
+
+    if (payload.type === 'response.output_audio.delta' || payload.type === 'response.audio.delta') {
       setStatus('Nova is speaking')
     }
 
     if (payload.type === 'response.done') {
       responseActiveRef.current = false
-      setStatus(micEnabled ? 'Nova is listening' : 'Tap Talk to respond')
       window.setTimeout(flushPendingResponse, 60)
+      // Guided tour: Nova narrates a section, asks a quick check-in, then
+      // continues automatically after a short pause unless the visitor speaks
+      // or types.
+      const t = tourRef.current
+      if (t.active && !t.paused) {
+        setStatus(`Guided tour · ${Math.min(t.index + 1, TOUR_STOPS.length)} / ${TOUR_STOPS.length}`)
+        clearTourAdvance()
+        if (tourPhaseRef.current === 'narrating') {
+          tourAdvanceTimerRef.current = window.setTimeout(() => {
+            tourAdvanceTimerRef.current = null
+            if (!tourRef.current.active || tourRef.current.paused || tourPhaseRef.current !== 'narrating') return
+            if (tourRef.current.index + 1 >= TOUR_STOPS.length) {
+              finishTour()
+            } else {
+              askTourQuestion()
+            }
+          }, estimateRemainingTranscriptMs() + TOUR_AFTER_NARRATION_PAUSE_MS)
+        } else if (tourPhaseRef.current === 'question') {
+          tourPhaseRef.current = 'waiting'
+          setStatus('Nova is waiting for your question')
+          tourAdvanceTimerRef.current = window.setTimeout(() => {
+            tourAdvanceTimerRef.current = null
+            if (!tourRef.current.active || tourRef.current.paused || tourPhaseRef.current !== 'waiting') return
+            runTourStep(tourRef.current.index + 1)
+          }, estimateRemainingTranscriptMs() + TOUR_QUESTION_PAUSE_MS)
+        }
+      } else {
+        setStatus(micEnabled ? 'Nova is listening' : 'Tap Talk to respond')
+      }
     }
 
     if (payload.type === 'input_audio_buffer.speech_started') {
       setMicActivity('hearing')
       setStatus('Nova hears you')
+      // Talking over the tour takes the wheel — pause auto-advance.
+      pauseTour('speech')
     }
 
     if (payload.type === 'input_audio_buffer.speech_stopped') {
@@ -1061,16 +1292,30 @@ function OpenAIRealtimeNova({
 
       const audioTransceiver = peer.addTransceiver('audio', { direction: 'sendrecv' })
       micSenderRef.current = audioTransceiver.sender
+      if (pendingMicStreamRef.current) {
+        const [track] = pendingMicStreamRef.current.getAudioTracks()
+        if (track) {
+          await audioTransceiver.sender.replaceTrack(track)
+        }
+      }
 
       const channel = peer.createDataChannel('oai-events')
       channelRef.current = channel
       channel.onmessage = handleRealtimeEvent
       channel.onopen = () => {
+        pendingMicStartRef.current = false
         setStatus('Nova is speaking')
-        createRealtimeResponse({
-          output_modalities: ['audio'],
-          instructions: introInstructions,
-        })
+        if (pendingTourStartRef.current) {
+          pendingTourStartRef.current = false
+          runTourStep(0)
+        } else if (pendingTypedPromptRef.current) {
+          flushPendingTypedPrompt()
+        } else {
+          createRealtimeResponse({
+            output_modalities: ['audio'],
+            instructions: introInstructions,
+          })
+        }
         trackDemoEvent('nova_realtime_connected', { model, conversationId })
       }
 
@@ -1096,6 +1341,14 @@ function OpenAIRealtimeNova({
         sdp: await response.text(),
       })
     } catch (err) {
+      if (pendingMicStartRef.current) {
+        pendingMicStreamRef.current?.getTracks?.().forEach(track => track.stop())
+        pendingMicStreamRef.current = null
+        pendingMicStartRef.current = false
+        micStreamRef.current = null
+        setMicEnabled(false)
+        setMicActivity('idle')
+      }
       setStatus('Nova is ready')
       const message = String(err?.message || err)
       const friendly = /not supported|permission|denied|mediaDevices|getUserMedia/i.test(message)
@@ -1112,6 +1365,9 @@ function OpenAIRealtimeNova({
   const stopSession = () => {
     channelRef.current?.close()
     micStreamRef.current?.getTracks?.().forEach(track => track.stop())
+    if (pendingMicStreamRef.current && pendingMicStreamRef.current !== micStreamRef.current) {
+      pendingMicStreamRef.current.getTracks?.().forEach(track => track.stop())
+    }
     stopMicMeter()
     peerRef.current?.getSenders?.().forEach(sender => sender.track?.stop())
     peerRef.current?.close()
@@ -1119,8 +1375,17 @@ function OpenAIRealtimeNova({
     channelRef.current = null
     micSenderRef.current = null
     micStreamRef.current = null
+    pendingMicStartRef.current = false
+    pendingMicStreamRef.current = null
     responseActiveRef.current = false
     pendingResponseRef.current = null
+    pendingTypedPromptRef.current = null
+    pendingTourStartRef.current = false
+    tourPhaseRef.current = 'idle'
+    clearTourAdvance()
+    clearNovaRevealTimer()
+    novaStreamRef.current = { id: null, text: '', target: '', done: false }
+    setTourState({ active: false, paused: false, index: 0 })
     executedToolCallsRef.current.clear()
     setMicEnabled(false)
     setMicActivity('idle')
@@ -1164,18 +1429,26 @@ function OpenAIRealtimeNova({
   }
 
   const enableMic = async () => {
-    if (!peerRef.current || micEnabled) return
+    if (micEnabled) return
     setError('')
     setStatus('Requesting microphone...')
     try {
+      const hadPeer = Boolean(peerRef.current)
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       micStreamRef.current = stream
+      pendingMicStreamRef.current = stream
       const [track] = stream.getAudioTracks()
-      await micSenderRef.current?.replaceTrack(track)
+      if (hadPeer) {
+        await micSenderRef.current?.replaceTrack(track)
+      } else {
+        pendingMicStartRef.current = true
+        setStatus('Connecting voice...')
+        startSession()
+      }
       startMicMeter(stream)
       setMicEnabled(true)
       setMicActivity('listening')
-      setStatus('Nova is listening')
+      if (hadPeer) setStatus('Nova is listening')
       trackDemoEvent('nova_realtime_microphone_enabled', { conversationId })
     } catch (err) {
       const message = String(err?.message || err)
@@ -1189,45 +1462,290 @@ function OpenAIRealtimeNova({
     }
   }
 
+  const toggleVoice = () => {
+    if (micEnabled) {
+      stopSession()
+      return
+    }
+    enableMic()
+  }
+
   const submitText = event => {
     event.preventDefault()
     const value = text.trim()
     if (!value) return
     setText('')
+    setError('')
+    // Typing mid-tour takes control — pause auto-advance and answer them.
+    pauseTour('typed')
+    addTranscript('You', value, { source: 'typed' })
 
     const local = actionFromDemoText(value)
-    if (local && workspaceAccessGranted) {
+    if (local) {
       performDemoAction(local.value, { label: local.label })
+        .then(result => {
+          addTranscript('Nova', result.ok
+            ? `Opened ${local.label || 'that part of the demo'}.`
+            : `I could not find that area yet. Try asking for scheduling, payroll, people, onboarding, compliance, agents, or messages.`
+          )
+        })
+        .catch(() => {
+          addTranscript('Nova', 'I could not move the demo there yet. Try another product area.')
+        })
       trackDemoEvent('nova_realtime_text_local_action', {
-        value: local.value,
-        kind: local.kind,
-        conversationId,
-      })
-    } else if (local && !workspaceAccessGranted) {
-      if (local.kind === 'industry') {
-        requestWorkspaceAccess?.(`/${local.value}`, 'nova_text_workspace', { industry: local.value })
-      }
-      trackDemoEvent('nova_realtime_text_action_blocked_by_gate', {
         value: local.value,
         kind: local.kind,
         conversationId,
       })
     }
 
-    sendEvent({
-      type: 'conversation.item.create',
-      item: {
-        type: 'message',
-        role: 'user',
-        content: [{ type: 'input_text', text: value }],
-      },
+    if (sendTypedPromptToRealtime({
+      text: value,
+      localLabel: local ? local.label : '',
+    })) {
+      return
+    }
+
+    if (clientSecret) {
+      pendingTypedPromptRef.current = {
+        text: value,
+        localLabel: local ? local.label : '',
+      }
+      setStatus('Nova is connecting to answer...')
+      startSession()
+      trackDemoEvent('nova_realtime_text_queued_for_voice', {
+        value,
+        hasLocalAction: Boolean(local),
+        conversationId,
+      })
+      return
+    }
+
+    if (local) return
+
+    setStatus('Nova is reading...')
+    requestNovaAgentActions({
+      line: { text: value, speaker: 'user' },
+      eventName: 'typed_prompt',
+      conversationId,
     })
+      .then(async body => {
+        const actions = Array.isArray(body.actions) ? body.actions.slice(0, 3) : []
+        if (!actions.length) {
+          addTranscript('Nova', body.spokenResponse || 'Ask me to open a workspace or show scheduling, payroll, people, onboarding, compliance, agents, or messages.')
+          return
+        }
+
+        for (const action of actions) {
+          const result = await performDemoAction(action.value, { label: action.label })
+          addTranscript('Nova', result.ok
+            ? `Opened ${action.label || 'that part of the demo'}.`
+            : `I could not find ${action.label || 'that area'} yet.`
+          )
+        }
+      })
+      .catch(err => {
+        addTranscript('Nova', 'I could not process that text command. Try asking for a specific workspace or product area.')
+        trackDemoEvent('nova_realtime_text_agent_failed', {
+          error: String(err?.message || err),
+          conversationId,
+        })
+      })
+      .finally(() => {
+        setStatus(micEnabled ? 'Nova is listening' : 'Tap Talk or type below')
+      })
+  }
+
+  const openBooking = () => {
+    setBookingOpen(true)
+    trackDemoEvent('demo_talk_to_team_clicked', {
+      source: 'nova_sidebar',
+      hasEmail: Boolean(leadContext?.email),
+      conversationId,
+    })
+  }
+
+  // Keep the tour ref and the render state in lockstep.
+  const setTourState = partial => {
+    tourRef.current = { ...tourRef.current, ...partial }
+    setTour(tourRef.current)
+  }
+
+  const clearTourAdvance = () => {
+    if (tourAdvanceTimerRef.current) {
+      window.clearTimeout(tourAdvanceTimerRef.current)
+      tourAdvanceTimerRef.current = null
+    }
+  }
+
+  // Cut Nova off mid-sentence — sends response.cancel so Pause / End / barge-in
+  // feel instant instead of letting the current turn play out.
+  const cancelActiveResponse = () => {
+    if (responseActiveRef.current) {
+      sendEvent({ type: 'response.cancel' })
+    }
+    responseActiveRef.current = false
+    pendingResponseRef.current = null
+    finishNovaStreamNow()
+  }
+
+  // Soft two-note cue (Web Audio) so the tour start feels like something
+  // begins. Synthesized — no asset to ship. The click that starts the tour is
+  // a user gesture, so the AudioContext is allowed to make sound.
+  const playTourChime = () => {
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext
+      if (!Ctx) return
+      let ctx = audioCtxRef.current
+      if (!ctx) { ctx = new Ctx(); audioCtxRef.current = ctx }
+      if (ctx.state === 'suspended') ctx.resume().catch(() => {})
+      const now = ctx.currentTime
+      ;[{ f: 587.33, t: 0 }, { f: 880, t: 0.16 }].forEach(({ f, t }) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.type = 'sine'
+        osc.frequency.value = f
+        const start = now + t
+        gain.gain.setValueAtTime(0.0001, start)
+        gain.gain.linearRampToValueAtTime(0.16, start + 0.02)
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.32)
+        osc.connect(gain).connect(ctx.destination)
+        osc.start(start)
+        osc.stop(start + 0.34)
+      })
+    } catch { /* sound is non-essential */ }
+  }
+
+  // Build the spoken directive for a given stop. The tour should sound like a
+  // product specialist walking beside the visitor, not a screen reader listing
+  // numbered steps.
+  const tourInstructionsFor = index => {
+    const stop = TOUR_STOPS[index]
+    const isFirst = index === 0
+    const script = isFirst
+      ? `Alright, I am Nova. I will give you a quick feel for how Teambridge runs workforce operations from one live workspace. ${stop.script}`
+      : stop.script
+    return [
+      isFirst
+        ? 'You are Nova, starting a guided product tour. Speak warmly and confidently, like a concise product specialist.'
+        : 'You are Nova, continuing a guided product tour. Do not greet again.',
+      'Do not say "stop", "step", "screen", "moving to", or any count like "2 of 8".',
+      'Do not ask a question in this turn; the app will ask the check-in separately.',
+      `Say this naturally, preserving the meaning and keeping it under 35 words: "${script}"`,
+    ].filter(Boolean).join(' ')
+  }
+
+  const askTourQuestion = () => {
+    tourPhaseRef.current = 'question'
+    setStatus('Nova is checking in')
     createRealtimeResponse({
       output_modalities: ['audio'],
-      instructions: accessGranted && workspaceAccessGranted
-        ? undefined
-        : 'Tell the visitor the workspace is ready behind the form, but they need to complete the visible work email form before you continue the walkthrough. Do not explain the workspace yet. Reassure them it saves the workspace and tailors the walkthrough to their organization.',
+      tool_choice: 'none',
+      instructions: `Say exactly: "${TOUR_QUESTION_TEXT}"`,
     })
+  }
+
+  // Open the screen for a stop, then have Nova narrate it. Called to start the
+  // tour and on each auto-advance.
+  const runTourStep = async index => {
+    if (index >= TOUR_STOPS.length) {
+      finishTour()
+      return
+    }
+    const stop = TOUR_STOPS[index]
+    setTourState({ active: true, index, paused: false })
+    tourPhaseRef.current = 'narrating'
+    setStatus('Nova is speaking')
+    try {
+      await performDemoAction(stop.action, { label: stop.label })
+    } catch { /* navigation best-effort; still narrate */ }
+    createRealtimeResponse({
+      output_modalities: ['audio'],
+      tool_choice: 'none',
+      instructions: tourInstructionsFor(index),
+    })
+  }
+
+  const finishTour = () => {
+    clearTourAdvance()
+    tourPhaseRef.current = 'finishing'
+    setTourState({ active: false, paused: false, index: 0 })
+    trackDemoEvent('nova_guided_tour_finished', { conversationId })
+    createRealtimeResponse({
+      output_modalities: ['audio'],
+      tool_choice: 'none',
+      instructions: 'You just finished the guided tour. In one short, warm sentence, say you can answer questions, go deeper on any workflow, or help book a meeting with the Teambridge team. Do not summarize the tour.',
+    })
+  }
+
+  // User spoke or typed mid-tour, or hit Pause — stop auto-advancing, cut
+  // Nova's current sentence, and hand them control.
+  const pauseTour = reason => {
+    if (!tourRef.current.active || tourRef.current.paused) return
+    clearTourAdvance()
+    cancelActiveResponse()
+    tourPhaseRef.current = 'paused'
+    setTourState({ paused: true })
+    setStatus('Tour paused')
+    trackDemoEvent('nova_guided_tour_paused', { reason, index: tourRef.current.index })
+  }
+
+  const resumeTour = () => {
+    if (!tourRef.current.active) return
+    clearTourAdvance()
+    setTourState({ paused: false })
+    trackDemoEvent('nova_guided_tour_resumed', { index: tourRef.current.index })
+    runTourStep(tourRef.current.index + 1)
+  }
+
+  const endTour = () => {
+    clearTourAdvance()
+    cancelActiveResponse()
+    tourPhaseRef.current = 'idle'
+    setTourState({ active: false, paused: false, index: 0 })
+    setStatus(micEnabled ? 'Nova is listening' : 'Tap Talk or type below')
+    trackDemoEvent('nova_guided_tour_ended', { conversationId })
+  }
+
+  // Jump straight to a chosen stop — wired to the step list and the
+  // Previous / Next controls so the visitor drives the tour instead of
+  // only watching it auto-walk. Cancels any in-flight narration and the
+  // pending auto-advance, then narrates the target stop. Works whether the
+  // tour is mid-narration or paused; landing on a stop clears the paused
+  // state so auto-advance picks up again from there.
+  const goToTourStep = index => {
+    if (!tourRef.current.active) return
+    const clamped = Math.max(0, Math.min(index, TOUR_STOPS.length - 1))
+    if (clamped === tourRef.current.index && tourPhaseRef.current === 'narrating') return
+    clearTourAdvance()
+    cancelActiveResponse()
+    trackDemoEvent('nova_guided_tour_jumped', { from: tourRef.current.index, to: clamped })
+    runTourStep(clamped)
+  }
+
+  const startGuidedTour = () => {
+    if (tourRef.current.active || pendingTourStartRef.current) return
+    setError('')
+    playTourChime()
+    addTranscript('You', 'Start guided tour', { source: 'guided_tour' })
+    trackDemoEvent('nova_guided_tour_started', {
+      conversationId,
+      hasLeadContext: Boolean(companyContext),
+    })
+    setTourState({ active: true, index: 0, paused: false })
+    setStatus('Starting your tour…')
+
+    if (channelRef.current && channelRef.current.readyState === 'open') {
+      runTourStep(0)
+      return
+    }
+    // Session not connected yet — queue the start and open the session. The
+    // channel.onopen handler runs step 0 the instant we're connected, so there
+    // is no dead air beyond the brief "Starting your tour…" + chime.
+    pendingTourStartRef.current = true
+    if (clientSecret) {
+      startSession()
+    }
   }
 
   useEffect(() => () => stopSession(), [])
@@ -1240,15 +1758,195 @@ function OpenAIRealtimeNova({
 
   return (
     <div className="nova-realtime-panel">
-      <div className="nova-realtime-avatar">
-        <img src={NOVA_AVATAR} alt="" />
+      <div className="nova-realtime-head">
+        <div className="nova-realtime-avatar">
+          <img src={NOVA_AVATAR} alt="" />
+          <button
+            type="button"
+            onClick={toggleVoice}
+            aria-label={micEnabled ? 'End voice with Nova' : 'Talk to Nova'}
+          >
+            {micEnabled ? 'End' : 'Talk'}
+          </button>
+        </div>
+        <div className="nova-realtime-status">
+          <strong>Nova</strong>
+          <span>{status}</span>
+        </div>
+      </div>
+      <div className={`nova-realtime-mic ${micActivity === 'hearing' ? 'is-hearing' : ''}`}>
+        <span className="nova-realtime-mic-dot" />
+        <span>{micEnabled ? (micActivity === 'hearing' ? 'Hearing you' : 'Mic on') : 'Text works without mic'}</span>
+      </div>
+      <div className="nova-realtime-transcript" ref={transcriptRef} aria-live="polite">
+        {transcript.length === 0 ? (
+          <p className="nova-realtime-transcript-empty">Ask Nova to show a workspace or product area.</p>
+        ) : (
+          transcript.map(line => (
+            <div key={line.id} className={`nova-realtime-line ${line.speaker === 'You' ? 'is-user' : 'is-nova'} ${line.streaming ? 'is-streaming' : ''}`}>
+              <span>{line.speaker}</span>
+              <p>{line.text}<span className="nova-realtime-caret" aria-hidden="true" /></p>
+            </div>
+          ))
+        )}
+      </div>
+      {error && <div className="nova-realtime-error">{error}</div>}
+      {tour.active && (
+        <div className="nova-tour-bar" role="group" aria-label="Guided tour controls">
+          <div className="nova-tour-bar-top">
+            <div className="nova-tour-bar-info">
+              <span className="nova-tour-bar-progress">
+                Guided tour · {Math.min(tour.index + 1, TOUR_STOPS.length)} / {TOUR_STOPS.length}
+              </span>
+              <span className="nova-tour-bar-label">
+                {tour.paused ? 'Paused' : TOUR_STOPS[Math.min(tour.index, TOUR_STOPS.length - 1)].label}
+              </span>
+            </div>
+            <div className="nova-tour-bar-controls">
+              <button
+                type="button"
+                onClick={() => goToTourStep(tour.index - 1)}
+                disabled={tour.index <= 0}
+                aria-label="Previous section"
+              >
+                ‹ Prev
+              </button>
+              <button
+                type="button"
+                onClick={tour.paused ? resumeTour : () => pauseTour('manual')}
+              >
+                {tour.paused ? 'Resume' : 'Pause'}
+              </button>
+              <button
+                type="button"
+                onClick={() => goToTourStep(tour.index + 1)}
+                disabled={tour.index >= TOUR_STOPS.length - 1}
+                aria-label="Next section"
+              >
+                Next ›
+              </button>
+              <button type="button" onClick={endTour}>End</button>
+            </div>
+          </div>
+          <div className="nova-tour-steps" role="tablist" aria-label="Tour sections">
+            {TOUR_STOPS.map((stop, i) => {
+              const state = i === tour.index ? 'current' : i < tour.index ? 'done' : 'upcoming'
+              return (
+                <button
+                  key={stop.action}
+                  type="button"
+                  role="tab"
+                  aria-selected={i === tour.index}
+                  className={`nova-tour-step is-${state}`}
+                  onClick={() => goToTourStep(i)}
+                >
+                  <span className="nova-tour-step-index">{i + 1}</span>
+                  <span className="nova-tour-step-label">{stop.label}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+      <div className="nova-realtime-actions nova-realtime-actions--split">
+        {!tour.active && (
+          <button type="button" className="nova-tour-guide-button" onClick={startGuidedTour}>
+            Tour guide
+          </button>
+        )}
+        <button type="button" className="nova-talk-team-button" onClick={openBooking}>
+          Schedule meeting with sales
+        </button>
+      </div>
+      <form className="nova-realtime-form" onSubmit={submitText}>
+        <div className="nova-realtime-input-wrap">
+          <span className="nova-realtime-input-mark" aria-hidden="true">✦</span>
+          <input
+            type="text"
+            value={text}
+            onChange={event => setText(event.target.value)}
+            placeholder="Ask Nova to show scheduling..."
+            aria-label="Type a prompt for Nova"
+          />
+        </div>
+        <button type="submit" aria-label="Send prompt" disabled={!text.trim()}>
+          Send
+        </button>
+      </form>
+      {bookingOpen && typeof document !== 'undefined' && createPortal((
+        <div className="demo-booking-modal" role="dialog" aria-modal="true" aria-label="Schedule a Teambridge meeting">
+          <div className="demo-booking-panel">
+            <div className="demo-booking-head">
+              <div>
+                <span>Teambridge team</span>
+                <strong>Pick a time to talk</strong>
+              </div>
+              <button type="button" onClick={() => setBookingOpen(false)} aria-label="Close booking">
+                ×
+              </button>
+            </div>
+            <iframe
+              title="Schedule a Teambridge meeting"
+              src={bookingUrl}
+              loading="lazy"
+              referrerPolicy="strict-origin-when-cross-origin"
+            />
+            <a className="demo-booking-fallback" href={bookingUrl} target="_blank" rel="noreferrer">
+              Open scheduler in a new tab
+            </a>
+          </div>
+        </div>
+      ), document.body)}
+    </div>
+  )
+}
+
+function NovaSidebarSetupState({ error, onRetry }) {
+  return (
+    <div className={`nova-realtime-panel nova-realtime-panel--setup ${error ? 'is-error' : ''}`}>
+      <div className="nova-realtime-head">
+        <div className="nova-realtime-avatar nova-realtime-avatar--setup">
+          <img src={NOVA_AVATAR} alt="" />
+        </div>
+        <div className="nova-realtime-status">
+          <strong>Nova</strong>
+          <span>{error ? 'Connection needs attention' : 'Preparing your demo guide...'}</span>
+        </div>
+      </div>
+      <div className={`nova-realtime-mic ${error ? 'nova-realtime-mic--error' : ''}`}>
+        <span className="nova-realtime-mic-dot" />
+        <span>{error ? 'Setup paused' : 'Text and voice are loading'}</span>
+      </div>
+      <div className="nova-realtime-transcript nova-realtime-transcript--setup" aria-live="polite">
+        {error ? (
+          <div className="nova-setup-message">
+            <strong>Nova could not start</strong>
+            <p>{error}</p>
+          </div>
+        ) : (
+          <>
+            <div className="nova-setup-line nova-setup-line--wide" />
+            <div className="nova-setup-line nova-setup-line--mid" />
+            <div className="nova-setup-line nova-setup-line--short" />
+          </>
+        )}
+      </div>
+      <div className="nova-realtime-actions">
         <button
           type="button"
-          onClick={!peerRef.current ? startSession : micEnabled ? stopSession : enableMic}
-          aria-label={!peerRef.current ? 'Start Nova' : micEnabled ? 'Stop Nova' : 'Enable microphone'}
+          className="nova-talk-team-button"
+          disabled={!error}
+          onClick={error ? onRetry : undefined}
         >
-          {!peerRef.current ? 'Call' : micEnabled ? 'End' : 'Talk'}
+          {error ? 'Retry Nova' : 'Schedule meeting with sales'}
         </button>
+      </div>
+      <div className="nova-realtime-form nova-realtime-form--setup" aria-hidden="true">
+        <div className="nova-realtime-input-wrap">
+          <span className="nova-realtime-input-mark">✦</span>
+          <span className="nova-setup-input-line" />
+        </div>
+        <button type="button" disabled>Send</button>
       </div>
     </div>
   )
@@ -1377,9 +2075,6 @@ export default function DemoSpecialist({
   route,
   autoOpen = false,
   leadData = null,
-  accessGranted = true,
-  leadCaptured = false,
-  onRequireWorkspaceAccess,
 }) {
   const [open, setOpen] = useState(false)
   const [voiceUnlocked, setVoiceUnlocked] = useState(false)
@@ -1390,6 +2085,7 @@ export default function DemoSpecialist({
   const [conversationId, setConversationId] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [setupNonce, setSetupNonce] = useState(0)
   const widgetRef = useRef(null)
   const autoStartRef = useRef(false)
   const voiceUnlockedRef = useRef(false)
@@ -1463,6 +2159,13 @@ export default function DemoSpecialist({
   }, [enabled, autoOpen])
 
   useEffect(() => {
+    document.body.classList.toggle('has-demo-specialist', Boolean(enabled && open))
+    return () => {
+      document.body.classList.remove('has-demo-specialist')
+    }
+  }, [enabled, open])
+
+  useEffect(() => {
     if (!enabled || !open || signedUrl || openAISecret || loading) return
     let cancelled = false
     setLoading(true)
@@ -1475,7 +2178,8 @@ export default function DemoSpecialist({
       }).catch(err => ({ ok: false, status: 0, json: async () => ({ error: String(err?.message || err) }) }))
 
       const realtimeBody = await realtimeResponse.json().catch(() => ({}))
-      if (!cancelled && realtimeResponse.ok && realtimeBody.clientSecret) {
+      if (cancelled) return
+      if (realtimeResponse.ok && realtimeBody.clientSecret) {
         const id = `openai_${Date.now()}_${Math.random().toString(36).slice(2)}`
         setConversationId(id)
         setOpenAISecret(realtimeBody.clientSecret)
@@ -1489,32 +2193,13 @@ export default function DemoSpecialist({
         return
       }
 
+      // Nova runs on OpenAI Realtime. If the token request fails, surface a
+      // clean retry message — never leak the raw server error or a key name.
       trackDemoEvent('demo_specialist_openai_unavailable', {
         status: realtimeResponse.status,
         error: realtimeBody?.error || realtimeBody?.detail || realtimeBody?.message,
       })
-
-      await loadWidgetScript().catch(err => {
-        if (cancelled) return
-        trackDemoEvent('demo_specialist_widget_load_failed', {
-          error: String(err?.message || err),
-        })
-      })
-
-      const elevenResponse = await fetch('/api/elevenlabs-signed-url', {
-        headers: { accept: 'application/json' },
-      })
-      const elevenBody = await elevenResponse.json().catch(() => ({}))
-      if (!elevenResponse.ok) throw new Error(elevenBody?.error || 'Unable to start specialist')
-      if (cancelled) return
-      setSignedUrl(elevenBody.signedUrl || '')
-      setConversationId(elevenBody.conversationId || '')
-      setProvider('elevenlabs')
-      trackDemoEvent('demo_specialist_ready', {
-        provider: 'elevenlabs',
-        conversationId: elevenBody.conversationId,
-        agentId: elevenBody.agentId,
-      })
+      throw new Error('Nova is taking a moment to connect. Please retry in a few seconds.')
     }
 
     start()
@@ -1530,7 +2215,7 @@ export default function DemoSpecialist({
       })
 
     return () => { cancelled = true }
-  }, [enabled, open, signedUrl, openAISecret])
+  }, [enabled, open, signedUrl, openAISecret, setupNonce])
 
   useEffect(() => {
     const widget = widgetRef.current
@@ -1540,24 +2225,8 @@ export default function DemoSpecialist({
       const detail = event.detail
       if (!detail) return
       detail.config = detail.config || {}
-      const leadGateRequired = (source, details = {}) => {
-        const result = {
-          ok: false,
-          reason: 'lead_gate_required',
-          required: 'work_email',
-          message: 'The visible work email form must be completed before Nova can open or change the workspace.',
-        }
-        trackDemoEvent('demo_specialist_action_blocked_by_gate', {
-          source,
-          ...details,
-          ...result,
-          conversationId,
-        })
-        return result
-      }
       const openWorkspaceTool = async ({ industry, workspace, vertical, label } = {}) => {
         const requested = industry || workspace || vertical
-        if (!accessGranted) return leadGateRequired('open_workspace_tool', { industry: requested, workspace, vertical })
         const result = await performDemoAction(requested || 'healthcare', { label })
         const path = result.industry ? `/${result.industry}` : window.location.hash.replace(/^#/, '') || '/'
         trackDemoEvent('demo_specialist_tool_open_workspace', {
@@ -1572,7 +2241,6 @@ export default function DemoSpecialist({
       }
       const showCapabilityTool = async ({ capability, action, label } = {}) => {
         const requested = capability || action
-        if (!accessGranted) return leadGateRequired('show_capability_tool', { capability, action })
         const result = await performDemoAction(requested || 'overview', { label })
         trackDemoEvent('demo_specialist_tool_show_capability', {
           capability,
@@ -1583,7 +2251,6 @@ export default function DemoSpecialist({
         return result
       }
       const buildWorkspaceTool = async ({ label } = {}) => {
-        if (!accessGranted) return leadGateRequired('build_workspace_tool')
         const result = await performDemoAction('build_workspace', { label: label || 'Build my workspace' })
         trackDemoEvent('demo_specialist_tool_build_workspace', {
           ...result,
@@ -1606,7 +2273,6 @@ export default function DemoSpecialist({
         showConstructionWorkspace: () => openWorkspaceTool({ industry: 'construction', label: 'Construction workspace' }),
         showCapability: showCapabilityTool,
         navigateToDemoView: ({ view }) => {
-          if (!accessGranted) return leadGateRequired('navigate_tool', { view })
           const path = routeForView(view)
           setHashPath(path)
           trackDemoEvent('demo_specialist_tool_navigate', { view, path, conversationId })
@@ -1614,7 +2280,6 @@ export default function DemoSpecialist({
           return { ok: true, path, industry: industry || undefined }
         },
         runDemoScenario: async ({ scenario }) => {
-          if (!accessGranted) return leadGateRequired('scenario_tool', { scenario })
           const key = String(scenario || '').toLowerCase()
           if (key.includes('overtime') || key.includes('sage')) {
             setHashPath('/sage')
@@ -1633,13 +2298,11 @@ export default function DemoSpecialist({
           return { ok: result.ok, path, ...result }
         },
         performDemoAction: async ({ action, label }) => {
-          if (!accessGranted) return leadGateRequired('action_tool', { action, label })
           const result = await performDemoAction(action, { label })
           trackDemoEvent('demo_specialist_tool_action', { action, label, ...result, conversationId })
           return result
         },
         highlightDemoAreaByName: async ({ area, label }) => {
-          if (!accessGranted) return leadGateRequired('named_highlight_tool', { area, label })
           const result = await performDemoAction(area, { label })
           trackDemoEvent('demo_specialist_tool_named_highlight', { area, label, ...result, conversationId })
           return result
@@ -1670,16 +2333,6 @@ export default function DemoSpecialist({
     const runLocalActionFromText = (text, source) => {
       const action = actionFromDemoText(text)
       if (!action) return false
-      if (!accessGranted) {
-        trackDemoEvent('nova_agent_local_action_blocked_by_gate', {
-          source,
-          kind: action.kind,
-          value: action.value,
-          text,
-          conversationId,
-        })
-        return true
-      }
 
       const actionKey = `${source}:${action.kind}:${action.value}:${String(text).slice(0, 160)}`
       if (novaAgentSeenRef.current.has(actionKey)) return true
@@ -1747,15 +2400,6 @@ export default function DemoSpecialist({
       const fallback = shouldInspect ? spokenToolAction(line.text) : null
 
       if (fallback) {
-        if (!accessGranted) {
-          trackDemoEvent('demo_specialist_spoken_tool_fallback_blocked_by_gate', {
-            kind: fallback.kind,
-            value: fallback.value,
-            label: fallback.label,
-            conversationId,
-          })
-          return
-        }
         const fallbackKey = `${fallback.kind}:${fallback.value}:${line.text.slice(0, 120)}`
         if (!spokenToolFallbackRef.current.has(fallbackKey)) {
           spokenToolFallbackRef.current.add(fallbackKey)
@@ -1803,16 +2447,6 @@ export default function DemoSpecialist({
         : null
 
       if (localAction) {
-        if (!accessGranted) {
-          trackDemoEvent('nova_agent_local_action_blocked_by_gate', {
-            kind: localAction.kind,
-            value: localAction.value,
-            label: localAction.label,
-            text: line.text,
-            conversationId,
-          })
-          return
-        }
         const localKey = `${localAction.kind}:${localAction.value}:${line.text.slice(0, 160)}`
         if (!novaAgentSeenRef.current.has(localKey)) {
           novaAgentSeenRef.current.add(localKey)
@@ -1863,15 +2497,6 @@ export default function DemoSpecialist({
           })
 
           for (const action of actions) {
-            if (!accessGranted) {
-              trackDemoEvent('nova_agent_action_blocked_by_gate', {
-                kind: action.kind,
-                value: action.value,
-                label: action.label,
-                conversationId,
-              })
-              continue
-            }
             const result = await performDemoAction(action.value, { label: action.label })
             trackDemoEvent('nova_agent_action_executed', {
               kind: action.kind,
@@ -1925,7 +2550,7 @@ export default function DemoSpecialist({
       widget.removeEventListener('keydown', handleWidgetKeydown, true)
       widget.removeEventListener('click', handleWidgetClick, true)
     }
-  }, [conversationId, signedUrl, accessGranted])
+  }, [conversationId, signedUrl])
 
   useEffect(() => {
     if (!open || !signedUrl || autoStartRef.current) return undefined
@@ -1987,15 +2612,38 @@ export default function DemoSpecialist({
 
   if (!enabled) return null
 
+  const retrySetup = () => {
+    setError('')
+    setSignedUrl('')
+    setOpenAISecret('')
+    setOpenAIModel('')
+    setProvider('')
+    setConversationId('')
+    setSetupNonce(value => value + 1)
+  }
+
   return (
-    <div className={`demo-specialist ${open ? 'is-open' : ''}`}>
-      {open && (
+    <div className={`demo-specialist ${open ? 'is-open' : 'is-collapsed'}`}>
+      {open ? (
         <section className="demo-specialist-widget" aria-label="Teambridge AI demo specialist">
-          {loading && <div className="demo-specialist-state">Connecting Nova...</div>}
-          {error && (
-            <div className="demo-specialist-state demo-specialist-state--error">
-              {error}
-            </div>
+          <button
+            type="button"
+            className="demo-specialist-collapse"
+            onClick={() => {
+              setOpen(false)
+              trackDemoEvent('demo_specialist_collapsed', { source: 'collapse_button' })
+            }}
+            aria-label="Minimize Teambridge AI specialist"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M6 6L18 18M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </button>
+          {(loading || (!provider && !error)) && (
+            <NovaSidebarSetupState />
+          )}
+          {error && !loading && (
+            <NovaSidebarSetupState error={error} onRetry={retrySetup} />
           )}
           {provider === 'openai' && openAISecret && (
             <OpenAIRealtimeNova
@@ -2003,9 +2651,6 @@ export default function DemoSpecialist({
               model={openAIModel}
               conversationId={conversationId}
               leadContext={lead}
-              accessGranted={accessGranted}
-              workspaceAccessGranted={leadCaptured}
-              requestWorkspaceAccess={onRequireWorkspaceAccess}
               autoStart={voiceUnlocked}
             />
           )}
@@ -2030,6 +2675,19 @@ export default function DemoSpecialist({
             />
           )}
         </section>
+      ) : (
+        <button
+          type="button"
+          className="demo-specialist-launcher"
+          onClick={() => {
+            setOpen(true)
+            trackDemoEvent('demo_specialist_reopened', { source: 'launcher_button' })
+          }}
+          aria-label="Open Teambridge AI specialist"
+        >
+          <img src={NOVA_AVATAR} alt="" aria-hidden="true" />
+          <span>Ask Nova</span>
+        </button>
       )}
     </div>
   )

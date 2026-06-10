@@ -76,14 +76,6 @@ const instructions = `You are Nova, Teambridge's AI demo guide.
 
 You are inside an interactive workforce management demo. Speak naturally, confidently,
 and briefly. Sound like a product specialist, not a chatbot.
-Only respond to clear user intent: a spoken question, command, or typed message.
-Ignore accidental noises, coughs, breaths, short unclear sounds, and background
-speech that is not directed at Nova.
-Some visitors are on a visible access form that asks for a work email. If a tool
-returns lead_gate_required, do not imply you opened anything. Explain that the
-workspace is ready, but you need them to enter their work email in the visible
-form first so Nova can save the workspace and connect the walkthrough to the
-right organization.
 When a visitor asks to open, show, navigate to, walk through, or explain a workspace
 or product area, call the matching tool immediately. Do not say code, JSON, function
 names, selectors, or implementation details.
@@ -130,10 +122,12 @@ export default async function handler(req, res) {
             input: {
               noise_reduction: { type: 'far_field' },
               turn_detection: {
-                type: 'semantic_vad',
-                eagerness: 'low',
+                type: 'server_vad',
+                threshold: 0.55,
+                prefix_padding_ms: 500,
+                silence_duration_ms: 650,
                 create_response: true,
-                interrupt_response: false,
+                interrupt_response: true,
               },
             },
           },

@@ -1861,29 +1861,43 @@ function buildUserBriefing(industryId, periodId, personId) {
   }
 }
 
+/* Resolve the briefing object for a given view + industry. Returns the
+   briefing directly (not a map keyed by industry).
+
+   Per-view briefing maps (schedule, people, pay-home, etc.) only cover some
+   industries — events is the most complete. When the active industry has no
+   view-specific briefing, we fall back to THAT INDUSTRY'S home briefing, never
+   another vertical's data. (Previously the fallback was `set.events`, which
+   leaked events content — Gate 3, Harbor Theater — into healthcare, security,
+   and every other workspace.) */
 function briefingFor(view, industryId, paySubRoute) {
-  if (view === 'schedule')        return SCHEDULE_BRIEFING
-  if (view === 'people')          return PEOPLE_BRIEFING
-  if (view === 'time-tracking')   return TIME_TRACKING_BRIEFING
-  if (view === 'shift-requests')  return SHIFT_REQUESTS_BRIEFING
-  if (view === 'timesheets')      return TIMESHEETS_BRIEFING
-  if (view === 'review')          return REVIEW_BRIEFING
-  if (view === 'onboarding')      return ONBOARDING_BRIEFING
+  // Pay sub-screens build a briefing for the specific industry on the fly,
+  // so they're already correct — return them straight through.
   if (view === 'pay') {
     if (paySubRoute?.screen === 'user' && paySubRoute.periodId && paySubRoute.personId) {
-      return { events: buildUserBriefing(industryId, paySubRoute.periodId, paySubRoute.personId) }
+      return buildUserBriefing(industryId, paySubRoute.periodId, paySubRoute.personId)
     }
     if (paySubRoute?.screen === 'period' && paySubRoute.periodId) {
-      return { events: buildPeriodBriefing(industryId, paySubRoute.periodId) }
+      return buildPeriodBriefing(industryId, paySubRoute.periodId)
     }
-    return PAY_HOME_BRIEFING
+    return PAY_HOME_BRIEFING[industryId] ?? BRIEFING[industryId] ?? BRIEFING.events
   }
-  return BRIEFING
+
+  const set =
+    view === 'schedule'       ? SCHEDULE_BRIEFING :
+    view === 'people'         ? PEOPLE_BRIEFING :
+    view === 'time-tracking'  ? TIME_TRACKING_BRIEFING :
+    view === 'shift-requests' ? SHIFT_REQUESTS_BRIEFING :
+    view === 'timesheets'     ? TIMESHEETS_BRIEFING :
+    view === 'review'         ? REVIEW_BRIEFING :
+    view === 'onboarding'     ? ONBOARDING_BRIEFING :
+    BRIEFING
+
+  return set[industryId] ?? BRIEFING[industryId] ?? BRIEFING.events
 }
 
 function DailyBriefing({ industryId, view = 'overview', paySubRoute, briefKey, onAction }) {
-  const set = briefingFor(view, industryId, paySubRoute)
-  const brief = set[industryId] ?? set.events ?? BRIEFING.events
+  const brief = briefingFor(view, industryId, paySubRoute)
   const hasSituations = Array.isArray(brief.situations)
 
   return (
@@ -3098,8 +3112,9 @@ function buildCancelScene(c) {
 
   scene.reachOutPrompt = {
     content: { segments: [
+      { type: 'text', text: `Teambridge is your always-on super agent — I've been monitoring your account and prepared your brief. Heads up: **${c.out.name}** just cancelled their **${c.shiftWhen} ${c.roleLower}**. No worries, the super agent's got this.` },
       { type: 'signal',
-        eyebrow: 'Activity flagged · might need resolution',
+        eyebrow: 'Super agent · auto-resolving',
         title:  `${c.out.name} cancelled their ${c.shiftWhen} ${c.roleLower}`,
         detail: `${c.venue} · ${c.notice} notice` },
       { type: 'thinking', steps: [
@@ -3112,7 +3127,7 @@ function buildCancelScene(c) {
         { title: 'Ranked the shortlist',
           detail: 'Proximity (traffic-adjusted), 90-day performance, last-min accept rate, and hours fairness so the same people aren\'t always on call.' },
       ] },
-      { type: 'text', text: `Found qualified replacements. Top 3 are nearby with strong accept rates. Want me to reach out to them in parallel?` },
+      { type: 'text', text: `It's already found a replacement — the top 3 are nearby with strong accept rates. Want me to reach out to them in parallel?` },
     ] },
     specialist: 'nova',
     approveLabel: 'Yes, reach out',
@@ -3291,10 +3306,104 @@ const OT_SCENE = {
 
 /* ─── Prompt panel ──────────────────────────────────────────────────────── */
 
+/* Spoken differentiator narration for the home cancellation scene.
+   Stitches the three super-agent beats — always-on/monitoring, the
+   cancellation, the auto-found replacement — into one short clip, voiced
+   native to the vertical (Sandra/usher for events, Keisha/ICU for
+   healthcare, etc.). */
+function cancelNarrationScript(industryId) {
+  const c = CANCEL_CONFIG_BY_INDUSTRY[industryId]
+  if (!c) return ''
+  return `Teambridge is your always-on super agent. I've been monitoring your account and prepared your brief. Ah — it looks like ${c.out.name} just cancelled their ${c.shiftWhen} ${c.roleLower} at ${c.venue}. No worries, the super agent's got this. It's already found a qualified replacement nearby, ready to reach out the moment you approve.`
+}
+
+/* Tap-to-hear narration bar for the cancellation scene. Browsers block
+   autoplaying audio until the visitor interacts, so the on-screen scene
+   always plays while Nova's voice starts on tap and stays available for
+   replay. The TTS clip is cached after the first fetch so replays don't
+   re-bill. Renders nothing if audio fails — voice never blocks the demo. */
+function SceneNarration({ script }) {
+  const audioRef = useRef(null)
+  const urlRef = useRef(null)
+  const [state, setState] = useState('idle') // idle | loading | playing | done | error
+
+  useEffect(() => () => {
+    audioRef.current?.pause()
+    if (urlRef.current) URL.revokeObjectURL(urlRef.current)
+  }, [])
+
+  const stop = () => {
+    const a = audioRef.current
+    if (a) { a.pause(); a.currentTime = 0 }
+    setState('done')
+  }
+
+  const play = async () => {
+    // Cached clip on replay — no second TTS call.
+    if (urlRef.current && audioRef.current) {
+      audioRef.current.currentTime = 0
+      setState('playing')
+      audioRef.current.play().catch(() => setState('error'))
+      return
+    }
+    setState('loading')
+    try {
+      const r = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ text: script, voiceId: AGENT_VOICE_ID }),
+      })
+      if (!r.ok) throw new Error(await r.text().catch(() => r.statusText))
+      const blob = await r.blob()
+      const url = URL.createObjectURL(blob)
+      urlRef.current = url
+      const audio = audioRef.current
+      if (!audio) return
+      audio.src = url
+      audio.onended = () => setState('done')
+      audio.onerror = () => setState('error')
+      setState('playing')
+      await audio.play().catch(() => setState('error'))
+    } catch (e) {
+      console.error('[scene-narration] TTS failed:', e)
+      setState('error')
+    }
+  }
+
+  if (state === 'error') return null
+
+  const label =
+    state === 'loading' ? 'Loading Nova’s voice…'
+    : state === 'playing' ? 'Nova is narrating… tap to stop'
+    : state === 'done' ? 'Replay Nova’s narration'
+    : 'Hear Nova narrate this'
+
+  return (
+    <div className="scene-narration">
+      <audio ref={audioRef} preload="none" />
+      <button
+        type="button"
+        className={`scene-narration-btn is-${state}`}
+        onClick={state === 'playing' ? stop : play}
+        disabled={state === 'loading'}
+      >
+        <span className="scene-narration-icon" aria-hidden="true">
+          {state === 'loading' ? '…' : state === 'playing' ? '⏸' : '🔊'}
+        </span>
+        <span>{label}</span>
+      </button>
+    </div>
+  )
+}
+
 function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = false, otFixed = false, onApplyOTFix, onInjectActivityCard, onOverrideActivityCard, onResetScene, onOpenWorkflow, mobileOpen = false }) {
   const suggestions = PROMPT_SUGGESTIONS[industryId] ?? PROMPT_SUGGESTIONS.events
   const [input, setInput]       = useState('')
   const [messages, setMessages] = useState([])
+  // Spoken-narration script for the home cancellation scene. Set when the
+  // scripted scene starts; drives the tap-to-hear bar (item: differentiator
+  // voice-over). Null = no bar.
+  const [narrationScript, setNarrationScript] = useState(null)
   const scrollRef   = useRef(null)
   const idRef       = useRef(0)
   // Compound key so the reignite effect fires not just on top-level view
@@ -3315,8 +3424,7 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
     lastBriefKeyRef.current = briefKey
     if (briefKey === prev) return
     if (messages.length === 0) return  // empty state already renders the briefing
-    const set = briefingFor(view, industryId, paySubRoute)
-    const brief = set[industryId] ?? set.events
+    const brief = briefingFor(view, industryId, paySubRoute)
     if (!brief?.situations?.length) return
     setMessages(prev => [
       ...prev,
@@ -3430,7 +3538,7 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
       const r = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ messages: apiMessages }),
+        body: JSON.stringify({ messages: apiMessages, industry: industryId }),
       })
       if (r.ok) {
         const data = await r.json()
@@ -3439,7 +3547,7 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
     } catch (_) { /* network error, fall through */ }
 
     if (!replyText) {
-      replyText = "I'm offline from the live AI right now, but here's where I'd start: check the open role for Saturday, roster changes in the last hour, and any credentialing still in-flight. Nova can handle this when you're ready — set ANTHROPIC_API_KEY on the Vercel deploy for real answers."
+      replyText = "I can't reach the live assistant this second — give it another try in a moment. In the meantime, the activity feed on the right shows what the agents are working on right now."
     }
 
     const followup = detectFollowup(replyText)
@@ -3543,6 +3651,7 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
   useEffect(() => {
     if (view !== 'overview') {
       sceneStartedRef.current = false
+      setNarrationScript(null)
       return
     }
     // Fresh-launch suppression. If the operator just came from the
@@ -3571,6 +3680,8 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
     }
     if (sceneStartedRef.current) return
     sceneStartedRef.current = true
+    // Arm the tap-to-hear narration to match the scene that's about to play.
+    setNarrationScript(cancelNarrationScript(industryId))
 
     // T=3s — the cancellation event arrives on its own. No agent is
     // attached yet; the card is anchored to the person so the prospect
@@ -3639,7 +3750,7 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
     return () => clearTimeout(t)
   }, [sageMode, industryId, view, messages.length, otFixed]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const clear = () => { setMessages([]); setInput(''); onResetScene?.() }
+  const clear = () => { setMessages([]); setInput(''); setNarrationScript(null); onResetScene?.() }
 
   const hasChat = messages.length > 0
 
@@ -3649,8 +3760,7 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
   // On the Schedule page, follow-up chips mirror the schedule briefing's
   // action prompts instead of the home canned suggestions. On overview (and
   // any other view) we fall back to the industry's PROMPT_SUGGESTIONS.
-  const viewBriefingSet = briefingFor(view, industryId, paySubRoute)
-  const viewBrief = viewBriefingSet[industryId] ?? viewBriefingSet.events
+  const viewBrief = briefingFor(view, industryId, paySubRoute)
   const chipPool = (view === 'overview' || !viewBrief?.situations?.length)
     ? (suggestions ?? [])
     : viewBrief.situations.map(s => s.action).filter(Boolean).map(a => ({ label: a.prompt }))
@@ -3661,6 +3771,9 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
   return (
     <section className={`prompt-panel ${mobileOpen ? 'is-mobile-open' : ''}`} aria-label="Ask Teambridge">
       <div className="prompt-panel-inner">
+        {narrationScript && view === 'overview' && (
+          <SceneNarration key={industryId} script={narrationScript} />
+        )}
         {hasChat && (
           <div className="prompt-panel-topbar">
             <button type="button" className="prompt-panel-clear" onClick={clear}>

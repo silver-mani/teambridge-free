@@ -118,12 +118,29 @@ function companyFromDomain(domain) {
     : ''
 }
 
+// Maps an Abstract API rejection reason to a short, human message for the gate.
+function messageForReason(reason) {
+  switch (reason) {
+    case 'free_email':
+      return 'Use a company email so Nova can attach the workspace to the right organization.'
+    case 'disposable':
+      return "Temporary addresses can't unlock a saved workspace."
+    case 'high_risk':
+      return 'That address looks risky — please use your main work email.'
+    case 'no_mx':
+      return "We couldn't find a mail server for that domain. Double-check the spelling?"
+    default:
+      return "That email doesn't look reachable. Please double-check it."
+  }
+}
+
 export default function LeadCaptureGate({ onSubmit, onShown, sessionId, delayMs = 3000, title = 'Your workspace is ready', subtitle = 'Use a verified work email so Nova can save this workspace, connect your walkthrough to the right organization, and keep your follow-up notes together.' }) {
   const [visible, setVisible]   = useState(false)
   const [email, setEmail]       = useState('')
   const [touched, setTouched]   = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [emailAttempts, setEmailAttempts] = useState([])
+  const [serverError, setServerError] = useState('')
 
   // Pop after the configured delay. Direct demo visitors use 0ms so the
   // gate appears immediately; approved landing visitors skip the gate.
@@ -181,12 +198,54 @@ export default function LeadCaptureGate({ onSubmit, onShown, sessionId, delayMs 
     }
 
     setSubmitting(true)
+    setServerError('')
+
+    // Server-side verification via Abstract API — the same email check every
+    // other Teambridge form runs (full SMTP + mailbox existence + risk),
+    // catching undeliverable mailboxes, catch-all domains, and high-risk
+    // addresses that the client-side classifier can't see. Fails open so an
+    // API hiccup never blocks a real prospect. This is a quick (~1-2s) check —
+    // not the old 60s company research.
+    const cleanEmail = email.trim().toLowerCase()
+    let verification = { valid: true }
+    try {
+      const r = await fetch('/api/verify-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cleanEmail }),
+      })
+      if (r.ok) verification = await r.json()
+    } catch {
+      verification = { valid: true, reason: 'fetch_error' } // fail open
+    }
+
+    if (verification && verification.valid === false) {
+      const quality = verification.quality || 'undeliverable'
+      const attempt = { email: cleanEmail, quality, blockedAt: Date.now() }
+      setEmailAttempts(prev => [...prev, attempt])
+      if (sessionId) {
+        fetch('/api/log-email-attempt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, attemptedEmail: cleanEmail, emailQuality: quality, userAgent: navigator.userAgent }),
+          keepalive: true,
+        }).catch(() => {})
+      }
+      setServerError(messageForReason(verification.reason))
+      setSubmitting(false)
+      return // keep gate open
+    }
+
+    // Verified. Enter immediately — company research no longer blocks here
+    // (it used to take up to ~60s); the lead is captured and enriched in the
+    // background by the parent, and richer research still runs in the
+    // build/onboarding flow if they build a workspace.
     onSubmit({
       name: '',
       company: companyFromDomain(domain),
-      email: email.trim().toLowerCase(),
+      email: cleanEmail,
       submittedDomain: domain,
-      submittedContact: email.trim().toLowerCase(),
+      submittedContact: cleanEmail,
       contactInputType: 'email',
       emailQuality: 'work',
       emailAttempts,
@@ -207,7 +266,7 @@ export default function LeadCaptureGate({ onSubmit, onShown, sessionId, delayMs 
               <img src={ROBOT_ANIMATION} alt="" />
               <div>
                 <span>Specialist online</span>
-                <strong>Nova prepared this workspace for your session.</strong>
+                <strong>Nova is your guide for this live demo.</strong>
               </div>
             </div>
             <div className="lead-gate-unlock-preview">
@@ -224,7 +283,7 @@ export default function LeadCaptureGate({ onSubmit, onShown, sessionId, delayMs 
           </div>
           <div className="lead-gate-nova-note">
             <img src={ROBOT_ANIMATION} alt="" />
-            <p>Before I open it, add your work email. I use it to save this workspace and tailor the walkthrough to the organization I find.</p>
+            <p>Before we start, add your work email. I use it to tailor the demo to your organization and keep your session together.</p>
           </div>
           <h2 id="lead-gate-title" className="lead-gate-title">{title}</h2>
           <p className="lead-gate-sub">
@@ -235,15 +294,15 @@ export default function LeadCaptureGate({ onSubmit, onShown, sessionId, delayMs 
             <label className="lead-gate-field">
               <span className="lead-gate-label">Work email</span>
               <input
-                className={`lead-gate-input ${touched && !emailOk ? 'is-invalid' : ''}`}
+                className={`lead-gate-input ${(touched && !emailOk) || serverError ? 'is-invalid' : ''}`}
                 type="email"
                 autoComplete="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); setServerError('') }}
                 placeholder="alex@company.com"
                 autoFocus
               />
-              {touched && !emailOk && (
+              {touched && !emailOk ? (
                 <span className="lead-gate-hint">
                   {email.trim().length === 0
                     ? 'Work email required.'
@@ -251,7 +310,9 @@ export default function LeadCaptureGate({ onSubmit, onShown, sessionId, delayMs 
                     ? "Temporary addresses can't unlock a saved workspace."
                     : 'Use a company email so Nova can attach the workspace to the right organization.'}
                 </span>
-              )}
+              ) : serverError ? (
+                <span className="lead-gate-hint">{serverError}</span>
+              ) : null}
             </label>
 
             <button
@@ -259,7 +320,7 @@ export default function LeadCaptureGate({ onSubmit, onShown, sessionId, delayMs 
               className="lead-gate-submit"
               disabled={email.trim().length === 0 || submitting}
             >
-              {submitting ? 'Opening workspace...' : 'Start Demo Now'}
+              {submitting ? 'Verifying…' : 'Start Demo Now'}
             </button>
           </form>
         </div>
