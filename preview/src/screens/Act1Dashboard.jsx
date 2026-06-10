@@ -3112,8 +3112,9 @@ function buildCancelScene(c) {
 
   scene.reachOutPrompt = {
     content: { segments: [
+      { type: 'text', text: `Teambridge is your always-on super agent — I've been monitoring your account and prepared your brief. Heads up: **${c.out.name}** just cancelled their **${c.shiftWhen} ${c.roleLower}**. No worries, the super agent's got this.` },
       { type: 'signal',
-        eyebrow: 'Activity flagged · might need resolution',
+        eyebrow: 'Super agent · auto-resolving',
         title:  `${c.out.name} cancelled their ${c.shiftWhen} ${c.roleLower}`,
         detail: `${c.venue} · ${c.notice} notice` },
       { type: 'thinking', steps: [
@@ -3126,7 +3127,7 @@ function buildCancelScene(c) {
         { title: 'Ranked the shortlist',
           detail: 'Proximity (traffic-adjusted), 90-day performance, last-min accept rate, and hours fairness so the same people aren\'t always on call.' },
       ] },
-      { type: 'text', text: `Found qualified replacements. Top 3 are nearby with strong accept rates. Want me to reach out to them in parallel?` },
+      { type: 'text', text: `It's already found a replacement — the top 3 are nearby with strong accept rates. Want me to reach out to them in parallel?` },
     ] },
     specialist: 'nova',
     approveLabel: 'Yes, reach out',
@@ -3305,10 +3306,104 @@ const OT_SCENE = {
 
 /* ─── Prompt panel ──────────────────────────────────────────────────────── */
 
+/* Spoken differentiator narration for the home cancellation scene.
+   Stitches the three super-agent beats — always-on/monitoring, the
+   cancellation, the auto-found replacement — into one short clip, voiced
+   native to the vertical (Sandra/usher for events, Keisha/ICU for
+   healthcare, etc.). */
+function cancelNarrationScript(industryId) {
+  const c = CANCEL_CONFIG_BY_INDUSTRY[industryId]
+  if (!c) return ''
+  return `Teambridge is your always-on super agent. I've been monitoring your account and prepared your brief. Ah — it looks like ${c.out.name} just cancelled their ${c.shiftWhen} ${c.roleLower} at ${c.venue}. No worries, the super agent's got this. It's already found a qualified replacement nearby, ready to reach out the moment you approve.`
+}
+
+/* Tap-to-hear narration bar for the cancellation scene. Browsers block
+   autoplaying audio until the visitor interacts, so the on-screen scene
+   always plays while Nova's voice starts on tap and stays available for
+   replay. The TTS clip is cached after the first fetch so replays don't
+   re-bill. Renders nothing if audio fails — voice never blocks the demo. */
+function SceneNarration({ script }) {
+  const audioRef = useRef(null)
+  const urlRef = useRef(null)
+  const [state, setState] = useState('idle') // idle | loading | playing | done | error
+
+  useEffect(() => () => {
+    audioRef.current?.pause()
+    if (urlRef.current) URL.revokeObjectURL(urlRef.current)
+  }, [])
+
+  const stop = () => {
+    const a = audioRef.current
+    if (a) { a.pause(); a.currentTime = 0 }
+    setState('done')
+  }
+
+  const play = async () => {
+    // Cached clip on replay — no second TTS call.
+    if (urlRef.current && audioRef.current) {
+      audioRef.current.currentTime = 0
+      setState('playing')
+      audioRef.current.play().catch(() => setState('error'))
+      return
+    }
+    setState('loading')
+    try {
+      const r = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ text: script, voiceId: AGENT_VOICE_ID }),
+      })
+      if (!r.ok) throw new Error(await r.text().catch(() => r.statusText))
+      const blob = await r.blob()
+      const url = URL.createObjectURL(blob)
+      urlRef.current = url
+      const audio = audioRef.current
+      if (!audio) return
+      audio.src = url
+      audio.onended = () => setState('done')
+      audio.onerror = () => setState('error')
+      setState('playing')
+      await audio.play().catch(() => setState('error'))
+    } catch (e) {
+      console.error('[scene-narration] TTS failed:', e)
+      setState('error')
+    }
+  }
+
+  if (state === 'error') return null
+
+  const label =
+    state === 'loading' ? 'Loading Nova’s voice…'
+    : state === 'playing' ? 'Nova is narrating… tap to stop'
+    : state === 'done' ? 'Replay Nova’s narration'
+    : 'Hear Nova narrate this'
+
+  return (
+    <div className="scene-narration">
+      <audio ref={audioRef} preload="none" />
+      <button
+        type="button"
+        className={`scene-narration-btn is-${state}`}
+        onClick={state === 'playing' ? stop : play}
+        disabled={state === 'loading'}
+      >
+        <span className="scene-narration-icon" aria-hidden="true">
+          {state === 'loading' ? '…' : state === 'playing' ? '⏸' : '🔊'}
+        </span>
+        <span>{label}</span>
+      </button>
+    </div>
+  )
+}
+
 function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = false, otFixed = false, onApplyOTFix, onInjectActivityCard, onOverrideActivityCard, onResetScene, onOpenWorkflow, mobileOpen = false }) {
   const suggestions = PROMPT_SUGGESTIONS[industryId] ?? PROMPT_SUGGESTIONS.events
   const [input, setInput]       = useState('')
   const [messages, setMessages] = useState([])
+  // Spoken-narration script for the home cancellation scene. Set when the
+  // scripted scene starts; drives the tap-to-hear bar (item: differentiator
+  // voice-over). Null = no bar.
+  const [narrationScript, setNarrationScript] = useState(null)
   const scrollRef   = useRef(null)
   const idRef       = useRef(0)
   // Compound key so the reignite effect fires not just on top-level view
@@ -3556,6 +3651,7 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
   useEffect(() => {
     if (view !== 'overview') {
       sceneStartedRef.current = false
+      setNarrationScript(null)
       return
     }
     // Fresh-launch suppression. If the operator just came from the
@@ -3584,6 +3680,8 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
     }
     if (sceneStartedRef.current) return
     sceneStartedRef.current = true
+    // Arm the tap-to-hear narration to match the scene that's about to play.
+    setNarrationScript(cancelNarrationScript(industryId))
 
     // T=3s — the cancellation event arrives on its own. No agent is
     // attached yet; the card is anchored to the person so the prospect
@@ -3652,7 +3750,7 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
     return () => clearTimeout(t)
   }, [sageMode, industryId, view, messages.length, otFixed]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const clear = () => { setMessages([]); setInput(''); onResetScene?.() }
+  const clear = () => { setMessages([]); setInput(''); setNarrationScript(null); onResetScene?.() }
 
   const hasChat = messages.length > 0
 
@@ -3673,6 +3771,9 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
   return (
     <section className={`prompt-panel ${mobileOpen ? 'is-mobile-open' : ''}`} aria-label="Ask Teambridge">
       <div className="prompt-panel-inner">
+        {narrationScript && view === 'overview' && (
+          <SceneNarration key={industryId} script={narrationScript} />
+        )}
         {hasChat && (
           <div className="prompt-panel-topbar">
             <button type="button" className="prompt-panel-clear" onClick={clear}>

@@ -784,21 +784,21 @@ export function bookingUrlForLead(leadContext = {}) {
 // auto-advancing between them.
 const TOUR_STOPS = [
   { action: 'overview', label: 'Command center',
-    script: "This is the command center. The feed shows what Teambridge is already handling, and the briefing keeps the important items at the top instead of making you hunt for them." },
+    script: "This is the command center — the feed shows what Teambridge is already handling, with the important items kept at the top." },
   { action: 'schedule_gap', label: 'Schedule & coverage',
-    script: "Here is scheduling and coverage. When a shift opens up, Teambridge finds qualified replacements and ranks them by fit, availability, hours, and past reliability." },
+    script: "Scheduling and coverage. When a shift opens, Teambridge finds qualified replacements and ranks them by fit." },
   { action: 'shift_requests', label: 'Shift requests',
-    script: "This is where swap and time-off requests land. Clean requests can clear automatically, and anything risky gets routed with the reason already attached." },
+    script: "Swap and time-off requests land here. Clean ones clear automatically; anything risky gets routed with the reason attached." },
   { action: 'people', label: 'People & credentials',
-    script: "Here is the roster. Credentials, certifications, roles, and work status stay live, so expiring items get caught before they create coverage problems." },
+    script: "The roster — credentials, certs, and work status stay live, so expiring items get caught before they cause gaps." },
   { action: 'onboarding', label: 'Onboarding',
-    script: "Onboarding turns a new hire into someone ready to work. Forms, checks, reminders, and handoffs move forward without a manager chasing each step." },
+    script: "Onboarding moves a new hire to ready-to-work. Forms, checks, and reminders advance without a manager chasing each step." },
   { action: 'payroll', label: 'Pay',
-    script: "Pay brings time, premiums, overtime, and approvals together before payroll closes. Managers see the exceptions, not a spreadsheet full of guesses." },
+    script: "Pay pulls time, premiums, overtime, and approvals together before payroll closes. Managers see only the exceptions." },
   { action: 'compliance', label: 'Compliance',
-    script: "Compliance keeps the rules visible. Policies, documents, and labor checks are enforced as work happens, with an audit trail behind every decision." },
+    script: "Compliance keeps the rules visible — policies and labor checks are enforced as work happens, with an audit trail behind each decision." },
   { action: 'agents', label: 'AI agents',
-    script: "These are the AI agents behind the scenes. They handle coverage, reminders, checks, and escalations, while operators keep control over scope and approvals." },
+    script: "The AI agents behind the scenes. They handle coverage, reminders, and escalations while you keep control over approvals." },
 ]
 
 const TOUR_QUESTION_TEXT = 'Any questions on this before I keep going?'
@@ -1707,6 +1707,22 @@ function OpenAIRealtimeNova({
     trackDemoEvent('nova_guided_tour_ended', { conversationId })
   }
 
+  // Jump straight to a chosen stop — wired to the step list and the
+  // Previous / Next controls so the visitor drives the tour instead of
+  // only watching it auto-walk. Cancels any in-flight narration and the
+  // pending auto-advance, then narrates the target stop. Works whether the
+  // tour is mid-narration or paused; landing on a stop clears the paused
+  // state so auto-advance picks up again from there.
+  const goToTourStep = index => {
+    if (!tourRef.current.active) return
+    const clamped = Math.max(0, Math.min(index, TOUR_STOPS.length - 1))
+    if (clamped === tourRef.current.index && tourPhaseRef.current === 'narrating') return
+    clearTourAdvance()
+    cancelActiveResponse()
+    trackDemoEvent('nova_guided_tour_jumped', { from: tourRef.current.index, to: clamped })
+    runTourStep(clamped)
+  }
+
   const startGuidedTour = () => {
     if (tourRef.current.active || pendingTourStartRef.current) return
     setError('')
@@ -1776,23 +1792,59 @@ function OpenAIRealtimeNova({
       </div>
       {error && <div className="nova-realtime-error">{error}</div>}
       {tour.active && (
-        <div className="nova-tour-bar" role="status" aria-live="polite">
-          <div className="nova-tour-bar-info">
-            <span className="nova-tour-bar-progress">
-              Guided tour · {Math.min(tour.index + 1, TOUR_STOPS.length)} / {TOUR_STOPS.length}
-            </span>
-            <span className="nova-tour-bar-label">
-              {tour.paused ? 'Paused' : TOUR_STOPS[Math.min(tour.index, TOUR_STOPS.length - 1)].label}
-            </span>
+        <div className="nova-tour-bar" role="group" aria-label="Guided tour controls">
+          <div className="nova-tour-bar-top">
+            <div className="nova-tour-bar-info">
+              <span className="nova-tour-bar-progress">
+                Guided tour · {Math.min(tour.index + 1, TOUR_STOPS.length)} / {TOUR_STOPS.length}
+              </span>
+              <span className="nova-tour-bar-label">
+                {tour.paused ? 'Paused' : TOUR_STOPS[Math.min(tour.index, TOUR_STOPS.length - 1)].label}
+              </span>
+            </div>
+            <div className="nova-tour-bar-controls">
+              <button
+                type="button"
+                onClick={() => goToTourStep(tour.index - 1)}
+                disabled={tour.index <= 0}
+                aria-label="Previous section"
+              >
+                ‹ Prev
+              </button>
+              <button
+                type="button"
+                onClick={tour.paused ? resumeTour : () => pauseTour('manual')}
+              >
+                {tour.paused ? 'Resume' : 'Pause'}
+              </button>
+              <button
+                type="button"
+                onClick={() => goToTourStep(tour.index + 1)}
+                disabled={tour.index >= TOUR_STOPS.length - 1}
+                aria-label="Next section"
+              >
+                Next ›
+              </button>
+              <button type="button" onClick={endTour}>End</button>
+            </div>
           </div>
-          <div className="nova-tour-bar-controls">
-            <button
-              type="button"
-              onClick={tour.paused ? resumeTour : () => pauseTour('manual')}
-            >
-              {tour.paused ? 'Resume' : 'Pause'}
-            </button>
-            <button type="button" onClick={endTour}>End</button>
+          <div className="nova-tour-steps" role="tablist" aria-label="Tour sections">
+            {TOUR_STOPS.map((stop, i) => {
+              const state = i === tour.index ? 'current' : i < tour.index ? 'done' : 'upcoming'
+              return (
+                <button
+                  key={stop.action}
+                  type="button"
+                  role="tab"
+                  aria-selected={i === tour.index}
+                  className={`nova-tour-step is-${state}`}
+                  onClick={() => goToTourStep(i)}
+                >
+                  <span className="nova-tour-step-index">{i + 1}</span>
+                  <span className="nova-tour-step-label">{stop.label}</span>
+                </button>
+              )
+            })}
           </div>
         </div>
       )}
@@ -1803,7 +1855,7 @@ function OpenAIRealtimeNova({
           </button>
         )}
         <button type="button" className="nova-talk-team-button" onClick={openBooking}>
-          Talk to the team
+          Schedule meeting with sales
         </button>
       </div>
       <form className="nova-realtime-form" onSubmit={submitText}>
@@ -1886,7 +1938,7 @@ function NovaSidebarSetupState({ error, onRetry }) {
           disabled={!error}
           onClick={error ? onRetry : undefined}
         >
-          {error ? 'Retry Nova' : 'Talk to the team'}
+          {error ? 'Retry Nova' : 'Schedule meeting with sales'}
         </button>
       </div>
       <div className="nova-realtime-form nova-realtime-form--setup" aria-hidden="true">

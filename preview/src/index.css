@@ -1137,14 +1137,87 @@ body {
    visitor pause/resume/end control while the tour auto-advances. */
 .nova-tour-bar {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
   margin-bottom: var(--space-2);
   padding: 8px 10px;
   border: 1px solid var(--color-border-opaque);
   border-radius: var(--radius-md, 10px);
   background: color-mix(in srgb, var(--color-bg-primary) 92%, var(--color-content-primary));
+}
+
+.nova-tour-bar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+/* Persistent, clickable list of every tour section. The visitor can jump
+   to any step, while Prev / Next and auto-advance keep working. */
+.nova-tour-steps {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+}
+
+.nova-tour-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding: 4px 9px 4px 5px;
+  border: 1px solid var(--color-border-opaque);
+  border-radius: var(--radius-full, 999px);
+  background: var(--color-bg-primary);
+  color: var(--color-content-secondary);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 140ms ease, color 140ms ease, background-color 140ms ease;
+}
+
+.nova-tour-step:hover {
+  border-color: var(--color-border-selected);
+  color: var(--color-content-primary);
+}
+
+.nova-tour-step-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-full, 999px);
+  background: var(--color-bg-secondary);
+  color: var(--color-content-secondary);
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+}
+
+.nova-tour-step.is-current {
+  border-color: var(--color-content-primary);
+  color: var(--color-content-primary);
+  background: color-mix(in srgb, var(--color-content-primary) 8%, var(--color-bg-primary));
+}
+
+.nova-tour-step.is-current .nova-tour-step-index {
+  background: var(--color-content-primary);
+  color: var(--color-bg-primary);
+}
+
+.nova-tour-step.is-done .nova-tour-step-index {
+  background: color-mix(in srgb, var(--color-content-primary) 22%, var(--color-bg-primary));
+  color: var(--color-content-primary);
+}
+
+.nova-tour-bar-controls button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .nova-tour-bar-info {
