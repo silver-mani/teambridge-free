@@ -1855,7 +1855,7 @@ function OpenAIRealtimeNova({
           </button>
         )}
         <button type="button" className="nova-talk-team-button" onClick={openBooking}>
-          Schedule meeting with sales
+          Meet with sales
         </button>
       </div>
       <form className="nova-realtime-form" onSubmit={submitText}>
@@ -1938,7 +1938,7 @@ function NovaSidebarSetupState({ error, onRetry }) {
           disabled={!error}
           onClick={error ? onRetry : undefined}
         >
-          {error ? 'Retry Nova' : 'Schedule meeting with sales'}
+          {error ? 'Retry Nova' : 'Meet with sales'}
         </button>
       </div>
       <div className="nova-realtime-form nova-realtime-form--setup" aria-hidden="true">
