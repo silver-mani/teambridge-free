@@ -59,7 +59,6 @@ export const DEFAULT_NAV_GROUPS = [
     label: 'Pay',
     items: [
       { id: 'pay',    label: 'Payroll', Icon: CurrencyDollarCircleIcon },
-      { id: 'review', label: 'Review',  Icon: ClipboardCheckIcon },
     ],
   },
 ]

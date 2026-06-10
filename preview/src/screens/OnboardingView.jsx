@@ -50,9 +50,9 @@ const CANDIDATES = [
   { id: 'c04', stage: 'form',       name: 'Aisha Bello',       phone: null,             roles: ['Box', 'Usher'],             ago: '3 weeks ago',  owner: 'GM – Harbor' },
 
   // ── Credentialing (5) ───────────────────────────────────────────────
-  { id: 'c05', stage: 'credential', name: 'Amy Jain',          phone: null,             roles: ['Lead','Usher','Security','F&B','Premium','Bev','Cleaning'], ago: '9 months ago', owner: 'Super Admin',         tier: 'Platinum' },
-  { id: 'c06', stage: 'credential', name: 'Julian Kelly',      phone: null,             roles: ['Usher'],                    ago: '1 year ago',    owner: 'Super Admin',          tier: 'Platinum' },
-  { id: 'c07', stage: 'credential', name: 'Mandy Wilson',      phone: '+14239876533',   roles: ['Usher'],                    ago: '3 weeks ago',   owner: 'Super Admin' },
+  { id: 'c05', stage: 'credential', name: 'Rosa Lindgren',     phone: null,             roles: ['Lead','Usher','Security','F&B','Premium','Bev','Cleaning'], ago: '9 months ago', owner: 'Operator – Levi\'s',   tier: 'Platinum' },
+  { id: 'c06', stage: 'credential', name: 'Julian Kelly',      phone: null,             roles: ['Usher'],                    ago: '1 year ago',    owner: 'Operator – Civic',     tier: 'Platinum' },
+  { id: 'c07', stage: 'credential', name: 'Mandy Wilson',      phone: '+14239876533',   roles: ['Usher'],                    ago: '3 weeks ago',   owner: 'GM – Harbor' },
   { id: 'c08', stage: 'credential', name: 'Miles Wilson',      phone: null,             roles: ['Bev', 'Usher'],             ago: '6 months ago',  owner: 'Operator – Civic' },
   { id: 'c09', stage: 'credential', name: 'Elena Petrov',      phone: '+15103330077',   roles: ['Premium', 'F&B'],           ago: '5 weeks ago',   owner: 'GM – Levi\'s' },
 
@@ -60,20 +60,20 @@ const CANDIDATES = [
   { id: 'c10', stage: 'background', name: 'Belroy Williams',   phone: null,             roles: ['Usher'],                    ago: '5 months ago',  owner: 'Operator – Civic',     tier: 'Silver' },
   { id: 'c11', stage: 'background', name: 'Emily Holdens',     phone: null,             roles: ['Usher'],                    ago: '1 year ago',    owner: 'Operator – Civic',     tier: 'Silver' },
   { id: 'c12', stage: 'background', name: 'Francis Miller',    phone: null,             roles: ['Usher'],                    ago: '1 year ago',    owner: 'Operator – Civic',     note: 'Probation' },
-  { id: 'c13', stage: 'background', name: 'James Ulrich',      phone: '+19735577332',   roles: ['Premium', 'Bev', 'Usher'],  ago: '6 months ago',  owner: 'Super Admin' },
+  { id: 'c13', stage: 'background', name: 'James Ulrich',      phone: '+19735577332',   roles: ['Premium', 'Bev', 'Usher'],  ago: '6 months ago',  owner: 'Operator – Levi\'s' },
   { id: 'c14', stage: 'background', name: 'Jerry Li',          phone: null,             roles: ['Usher'],                    ago: '2 weeks ago',   owner: 'Operator – Levi\'s' },
   { id: 'c15', stage: 'background', name: 'Hana Volk',         phone: null,             roles: ['Cleaning', 'Engineer'],     ago: '1 month ago',   owner: 'GM – Harbor' },
 
   // ── DocuSign (5) ────────────────────────────────────────────────────
-  { id: 'c16', stage: 'docusign',   name: 'Jai Silva',         phone: '+17345553383',   roles: ['Usher'],                    ago: '6 days ago',    owner: 'Super Admin' },
+  { id: 'c16', stage: 'docusign',   name: 'Jai Silva',         phone: '+17345553383',   roles: ['Usher'],                    ago: '6 days ago',    owner: 'Operator – Civic' },
   { id: 'c17', stage: 'docusign',   name: 'Jane Matthews',     phone: '+11234567890',   roles: ['Usher'],                    ago: '1 year ago',    owner: 'Operator – Civic' },
-  { id: 'c18', stage: 'docusign',   name: 'Kyle Johnston',     phone: '+11672598765',   roles: ['Lead','Usher','Security','F&B','Premium','Bev','Cleaning','Box','Gate'], ago: '2 months ago', owner: 'Super Admin' },
-  { id: 'c19', stage: 'docusign',   name: 'Milly Gold',        phone: null,             roles: ['Usher'],                    ago: '1 year ago',    owner: 'Super Admin' },
+  { id: 'c18', stage: 'docusign',   name: 'Kyle Johnston',     phone: '+11672598765',   roles: ['Lead','Usher','Security','F&B','Premium','Bev','Cleaning','Box','Gate'], ago: '2 months ago', owner: 'GM – Levi\'s' },
+  { id: 'c19', stage: 'docusign',   name: 'Milly Gold',        phone: null,             roles: ['Usher'],                    ago: '1 year ago',    owner: 'Operator – Civic' },
   { id: 'c20', stage: 'docusign',   name: 'Devon Marsh',       phone: '+12068884412',   roles: ['Gate', 'Security'],         ago: '3 days ago',    owner: 'Operator – Levi\'s' },
 
   // ── Hired (8) ───────────────────────────────────────────────────────
   { id: 'c21', stage: 'hired',      name: 'Amanda Smith',      phone: null,             roles: ['Premium', 'Lead', 'Usher'], ago: '3 months ago',  owner: 'Operator – Levi\'s',    tier: 'Gold' },
-  { id: 'c22', stage: 'hired',      name: 'Austin Gaydos',     phone: null,             roles: ['Premium', 'Usher', 'Bev', 'Lead'], ago: '9 months ago',  owner: 'Super Admin',     tier: 'Gold', tierOwner: 'Sandra Donovay' },
+  { id: 'c22', stage: 'hired',      name: 'Austin Gaydos',     phone: null,             roles: ['Premium', 'Usher', 'Bev', 'Lead'], ago: '9 months ago',  owner: 'Operator – Levi\'s', tier: 'Gold', tierOwner: 'Sandra Donovay' },
   { id: 'c23', stage: 'hired',      name: 'Gordan Austin',     phone: null,             roles: ['Lead', 'Usher', 'Cleaning', 'Bev'], ago: '8 months ago',  owner: 'Operator – Civic',   shifts: ['Tuesday PM'] },
   { id: 'c24', stage: 'hired',      name: 'James Jones',       phone: null,             roles: ['Usher'],                    ago: 'No activity yet', owner: 'Operator – Civic',  metrics: '3 / 4 · 0 / 7 · 0' },
   { id: 'c25', stage: 'hired',      name: 'Javier Carrillo',   phone: null,             roles: [],                           ago: '1 month ago',   owner: '' },

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { StatusTag }           from '../../../src/components/StatusTag/StatusTag.tsx'
 import { Button }              from '../../../src/components/Button/Button.tsx'
 import { AILoader }            from '../../../src/components/ai/AILoader/AILoader.tsx'
@@ -42,7 +42,6 @@ import ShiftRequests           from './ShiftRequests.jsx'
 import SettingsView            from './SettingsView.jsx'
 import OnboardingView          from './OnboardingView.jsx'
 import TimesheetsView          from './TimesheetsView.jsx'
-import ReviewView              from './ReviewView.jsx'
 import './act1.css'
 
 /* ─── Agent avatar (animated GIF in a color-tinted ring) ─────────────────── */
@@ -156,7 +155,6 @@ const NAV_GROUPS = [
     label: 'Pay',
     items: [
       { id: 'pay',    label: 'Payroll', Icon: CurrencyDollarCircleIcon },
-      { id: 'review', label: 'Review',  Icon: ClipboardCheckIcon       },
     ],
   },
 ]
@@ -1278,12 +1276,39 @@ function RecordDrawer({ card, detail, onClose, onExplore }) {
 
 /* ─── Activity feed (right column) ───────────────────────────────────────── */
 
-function ActivityFeed({ data, injectedCard, cardOverrides, onClose, mobileOpen = false }) {
+function ActivityFeed({ data, injectedCard, cardOverrides, onClose, mobileOpen = false, streamIn = false, maxCards = Infinity }) {
   const [expandedId, setExpandedId] = useState(null)
   const toggle = id => setExpandedId(curr => curr === id ? null : id)
   // When the scripted scene has posted a live card, render it above the
   // data-driven cards so it reads as the freshest event.
   const applyOverride = (card) => cardOverrides?.[card.id] ? { ...card, ...cardOverrides[card.id] } : card
+
+  // Background cards = active card (if any) + the seeded history, capped
+  // so the home feed reads calm rather than a wall of cards.
+  const bgCards = [
+    ...(data.activeCard ? [data.activeCard] : []),
+    ...(data.feed ?? []),
+  ].slice(0, maxCards)
+
+  // Progressive reveal — on a first home visit the feed populates from
+  // nothing, one card at a time, so the operator watches the agent's
+  // recent work stream in instead of landing on a full, busy panel.
+  // `streaming` is captured once so a parent re-render mid-animation
+  // doesn't restart or short-circuit the reveal.
+  const [streaming] = useState(streamIn)
+  const [revealed, setRevealed] = useState(streamIn ? 0 : bgCards.length)
+  useEffect(() => {
+    if (!streaming) { setRevealed(bgCards.length); return }
+    setRevealed(0)
+    const timers = bgCards.map((_, i) =>
+      setTimeout(() => setRevealed(n => Math.max(n, i + 1)), 500 + i * 700)
+    )
+    return () => timers.forEach(clearTimeout)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [streaming, bgCards.length])
+
+  const shownBg = bgCards.slice(0, revealed)
+
   return (
     <aside className={`activity-feed ${mobileOpen ? 'is-mobile-open' : ''}`} aria-label="Activity">
       <div className="activity-feed-inner">
@@ -1313,23 +1338,20 @@ function ActivityFeed({ data, injectedCard, cardOverrides, onClose, mobileOpen =
               />
             )
           })()}
-          {data.activeCard && (
-            <ActivityCard
-              card={applyOverride(data.activeCard)}
-              expanded={expandedId === data.activeCard.id}
-              onToggle={() => toggle(data.activeCard.id)}
-            />
-          )}
-          {data.feed.map(card => {
+          {shownBg.map(card => {
             const shown = applyOverride(card)
-            return (
+            const cardEl = (
               <ActivityCard
-                key={shown.id}
                 card={shown}
                 expanded={expandedId === shown.id}
                 onToggle={() => toggle(shown.id)}
               />
             )
+            // Only the streaming home feed wraps cards in the reveal
+            // animation; the drawer + other views render unchanged.
+            return streaming
+              ? <div className="activity-card-streamed" key={shown.id}>{cardEl}</div>
+              : <ActivityCard key={shown.id} card={shown} expanded={expandedId === shown.id} onToggle={() => toggle(shown.id)} />
           })}
         </div>
       </div>
@@ -1395,7 +1417,7 @@ function NeedsZoneWithSelect({ cards, selectedCardId, onSelect }) {
 const BRIEFING = {
   events: {
     time: '9:04 AM',
-    greeting: "Good morning. Here's your Saturday briefing.",
+    greeting: "Good morning — I'm your Teambridge agent, watching all 48 staff across your venues around the clock. Here's where Saturday stands.",
     situations: [
       { id: 'coverage-chart', tone: 'warning',
         title: 'Gate coverage for Saturday',
@@ -1542,9 +1564,9 @@ const ONBOARDING_BRIEFING = {
         desc:  'Iris pushed Olivia, Diego, Devon, and Priya through Form → Hired with no human touch.',
         action: { label: 'Open workflow', prompt: 'Open the Onboarding Auto-Advance workflow' } },
       { id: 'cred-tier', tone: 'info',
-        title: 'Amy Jain ready for Platinum tier review',
-        desc:  '7 role qualifications · 9 months tenure pending · waiting on Super Admin sign-off.',
-        action: { label: 'Promote', prompt: "Open Amy Jain's tier review" } },
+        title: 'Rosa Lindgren ready for Platinum tier review',
+        desc:  '7 role qualifications · 9 months tenure pending · waiting on operator sign-off.',
+        action: { label: 'Promote', prompt: "Open Rosa Lindgren's tier review" } },
     ],
   },
 }
@@ -1629,33 +1651,6 @@ const TIMESHEETS_BRIEFING = {
         title: '5 clean rows ready to approve in one click',
         desc:  'Rachel, Priya, Sofia, Amir, plus Marcus once his Friday clock-out finalizes.',
         action: { label: 'Approve clean', prompt: 'Approve all clean timesheets for this period' } },
-    ],
-  },
-}
-
-/* Briefing set when the user is on Pay Review — exception queue with
-   pay impact, ordered by Nova's "do this next" sequence. */
-const REVIEW_BRIEFING = {
-  events: {
-    time: '9:04 AM',
-    greeting: "Apr 27 – May 3 pay review — 6 exceptions before payroll runs Friday.",
-    situations: [
-      { id: 'diane-cap', tone: 'warning',
-        title: 'Diane Kim Sat shift exceeds 12-hr cap',
-        desc:  '14 hrs logged. Daily-cap policy auto-blocks pay until ops signs off the 2-hr overage.',
-        action: { label: 'Resolve', prompt: 'Apply Nova\'s recommendation for Diane\'s Saturday shift' } },
-      { id: 'carlos-ot', tone: 'warning',
-        title: 'Carlos +5 hrs OT — GM-approved',
-        desc:  'Needs 1.5× rate applied. ~$420 premium. Sign-off already on file.',
-        action: { label: 'Apply rate', prompt: 'Apply 1.5× OT rate to Carlos\'s 5 OT hours' } },
-      { id: 'auto-clear', tone: 'info',
-        title: '4 exceptions are auto-resolvable',
-        desc:  'Tasha late clock-ins, Marcus Friday auto-out, Priya PTO split, Sandra no-show drop.',
-        action: { label: 'Bulk clear', prompt: 'Clear the 4 auto-resolvable exceptions' } },
-      { id: 'budget', tone: 'warning',
-        title: 'OT premium $3,840 this period',
-        desc:  '+182% vs. budget. Most of it concentrates on Saturday Levi\'s shifts.',
-        action: { label: 'Budget breakdown', prompt: 'Show OT premium breakdown by venue' } },
     ],
   },
 }
@@ -1889,7 +1884,6 @@ function briefingFor(view, industryId, paySubRoute) {
     view === 'time-tracking'  ? TIME_TRACKING_BRIEFING :
     view === 'shift-requests' ? SHIFT_REQUESTS_BRIEFING :
     view === 'timesheets'     ? TIMESHEETS_BRIEFING :
-    view === 'review'         ? REVIEW_BRIEFING :
     view === 'onboarding'     ? ONBOARDING_BRIEFING :
     BRIEFING
 
@@ -3396,7 +3390,7 @@ function SceneNarration({ script }) {
   )
 }
 
-function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = false, otFixed = false, onApplyOTFix, onInjectActivityCard, onOverrideActivityCard, onResetScene, onOpenWorkflow, mobileOpen = false }) {
+function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = false, otFixed = false, onApplyOTFix, onInjectActivityCard, onOverrideActivityCard, onResetScene, onOpenWorkflow, mobileOpen = false, firstHomeVisit = true, onMarkHomeSeen }) {
   const suggestions = PROMPT_SUGGESTIONS[industryId] ?? PROMPT_SUGGESTIONS.events
   const [input, setInput]       = useState('')
   const [messages, setMessages] = useState([])
@@ -3654,17 +3648,24 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
       setNarrationScript(null)
       return
     }
-    // Fresh-launch suppression. If the operator just came from the
-    // build flow, sessionStorage tb:fresh-launch is set — we skip
-    // the scripted cancellation scene so their first impression of
-    // "their" account is a calm populated dashboard, not Sandra Lee
-    // dropping a shift on them. The flag is consumed (cleared) on
-    // first read so subsequent visits / Clear-chat replays the scene
-    // normally.
+    // Return-visit suppression. The home walk-through plays exactly
+    // once per industry; after that, navigating back lands the operator
+    // on the calm, fully-populated dashboard. `firstHomeVisit` is backed
+    // by localStorage so this survives reloads, not just navigation.
+    if (!firstHomeVisit) {
+      sceneStartedRef.current = true
+      return
+    }
+    // Fresh-launch suppression. If the operator just came from the build
+    // flow, sessionStorage tb:fresh-launch is set — we skip the scripted
+    // call-out so their first impression of "their" account is a calm
+    // dashboard, not someone dropping a shift on them. Mark home seen so
+    // it doesn't surface on a later visit either.
     try {
       if (sessionStorage.getItem('tb:fresh-launch') === '1') {
         sessionStorage.removeItem('tb:fresh-launch')
         sceneStartedRef.current = true
+        onMarkHomeSeen?.()
         return
       }
     } catch { /* ignore */ }
@@ -3680,12 +3681,17 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
     }
     if (sceneStartedRef.current) return
     sceneStartedRef.current = true
+    // First (and only) time on home for this industry — remember it so we
+    // never replay. The feed streams in from empty in parallel; we time
+    // the call-out to land just after that finishes.
+    onMarkHomeSeen?.()
     // Arm the tap-to-hear narration to match the scene that's about to play.
     setNarrationScript(cancelNarrationScript(industryId))
 
-    // T=3s — the cancellation event arrives on its own. No agent is
-    // attached yet; the card is anchored to the person so the prospect
-    // sees it as a raw inbound event before the AI reacts.
+    // T=~4.5s — the call-out arrives on its own, just after the activity
+    // feed has finished populating from empty. No agent is attached yet;
+    // the card is anchored to the person so the prospect sees it as a raw
+    // inbound event before the AI reacts.
     const activityTimer = setTimeout(() => {
       onInjectActivityCard?.({
         id: 'cancellation-live',
@@ -3702,20 +3708,21 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
           image: cfg.out.image,
         },
       })
-    }, 3000)
+    }, 4500)
 
-    // T=~6s — only after the operator has had time to notice the activity
-    // popup does the chat react. We deliberately do NOT re-post the daily
-    // briefing into the chat: the empty-state greeting has already typed
-    // itself and re-rendering it would look like the AI was retyping.
+    // T=~6.5s — only after the operator has had time to notice the
+    // call-out does the chat react and walk through the fix.
     const chatTimer = setTimeout(() => {
       postAssistant(scene.reachOutPrompt)
-    }, 6000)
+    }, 6500)
 
     return () => {
       clearTimeout(activityTimer)
       clearTimeout(chatTimer)
     }
+    // firstHomeVisit is intentionally NOT a dep: marking home seen flips
+    // it to false mid-scene, and re-running here would clear the timers
+    // and cancel the walk-through. We read it fresh on each view change.
   }, [industryId, view, messages.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Scripted OT crisis scene (Sage Intacct → Workforce handoff) ────
@@ -3923,7 +3930,6 @@ const TITLE_FOR_VIEW = {
   settings:        'Settings',
   onboarding:      'Onboarding',
   timesheets:      'Timesheets',
-  review:          'Pay Review',
 }
 
 function HamburgerGlyph() {
@@ -4052,6 +4058,26 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
     try { return sessionStorage.getItem('tb:fresh-launch') === '1' } catch { return false }
   })
 
+  // "Has the operator already watched the home walk-through for this
+  // industry this session?" Cached in sessionStorage so navigating away
+  // and back lands them on the calm, fully-populated dashboard instead
+  // of replaying the intro + last-minute call-out — but a fresh tab
+  // (the next prospect) still gets the full reveal. First visit per
+  // industry streams the activity feed in from empty and plays the
+  // call-out; every visit after, this session, is instant.
+  const homeSeenKey = (id) => `tb:home-seen:${id}`
+  const [firstHomeVisit, setFirstHomeVisit] = useState(() => {
+    try { return sessionStorage.getItem(homeSeenKey(industryId)) !== '1' } catch { return true }
+  })
+  useEffect(() => {
+    try { setFirstHomeVisit(sessionStorage.getItem(homeSeenKey(industryId)) !== '1') }
+    catch { setFirstHomeVisit(true) }
+  }, [industryId])
+  const markHomeSeen = useCallback(() => {
+    try { sessionStorage.setItem(homeSeenKey(industryId), '1') } catch { /* ignore */ }
+    setFirstHomeVisit(false)
+  }, [industryId])
+
   // Apply any account override saved from the build flow — company
   // name swaps into the brand label and venue strings throughout the
   // data tree get replaced with the operator's actual locations.
@@ -4145,7 +4171,7 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
   // a single full-page surface, so they skip the toggle entirely.
   const MOBILE_DUAL_VIEWS = new Set([
     'overview', 'schedule', 'people', 'pay', 'time-tracking',
-    'shift-requests', 'timesheets', 'review', 'onboarding',
+    'shift-requests', 'timesheets', 'onboarding',
   ])
   const isMobileDual = MOBILE_DUAL_VIEWS.has(view)
 
@@ -4207,6 +4233,8 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
           onOverrideActivityCard={(id, patch) => setSceneCardOverrides(prev => ({ ...prev, [id]: { ...(prev[id] ?? {}), ...patch } }))}
           onResetScene={() => { setSceneInjectedCard(null); setSceneCardOverrides({}) }}
           onOpenWorkflow={openWorkflow}
+          firstHomeVisit={firstHomeVisit}
+          onMarkHomeSeen={markHomeSeen}
         />
       )}
 
@@ -4217,12 +4245,11 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
        : view === 'shift-requests' ? <ShiftRequests   data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
        : view === 'onboarding'    ? <OnboardingView   data={data} onDemo={() => showDemoToast()} />
        : view === 'timesheets'    ? <TimesheetsView   data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
-       : view === 'review'        ? <ReviewView       data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
        : view === 'workflows'     ? <WorkflowsView    industryId={industryId} pendingWorkflowId={pendingWorkflowId} onConsumePending={() => setPendingWorkflowId(null)} onDemo={() => showDemoToast()} />
        : view === 'policies'      ? <PoliciesView     onDemo={() => showDemoToast()} />
        : view === 'engage'        ? <EngageView       onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
        : view === 'settings'      ? <SettingsView     onDemo={() => showDemoToast()} />
-       :                            <ActivityFeed     data={data} injectedCard={sceneInjectedCard} cardOverrides={sceneCardOverrides} />}
+       :                            <ActivityFeed     data={data} injectedCard={sceneInjectedCard} cardOverrides={sceneCardOverrides} streamIn={firstHomeVisit} maxCards={4} />}
 
       {supportsActivityDrawer && (
         <>
