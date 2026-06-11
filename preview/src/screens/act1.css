@@ -2011,7 +2011,7 @@
 .sa-feed-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 22px;
 }
 
 /* Each card streams in with the same gentle rise as the legacy feed. */
@@ -2019,26 +2019,49 @@
   animation: activity-card-stream-in 460ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
+/* Wrap pairs the small lowercase state label with the card itself,
+ * so the label sits flush above the card the way the inspiration
+ * design lays it out. */
+.sa-card-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sa-card-label {
+  font-size: 12px;
+  color: var(--color-content-tertiary);
+  font-weight: var(--font-weight-medium);
+  padding-left: 6px;
+  text-transform: lowercase;
+  letter-spacing: 0.01em;
+}
+
 .sa-card {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 14px 16px 12px;
+  gap: 14px;
+  padding: 20px 24px;
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border-opaque);
-  border-radius: 12px;
+  border-radius: 16px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  transition: box-shadow 180ms ease, transform 180ms ease, border-color 180ms ease;
+  transition: background 280ms ease, border-color 280ms ease, box-shadow 280ms ease;
   text-align: left;
 }
-.sa-card.is-working {
-  box-shadow:
-    0 0 0 2px color-mix(in srgb, var(--ai-grad-mid, #446CFF) 28%, transparent),
-    0 8px 24px -8px rgba(68, 108, 255, 0.18);
+/* Soft lavender wash while the agent is working — matches the
+ * inspiration's "In progress" state. */
+.sa-card[data-state="working"] {
+  background: linear-gradient(180deg, #F2EDFB 0%, #F8F4FF 60%, #FFFFFF 100%);
+  border-color: transparent;
+  box-shadow: 0 6px 18px -10px rgba(120, 90, 200, 0.22);
 }
+/* Soft green wash for resolved — same calm fade as the inspiration. */
+.sa-card[data-state="handled"],
 .sa-card--handled {
-  background: linear-gradient(180deg, #f0fdf4 0%, var(--color-bg-primary) 60%);
+  background: linear-gradient(180deg, #E8F5EA 0%, #F0FAF1 60%, #FFFFFF 100%);
+  border-color: transparent;
+  box-shadow: 0 6px 18px -10px rgba(34, 138, 90, 0.18);
 }
 
 .sa-card-head {
@@ -2046,46 +2069,28 @@
   align-items: center;
   justify-content: flex-start;
   gap: 8px;
+  margin-top: -4px;
 }
-.sa-card-head-sep {
-  color: var(--color-content-tertiary);
-  font-size: 10px;
-}
-.sa-card-severity {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 2px 8px 2px 7px;
-  border-radius: var(--radius-full);
-  font-size: 9.5px;
-  font-weight: var(--font-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-.sa-card--urgent .sa-card-severity { background: #fee2e2; color: #b91c1c; }
-.sa-card--watch  .sa-card-severity { background: #e0e7ff; color: #4338ca; }
-.sa-card--info   .sa-card-severity { background: #ccfbf1; color: #115e59; }
-.sa-card-severity--handled { background: #dcfce7 !important; color: #166534 !important; }
-
 .sa-card-time {
   font-size: 11px;
   color: var(--color-content-tertiary);
+  font-weight: var(--font-weight-medium);
 }
 
 .sa-card-subject {
   display: grid;
-  grid-template-columns: 38px 1fr;
-  gap: 10px;
+  grid-template-columns: 44px 1fr;
+  gap: 14px;
   align-items: center;
 }
 .sa-card-avatar {
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   border-radius: var(--radius-full);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: var(--font-weight-semibold);
   letter-spacing: 0.02em;
   overflow: hidden;
@@ -2103,9 +2108,9 @@
 }
 .sa-card-subjecttext { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .sa-card-headline {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: var(--font-weight-semibold);
-  letter-spacing: -0.005em;
+  letter-spacing: -0.01em;
   color: var(--color-content-primary);
   line-height: 1.35;
 }

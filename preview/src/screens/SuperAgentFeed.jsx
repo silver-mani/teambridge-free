@@ -96,8 +96,12 @@ const SEVERITY_META = {
 function SuperAgentCard({ action, onDemo }) {
   const [state, setState] = useState('idle') // 'idle' | 'working' | 'handled'
   const [detailsOpen, setDetailsOpen] = useState(false)
-  const sev = SEVERITY_META[action.severity] ?? SEVERITY_META.info
-  const SevIcon = sev.Icon
+
+  const STATE_LABEL = {
+    idle:    'Recommended',
+    working: 'In progress',
+    handled: 'Resolved',
+  }
 
   const handleAccept = () => {
     if (state !== 'idle') return
@@ -106,7 +110,12 @@ function SuperAgentCard({ action, onDemo }) {
   }
 
   if (state === 'handled') {
-    return <SuperAgentHandledCard action={action} onDemo={onDemo} />
+    return (
+      <div className="sa-card-wrap">
+        <div className="sa-card-label">{STATE_LABEL.handled}</div>
+        <SuperAgentHandledCard action={action} onDemo={onDemo} />
+      </div>
+    )
   }
 
   const agent = AGENTS[action.cta?.agentId] ?? null
@@ -114,14 +123,12 @@ function SuperAgentCard({ action, onDemo }) {
   const planTitle = action.planTitle ?? 'My plan'
 
   return (
-    <article className={`sa-card ${sev.className} ${state === 'working' ? 'is-working' : ''}`}>
-      {/* Eyebrow row — severity + timestamp inline on the left so the
-          eye reads top-down. */}
+    <div className="sa-card-wrap">
+      <div className="sa-card-label">{STATE_LABEL[state]}</div>
+      <article className={`sa-card ${state === 'working' ? 'is-working' : ''}`} data-state={state}>
+      {/* Minimal head: just the timestamp, since the state label above
+          the card already carries the lifecycle signal. */}
       <header className="sa-card-head">
-        <span className="sa-card-severity">
-          <SevIcon size={10} /> {action.eyebrow}
-        </span>
-        <span className="sa-card-head-sep" aria-hidden="true">·</span>
         <span className="sa-card-time">{action.timestamp}</span>
       </header>
 
@@ -207,6 +214,7 @@ function SuperAgentCard({ action, onDemo }) {
         </button>
       </footer>
     </article>
+    </div>
   )
 }
 
