@@ -97,7 +97,7 @@ function parseHashString(input) {
   const viewOk = new Set([
     'overview', 'schedule', 'people', 'pay', 'workflows', 'engage', 'policies',
     'time-tracking', 'shift-requests', 'settings',
-    'onboarding', 'timesheets', 'review',
+    'onboarding', 'timesheets',
   ])
   return { kind: 'industry', industry, view: viewOk.has(view) ? view : 'overview' }
 }
@@ -443,12 +443,18 @@ function App() {
           onSubmit={submitLead}
         />
       )}
-      <DemoSpecialist
-        enabled={accessChecked}
-        route={route}
-        autoOpen={accessChecked}
-        leadData={leadData}
-      />
+      {/* DemoSpecialist (voice agent Nova rail) is suppressed while the
+          new Super-Agent action feed runs the home story — it competed
+          for the operator's attention with the very surface that's
+          meant to be the focal point. */}
+      {false && (
+        <DemoSpecialist
+          enabled={accessChecked}
+          route={route}
+          autoOpen={accessChecked}
+          leadData={leadData}
+        />
+      )}
     </>
   )
 }

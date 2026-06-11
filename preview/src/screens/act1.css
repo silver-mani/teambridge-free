@@ -217,7 +217,8 @@
   padding: 0 var(--space-1);
 }
 .activity-feed .zone-head { padding: 0; }
-.drawer-open .activity-feed { visibility: hidden; }
+.drawer-open .activity-feed,
+.drawer-open .sa-feed { visibility: hidden; }
 
 @media (max-width: 1200px) {
   .act1-root      { grid-template-columns: 240px 1fr; }
@@ -1937,6 +1938,491 @@
 @keyframes activity-card-highlight {
   0%   { box-shadow: 0 0 0 2px color-mix(in srgb, var(--ai-grad-mid, #446CFF) 35%, transparent), 0 6px 20px rgba(0, 0, 0, 0.08); }
   100% { box-shadow: 0 0 0 0 transparent, 0 0 0 rgba(0, 0, 0, 0); }
+}
+
+/* Each card the home feed streams in from empty gets a gentle fade +
+   rise on mount — no highlight ring, so the panel populating itself
+   reads as calm rather than a cascade of alerts. */
+.activity-card-streamed {
+  animation: activity-card-stream-in 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes activity-card-stream-in {
+  0%   { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ────────────────────────────────────────────────────────────────────
+ * Super-Agent feed — the home view as a stack of action cards. Each
+ * card visually shows the agent's reasoning, plan, and forecast for a
+ * specific thing it's caught, with one-tap delegation.
+ * ──────────────────────────────────────────────────────────────────── */
+.sa-feed {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: 36px var(--space-7) var(--space-10);
+  overflow-y: auto;
+  background: var(--color-bg-secondary);
+}
+.sa-feed > * { max-width: 620px; margin-left: auto; margin-right: auto; width: 100%; }
+.sa-feed-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 0 4px;
+}
+.sa-feed-headtext { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.sa-feed-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-purple-content-secondary, #6b21a8);
+}
+.sa-feed-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.01em;
+  color: var(--color-content-primary);
+}
+.sa-feed-sub {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--color-content-tertiary);
+}
+.sa-feed-close {
+  appearance: none;
+  background: transparent;
+  border: none;
+  color: var(--color-content-tertiary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-full);
+}
+.sa-feed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* Each card streams in with the same gentle rise as the legacy feed. */
+.sa-card-streamed {
+  animation: activity-card-stream-in 460ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* Wrap pairs the small lowercase state label with the card itself,
+ * so the label sits flush above the card the way the inspiration
+ * design lays it out. */
+.sa-card-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sa-card-label {
+  font-size: 12px;
+  color: var(--color-content-tertiary);
+  font-weight: var(--font-weight-medium);
+  padding-left: 6px;
+  text-transform: lowercase;
+  letter-spacing: 0.01em;
+}
+
+.sa-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 24px;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-opaque);
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: background 280ms ease, border-color 280ms ease, box-shadow 280ms ease;
+  text-align: left;
+}
+/* Soft lavender wash while the agent is working — matches the
+ * inspiration's "In progress" state. */
+.sa-card[data-state="working"] {
+  background: linear-gradient(180deg, #F2EDFB 0%, #F8F4FF 60%, #FFFFFF 100%);
+  border-color: transparent;
+  box-shadow: 0 6px 18px -10px rgba(120, 90, 200, 0.22);
+}
+/* Soft green wash for resolved — same calm fade as the inspiration. */
+.sa-card[data-state="handled"],
+.sa-card--handled {
+  background: linear-gradient(180deg, #E8F5EA 0%, #F0FAF1 60%, #FFFFFF 100%);
+  border-color: transparent;
+  box-shadow: 0 6px 18px -10px rgba(34, 138, 90, 0.18);
+}
+
+.sa-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  margin-top: -4px;
+}
+.sa-card-time {
+  font-size: 11px;
+  color: var(--color-content-tertiary);
+  font-weight: var(--font-weight-medium);
+}
+
+.sa-card-subject {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 14px;
+  align-items: center;
+}
+.sa-card-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.sa-card-avatar--image {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-opaque);
+}
+.sa-card-avatar--image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.sa-card-subjecttext { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.sa-card-headline {
+  font-size: 16px;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.01em;
+  color: var(--color-content-primary);
+  line-height: 1.35;
+}
+.sa-card-context {
+  font-size: 11px;
+  color: var(--color-content-tertiary);
+  line-height: 1.45;
+}
+
+/* Collapsible reasoning/plan rows — compact by default, expand for
+ * the full bullets. Cuts the card's resting height significantly. */
+.sa-card-section--collapsible {
+  border-top: 1px solid color-mix(in srgb, var(--color-border-opaque) 70%, transparent);
+}
+.sa-card-section-toggle {
+  appearance: none;
+  width: 100%;
+  background: transparent;
+  border: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 6px 0 5px;
+  color: var(--color-content-secondary);
+  transition: color 140ms ease;
+}
+.sa-card-section-toggle:hover { color: var(--color-content-primary); }
+.sa-card-section-toggleleft {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.sa-card-section-titlewrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.sa-card-section-title {
+  font-size: 12px;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.005em;
+  color: var(--color-content-primary);
+  text-transform: none;
+}
+.sa-card-section-subtitle {
+  font-size: 10.5px;
+  color: var(--color-content-tertiary);
+  line-height: 1.3;
+}
+.sa-card-section-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  padding: 0 5px;
+  height: 16px;
+  border-radius: var(--radius-full);
+  background: var(--color-bg-secondary);
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-content-secondary);
+}
+.sa-card-section-chev {
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-content-tertiary);
+  transition: transform 160ms ease;
+}
+.sa-card-section-chev.is-open { transform: rotate(180deg); }
+.sa-card-section-body {
+  padding: 2px 0 8px;
+  animation: sa-section-expand 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes sa-section-expand {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.sa-card-reasoning-list,
+.sa-card-plan-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sa-card-reasoning-item,
+.sa-card-plan-item {
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  gap: 9px;
+  align-items: flex-start;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--color-content-primary);
+}
+.sa-card-reasoning-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  color: var(--color-matcha-content-secondary, #15803d);
+}
+.sa-card-plan-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  border-radius: var(--radius-full);
+  background: var(--color-bg-secondary);
+  color: var(--color-content-secondary);
+  font-size: 9px;
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Forecast row — outcome + confidence bar, anchored just above the
+ * action button so "expected result" reads right before approval. */
+.sa-card-forecast {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-3);
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--color-bg-secondary);
+  border-radius: 8px;
+}
+.sa-card-forecast-text { display: flex; flex-direction: column; gap: 0; }
+.sa-card-forecast-label {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-content-tertiary);
+}
+.sa-card-forecast-value {
+  font-size: 13px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-content-primary);
+}
+.sa-card-forecast-conf {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: help;
+}
+.sa-card-forecast-bar {
+  width: 60px;
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-border-opaque) 80%, transparent);
+  position: relative;
+  overflow: hidden;
+}
+.sa-card-forecast-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: var(--conf);
+  background: linear-gradient(90deg, #8b5cf6 0%, #6366f1 100%);
+  border-radius: inherit;
+}
+.sa-card-forecast-pct {
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-content-secondary);
+  min-width: 32px;
+  text-align: right;
+}
+
+/* In-body plan header — separates the agent's reasoning bullets from
+ * the workflow steps inside the single combined dropdown. */
+.sa-card-plan-head {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 10px 0 6px;
+  padding-top: 8px;
+  border-top: 1px dashed color-mix(in srgb, var(--color-border-opaque) 80%, transparent);
+}
+.sa-card-plan-title {
+  font-size: 12px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-content-primary);
+}
+.sa-card-plan-scope {
+  font-size: 10.5px;
+  color: var(--color-content-tertiary);
+}
+
+/* Wrap so the two collapsible rows share a single divider rhythm
+ * (the top border on each row makes them stack cleanly). */
+.sa-card-collapsibles {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Footer — primary takes the left, "Show details" tucks in as a
+ * low-weight text link on the right so the agent CTA is the
+ * unambiguous focus. */
+.sa-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  padding-top: 6px;
+  margin-top: 2px;
+}
+.sa-card-secondary,
+.sa-card-primary {
+  appearance: none;
+  font: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--radius-full);
+  font-weight: var(--font-weight-medium);
+  transition: background 140ms ease, transform 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+.sa-card-secondary {
+  background: transparent;
+  border: none;
+  color: var(--color-content-tertiary);
+  font-size: 12px;
+  padding: 6px 4px;
+  margin-left: auto;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: color-mix(in srgb, var(--color-content-tertiary) 35%, transparent);
+}
+.sa-card-secondary:hover {
+  color: var(--color-content-primary);
+  text-decoration-color: var(--color-content-primary);
+}
+/* Light outlined pill — blue text on a white pill with a soft blue
+ * border, per the reference design. Reads as an invitation, not a
+ * heavy commitment. */
+.sa-card-primary {
+  background: var(--color-bg-primary);
+  border: 1.5px solid #C7D7F5;
+  color: #1D4ED8;
+  font-size: 13.5px;
+  font-weight: var(--font-weight-semibold);
+  padding: 5px 16px 5px 6px;
+}
+.sa-card-primary-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-full);
+  background-size: cover;
+  background-position: center;
+  background-color: #EFF4FD;
+  flex-shrink: 0;
+}
+.sa-card-primary-label {
+  white-space: nowrap;
+}
+.sa-card-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: #93B4F0;
+  background: #F7FAFF;
+}
+.sa-card-primary:disabled {
+  opacity: 0.85;
+  cursor: progress;
+}
+.sa-card-spin {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radius-full);
+  border: 2px solid color-mix(in srgb, #1D4ED8 25%, transparent);
+  border-top-color: #1D4ED8;
+  animation: sa-spin 700ms linear infinite;
+}
+@keyframes sa-spin { to { transform: rotate(360deg); } }
+
+/* Handled-state card — outcome bullets, no plan/reasoning recap. */
+.sa-card-outcome {
+  list-style: none;
+  margin: 0;
+  padding: 12px 14px;
+  background: #ecfdf5;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sa-card-outcome-item {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #14532d;
+}
+.sa-card-outcome-item svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: #16a34a;
 }
 
 .activity-feed .activity-card {
@@ -10094,7 +10580,8 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   .act1-root.is-mobile-dual > .timesheets,
   .act1-root.is-mobile-dual > .review,
   .act1-root.is-mobile-dual > .onboarding,
-  .act1-root.is-mobile-dual > .activity-feed {
+  .act1-root.is-mobile-dual > .activity-feed,
+  .act1-root.is-mobile-dual > .sa-feed {
     display: none !important;
   }
 
@@ -10110,7 +10597,8 @@ button.pay-breadcrumbs-link:hover { color: var(--color-content-primary); }
   .act1-root.is-mobile-dual.mobile-content-open > .timesheets,
   .act1-root.is-mobile-dual.mobile-content-open > .review,
   .act1-root.is-mobile-dual.mobile-content-open > .onboarding,
-  .act1-root.is-mobile-dual.mobile-content-open > .activity-feed {
+  .act1-root.is-mobile-dual.mobile-content-open > .activity-feed,
+  .act1-root.is-mobile-dual.mobile-content-open > .sa-feed {
     display: revert !important;
   }
 
