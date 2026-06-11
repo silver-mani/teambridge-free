@@ -7,6 +7,7 @@ import { ClockIcon }           from '../../../src/components/icons/ClockIcon.tsx
 import { AlertTriangleIcon }   from '../../../src/components/icons/AlertTriangleIcon.tsx'
 import { XIcon }               from '../../../src/components/icons/XIcon.tsx'
 import { SUPER_AGENT_ACTIONS } from '../data/superAgentActions.js'
+import { AGENTS }              from '../data/agents.js'
 
 /* ──────────────────────────────────────────────────────────────────────
  * Super-Agent Feed — the home view re-imagined as a list of action
@@ -109,12 +110,19 @@ function SuperAgentCard({ action, onDemo }) {
     return <SuperAgentHandledCard action={action} onDemo={onDemo} />
   }
 
+  const agent = AGENTS[action.cta?.agentId] ?? null
+  const ctaLabel = action.cta?.label ?? 'Let me handle this'
+  const planTitle = action.planTitle ?? 'My plan'
+
   return (
     <article className={`sa-card ${sev.className} ${state === 'working' ? 'is-working' : ''}`}>
+      {/* Eyebrow row — severity + timestamp inline on the left so the
+          eye reads top-down. */}
       <header className="sa-card-head">
         <span className="sa-card-severity">
-          <SevIcon size={12} /> {action.eyebrow}
+          <SevIcon size={10} /> {action.eyebrow}
         </span>
+        <span className="sa-card-head-sep" aria-hidden="true">·</span>
         <span className="sa-card-time">{action.timestamp}</span>
       </header>
 
@@ -126,78 +134,76 @@ function SuperAgentCard({ action, onDemo }) {
         </div>
       </div>
 
-      <CollapsibleSection
-        title="How I'm thinking about it"
-        leadingIcon={<TeambridgeAIIcon size={11} />}
-        count={action.reasoning.length}
-        open={reasoningOpen}
-        onToggle={() => setReasoningOpen(o => !o)}
-      >
-        <ul className="sa-card-reasoning-list">
-          {action.reasoning.map((step, i) => (
-            <li key={i} className="sa-card-reasoning-item">
-              <span className="sa-card-reasoning-mark" aria-hidden="true">
-                <CheckCircleIcon size={12} />
-              </span>
-              <span>{step}</span>
-            </li>
-          ))}
-        </ul>
-      </CollapsibleSection>
-
-      <CollapsibleSection
-        title={action.workflow.name}
-        subtitle={action.workflow.scope}
-        count={action.workflow.plan.length}
-        open={planOpen}
-        onToggle={() => setPlanOpen(o => !o)}
-      >
-        <ol className="sa-card-plan-list">
-          {action.workflow.plan.map((step, i) => (
-            <li key={i} className="sa-card-plan-item">
-              <span className="sa-card-plan-num" aria-hidden="true">{i + 1}</span>
-              <span>{step}</span>
-            </li>
-          ))}
-        </ol>
-      </CollapsibleSection>
-
-      <div className="sa-card-forecast">
-        <div className="sa-card-forecast-text">
-          <span className="sa-card-forecast-label">{action.forecast.label}</span>
-          <span className="sa-card-forecast-value">{action.forecast.value}</span>
-        </div>
-        <div className="sa-card-forecast-conf" title={action.forecast.confidenceLabel}>
-          <div className="sa-card-forecast-bar" style={{ '--conf': `${action.forecast.confidence}%` }} />
-          <span className="sa-card-forecast-pct">{action.forecast.confidence}%</span>
-        </div>
+      {/* Outcome — single left-aligned line, no right-rail bar. */}
+      <div className="sa-card-outcome-line" title={action.forecast.confidenceLabel}>
+        <span className="sa-card-outcome-label">{action.forecast.label}:</span>
+        <span className="sa-card-outcome-value">{action.forecast.value}</span>
+        <span className="sa-card-outcome-sep" aria-hidden="true">·</span>
+        <span className="sa-card-outcome-conf">{action.forecast.confidence}% confident</span>
       </div>
 
-      <footer className="sa-card-foot">
-        <button
-          type="button"
-          className="sa-card-secondary"
-          onClick={onDemo}
+      <div className="sa-card-collapsibles">
+        <CollapsibleSection
+          title="How I'm thinking about it"
+          count={action.reasoning.length}
+          open={reasoningOpen}
+          onToggle={() => setReasoningOpen(o => !o)}
         >
-          Show details
-        </button>
+          <ul className="sa-card-reasoning-list">
+            {action.reasoning.map((step, i) => (
+              <li key={i} className="sa-card-reasoning-item">
+                <span className="sa-card-reasoning-mark" aria-hidden="true">
+                  <CheckCircleIcon size={11} />
+                </span>
+                <span>{step}</span>
+              </li>
+            ))}
+          </ul>
+        </CollapsibleSection>
+
+        <CollapsibleSection
+          title={planTitle}
+          subtitle={action.planScope}
+          count={action.plan?.length ?? 0}
+          open={planOpen}
+          onToggle={() => setPlanOpen(o => !o)}
+        >
+          <ol className="sa-card-plan-list">
+            {(action.plan ?? []).map((step, i) => (
+              <li key={i} className="sa-card-plan-item">
+                <span className="sa-card-plan-num" aria-hidden="true">{i + 1}</span>
+                <span>{step}</span>
+              </li>
+            ))}
+          </ol>
+        </CollapsibleSection>
+      </div>
+
+      {/* Primary action — left-aligned, prominent. Carries the specific
+          agent's avatar so the operator sees who's running it. */}
+      <footer className="sa-card-foot">
         <button
           type="button"
           className="sa-card-primary"
           onClick={handleAccept}
           disabled={state === 'working'}
         >
-          {state === 'working' ? (
-            <>
-              <span className="sa-card-spin" aria-hidden="true" />
-              Turning on
-            </>
-          ) : (
-            <>
-              <TeambridgeAIIcon size={13} /> {action.cta}
-              <ArrowNarrowRightIcon size={13} />
-            </>
+          {agent && (
+            <span
+              className={`sa-card-primary-avatar agent-avatar-${agent.color}`}
+              style={{ backgroundImage: `url(${agent.avatar})` }}
+              aria-hidden="true"
+            />
           )}
+          <span className="sa-card-primary-label">
+            {state === 'working' ? 'Working on it' : ctaLabel}
+          </span>
+          {state === 'working'
+            ? <span className="sa-card-spin" aria-hidden="true" />
+            : <ArrowNarrowRightIcon size={13} />}
+        </button>
+        <button type="button" className="sa-card-secondary" onClick={onDemo}>
+          Show details
         </button>
       </footer>
     </article>
