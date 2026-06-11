@@ -4220,9 +4220,12 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
 
       {/* Engage is a chat module of its own, Policies is a doc browser,
           Settings is a system-config page — surfacing Nova's chat panel
-          alongside any of them is just noise. Onboarding keeps the chat
-          so Iris can surface candidate-pipeline insights. */}
-      {view !== 'engage' && view !== 'policies' && view !== 'settings' && (
+          alongside any of them is just noise. Home overview now shows
+          the Super-Agent action feed in place of the chat for industries
+          that have curated actions — the cards ARE the operator's main
+          surface. */}
+      {view !== 'engage' && view !== 'policies' && view !== 'settings'
+        && !(view === 'overview' && hasSuperAgentActions(industryId)) && (
         <PromptPanel
           industryId={industryId}
           view={view}
@@ -4239,6 +4242,13 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
         />
       )}
 
+      {/* Home-overview Super-Agent feed: takes the chat column when the
+          industry has curated agent actions. Other views render their
+          own page surface as the second non-nav element. */}
+      {view === 'overview' && hasSuperAgentActions(industryId) && (
+        <SuperAgentFeed industryId={industryId} streamIn={firstHomeVisit} onDemo={() => showDemoToast()} />
+      )}
+
       {view === 'schedule'        ? <ScheduleCalendar data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} swapsApplied={otFixed} onBackToIntacct={sageMode ? onBackToIntacct : null} />
        : view === 'people'        ? <PeopleList       data={data} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
        : view === 'pay'           ? <PayView          industryId={industryId} route={paySubRoute} onChangeRoute={setPaySubRoute} onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
@@ -4250,9 +4260,7 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
        : view === 'policies'      ? <PoliciesView     onDemo={() => showDemoToast()} />
        : view === 'engage'        ? <EngageView       onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
        : view === 'settings'      ? <SettingsView     onDemo={() => showDemoToast()} />
-       :                            (hasSuperAgentActions(industryId)
-           ? <SuperAgentFeed industryId={industryId} streamIn={firstHomeVisit} onDemo={() => showDemoToast()} />
-           : <ActivityFeed     data={data} injectedCard={sceneInjectedCard} cardOverrides={sceneCardOverrides} streamIn={firstHomeVisit} maxCards={4} />)}
+       :                            <ActivityFeed     data={data} injectedCard={sceneInjectedCard} cardOverrides={sceneCardOverrides} streamIn={firstHomeVisit} maxCards={4} />}
 
       {supportsActivityDrawer && (
         <>

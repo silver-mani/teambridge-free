@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { CheckCircleIcon }     from '../../../src/components/icons/CheckCircleIcon.tsx'
 import { ArrowNarrowRightIcon } from '../../../src/components/icons/ArrowNarrowRightIcon.tsx'
 import { TeambridgeAIIcon }    from '../../../src/components/icons/TeambridgeAIIcon.tsx'
+import { ChevronDownIcon }     from '../../../src/components/icons/ChevronDownIcon.tsx'
 import { ClockIcon }           from '../../../src/components/icons/ClockIcon.tsx'
 import { AlertTriangleIcon }   from '../../../src/components/icons/AlertTriangleIcon.tsx'
 import { XIcon }               from '../../../src/components/icons/XIcon.tsx'
@@ -93,14 +94,14 @@ const SEVERITY_META = {
 
 function SuperAgentCard({ action, onDemo }) {
   const [state, setState] = useState('idle') // 'idle' | 'working' | 'handled'
+  const [reasoningOpen, setReasoningOpen] = useState(false)
+  const [planOpen, setPlanOpen] = useState(false)
   const sev = SEVERITY_META[action.severity] ?? SEVERITY_META.info
   const SevIcon = sev.Icon
 
   const handleAccept = () => {
     if (state !== 'idle') return
     setState('working')
-    // Brief pulse so the operator sees the agent act on it, then
-    // settle into the success state.
     setTimeout(() => setState('handled'), 1800)
   }
 
@@ -118,23 +119,20 @@ function SuperAgentCard({ action, onDemo }) {
       </header>
 
       <div className="sa-card-subject">
-        <span
-          className="sa-card-avatar"
-          style={{ background: action.subject.bg, color: action.subject.color }}
-          aria-hidden="true"
-        >
-          {action.subject.initials}
-        </span>
+        <SubjectAvatar subject={action.subject} />
         <div className="sa-card-subjecttext">
           <div className="sa-card-headline">{action.headline}</div>
           <div className="sa-card-context">{action.context}</div>
         </div>
       </div>
 
-      <section className="sa-card-section sa-card-reasoning">
-        <h3 className="sa-card-section-title">
-          <TeambridgeAIIcon size={11} /> How I'm thinking about it
-        </h3>
+      <CollapsibleSection
+        title="How I'm thinking about it"
+        leadingIcon={<TeambridgeAIIcon size={11} />}
+        count={action.reasoning.length}
+        open={reasoningOpen}
+        onToggle={() => setReasoningOpen(o => !o)}
+      >
         <ul className="sa-card-reasoning-list">
           {action.reasoning.map((step, i) => (
             <li key={i} className="sa-card-reasoning-item">
@@ -145,10 +143,14 @@ function SuperAgentCard({ action, onDemo }) {
             </li>
           ))}
         </ul>
-      </section>
+      </CollapsibleSection>
 
-      <section className="sa-card-section sa-card-plan">
-        <h3 className="sa-card-section-title">My plan</h3>
+      <CollapsibleSection
+        title="My plan"
+        count={action.plan.length}
+        open={planOpen}
+        onToggle={() => setPlanOpen(o => !o)}
+      >
         <ol className="sa-card-plan-list">
           {action.plan.map((step, i) => (
             <li key={i} className="sa-card-plan-item">
@@ -157,7 +159,7 @@ function SuperAgentCard({ action, onDemo }) {
             </li>
           ))}
         </ol>
-      </section>
+      </CollapsibleSection>
 
       <div className="sa-card-forecast">
         <div className="sa-card-forecast-text">
@@ -198,6 +200,55 @@ function SuperAgentCard({ action, onDemo }) {
         </button>
       </footer>
     </article>
+  )
+}
+
+/* Real-photo avatar with initials fallback (used when the action data
+ * has no image URL or the image fails to load). */
+function SubjectAvatar({ subject }) {
+  const [failed, setFailed] = useState(false)
+  if (subject.avatar && !failed) {
+    return (
+      <span className="sa-card-avatar sa-card-avatar--image" aria-hidden="true">
+        <img
+          src={subject.avatar}
+          alt={subject.name}
+          onError={() => setFailed(true)}
+        />
+      </span>
+    )
+  }
+  return (
+    <span
+      className="sa-card-avatar sa-card-avatar--initials"
+      style={{ background: subject.bg, color: subject.color }}
+      aria-hidden="true"
+    >
+      {subject.initials}
+    </span>
+  )
+}
+
+function CollapsibleSection({ title, leadingIcon, count, open, onToggle, children }) {
+  return (
+    <section className={`sa-card-section sa-card-section--collapsible ${open ? 'is-open' : ''}`}>
+      <button
+        type="button"
+        className="sa-card-section-toggle"
+        onClick={onToggle}
+        aria-expanded={open}
+      >
+        <span className="sa-card-section-toggleleft">
+          {leadingIcon}
+          <span className="sa-card-section-title">{title}</span>
+          {typeof count === 'number' && <span className="sa-card-section-count">{count}</span>}
+        </span>
+        <span className={`sa-card-section-chev ${open ? 'is-open' : ''}`} aria-hidden="true">
+          <ChevronDownIcon size={12} />
+        </span>
+      </button>
+      {open && <div className="sa-card-section-body">{children}</div>}
+    </section>
   )
 }
 

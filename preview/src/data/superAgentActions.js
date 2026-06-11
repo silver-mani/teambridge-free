@@ -1,16 +1,15 @@
 /* Super-Agent action feed — what the always-on agent has uncovered,
- * thought through, and is ready to fix on the operator's behalf. Each
- * action carries enough structure for the home card to read as the
- * agent's actual reasoning, not a generic alert:
- *
- *   - subject       (who/what the action centres on)
- *   - reasoning     (3-4 short steps showing how the agent got here)
- *   - plan          (what it will do, in plain English)
- *   - forecast      (expected outcome + confidence)
- *   - handled       (the success state shown after "Let me handle this")
- *
- * Keyed by industry. Industries without a curated set fall back to
- * the legacy ActivityFeed in Act1Dashboard. */
+ * thought through, and is ready to fix on the operator's behalf. */
+
+/* Worker face library — same Unsplash crops used elsewhere so the
+ * same person reads consistently across the dashboard. */
+const FACE = {
+  sandra:  'https://images.unsplash.com/photo-1489980557514-251d61e3eeb6?w=160&h=160&fit=crop&crop=faces&auto=format',
+  marcus:  'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=160&h=160&fit=crop&crop=faces&auto=format',
+  miguel:  'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=160&h=160&fit=crop&crop=faces&auto=format',
+  priya:   'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=160&h=160&fit=crop&crop=faces&auto=format',
+  ashley:  'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=160&h=160&fit=crop&crop=faces&auto=format',
+}
 
 export const SUPER_AGENT_ACTIONS = {
   events: [
@@ -26,6 +25,7 @@ export const SUPER_AGENT_ACTIONS = {
         initials: 'SL',
         color: '#dc2626',
         bg: '#fee2e2',
+        avatar: FACE.sandra,
       },
       headline: "Sandra Lee cancelled her Saturday 7pm gate-3 shift",
       context: "Levi's Stadium · 4 hours notice · 8th cancellation she's made this quarter",
@@ -70,6 +70,7 @@ export const SUPER_AGENT_ACTIONS = {
         initials: 'MT',
         color: '#2563eb',
         bg: '#dbeafe',
+        avatar: FACE.marcus,
       },
       headline: "Marcus T. didn't clock out from his Friday 6:30 PM shift",
       context: "Scheduled 6:30 PM – 11:30 PM · Geofence shows he left at 11:34 PM",
@@ -114,6 +115,7 @@ export const SUPER_AGENT_ACTIONS = {
         initials: 'MR',
         color: '#9333ea',
         bg: '#ede9fe',
+        avatar: FACE.miguel,
       },
       headline: "Miguel R. is projecting 46 hours this week — 6 over your cap",
       context: 'Civic Arena (32 hrs) + Saturday Niners home game (14 hrs) trips the 40-hr OT cap',
@@ -158,6 +160,7 @@ export const SUPER_AGENT_ACTIONS = {
         initials: 'PS',
         color: '#0d9488',
         bg: '#ccfbf1',
+        avatar: FACE.priya,
       },
       headline: "Priya's TABC certification expires Tuesday",
       context: '4 shifts on her schedule after that date · state law blocks alcohol service without an active cert',
@@ -202,6 +205,7 @@ export const SUPER_AGENT_ACTIONS = {
         initials: 'AM',
         color: '#ea580c',
         bg: '#fed7aa',
+        avatar: FACE.ashley,
       },
       headline: "Ashley M. has 2 no-shows in the last 4 weeks",
       context: 'Missed Mar 8 (Civic) and Mar 22 (Harbor) · both Sunday evenings · 18 of 20 other shifts on time',
