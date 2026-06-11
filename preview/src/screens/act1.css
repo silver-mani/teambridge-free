@@ -2232,35 +2232,78 @@
   font-weight: var(--font-weight-semibold);
 }
 
-/* Outcome line — single left-aligned row, no right-rail bar.
- * Reads as a peer of the headline, not a meter. */
-.sa-card-outcome-line {
-  display: inline-flex;
+/* Forecast row — outcome + confidence bar, anchored just above the
+ * action button so "expected result" reads right before approval. */
+.sa-card-forecast {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-3);
   align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 8px 10px;
+  padding: 8px 12px;
   background: var(--color-bg-secondary);
   border-radius: 8px;
-  font-size: 12px;
-  line-height: 1.4;
+}
+.sa-card-forecast-text { display: flex; flex-direction: column; gap: 0; }
+.sa-card-forecast-label {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-content-tertiary);
+}
+.sa-card-forecast-value {
+  font-size: 13px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-content-primary);
+}
+.sa-card-forecast-conf {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   cursor: help;
 }
-.sa-card-outcome-label {
-  color: var(--color-content-tertiary);
-  font-weight: var(--font-weight-medium);
+.sa-card-forecast-bar {
+  width: 60px;
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-border-opaque) 80%, transparent);
+  position: relative;
+  overflow: hidden;
 }
-.sa-card-outcome-value {
-  color: var(--color-content-primary);
+.sa-card-forecast-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: var(--conf);
+  background: linear-gradient(90deg, #8b5cf6 0%, #6366f1 100%);
+  border-radius: inherit;
+}
+.sa-card-forecast-pct {
+  font-size: 11px;
   font-weight: var(--font-weight-semibold);
-}
-.sa-card-outcome-sep {
-  color: var(--color-content-tertiary);
-  opacity: 0.6;
-}
-.sa-card-outcome-conf {
   color: var(--color-content-secondary);
-  font-weight: var(--font-weight-medium);
+  min-width: 32px;
+  text-align: right;
+}
+
+/* In-body plan header — separates the agent's reasoning bullets from
+ * the workflow steps inside the single combined dropdown. */
+.sa-card-plan-head {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 10px 0 6px;
+  padding-top: 8px;
+  border-top: 1px dashed color-mix(in srgb, var(--color-border-opaque) 80%, transparent);
+}
+.sa-card-plan-title {
+  font-size: 12px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-content-primary);
+}
+.sa-card-plan-scope {
+  font-size: 10.5px;
+  color: var(--color-content-tertiary);
 }
 
 /* Wrap so the two collapsible rows share a single divider rhythm

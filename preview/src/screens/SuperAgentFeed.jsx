@@ -95,8 +95,7 @@ const SEVERITY_META = {
 
 function SuperAgentCard({ action, onDemo }) {
   const [state, setState] = useState('idle') // 'idle' | 'working' | 'handled'
-  const [reasoningOpen, setReasoningOpen] = useState(false)
-  const [planOpen, setPlanOpen] = useState(false)
+  const [detailsOpen, setDetailsOpen] = useState(false)
   const sev = SEVERITY_META[action.severity] ?? SEVERITY_META.info
   const SevIcon = sev.Icon
 
@@ -130,24 +129,17 @@ function SuperAgentCard({ action, onDemo }) {
         <SubjectAvatar subject={action.subject} />
         <div className="sa-card-subjecttext">
           <div className="sa-card-headline">{action.headline}</div>
-          <div className="sa-card-context">{action.context}</div>
         </div>
       </div>
 
-      {/* Outcome — single left-aligned line, no right-rail bar. */}
-      <div className="sa-card-outcome-line" title={action.forecast.confidenceLabel}>
-        <span className="sa-card-outcome-label">{action.forecast.label}:</span>
-        <span className="sa-card-outcome-value">{action.forecast.value}</span>
-        <span className="sa-card-outcome-sep" aria-hidden="true">·</span>
-        <span className="sa-card-outcome-conf">{action.forecast.confidence}% confident</span>
-      </div>
-
+      {/* One dropdown carries the agent's full thinking: reasoning
+          bullets, then the workflow plan it maps to. */}
       <div className="sa-card-collapsibles">
         <CollapsibleSection
           title="How I'm thinking about it"
-          count={action.reasoning.length}
-          open={reasoningOpen}
-          onToggle={() => setReasoningOpen(o => !o)}
+          count={action.reasoning.length + (action.plan?.length ?? 0)}
+          open={detailsOpen}
+          onToggle={() => setDetailsOpen(o => !o)}
         >
           <ul className="sa-card-reasoning-list">
             {action.reasoning.map((step, i) => (
@@ -159,15 +151,10 @@ function SuperAgentCard({ action, onDemo }) {
               </li>
             ))}
           </ul>
-        </CollapsibleSection>
-
-        <CollapsibleSection
-          title={planTitle}
-          subtitle={action.planScope}
-          count={action.plan?.length ?? 0}
-          open={planOpen}
-          onToggle={() => setPlanOpen(o => !o)}
-        >
+          <div className="sa-card-plan-head">
+            <span className="sa-card-plan-title">{planTitle}</span>
+            {action.planScope && <span className="sa-card-plan-scope">{action.planScope}</span>}
+          </div>
           <ol className="sa-card-plan-list">
             {(action.plan ?? []).map((step, i) => (
               <li key={i} className="sa-card-plan-item">
@@ -177,6 +164,19 @@ function SuperAgentCard({ action, onDemo }) {
             ))}
           </ol>
         </CollapsibleSection>
+      </div>
+
+      {/* Forecast — outcome + confidence bar, anchored just above the
+          action so the operator reads "what I expect" then approves. */}
+      <div className="sa-card-forecast">
+        <div className="sa-card-forecast-text">
+          <span className="sa-card-forecast-label">{action.forecast.label}</span>
+          <span className="sa-card-forecast-value">{action.forecast.value}</span>
+        </div>
+        <div className="sa-card-forecast-conf" title={action.forecast.confidenceLabel}>
+          <div className="sa-card-forecast-bar" style={{ '--conf': `${action.forecast.confidence}%` }} />
+          <span className="sa-card-forecast-pct">{action.forecast.confidence}%</span>
+        </div>
       </div>
 
       {/* Primary action — left-aligned, prominent. Carries the specific
