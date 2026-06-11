@@ -2011,7 +2011,7 @@
 .sa-feed-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: 12px;
 }
 
 /* Each card streams in with the same gentle rise as the legacy feed. */
@@ -2023,11 +2023,11 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-4) var(--space-5);
+  gap: 8px;
+  padding: 14px 18px;
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border-opaque);
-  border-radius: 14px;
+  border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: box-shadow 180ms ease, transform 180ms ease, border-color 180ms ease;
 }
@@ -2049,10 +2049,10 @@
 .sa-card-severity {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 3px 9px 3px 8px;
+  gap: 5px;
+  padding: 2px 8px 2px 7px;
   border-radius: var(--radius-full);
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -2069,18 +2069,18 @@
 
 .sa-card-subject {
   display: grid;
-  grid-template-columns: 52px 1fr;
-  gap: 14px;
-  align-items: flex-start;
+  grid-template-columns: 42px 1fr;
+  gap: 12px;
+  align-items: center;
 }
 .sa-card-avatar {
-  width: 52px;
-  height: 52px;
+  width: 42px;
+  height: 42px;
   border-radius: var(--radius-full);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 17px;
+  font-size: 14px;
   font-weight: var(--font-weight-semibold);
   letter-spacing: 0.02em;
   overflow: hidden;
@@ -2098,21 +2098,20 @@
 }
 .sa-card-subjecttext { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .sa-card-headline {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: var(--font-weight-semibold);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.005em;
   color: var(--color-content-primary);
   line-height: 1.35;
 }
 .sa-card-context {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--color-content-tertiary);
-  line-height: 1.5;
+  line-height: 1.45;
 }
 
-/* Collapsible reasoning/plan rows — compact by default, expand to
- * show the full bullets/steps. Cuts the card height roughly in half
- * so the feed stays scannable. */
+/* Collapsible reasoning/plan rows — compact by default, expand for
+ * the full bullets. Cuts the card's resting height significantly. */
 .sa-card-section--collapsible {
   border-top: 1px solid color-mix(in srgb, var(--color-border-opaque) 70%, transparent);
 }
@@ -2128,7 +2127,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  padding: 10px 0 8px;
+  padding: 6px 0 5px;
   color: var(--color-content-secondary);
   transition: color 140ms ease;
 }
@@ -2136,13 +2135,26 @@
 .sa-card-section-toggleleft {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  min-width: 0;
+}
+.sa-card-section-titlewrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
 }
 .sa-card-section-title {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: var(--font-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: -0.005em;
+  color: var(--color-content-primary);
+  text-transform: none;
+}
+.sa-card-section-subtitle {
+  font-size: 10.5px;
+  color: var(--color-content-tertiary);
+  line-height: 1.3;
 }
 .sa-card-section-count {
   display: inline-flex;
@@ -2221,20 +2233,20 @@
   grid-template-columns: 1fr auto;
   gap: var(--space-3);
   align-items: center;
-  padding: 10px 12px;
+  padding: 7px 10px;
   background: var(--color-bg-secondary);
-  border-radius: 10px;
+  border-radius: 8px;
 }
-.sa-card-forecast-text { display: flex; flex-direction: column; gap: 1px; }
+.sa-card-forecast-text { display: flex; flex-direction: column; gap: 0; }
 .sa-card-forecast-label {
-  font-size: 10px;
+  font-size: 9.5px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   font-weight: var(--font-weight-semibold);
   color: var(--color-content-tertiary);
 }
 .sa-card-forecast-value {
-  font-size: 14px;
+  font-size: 12.5px;
   font-weight: var(--font-weight-semibold);
   color: var(--color-content-primary);
 }
@@ -2272,8 +2284,8 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
-  padding-top: var(--space-2);
+  gap: 6px;
+  padding-top: 4px;
 }
 .sa-card-secondary,
 .sa-card-primary {
@@ -2282,10 +2294,10 @@
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
+  gap: 5px;
+  padding: 6px 12px;
   border-radius: var(--radius-full);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: var(--font-weight-medium);
   transition: background 140ms ease, transform 140ms ease, border-color 140ms ease, color 140ms ease;
 }

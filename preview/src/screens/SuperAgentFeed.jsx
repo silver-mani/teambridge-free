@@ -146,13 +146,14 @@ function SuperAgentCard({ action, onDemo }) {
       </CollapsibleSection>
 
       <CollapsibleSection
-        title="My plan"
-        count={action.plan.length}
+        title={action.workflow.name}
+        subtitle={action.workflow.scope}
+        count={action.workflow.plan.length}
         open={planOpen}
         onToggle={() => setPlanOpen(o => !o)}
       >
         <ol className="sa-card-plan-list">
-          {action.plan.map((step, i) => (
+          {action.workflow.plan.map((step, i) => (
             <li key={i} className="sa-card-plan-item">
               <span className="sa-card-plan-num" aria-hidden="true">{i + 1}</span>
               <span>{step}</span>
@@ -189,11 +190,11 @@ function SuperAgentCard({ action, onDemo }) {
           {state === 'working' ? (
             <>
               <span className="sa-card-spin" aria-hidden="true" />
-              Working on it
+              Turning on
             </>
           ) : (
             <>
-              <TeambridgeAIIcon size={13} /> Let me handle this
+              <TeambridgeAIIcon size={13} /> {action.cta}
               <ArrowNarrowRightIcon size={13} />
             </>
           )}
@@ -229,7 +230,7 @@ function SubjectAvatar({ subject }) {
   )
 }
 
-function CollapsibleSection({ title, leadingIcon, count, open, onToggle, children }) {
+function CollapsibleSection({ title, subtitle, leadingIcon, count, open, onToggle, children }) {
   return (
     <section className={`sa-card-section sa-card-section--collapsible ${open ? 'is-open' : ''}`}>
       <button
@@ -240,7 +241,10 @@ function CollapsibleSection({ title, leadingIcon, count, open, onToggle, childre
       >
         <span className="sa-card-section-toggleleft">
           {leadingIcon}
-          <span className="sa-card-section-title">{title}</span>
+          <span className="sa-card-section-titlewrap">
+            <span className="sa-card-section-title">{title}</span>
+            {subtitle && <span className="sa-card-section-subtitle">{subtitle}</span>}
+          </span>
           {typeof count === 'number' && <span className="sa-card-section-count">{count}</span>}
         </span>
         <span className={`sa-card-section-chev ${open ? 'is-open' : ''}`} aria-hidden="true">
