@@ -1,0 +1,238 @@
+/* Super-Agent action feed — what the always-on agent has uncovered,
+ * thought through, and is ready to fix on the operator's behalf. Each
+ * action carries enough structure for the home card to read as the
+ * agent's actual reasoning, not a generic alert:
+ *
+ *   - subject       (who/what the action centres on)
+ *   - reasoning     (3-4 short steps showing how the agent got here)
+ *   - plan          (what it will do, in plain English)
+ *   - forecast      (expected outcome + confidence)
+ *   - handled       (the success state shown after "Let me handle this")
+ *
+ * Keyed by industry. Industries without a curated set fall back to
+ * the legacy ActivityFeed in Act1Dashboard. */
+
+export const SUPER_AGENT_ACTIONS = {
+  events: [
+    {
+      id: 'callout-sandra',
+      kind: 'callout',
+      severity: 'urgent',
+      eyebrow: 'Last-minute call-out',
+      timestamp: '4 min ago',
+      subject: {
+        name: 'Sandra Lee',
+        role: 'Gate 3 Usher · Saturday 7pm',
+        initials: 'SL',
+        color: '#dc2626',
+        bg: '#fee2e2',
+      },
+      headline: "Sandra Lee cancelled her Saturday 7pm gate-3 shift",
+      context: "Levi's Stadium · 4 hours notice · 8th cancellation she's made this quarter",
+      reasoning: [
+        "Pulled 12 gate-3 qualified workers currently under your OT cap",
+        "Ranked by proximity, accept rate, hours fairness, and 90-day rating",
+        "Top 3 average 4.7★ — the closest is 6 min from Levi's",
+        "Saturday differential (+$1.50/hr) applies — zero pay-rate impact",
+      ],
+      plan: [
+        "SMS offer to all 3 candidates in parallel, 90-second expiry",
+        "First confirmed accept wins; the other two offers auto-rescind",
+        "Confirm shift in the scheduler and notify your gate-3 ops lead",
+      ],
+      forecast: {
+        label: 'Expected fill time',
+        value: '~4 min',
+        confidence: 94,
+        confidenceLabel: '94% confident based on the last 30 same-day calls',
+      },
+      handled: {
+        eyebrow: 'Handled',
+        timestamp: 'Just now',
+        headline: 'Janelle R. accepted in 47 seconds',
+        detail: "Shift confirmed at Gate 3, ops lead notified. Saturday is fully covered. I logged Sandra's cancellation for the coverage recap.",
+        outcomeBullets: [
+          '3 offers sent · 1 accept · 47s end-to-end',
+          'No pay delta · no OT cap impact',
+          'Sandra logged for the weekly coverage recap',
+        ],
+      },
+    },
+    {
+      id: 'missed-clockout-marcus',
+      kind: 'clockout',
+      severity: 'watch',
+      eyebrow: 'Missed clock-out',
+      timestamp: '12 min ago',
+      subject: {
+        name: 'Marcus T.',
+        role: 'Gate 3 Usher · Friday',
+        initials: 'MT',
+        color: '#2563eb',
+        bg: '#dbeafe',
+      },
+      headline: "Marcus T. didn't clock out from his Friday 6:30 PM shift",
+      context: "Scheduled 6:30 PM – 11:30 PM · Geofence shows he left at 11:34 PM",
+      reasoning: [
+        "Last text from Marcus at 11:15 PM said 'wrapping up the section'",
+        "Stadium geofence registered exit at 11:34 PM",
+        "He's clocked out cleanly on 47 of his last 48 shifts",
+        "The window matches his usual gate-3 wrap-up cadence — this reads like a missed tap, not a missed shift",
+      ],
+      plan: [
+        "Draft a friendly SMS for your review: 'Hey Marcus — looks like Friday's punch didn't go through. Schedule says 6:30–11:30, geofence says 11:34. OK to file that?'",
+        "If he confirms (or no reply by 4 PM), file 6:30 – 11:34 and route to your timesheet approver",
+        "Loop the F&B lead in on the summary either way",
+      ],
+      forecast: {
+        label: 'Likely resolution',
+        value: 'under 30 min',
+        confidence: 92,
+        confidenceLabel: '92% based on his 18-month track record',
+      },
+      handled: {
+        eyebrow: 'Handled',
+        timestamp: 'Just now',
+        headline: "Marcus replied 'yeah my bad, file it'",
+        detail: 'Punch filed for 6:30 – 11:34 PM. Approved for payroll. Timesheet updated for the Friday pay-period close.',
+        outcomeBullets: [
+          'Marcus replied in 6 min',
+          'Hours filed (5h 4min) and approved',
+          'Timesheet ready for Friday close',
+        ],
+      },
+    },
+    {
+      id: 'ot-cap-miguel',
+      kind: 'ot',
+      severity: 'watch',
+      eyebrow: 'OT cap approaching',
+      timestamp: '38 min ago',
+      subject: {
+        name: 'Miguel R.',
+        role: 'Event Lead · this week',
+        initials: 'MR',
+        color: '#9333ea',
+        bg: '#ede9fe',
+      },
+      headline: "Miguel R. is projecting 46 hours this week — 6 over your cap",
+      context: 'Civic Arena (32 hrs) + Saturday Niners home game (14 hrs) trips the 40-hr OT cap',
+      reasoning: [
+        "Jordan K. is gate-3 qualified, sitting at 28 hrs this week",
+        '4.9★ rating · last 12 same-day swaps, all accepted within 5 min',
+        "Same pay tier — zero rate-card impact for either of you",
+        "No 14-day predictive-scheduling premium triggers on this move",
+      ],
+      plan: [
+        'Move the Saturday 4 – 9 PM gate-3 shift from Miguel → Jordan',
+        "Miguel finishes the week at 32 hrs — comfortably under cap",
+        'Notify both, update payroll, log the swap in the coverage recap',
+      ],
+      forecast: {
+        label: 'OT premium avoided',
+        value: '~$640',
+        confidence: 100,
+        confidenceLabel: 'Fully policy-compliant — no manager override needed',
+      },
+      handled: {
+        eyebrow: 'Handled',
+        timestamp: 'Just now',
+        headline: 'Jordan accepted. Miguel back to 32 hrs.',
+        detail: 'Saturday gate-3 reassigned cleanly. OT cap restored across the week. Both workers notified, payroll updated.',
+        outcomeBullets: [
+          'Swap closed in 1 min 12s',
+          '$640 OT premium avoided',
+          'Coverage recap updated',
+        ],
+      },
+    },
+    {
+      id: 'cert-priya',
+      kind: 'credential',
+      severity: 'info',
+      eyebrow: 'Credential renewal',
+      timestamp: '2 hr ago',
+      subject: {
+        name: 'Priya S.',
+        role: 'Bev Service',
+        initials: 'PS',
+        color: '#0d9488',
+        bg: '#ccfbf1',
+      },
+      headline: "Priya's TABC certification expires Tuesday",
+      context: '4 shifts on her schedule after that date · state law blocks alcohol service without an active cert',
+      reasoning: [
+        "Current TABC valid through Tue Apr 30",
+        '4 upcoming shifts touch alcohol service (Wed, Thu, Fri, Sat)',
+        'State portal renewal takes about 8 minutes',
+        "She's renewed 4 of 4 previous certs on her own with one nudge",
+      ],
+      plan: [
+        "SMS Priya the state-specific renewal link now (Monday morning)",
+        'Auto-block her Wed-onwards shifts in the scheduler if not done by EOD Tuesday',
+        'Notify your F&B lead about the temporary hold so coverage can pre-stage',
+      ],
+      forecast: {
+        label: 'Expected to renew',
+        value: 'within 24 hr',
+        confidence: 88,
+        confidenceLabel: '88% based on Priya\'s renewal history',
+      },
+      handled: {
+        eyebrow: 'Handled',
+        timestamp: 'Just now',
+        headline: 'Priya renewed her TABC in 6 minutes',
+        detail: "Cert valid through Apr 2027. Schedule cleared, F&B lead notified the hold is off. She used the link inside the original SMS.",
+        outcomeBullets: [
+          'Renewal completed in 6 min',
+          'Schedule hold released',
+          'Cert auto-attached to her profile',
+        ],
+      },
+    },
+    {
+      id: 'pattern-ashley',
+      kind: 'pattern',
+      severity: 'watch',
+      eyebrow: 'No-show pattern',
+      timestamp: '5 hr ago',
+      subject: {
+        name: 'Ashley M.',
+        role: 'Usher · multi-site',
+        initials: 'AM',
+        color: '#ea580c',
+        bg: '#fed7aa',
+      },
+      headline: "Ashley M. has 2 no-shows in the last 4 weeks",
+      context: 'Missed Mar 8 (Civic) and Mar 22 (Harbor) · both Sunday evenings · 18 of 20 other shifts on time',
+      reasoning: [
+        "Both misses fell on Sunday evening shifts at distant venues",
+        "Her last 20 shifts at Levi's were all on time — punctuality issue lives at Civic + Harbor specifically",
+        "HR file shows she moved to East Bay in early March",
+        "Pattern reads like a transit problem, not an attitude problem",
+      ],
+      plan: [
+        "Draft a warm coaching message (not punitive): \"Hey Ashley — we've got two Sunday-night misses in March. Is the Civic/Harbor commute working? Happy to look at closer venues.\"",
+        'Route the draft to her manager for approval before it sends',
+        'Auto-flag for ops review if a 3rd happens this month — but only after this conversation lands',
+      ],
+      forecast: {
+        label: 'Likely to resolve with a check-in',
+        value: '~78%',
+        confidence: 78,
+        confidenceLabel: '78% based on similar patterns across the team',
+      },
+      handled: {
+        eyebrow: 'Handled',
+        timestamp: 'Just now',
+        headline: 'Ashley confirmed the transit issue',
+        detail: "Moved her to Levi's-only schedule going forward. No further misses logged. She thanked the ops lead for noticing.",
+        outcomeBullets: [
+          'Coaching message landed warmly',
+          "Schedule rebalanced to Levi's only",
+          'No further misses in 6 weeks',
+        ],
+      },
+    },
+  ],
+}

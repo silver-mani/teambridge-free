@@ -42,6 +42,7 @@ import ShiftRequests           from './ShiftRequests.jsx'
 import SettingsView            from './SettingsView.jsx'
 import OnboardingView          from './OnboardingView.jsx'
 import TimesheetsView          from './TimesheetsView.jsx'
+import SuperAgentFeed, { hasSuperAgentActions } from './SuperAgentFeed.jsx'
 import './act1.css'
 
 /* ─── Agent avatar (animated GIF in a color-tinted ring) ─────────────────── */
@@ -4249,7 +4250,9 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
        : view === 'policies'      ? <PoliciesView     onDemo={() => showDemoToast()} />
        : view === 'engage'        ? <EngageView       onDemo={() => showDemoToast()} onToggleActivityDrawer={toggleActivityDrawer} activityDrawerOpen={activityDrawerOpen} />
        : view === 'settings'      ? <SettingsView     onDemo={() => showDemoToast()} />
-       :                            <ActivityFeed     data={data} injectedCard={sceneInjectedCard} cardOverrides={sceneCardOverrides} streamIn={firstHomeVisit} maxCards={4} />}
+       :                            (hasSuperAgentActions(industryId)
+           ? <SuperAgentFeed industryId={industryId} streamIn={firstHomeVisit} onDemo={() => showDemoToast()} />
+           : <ActivityFeed     data={data} injectedCard={sceneInjectedCard} cardOverrides={sceneCardOverrides} streamIn={firstHomeVisit} maxCards={4} />)}
 
       {supportsActivityDrawer && (
         <>
