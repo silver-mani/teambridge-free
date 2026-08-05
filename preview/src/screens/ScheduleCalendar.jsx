@@ -6,6 +6,7 @@ import { ChevronRightIcon }     from '../../../src/components/icons/ChevronRight
 import { ChevronDownIcon }      from '../../../src/components/icons/ChevronDownIcon.tsx'
 import { PlusIcon }             from '../../../src/components/icons/PlusIcon.tsx'
 import { ListBulletIcon }       from '../../../src/components/icons/ListBulletIcon.tsx'
+import { getBrand } from './brand.js'
 import { TeambridgeAIIcon }     from '../../../src/components/icons/TeambridgeAIIcon.tsx'
 import { BarChart02Icon }       from '../../../src/components/icons/BarChart02Icon.tsx'
 import { XIcon }                from '../../../src/components/icons/XIcon.tsx'
@@ -433,7 +434,7 @@ export default function ScheduleCalendar({ data, onDemo, onToggleActivityDrawer,
           >
             <ListBulletIcon size={16} />
           </button>
-          <button type="button" className="schedule-icon-btn schedule-icon-btn-ai" onClick={buzz} aria-label="Ask Teambridge">
+          <button type="button" className="schedule-icon-btn schedule-icon-btn-ai" onClick={buzz} aria-label={`Ask ${getBrand().product}`}>
             <TeambridgeAIIcon size={16} />
           </button>
         </div>

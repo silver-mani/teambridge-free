@@ -1,0 +1,761 @@
+/*
+ * Sage HCM skin — the host product Teambridge is embedded into.
+ *
+ * Everything is scoped under `.sagehcm` so none of it leaks into the
+ * standalone Teambridge experience that lives in the same Vite app.
+ * Colors are read off Sage's actual product chrome: near-black top bar,
+ * charcoal left rail, Sage green as the single accent, light gray page.
+ */
+.sagehcm {
+  --shcm-bar:         #0c0e0f;
+  --shcm-rail:        #1f2225;
+  --shcm-rail-hover:  #2b2f33;
+  --shcm-rail-text:   #e8eaec;
+  --shcm-rail-mute:   #9aa1a8;
+  --shcm-green:       #00d639;
+  --shcm-green-deep:  #00a82d;
+  --shcm-green-soft:  #e6faec;
+
+  --shcm-bg:          #eef1f4;
+  --shcm-card:        #ffffff;
+  --shcm-border:      #e1e5e9;
+  --shcm-border-soft: #eef0f3;
+  --shcm-text:        #14171a;
+  --shcm-text-soft:   #5d666e;
+  --shcm-text-mute:   #939ba2;
+  --shcm-link:        #0a7bbf;
+  --shcm-red:         #d92d20;
+  --shcm-amber:       #b54708;
+
+  /* Lock to the viewport: the top bar and rail stay pinned while the
+     content region owns its own scroll. The Work module depends on this —
+     its schedule grid pins a stats drawer to the actual viewport bottom. */
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--shcm-bg);
+  color: var(--shcm-text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ──────────────────────────────────────────────────────────────────────
+ * Top bar
+ * ────────────────────────────────────────────────────────────────────── */
+.shcm-topbar {
+  flex: 0 0 auto;
+  height: 52px;
+  background: var(--shcm-bar);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 16px;
+  position: relative;
+  z-index: 60;
+}
+
+.shcm-iconbtn {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #d7dbdf;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+.shcm-iconbtn:hover { background: #21252a; color: #fff; }
+.shcm-iconbtn:focus-visible { outline: 2px solid var(--shcm-green); outline-offset: 1px; }
+.shcm-iconbtn[data-open="true"] { background: #21252a; color: var(--shcm-green); }
+
+/* Sage wordmark. The real mark is a rounded green script — approximated
+   here with a tight, heavy lowercase setting so it reads as Sage at a
+   glance without shipping their logo file. */
+.shcm-wordmark {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 2px 4px;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  border-radius: 6px;
+  color: inherit;
+  font: inherit;
+}
+.shcm-wordmark:focus-visible { outline: 2px solid var(--shcm-green); outline-offset: 2px; }
+.shcm-wordmark-text {
+  font-size: 23px;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  color: var(--shcm-green);
+  line-height: 1;
+}
+.shcm-topbar-rule {
+  width: 1px;
+  height: 22px;
+  background: #2c3136;
+}
+.shcm-topbar-product {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #f2f4f6;
+}
+.shcm-topbar-spacer { flex: 1; }
+
+.shcm-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.shcm-add {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--shcm-green);
+  color: #06210e;
+  border: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: filter 120ms ease;
+}
+.shcm-add:hover { filter: brightness(1.08); }
+.shcm-bell { position: relative; }
+.shcm-bell-badge {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--shcm-green);
+  color: #06210e;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 15px;
+  text-align: center;
+}
+.shcm-avatar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  color: #d7dbdf;
+  padding: 2px 4px 2px 2px;
+  border-radius: 999px;
+}
+.shcm-avatar-btn:hover { background: #21252a; }
+.shcm-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #3a4046;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #e8eaec;
+}
+
+/* ──────────────────────────────────────────────────────────────────────
+ * Body = rail + content
+ * ────────────────────────────────────────────────────────────────────── */
+.shcm-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  position: relative;
+}
+
+.shcm-rail {
+  flex: 0 0 auto;
+  width: 196px;
+  background: var(--shcm-rail);
+  color: var(--shcm-rail-text);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #3a4046 transparent;
+  position: relative;
+  z-index: 40;
+}
+.shcm-rail::-webkit-scrollbar { width: 8px; }
+.shcm-rail::-webkit-scrollbar-thumb { background: #3a4046; border-radius: 999px; }
+
+/* The module header at the top of the rail. Doubles as the product
+   switcher trigger — same affordance Sage gives it. */
+.shcm-rail-module {
+  appearance: none;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid #2b2f33;
+  color: var(--shcm-rail-text);
+  font: inherit;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 14px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 120ms ease;
+}
+.shcm-rail-module:hover,
+.shcm-rail-module[data-open="true"] { background: var(--shcm-green); color: #fff; }
+.shcm-rail-module:hover .shcm-rail-module-icon,
+.shcm-rail-module[data-open="true"] .shcm-rail-module-icon { color: #fff; }
+.shcm-rail-module-icon { color: var(--shcm-green); display: inline-flex; flex: 0 0 auto; }
+.shcm-rail-module-label {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shcm-rail-nav {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0 20px;
+  flex: 1;
+}
+
+.shcm-rail-item {
+  appearance: none;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  color: var(--shcm-rail-text);
+  font: inherit;
+  font-size: 13.5px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 110ms ease, color 110ms ease;
+}
+.shcm-rail-item:hover { background: var(--shcm-green); color: #fff; }
+.shcm-rail-item[data-active="true"] {
+  background: var(--shcm-rail-hover);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--shcm-green);
+}
+.shcm-rail-item[data-active="true"]:hover { background: var(--shcm-green); }
+.shcm-rail-item-icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  opacity: 0.9;
+}
+.shcm-rail-item-label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.shcm-rail-item-chevron {
+  flex: 0 0 auto;
+  opacity: 0.6;
+  transition: transform 160ms ease;
+}
+.shcm-rail-item[data-expanded="true"] .shcm-rail-item-chevron { transform: rotate(180deg); }
+
+/* Sub-items under an expanded rail group */
+.shcm-rail-sub {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 4px;
+}
+.shcm-rail-subitem {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: var(--shcm-rail-mute);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  padding: 6px 14px 6px 40px;
+  cursor: pointer;
+  transition: background 110ms ease, color 110ms ease;
+}
+.shcm-rail-subitem:hover { background: var(--shcm-rail-hover); color: #fff; }
+.shcm-rail-subitem[data-active="true"] { color: #fff; font-weight: 600; }
+
+/* ──────────────────────────────────────────────────────────────────────
+ * Product switcher flyout
+ * ────────────────────────────────────────────────────────────────────── */
+.shcm-switcher-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: transparent;
+}
+.shcm-switcher {
+  position: absolute;
+  top: 0;
+  left: 196px;
+  width: 186px;
+  background: var(--shcm-rail);
+  border-left: 1px solid #2b2f33;
+  box-shadow: 12px 0 32px rgba(0, 0, 0, 0.28);
+  z-index: 55;
+  padding: 6px 0 10px;
+  animation: shcm-switcher-in 140ms cubic-bezier(0.2, 0, 0, 1);
+}
+@keyframes shcm-switcher-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: none; }
+}
+.shcm-switcher-item {
+  appearance: none;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  color: var(--shcm-rail-text);
+  font: inherit;
+  font-size: 13.5px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  cursor: pointer;
+  text-align: left;
+  position: relative;
+  transition: background 110ms ease, color 110ms ease;
+}
+.shcm-switcher-item:hover,
+.shcm-switcher-item[data-active="true"] { background: var(--shcm-green); color: #fff; }
+.shcm-switcher-item-icon { flex: 0 0 auto; display: inline-flex; opacity: 0.95; }
+
+/* The Work module is the new one — a quiet "New" chip earns its place
+   without turning the switcher into a marketing surface. */
+.shcm-switcher-new {
+  margin-left: auto;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--shcm-green);
+  color: #06210e;
+}
+.shcm-switcher-item:hover .shcm-switcher-new,
+.shcm-switcher-item[data-active="true"] .shcm-switcher-new {
+  background: #fff;
+  color: #06210e;
+}
+
+/* ──────────────────────────────────────────────────────────────────────
+ * Content region
+ * ────────────────────────────────────────────────────────────────────── */
+.shcm-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--shcm-bg);
+}
+/* `bare` content (the Work module) fills the region and manages its own
+   scrolling — no page padding, no max width. */
+.shcm-content--bare { overflow: hidden; display: flex; flex-direction: column; }
+
+.shcm-page {
+  padding: 18px;
+  display: grid;
+  grid-template-columns: 268px minmax(0, 1fr) 300px;
+  gap: 16px;
+  align-items: start;
+  max-width: 1720px;
+  margin: 0 auto;
+}
+@media (max-width: 1280px) {
+  .shcm-page { grid-template-columns: 250px minmax(0, 1fr); }
+  .shcm-page > .shcm-col--right { display: none; }
+}
+.shcm-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+/* ──────────────────────────────────────────────────────────────────────
+ * Cards
+ * ────────────────────────────────────────────────────────────────────── */
+.shcm-card {
+  background: var(--shcm-card);
+  border: 1px solid var(--shcm-border);
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  overflow: hidden;
+}
+.shcm-card-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--shcm-border-soft);
+  color: var(--shcm-text-soft);
+}
+.shcm-card-head-icon { display: inline-flex; color: var(--shcm-text-mute); }
+.shcm-card-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--shcm-text);
+  letter-spacing: -0.005em;
+}
+.shcm-card-head-spacer { flex: 1; }
+.shcm-card-body { padding: 14px; }
+.shcm-card-body--flush { padding: 0; }
+
+/* Profile card */
+.shcm-profile { padding: 20px 16px 14px; text-align: center; }
+.shcm-profile-photo {
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  margin: 0 auto 12px;
+  object-fit: cover;
+  background: linear-gradient(140deg, #cfd6dc, #aeb8c0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+.shcm-profile-name {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.shcm-profile-title { font-size: 12.5px; color: var(--shcm-text-soft); margin-top: 2px; }
+.shcm-profile-org   { font-size: 12.5px; color: var(--shcm-text-soft); }
+.shcm-profile-status {
+  margin-top: 14px;
+  border: 1px solid var(--shcm-border);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px 7px 12px;
+  font-size: 12.5px;
+  color: var(--shcm-text-mute);
+  text-align: left;
+}
+.shcm-profile-status-edit {
+  margin-left: auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--shcm-green-deep);
+  color: var(--shcm-green-deep);
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+/* Collapsible list rows (My Tasks) */
+.shcm-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--shcm-border-soft);
+  font-size: 13px;
+  color: var(--shcm-text);
+  background: transparent;
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+  width: 100%;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.shcm-row:last-child { border-bottom: 0; }
+.shcm-row:hover { background: #f7f9fa; }
+.shcm-row-count {
+  margin-left: auto;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--shcm-text-soft);
+}
+.shcm-row-chevron { color: var(--shcm-text-mute); display: inline-flex; }
+
+/* Policies */
+.shcm-policy-note { font-size: 12.5px; color: var(--shcm-text-mute); margin-bottom: 12px; }
+.shcm-pill-btn {
+  appearance: none;
+  background: #fff;
+  border: 1px solid var(--shcm-green-deep);
+  color: var(--shcm-green-deep);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 6px 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 120ms ease;
+}
+.shcm-pill-btn:hover { background: var(--shcm-green-soft); }
+.shcm-pill-btn--solid {
+  background: var(--shcm-green-deep);
+  color: #fff;
+  border-color: var(--shcm-green-deep);
+}
+.shcm-pill-btn--solid:hover { background: #008a25; }
+
+/* Time-off meters */
+.shcm-meter + .shcm-meter { margin-top: 14px; }
+.shcm-meter-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12.5px;
+}
+.shcm-meter-label { color: var(--shcm-text); font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.shcm-meter-value { color: var(--shcm-green-deep); font-weight: 700; font-variant-numeric: tabular-nums; flex: 0 0 auto; }
+.shcm-meter-track {
+  margin-top: 6px;
+  height: 5px;
+  border-radius: 999px;
+  background: #eef1f4;
+  overflow: hidden;
+}
+.shcm-meter-fill { height: 100%; border-radius: 999px; background: var(--shcm-green-deep); }
+
+/* External links */
+.shcm-linklist { display: flex; flex-direction: column; gap: 9px; }
+.shcm-linklist a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--shcm-link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.shcm-linklist a:hover { color: #075e91; }
+.shcm-linklist-icon { color: var(--shcm-text-mute); display: inline-flex; flex: 0 0 auto; }
+
+/* ──────────────────────────────────────────────────────────────────────
+ * Engagement feed
+ * ────────────────────────────────────────────────────────────────────── */
+.shcm-post-input {
+  width: 100%;
+  border: 1px solid var(--shcm-border);
+  border-radius: 8px;
+  padding: 11px 14px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--shcm-text);
+  background: #fff;
+}
+.shcm-post-input::placeholder { color: var(--shcm-text-mute); }
+.shcm-post-input:focus { outline: 2px solid var(--shcm-green); outline-offset: -1px; }
+
+.shcm-post { padding: 14px 16px 12px; }
+.shcm-post + .shcm-post { border-top: 1px solid var(--shcm-border-soft); }
+.shcm-post-head { display: flex; align-items: flex-start; gap: 10px; }
+.shcm-post-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  background: #d4dade;
+  color: #4b545b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.shcm-post-meta { min-width: 0; flex: 1; }
+.shcm-post-time { font-size: 11.5px; color: var(--shcm-text-mute); }
+.shcm-post-author { font-size: 13px; font-weight: 600; color: var(--shcm-text); }
+.shcm-post-tag {
+  flex: 0 0 auto;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--shcm-text-mute);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.shcm-post-body {
+  margin-top: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--shcm-text);
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+}
+.shcm-post-body a { color: var(--shcm-link); text-decoration: underline; }
+.shcm-post-sub { margin-top: 6px; font-size: 12.5px; color: var(--shcm-text-soft); font-weight: 400; }
+.shcm-post-foot {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 11.5px;
+  color: var(--shcm-text-mute);
+}
+.shcm-post-foot span { display: inline-flex; align-items: center; gap: 5px; }
+
+/* A single feed post is authored by the Work agent — it's how a Sage HCM
+   user first learns the new module exists, in the surface they already
+   read every morning. */
+.shcm-post--work { background: linear-gradient(180deg, #f4fbf6 0%, #ffffff 70%); }
+.shcm-post-workmark {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--shcm-bar);
+  color: var(--shcm-green);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+.shcm-post-cta {
+  appearance: none;
+  margin-top: 12px;
+  background: var(--shcm-green-deep);
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 8px 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: background 120ms ease;
+}
+.shcm-post-cta:hover { background: #008a25; }
+
+/* ──────────────────────────────────────────────────────────────────────
+ * Right rail widgets
+ * ────────────────────────────────────────────────────────────────────── */
+.shcm-survey-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+}
+.shcm-btn-row { display: flex; gap: 8px; justify-content: center; }
+
+.shcm-notif {
+  display: flex;
+  gap: 9px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--shcm-border-soft);
+}
+.shcm-notif:last-child { border-bottom: 0; }
+.shcm-notif-icon { color: var(--shcm-text-mute); flex: 0 0 auto; margin-top: 1px; }
+.shcm-notif-date { font-size: 11px; color: var(--shcm-text-mute); }
+.shcm-notif-text { font-size: 12.5px; color: var(--shcm-text); margin-top: 2px; line-height: 1.35; }
+.shcm-notif--work .shcm-notif-icon { color: var(--shcm-green-deep); }
+
+.shcm-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px 14px;
+  font-size: 11px;
+  color: var(--shcm-text-mute);
+  border-top: 1px solid var(--shcm-border-soft);
+}
+
+.shcm-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 0 12px;
+}
+.shcm-search input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--shcm-border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 12.5px;
+}
+.shcm-search-go {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  border: 1px solid var(--shcm-green-deep);
+  color: var(--shcm-green-deep);
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.shcm-working-group {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--shcm-text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0 4px;
+}
+.shcm-working-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 3px 0 7px 14px;
+}
+.shcm-working-name { font-size: 12.5px; color: var(--shcm-text); }
+.shcm-working-loc { font-size: 11px; color: var(--shcm-text-mute); }
+.shcm-working-hrs { font-size: 12px; color: var(--shcm-text-soft); font-variant-numeric: tabular-nums; flex: 0 0 auto; }
+
+/* "Live from Sage Work" strip — the host product surfacing the module's
+   own data inline, which is the whole point of the integration story. */
+.shcm-worksource {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--shcm-border-soft);
+  background: #f7fbf8;
+  font-size: 11px;
+  color: var(--shcm-green-deep);
+  font-weight: 600;
+}

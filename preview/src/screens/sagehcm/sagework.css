@@ -1,0 +1,122 @@
+/*
+ * Sage Work skin — the white-label layer.
+ *
+ * Scoped to `[data-sage-module="work"]` so it only ever touches the
+ * embedded experience, never the standalone Teambridge sandbox running
+ * in the same app.
+ *
+ * Two jobs:
+ *   1. Fit the Teambridge layout into Sage's content region (which is
+ *      already inside a pinned top bar + module rail).
+ *   2. Repaint the AI layer from Teambridge purple to Sage green, so the
+ *      one thing a customer would otherwise recognise as another
+ *      vendor's product reads as Sage's own.
+ */
+
+.sagehcm[data-sage-module="work"] .act1-root {
+  /* Teambridge's own nav rail is suppressed here — Sage's rail carries
+     the IA — so every view drops its leading 240px nav column. Home
+     keeps chat + activity feed. */
+  grid-template-columns: minmax(0, 1fr) 460px;
+  /* act1-root ships `min-height: 100vh` for standalone use; inside the
+     shell it has to fit the remaining height instead. */
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  grid-template-rows: minmax(0, 1fr);
+  background: var(--shcm-bg);
+}
+
+/* Content views: agent panel + canvas (was 240px 360px 1fr). */
+.sagehcm[data-sage-module="work"] .act1-root--schedule,
+.sagehcm[data-sage-module="work"] .act1-root--people,
+.sagehcm[data-sage-module="work"] .act1-root--pay,
+.sagehcm[data-sage-module="work"] .act1-root--time-tracking,
+.sagehcm[data-sage-module="work"] .act1-root--shift-requests,
+.sagehcm[data-sage-module="work"] .act1-root--timesheets,
+.sagehcm[data-sage-module="work"] .act1-root--review,
+.sagehcm[data-sage-module="work"] .act1-root--onboarding {
+  grid-template-columns: 360px minmax(0, 1fr);
+}
+
+/* Full-canvas views: no agent panel in the JSX at all (was 240px 1fr). */
+.sagehcm[data-sage-module="work"] .act1-root--engage,
+.sagehcm[data-sage-module="work"] .act1-root--policies,
+.sagehcm[data-sage-module="work"] .act1-root--settings,
+.sagehcm[data-sage-module="work"] .act1-root--workflows {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Surfaces that own their own scroll assume a full viewport when they
+   run standalone. Inside the shell they fill the grid cell. */
+.sagehcm[data-sage-module="work"] .schedule { height: 100%; }
+
+/* ── AI palette remap ──────────────────────────────────────────────────
+ * Alloy's purple family is what the agent layer is painted with — chat
+ * accents, reasoning steps, AI badges, the "thinking" states. Remapping
+ * the family (rather than chasing individual rules) recolours the whole
+ * AI surface in one place and keeps future Teambridge work in sync.
+ * ──────────────────────────────────────────────────────────────────── */
+.sagehcm[data-sage-module="work"] .act1-root,
+.sagehcm[data-sage-module="work"] .act1-root * {
+  --color-purple-bg-primary:     #0b8f31;
+  --color-purple-bg-secondary:   #d6f5e0;
+  --color-purple-bg-tertiary:    #eefaf2;
+  --color-purple-content-primary:#0a7a2b;
+  --color-purple-content-secondary: #0b8f31;
+  --color-purple-border-primary: #b6e8c8;
+  --color-purple-fill:           #0b8f31;
+
+  /* The agent gradient — Teambridge runs purple → blue → teal. Sage runs
+     one hue, so this stays inside the green family with enough range to
+     still read as a gradient in motion. */
+  --ai-grad-start: #0a7a2b;
+  --ai-grad-mid:   #00c234;
+  --ai-grad-end:   #7fe6a3;
+}
+
+/* The gradient vars are declared on .act1-root itself in act1.css, so
+   the override above needs to win there too — restate at the root. */
+.sagehcm[data-sage-module="work"] .act1-root {
+  --ai-grad-start: #0a7a2b;
+  --ai-grad-mid:   #00c234;
+  --ai-grad-end:   #7fe6a3;
+}
+
+/* Focus rings inside the embed should read Sage green, not Alloy slate —
+   it's the smallest tell, and the one a keyboard user hits first. */
+.sagehcm[data-sage-module="work"] .act1-root :focus-visible {
+  outline-color: var(--shcm-green-deep, #00a82d);
+}
+
+/* ── Chrome seams ──────────────────────────────────────────────────────
+ * The embedded product sits directly under Sage's rail with no gutter,
+ * so its own left edge shouldn't paint a second border.
+ * ──────────────────────────────────────────────────────────────────── */
+.sagehcm[data-sage-module="work"] .act1-root > *:first-child {
+  border-left: 0;
+}
+
+/* Teambridge's mobile top bar duplicates Sage's — the shell already
+   provides the bar and the rail on small screens. */
+.sagehcm[data-sage-module="work"] .act1-mobile-topbar { display: none; }
+
+@media (max-width: 1100px) {
+  .sagehcm[data-sage-module="work"] .act1-root {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sagehcm[data-sage-module="work"] .prompt-panel { display: none; }
+}
+
+@media (max-width: 900px) {
+  .sagehcm .shcm-rail { width: 62px; }
+  .sagehcm .shcm-rail-module-label,
+  .sagehcm .shcm-rail-item-label,
+  .sagehcm .shcm-rail-item-chevron { display: none; }
+  .sagehcm .shcm-rail-sub { display: none; }
+  .sagehcm .shcm-rail-item { justify-content: center; padding: 11px 0; }
+  .sagehcm .shcm-rail-module { justify-content: center; padding: 14px 0; }
+  .sagehcm .shcm-switcher { left: 62px; }
+  .sagehcm .shcm-page { grid-template-columns: minmax(0, 1fr); }
+  .sagehcm .shcm-page > .shcm-col--right { display: none; }
+}
