@@ -6,6 +6,10 @@ import EntryChoice        from './screens/EntryChoice.jsx'
 import Act1Dashboard      from './screens/Act1Dashboard.jsx'
 import SageDashboard      from './screens/sage/SageDashboard.jsx'
 import SageWorkforceEmbed from './screens/sage/SageWorkforceEmbed.jsx'
+import SageHcmHome        from './screens/sagehcm/SageHcmHome.jsx'
+import SageWork           from './screens/sagehcm/SageWork.jsx'
+import { WORK_VIEWS }     from './screens/sagehcm/workNav.js'
+import { setBrand, TEAMBRIDGE_BRAND, SAGE_WORK_BRAND } from './screens/brand.js'
 import LeadCaptureGate    from './screens/LeadCaptureGate.jsx'
 import OnboardingFlow     from './screens/onboarding/OnboardingFlow.jsx'
 import DemoSpecialist from './screens/DemoSpecialist.jsx'
@@ -62,6 +66,10 @@ function routeToHashPath(route) {
   if (!route) return null
   if (route.kind === 'industry') return route.view === 'overview' ? `/${route.industry}` : `/${route.industry}/${route.view}`
   if (route.kind === 'sage') return route.view === 'dashboard' ? '/sage' : `/sage/${route.view}`
+  if (route.kind === 'sage-hcm') {
+    if (route.module !== 'work') return '/sage-hcm'
+    return route.view === 'overview' ? '/sage-hcm/work' : `/sage-hcm/work/${route.view}`
+  }
   return null
 }
 
@@ -91,6 +99,13 @@ function parseHashString(input) {
     const sub = segs[1] || 'dashboard'
     const sageOk = new Set(['dashboard', 'workforce'])
     return { kind: 'sage', view: sageOk.has(sub) ? sub : 'dashboard' }
+  }
+  // #/sage-hcm            → Sage HCM Self Service (the host product)
+  // #/sage-hcm/work[/view] → Sage Work, i.e. Teambridge white-labelled
+  if (segs[0] === 'sage-hcm') {
+    if (segs[1] !== 'work') return { kind: 'sage-hcm', module: 'self-service' }
+    const view = segs[2] || 'overview'
+    return { kind: 'sage-hcm', module: 'work', view: WORK_VIEWS.has(view) ? view : 'overview' }
   }
   const [industry, view = 'overview'] = segs
   if (!VALID_INDUSTRIES.has(industry)) return null
@@ -370,6 +385,13 @@ function App() {
   // deep links remain gated too, so pasted URLs can't bypass capture.
   const showGate = accessChecked && !leadCaptured
 
+  // Resolve the white-label identity before anything renders. Inside Sage
+  // Work the product calls itself "Sage Work" everywhere it names itself;
+  // everywhere else it's Teambridge. See screens/brand.js.
+  setBrand(route?.kind === 'sage-hcm' && route.module === 'work'
+    ? SAGE_WORK_BRAND
+    : TEAMBRIDGE_BRAND)
+
   let view
   if (!route) {
     view = (
@@ -399,6 +421,18 @@ function App() {
         }}
       />
     )
+  } else if (route.kind === 'sage-hcm') {
+    if (route.module === 'work') {
+      view = (
+        <SageWork
+          view={route.view}
+          onNavigate={setHash}
+          onSelectView={(v) => setHash(v === 'overview' ? '/sage-hcm/work' : `/sage-hcm/work/${v}`)}
+        />
+      )
+    } else {
+      view = <SageHcmHome onNavigate={setHash} />
+    }
   } else if (route.kind === 'sage') {
     const sageNav = (v) => setHash(v === 'dashboard' ? '/sage' : `/sage/${v}`)
     if (route.view === 'workforce') {
@@ -443,8 +477,12 @@ function App() {
           onSubmit={submitLead}
         />
       )}
+      {/* Nova's rail is Teambridge-branded and sits on top of whatever is
+          on screen. Inside the Sage HCM vision that would break the exact
+          illusion the prototype exists to prove, so the rail stands down
+          there — Sage Work's own in-product agent panel carries the AI. */}
       <DemoSpecialist
-        enabled={accessChecked}
+        enabled={accessChecked && route?.kind !== 'sage-hcm'}
         route={route}
         autoOpen={accessChecked}
         leadData={leadData}

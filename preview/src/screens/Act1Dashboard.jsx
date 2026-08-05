@@ -30,6 +30,7 @@ import { applyAccountOverride, getStoredBuildConfig } from './accountOverride.js
 import { getAgent, AGENTS }   from '../data/agents.js'
 import { getCardDetail }       from '../data/cardDetails.js'
 import { getPeriodSummary, getUserPeriod, fmt } from '../data/payData.js'
+import { getBrand } from './brand.js'
 import { trackDemoEvent } from '../lib/demoTracking.js'
 import ScheduleCalendar        from './ScheduleCalendar.jsx'
 import PeopleList              from './PeopleList.jsx'
@@ -64,7 +65,7 @@ function AgentAvatar({ agent, size = 32 }) {
 
 /* ─── Demo-only toast: signals dead links without navigating away ────────── */
 const DEMO_TOAST_EVENT = 'teambridge:demo-toast'
-function showDemoToast(message = 'This action is available in the full Teambridge product.') {
+function showDemoToast(message = `This action is available in the full ${getBrand().product} product.`) {
   if (typeof window === 'undefined') return
   trackDemoEvent('demo_action_clicked', { message })
   window.dispatchEvent(new CustomEvent(DEMO_TOAST_EVENT, { detail: message }))
@@ -924,7 +925,7 @@ function CallBody({ comm }) {
         <div className="call-transcript">
           {comm.transcript.map((t, i) => (
             <div key={i} className={`call-line call-line-${t.speaker}`}>
-              <span className="call-line-speaker">{t.speaker === 'agent' ? 'Teambridge' : comm.contact}</span>
+              <span className="call-line-speaker">{t.speaker === 'agent' ? getBrand().sender : comm.contact}</span>
               <span className="call-line-time">{t.time}</span>
               <p className="call-line-text">{t.text}</p>
             </div>
@@ -1197,7 +1198,7 @@ function ActivityTab({ record, detail, onExplore }) {
           <div className="detail-kicker">
             <p className="kicker-text">{detail.kicker}</p>
             <Button variant="secondary" size="lg" trailingArtwork={<ArrowNarrowRightIcon size={18} />} onClick={onExplore}>
-              Want to see what else Teambridge can do?
+              Want to see what else {getBrand().product} can do?
             </Button>
           </div>
         )}
@@ -1362,7 +1363,7 @@ function NeedsZoneWithSelect({ cards, selectedCardId, onSelect }) {
         <span className="zone-count">{remaining} waiting</span>
       </div>
       <p className="zone-sub">
-        Teambridge has prepared recommendations. Click a card to review the full agent reasoning, or approve directly.
+        {getBrand().product} has prepared recommendations. Click a card to review the full agent reasoning, or approve directly.
       </p>
       <div className="needs-list">
         {cards.map(card => (
@@ -1905,7 +1906,7 @@ function DailyBriefing({ industryId, view = 'overview', paySubRoute, briefKey, o
       <header className="briefing-agent">
         <span className="briefing-agent-status" aria-hidden="true" />
         <div className="briefing-agent-text">
-          <div className="briefing-agent-name">Teambridge</div>
+          <div className="briefing-agent-name">{getBrand().sender}</div>
           <div className="briefing-agent-role">Super Agent · Monitoring all</div>
         </div>
       </header>
@@ -1949,7 +1950,7 @@ function DailyBriefing({ industryId, view = 'overview', paySubRoute, briefKey, o
       ) : (
         <article className="briefing-message">
           <div className="briefing-message-head">
-            <span className="briefing-message-sender">Teambridge</span>
+            <span className="briefing-message-sender">{getBrand().sender}</span>
             <span className="briefing-message-time">{brief.time}</span>
           </div>
           <div className="briefing-message-body">
@@ -2267,7 +2268,7 @@ Want me to ask each to keep/swap/drop?` },
     { label: 'Draft shift reminder',
       answer: `Draft for tomorrow's 5am pick-and-pack:
 
-"Reminder: your shift starts at 5am at DC East. Report to the north dock. Reply Y to confirm. — Teambridge"
+"Reminder: your shift starts at 5am at DC East. Report to the north dock. Reply Y to confirm. — ${getBrand().sender}"
 
 Dispatching to all 12 scheduled associates. Send?` },
     { label: 'Summarise auto-approved swaps',
@@ -2720,7 +2721,7 @@ function workflowCta(action) {
 function ProgressMessage({ message }) {
   const agent = message.agentId ? getAgent(message.agentId) : null
   const steps = message.steps ?? []
-  const agentName = agent ? `${agent.name} (${agent.role})` : 'Teambridge AI'
+  const agentName = agent ? `${agent.name} (${agent.role})` : getBrand().ai
   const isThinking = message.status === 'thinking'
   // Per-message override so scripted scenes can advance faster than the
   // default 18s pacing used for background workflows.
@@ -3112,7 +3113,7 @@ function buildCancelScene(c) {
 
   scene.reachOutPrompt = {
     content: { segments: [
-      { type: 'text', text: `Teambridge is your always-on super agent — I've been monitoring your account and prepared your brief. Heads up: **${c.out.name}** just cancelled their **${c.shiftWhen} ${c.roleLower}**. No worries, the super agent's got this.` },
+      { type: 'text', text: `${getBrand().sender} is your always-on super agent — I've been monitoring your account and prepared your brief. Heads up: **${c.out.name}** just cancelled their **${c.shiftWhen} ${c.roleLower}**. No worries, the super agent's got this.` },
       { type: 'signal',
         eyebrow: 'Super agent · auto-resolving',
         title:  `${c.out.name} cancelled their ${c.shiftWhen} ${c.roleLower}`,
@@ -3372,11 +3373,14 @@ function SceneNarration({ script }) {
 
   if (state === 'error') return null
 
+  // The narrator is the product's own voice, so it takes the brand's
+  // name — "Nova" standalone, "Sage Work" when white-labelled.
+  const voice = getBrand().id === 'teambridge' ? 'Nova' : getBrand().sender
   const label =
-    state === 'loading' ? 'Loading Nova’s voice…'
-    : state === 'playing' ? 'Nova is narrating… tap to stop'
-    : state === 'done' ? 'Replay Nova’s narration'
-    : 'Hear Nova narrate this'
+    state === 'loading' ? `Loading ${voice}’s voice…`
+    : state === 'playing' ? `${voice} is narrating… tap to stop`
+    : state === 'done' ? `Replay ${voice}’s narration`
+    : `Hear ${voice} narrate this`
 
   return (
     <div className="scene-narration">
@@ -3769,7 +3773,7 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
     .slice(0, 3)
 
   return (
-    <section className={`prompt-panel ${mobileOpen ? 'is-mobile-open' : ''}`} aria-label="Ask Teambridge">
+    <section className={`prompt-panel ${mobileOpen ? 'is-mobile-open' : ''}`} aria-label={`Ask ${getBrand().product}`}>
       <div className="prompt-panel-inner">
         {narrationScript && view === 'overview' && (
           <SceneNarration key={industryId} script={narrationScript} />
@@ -3826,7 +3830,7 @@ function PromptPanel({ industryId, view = 'overview', paySubRoute, sageMode = fa
         <div className="prompt-input">
           <textarea
             className="prompt-input-field"
-            placeholder="Ask Teambridge…"
+            placeholder={`Ask ${getBrand().product}…`}
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => {
@@ -4042,7 +4046,7 @@ function buildFreshLaunchFeed(config) {
   return cards
 }
 
-export default function Act1Dashboard({ industryId, view = 'overview', sageMode = false, otFixed = false, onApplyOTFix, onBackToIntacct, onBack, onExplore, onSelectView }) {
+export default function Act1Dashboard({ industryId, view = 'overview', sageMode = false, hideNav = false, otFixed = false, onApplyOTFix, onBackToIntacct, onBack, onExplore, onSelectView }) {
   // Capture the fresh-launch flag once on mount. The scripted-scene
   // effect down below clears it from sessionStorage on first run, so
   // we need to lock it into local state right away. When true, the
@@ -4179,17 +4183,21 @@ export default function Act1Dashboard({ industryId, view = 'overview', sageMode 
         onClick={() => setMobileNavOpen(false)}
       />
 
-      <LeftNav
-        industryLabel={data.label}
-        brandUrl={data.brandUrl}
-        view={view}
-        sageMode={sageMode}
-        onBrand={onBack}
-        onAsk={onExplore}
-        onSelectView={(v) => { setMobileNavOpen(false); onSelectView?.(v) }}
-        mobileOpen={mobileNavOpen}
-        onMobileClose={() => setMobileNavOpen(false)}
-      />
+      {/* White-label hosts (Sage Work) carry the IA in their own module
+          rail, so Teambridge's nav would be a redundant second rail. */}
+      {!hideNav && (
+        <LeftNav
+          industryLabel={data.label}
+          brandUrl={data.brandUrl}
+          view={view}
+          sageMode={sageMode}
+          onBrand={onBack}
+          onAsk={onExplore}
+          onSelectView={(v) => { setMobileNavOpen(false); onSelectView?.(v) }}
+          mobileOpen={mobileNavOpen}
+          onMobileClose={() => setMobileNavOpen(false)}
+        />
+      )}
 
       {/* Engage is a chat module of its own, Policies is a doc browser,
           Settings is a system-config page — surfacing Nova's chat panel
